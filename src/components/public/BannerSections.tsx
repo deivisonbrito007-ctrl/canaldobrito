@@ -1,17 +1,15 @@
-import { useBannersByCategory, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
+import { useBannersByCategory, type BannerCategory } from "@/hooks/useBanners";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CATEGORY_CONFIG: Record<BannerCategory, { emoji: string; label: string }> = {
-  cover: { emoji: "📺", label: "Capa" },
-  football: { emoji: "⚽", label: "Futebol" },
-  basketball: { emoji: "🏀", label: "Basquete" },
-  ufc: { emoji: "🥊", label: "UFC/MMA" },
-  other_sports: { emoji: "🏆", label: "Demais Esportes" },
-  football_guide: { emoji: "📋", label: "Guia do Futebol" },
-};
+const SPORTS_CATEGORIES: { key: BannerCategory; emoji: string; label: string }[] = [
+  { key: "football", emoji: "⚽", label: "Futebol" },
+  { key: "basketball", emoji: "🏀", label: "Basquete" },
+  { key: "ufc", emoji: "🥊", label: "UFC/MMA" },
+  { key: "other_sports", emoji: "🏆", label: "Outros" },
+];
 
 const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
   const { data: banners, isLoading } = useBannersByCategory(category);
@@ -66,12 +64,11 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
           >
             <img
               src={banner.image_url}
-              alt={banner.title || CATEGORY_CONFIG[category].label}
+              alt={banner.title || "Banner"}
               className="w-full aspect-video object-cover"
               loading="lazy"
               onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
             />
-            {/* Overlay with title */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
             {banner.title && (
               <div className="absolute bottom-4 left-4 right-4">
@@ -84,7 +81,6 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
         </AnimatePresence>
       </div>
 
-      {/* Desktop arrows */}
       {validBanners.length > 1 && (
         <>
           <button
@@ -102,7 +98,6 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
         </>
       )}
 
-      {/* Dots */}
       {validBanners.length > 1 && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
           {validBanners.map((_, i) => (
@@ -122,11 +117,32 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
   );
 };
 
-const BannerSection = ({ category }: { category: BannerCategory }) => {
-  const { data: banners } = useBannersByCategory(category);
-  if (!banners || banners.length === 0) return null;
+const SportsSection = () => {
+  const [activeSport, setActiveSport] = useState<BannerCategory>("football");
+  
+  // Check which sports have banners
+  const footballData = useBannersByCategory("football");
+  const basketballData = useBannersByCategory("basketball");
+  const ufcData = useBannersByCategory("ufc");
+  const otherData = useBannersByCategory("other_sports");
 
-  const config = CATEGORY_CONFIG[category];
+  const dataMap: Record<string, { data: any[] | undefined }> = {
+    football: footballData,
+    basketball: basketballData,
+    ufc: ufcData,
+    other_sports: otherData,
+  };
+
+  const availableSports = SPORTS_CATEGORIES.filter(
+    (s) => (dataMap[s.key]?.data?.length ?? 0) > 0
+  );
+
+  if (availableSports.length === 0) return null;
+
+  // If active sport has no data, switch to first available
+  if (!availableSports.find((s) => s.key === activeSport) && availableSports.length > 0) {
+    return <SportsWithDefault availableSports={availableSports} />;
+  }
 
   return (
     <motion.section
@@ -136,11 +152,91 @@ const BannerSection = ({ category }: { category: BannerCategory }) => {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="flex items-center gap-2.5 px-4 sm:px-6">
-        <span className="text-lg">{config.emoji}</span>
-        <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">{config.label}</h2>
+        <span className="text-lg">🏟️</span>
+        <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">Esportes</h2>
         <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
       </div>
-      <CategoryCarousel category={category} />
+
+      {availableSports.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-4 sm:px-6 pb-1">
+          {availableSports.map((sport) => (
+            <button
+              key={sport.key}
+              onClick={() => setActiveSport(sport.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[32px] ${
+                activeSport === sport.key
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {sport.emoji} {sport.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <CategoryCarousel category={activeSport} />
+    </motion.section>
+  );
+};
+
+// Helper to auto-select first available sport
+const SportsWithDefault = ({ availableSports }: { availableSports: typeof SPORTS_CATEGORIES }) => {
+  const [activeSport, setActiveSport] = useState<BannerCategory>(availableSports[0].key);
+
+  return (
+    <motion.section
+      className="space-y-4"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <div className="flex items-center gap-2.5 px-4 sm:px-6">
+        <span className="text-lg">🏟️</span>
+        <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">Esportes</h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
+      </div>
+
+      {availableSports.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-4 sm:px-6 pb-1">
+          {availableSports.map((sport) => (
+            <button
+              key={sport.key}
+              onClick={() => setActiveSport(sport.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all min-h-[32px] ${
+                activeSport === sport.key
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {sport.emoji} {sport.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <CategoryCarousel category={activeSport} />
+    </motion.section>
+  );
+};
+
+const FootballGuideSection = () => {
+  const { data: banners } = useBannersByCategory("football_guide");
+  if (!banners || banners.length === 0) return null;
+
+  return (
+    <motion.section
+      className="space-y-4"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <div className="flex items-center gap-2.5 px-4 sm:px-6">
+        <span className="text-lg">📋</span>
+        <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">Guia do Futebol</h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
+      </div>
+      <CategoryCarousel category="football_guide" />
     </motion.section>
   );
 };
@@ -148,9 +244,8 @@ const BannerSection = ({ category }: { category: BannerCategory }) => {
 export const BannerSections = () => {
   return (
     <div className="space-y-12">
-      {CATEGORY_LIST.map((cat) => (
-        <BannerSection key={cat} category={cat} />
-      ))}
+      <SportsSection />
+      <FootballGuideSection />
     </div>
   );
 };
