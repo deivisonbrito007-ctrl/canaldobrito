@@ -4,7 +4,8 @@ import { CategoryPills } from "@/components/public/CategoryPills";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
-import { WatchTodaySection } from "@/components/public/WatchTodaySection";
+import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
+import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { ReleaseBanner } from "@/components/public/ReleaseBanner";
