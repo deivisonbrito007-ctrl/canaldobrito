@@ -90,7 +90,7 @@ export const DailyBannerCarousel = () => {
                   <img
                     src={banner.image_url}
                     alt={banner.title || "Programação do dia"}
-                    className="w-full aspect-video object-cover"
+                    className="w-full h-[60vh] object-cover"
                     loading="lazy"
                     onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
                   />
