@@ -129,6 +129,11 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
     78,   // Bundesliga
     1,    // World Cup
     29,   // World Cup Qualifiers SA
+    253,  // MLS
+    307,  // Saudi Pro League
+    262,  // Liga MX
+    94,   // Primeira Liga (Portugal)
+    34,   // World Cup Qualifiers Europe
   ];
 
   console.log(`[API-Football] Fetching ${leagues.length} leagues for ${today}`);
