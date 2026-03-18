@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,13 +23,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   Plus, Pencil, Trash2, LogOut, ArrowLeft, RefreshCw,
   Tv, Trophy, Wifi, Calendar, Search, Filter,
-  LayoutGrid, List, Zap, Image, Upload,
+  LayoutGrid, List, Zap, Image, Upload, Eye, EyeOff,
+  GripVertical, ChevronUp, ChevronDown,
 } from "lucide-react";
-import { LiveBadge } from "@/components/LiveBadge";
 import { SPORTS } from "@/types/sports";
 import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
 import type { TablesInsert } from "@/integrations/supabase/types";
@@ -42,6 +41,7 @@ import {
   useDeleteBanner,
   BANNER_CATEGORIES,
   type BannerCategory,
+  type Banner,
 } from "@/hooks/useBanners";
 
 type GameInsert = TablesInsert<"games">;
@@ -76,7 +76,7 @@ const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
 const Admin = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"games" | "banners">("games");
+  const [activeTab, setActiveTab] = useState<"games" | "banners">("banners");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<GameInsert>>(INITIAL_FORM);
@@ -92,6 +92,8 @@ const Admin = () => {
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewBanner, setPreviewBanner] = useState<Banner | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: games = [], isLoading: gamesLoading } = useQuery({
@@ -114,6 +116,34 @@ const Admin = () => {
   const uploadBanner = useUploadBanner();
   const toggleBanner = useToggleBanner();
   const deleteBanner = useDeleteBanner();
+
+  // Reorder mutation
+  const reorderMutation = useMutation({
+    mutationFn: async ({ id, newOrder }: { id: string; newOrder: number }) => {
+      const { error } = await supabase
+        .from("banners")
+        .update({ sort_order: newOrder })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
+    },
+  });
+
+  const moveBanner = useCallback(
+    (banner: Banner, direction: "up" | "down") => {
+      const idx = banners.findIndex((b) => b.id === banner.id);
+      if (idx < 0) return;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= banners.length) return;
+
+      const other = banners[swapIdx];
+      reorderMutation.mutate({ id: banner.id, newOrder: other.sort_order });
+      reorderMutation.mutate({ id: other.id, newOrder: banner.sort_order });
+    },
+    [banners, reorderMutation]
+  );
 
   const filteredGames = useMemo(() => {
     return games.filter((g) => {
@@ -139,16 +169,16 @@ const Admin = () => {
       today: todayGames.length,
       live: games.filter((g) => g.status === "live").length,
       scheduled: games.filter((g) => g.status === "scheduled").length,
-      finished: games.filter((g) => g.status === "finished").length,
     };
   }, [games]);
 
-  const bannerCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    banners.forEach((b) => {
-      if (b.active) c[b.category] = (c[b.category] || 0) + 1;
-    });
-    return c;
+  const bannerStats = useMemo(() => {
+    const all = banners;
+    return {
+      total: all.length,
+      active: all.filter((b) => b.active).length,
+      inactive: all.filter((b) => !b.active).length,
+    };
   }, [banners]);
 
   const upsertMutation = useMutation({
@@ -242,13 +272,23 @@ const Admin = () => {
     upsertMutation.mutate(payload);
   };
 
-  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleBannerFileChange = (file: File) => {
     setBannerFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => setBannerPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleBannerFileChange(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) handleBannerFileChange(file);
   };
 
   const handleBannerUpload = async () => {
@@ -262,7 +302,7 @@ const Admin = () => {
         category: bannerUploadCategory,
         title: bannerTitle || undefined,
       });
-      toast.success("Banner enviado!");
+      toast.success("Banner enviado com sucesso!");
       setBannerUploadOpen(false);
       setBannerFile(null);
       setBannerPreview(null);
@@ -273,7 +313,6 @@ const Admin = () => {
   };
 
   const sportIcon = (sport: string) => SPORTS.find((s) => s.type === sport)?.icon || "🏟️";
-  const sportLabel = (sport: string) => SPORTS.find((s) => s.type === sport)?.label || sport;
 
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     live: { label: "Ao Vivo", color: "bg-[hsl(var(--live))]/15 text-[hsl(var(--live))] border-[hsl(var(--live))]/30", icon: <Wifi className="h-3 w-3" /> },
@@ -317,34 +356,430 @@ const Admin = () => {
 
       <main className="container py-6 px-4 space-y-6">
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1 rounded-lg border border-border/50 bg-card p-1 w-fit">
-          <button
-            onClick={() => setActiveTab("games")}
-            className={cn(
-              "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-              activeTab === "games"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Tv className="h-4 w-4" />
-            Jogos
-          </button>
+        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-card p-1 w-fit">
           <button
             onClick={() => setActiveTab("banners")}
             className={cn(
-              "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
               activeTab === "banners"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             )}
           >
             <Image className="h-4 w-4" />
             Banners
+            {bannerStats.active > 0 && (
+              <span className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                activeTab === "banners" ? "bg-primary-foreground/20" : "bg-primary/15 text-primary"
+              )}>
+                {bannerStats.active}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("games")}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
+              activeTab === "games"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            )}
+          >
+            <Tv className="h-4 w-4" />
+            Jogos
+            {stats.today > 0 && (
+              <span className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                activeTab === "games" ? "bg-primary-foreground/20" : "bg-primary/15 text-primary"
+              )}>
+                {stats.today}
+              </span>
+            )}
           </button>
         </div>
 
-        {activeTab === "games" ? (
+        {activeTab === "banners" ? (
+          <>
+            {/* Banner Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Total", value: bannerStats.total, icon: <Image className="h-5 w-5" />, color: "text-primary" },
+                { label: "Ativos", value: bannerStats.active, icon: <Eye className="h-5 w-5" />, color: "text-[hsl(142,70%,45%)]" },
+                { label: "Inativos", value: bannerStats.inactive, icon: <EyeOff className="h-5 w-5" />, color: "text-muted-foreground" },
+              ].map((stat) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl border border-border/50 bg-card p-4 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{stat.label}</span>
+                    <span className={stat.color}>{stat.icon}</span>
+                  </div>
+                  <p className="font-display text-2xl sm:text-3xl font-black text-foreground">{stat.value}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+              <button
+                onClick={() => setBannerCategory("all")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium whitespace-nowrap transition-all min-h-[36px]",
+                  bannerCategory === "all"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-border"
+                )}
+              >
+                Todos
+                <span className={cn("rounded-full px-1.5 text-[10px] font-bold",
+                  bannerCategory === "all" ? "bg-primary-foreground/20" : "bg-secondary"
+                )}>{bannerStats.total}</span>
+              </button>
+              {BANNER_CATEGORIES.map((cat) => {
+                const count = banners.filter((b) => b.category === cat.value).length;
+                return (
+                  <button
+                    key={cat.value}
+                    onClick={() => setBannerCategory(cat.value)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium whitespace-nowrap transition-all min-h-[36px]",
+                      bannerCategory === cat.value
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-border"
+                    )}
+                  >
+                    <span>{cat.icon}</span>
+                    <span className="hidden sm:inline">{cat.label}</span>
+                    {count > 0 && (
+                      <span className={cn("rounded-full px-1.5 text-[10px] font-bold",
+                        bannerCategory === cat.value ? "bg-primary-foreground/20" : "bg-secondary"
+                      )}>{count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {banners.length} banner{banners.length !== 1 ? "s" : ""}
+              </p>
+              <Dialog open={bannerUploadOpen} onOpenChange={(open) => {
+                setBannerUploadOpen(open);
+                if (!open) {
+                  setBannerFile(null);
+                  setBannerPreview(null);
+                  setBannerTitle("");
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-1.5 shadow-sm">
+                    <Upload className="h-4 w-4" />
+                    Upload Banner
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="border-border/50 bg-card sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
+                        <Image className="h-4 w-4 text-primary" />
+                      </div>
+                      Novo Banner
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    {/* Drag & Drop Upload */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={handleDrop}
+                      className={cn(
+                        "relative cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-all duration-200",
+                        isDragging
+                          ? "border-primary bg-primary/5 scale-[1.02]"
+                          : bannerPreview
+                            ? "border-border/50 bg-secondary/20"
+                            : "border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/40"
+                      )}
+                    >
+                      {bannerPreview ? (
+                        <div className="space-y-3">
+                          <img
+                            src={bannerPreview}
+                            alt="Preview"
+                            className="mx-auto max-h-52 rounded-lg object-contain shadow-md"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {bannerFile?.name} • {bannerFile ? (bannerFile.size / 1024 / 1024).toFixed(1) : 0} MB
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBannerFile(null);
+                              setBannerPreview(null);
+                            }}
+                            className="text-xs text-muted-foreground"
+                          >
+                            Trocar imagem
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3 py-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                            <Upload className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              Arraste uma imagem ou clique aqui
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              JPG, PNG ou WebP • Máx 10 MB
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleInputChange}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Categoria</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {BANNER_CATEGORIES.map((cat) => (
+                          <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => setBannerUploadCategory(cat.value)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition-all",
+                              bannerUploadCategory === cat.value
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border hover:text-foreground"
+                            )}
+                          >
+                            <span className="text-base">{cat.icon}</span>
+                            {cat.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Título (opcional)</Label>
+                      <Input
+                        value={bannerTitle}
+                        onChange={(e) => setBannerTitle(e.target.value)}
+                        placeholder="Ex: Jogos do Dia - 18/03"
+                        className="bg-secondary/30 border-border/50"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleBannerUpload}
+                      disabled={!bannerFile || uploadBanner.isPending}
+                      className="w-full h-11 font-medium"
+                    >
+                      {uploadBanner.isPending ? (
+                        <span className="flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Enviando...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Upload className="h-4 w-4" />
+                          Enviar Banner
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Banner Grid */}
+            {bannersLoading ? (
+              <div className="flex justify-center py-12">
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : banners.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-secondary">
+                  <Image className="h-10 w-10 text-muted-foreground/30" />
+                </div>
+                <p className="font-display text-lg font-semibold text-foreground">
+                  Nenhum banner encontrado
+                </p>
+                <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+                  Clique em "Upload Banner" para adicionar seu primeiro banner.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <AnimatePresence mode="popLayout">
+                  {banners.map((banner, idx) => {
+                    const cat = BANNER_CATEGORIES.find((c) => c.value === banner.category);
+                    return (
+                      <motion.div
+                        key={banner.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={cn(
+                          "group rounded-xl border bg-card overflow-hidden transition-all hover:shadow-lg",
+                          banner.active
+                            ? "border-border/50 hover:border-primary/30"
+                            : "border-border/30 opacity-70 hover:opacity-100"
+                        )}
+                      >
+                        {/* Image with overlay */}
+                        <div
+                          className="relative aspect-[16/9] overflow-hidden bg-secondary cursor-pointer"
+                          onClick={() => setPreviewBanner(banner)}
+                        >
+                          <img
+                            src={banner.image_url}
+                            alt={banner.title || cat?.label || "Banner"}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                          {/* Category badge */}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 backdrop-blur-md">
+                            <span className="text-xs">{cat?.icon}</span>
+                            <span className="text-[10px] font-semibold text-foreground">{cat?.label}</span>
+                          </div>
+                          {/* Status indicator */}
+                          <div className={cn(
+                            "absolute top-2 right-2 h-2.5 w-2.5 rounded-full ring-2 ring-background",
+                            banner.active ? "bg-[hsl(142,70%,45%)]" : "bg-muted-foreground/50"
+                          )} />
+                          {/* Inactive overlay */}
+                          {!banner.active && (
+                            <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px] flex items-center justify-center">
+                              <span className="rounded-full bg-background/90 px-4 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm">
+                                <EyeOff className="h-3.5 w-3.5 inline mr-1.5" />
+                                Inativo
+                              </span>
+                            </div>
+                          )}
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-background/0 group-hover:bg-background/10 transition-colors flex items-center justify-center">
+                            <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+                          </div>
+                        </div>
+
+                        {/* Info & Actions */}
+                        <div className="p-3 space-y-2.5">
+                          {banner.title && (
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {banner.title}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(banner.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                          </p>
+                          <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={banner.active}
+                                onCheckedChange={(v) =>
+                                  toggleBanner.mutate({ id: banner.id, active: v })
+                                }
+                              />
+                              <span className={cn("text-xs font-medium", banner.active ? "text-[hsl(142,70%,45%)]" : "text-muted-foreground")}>
+                                {banner.active ? "Ativo" : "Inativo"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              {/* Reorder buttons */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => moveBanner(banner, "up")}
+                                disabled={idx === 0}
+                              >
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => moveBanner(banner, "down")}
+                                disabled={idx === banners.length - 1}
+                              >
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive/70 hover:text-destructive"
+                                onClick={() => {
+                                  if (confirm("Remover este banner permanentemente?"))
+                                    deleteBanner.mutate(banner);
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Full Preview Dialog */}
+            <Dialog open={!!previewBanner} onOpenChange={(open) => !open && setPreviewBanner(null)}>
+              <DialogContent className="sm:max-w-3xl p-0 overflow-hidden border-border/50 bg-card">
+                {previewBanner && (
+                  <>
+                    <div className="relative">
+                      <img
+                        src={previewBanner.image_url}
+                        alt={previewBanner.title || "Banner"}
+                        className="w-full object-contain max-h-[80vh]"
+                      />
+                    </div>
+                    <div className="px-6 pb-6 pt-2 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">
+                          {BANNER_CATEGORIES.find((c) => c.value === previewBanner.category)?.icon}
+                        </span>
+                        <p className="font-display text-lg font-semibold text-foreground">
+                          {previewBanner.title || BANNER_CATEGORIES.find((c) => c.value === previewBanner.category)?.label}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Criado em {format(new Date(previewBanner.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                        {" • "}
+                        {previewBanner.active ? "✅ Ativo" : "⏸️ Inativo"}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
+          </>
+        ) : (
+          /* ==================== GAMES TAB ==================== */
           <>
             {/* Stats Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -380,7 +815,6 @@ const Admin = () => {
                   className="pl-9 bg-card border-border/50"
                 />
               </div>
-
               <div className="flex items-center gap-2">
                 <Select value={filterSport} onValueChange={setFilterSport}>
                   <SelectTrigger className="w-[140px] bg-card border-border/50">
@@ -394,7 +828,6 @@ const Admin = () => {
                     ))}
                   </SelectContent>
                 </Select>
-
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger className="w-[130px] bg-card border-border/50">
                     <SelectValue placeholder="Status" />
@@ -406,7 +839,6 @@ const Admin = () => {
                     <SelectItem value="finished">Encerrado</SelectItem>
                   </SelectContent>
                 </Select>
-
                 <div className="hidden sm:flex items-center rounded-lg border border-border/50 bg-card p-0.5">
                   <button
                     onClick={() => setViewMode("grid")}
@@ -429,143 +861,121 @@ const Admin = () => {
               <p className="text-sm text-muted-foreground">
                 {filteredGames.length} de {games.length} jogos
               </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    toast.info("Sincronizando com APIs...");
-                    try {
-                      const { data, error } = await supabase.functions.invoke("sync-daily-games");
-                      if (error) throw error;
-                      toast.success(`Sync concluída! ${data?.total || 0} jogos importados.`);
-                      queryClient.invalidateQueries({ queryKey: ["admin-games"] });
-                      queryClient.invalidateQueries({ queryKey: ["games"] });
-                    } catch (err: any) {
-                      toast.error(`Erro na sync: ${err.message}`);
-                    }
-                  }}
-                  className="border-primary/30 text-primary hover:bg-primary/10"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Sincronizar APIs
-                </Button>
-                <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" onClick={openCreate} className="gap-1.5">
-                      <Plus className="h-4 w-4" />
-                      Novo Jogo
+              <Dialog open={formOpen} onOpenChange={setFormOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" onClick={openCreate} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    Novo Jogo
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] overflow-y-auto border-border/50 bg-card sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle className="font-display flex items-center gap-2">
+                      {editingId ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
+                      {editingId ? "Editar Jogo" : "Novo Jogo"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Esporte</Label>
+                        <Select value={form.sport} onValueChange={(v: any) => setForm({ ...form, sport: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {SPORTS.map((s) => (
+                              <SelectItem key={s.type} value={s.type}>{s.icon} {s.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Status</Label>
+                        <Select value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="scheduled">📅 Agendado</SelectItem>
+                            <SelectItem value="live">🔴 Ao Vivo</SelectItem>
+                            <SelectItem value="finished">✅ Encerrado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Liga / Campeonato</Label>
+                      <Input value={form.league || ""} onChange={(e) => setForm({ ...form, league: e.target.value })} placeholder="Brasileirão Série A" required />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Time Casa</Label>
+                        <Input value={form.home_team_name || ""} onChange={(e) => setForm({ ...form, home_team_name: e.target.value })} placeholder="Flamengo" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Time Visitante</Label>
+                        <Input value={form.away_team_name || ""} onChange={(e) => setForm({ ...form, away_team_name: e.target.value })} placeholder="Palmeiras" required />
+                      </div>
+                    </div>
+
+                    {form.status !== "scheduled" && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Placar Casa</Label>
+                          <Input type="number" min={0} value={form.home_team_score ?? ""} onChange={(e) => setForm({ ...form, home_team_score: e.target.value ? Number(e.target.value) : undefined })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Placar Visitante</Label>
+                          <Input type="number" min={0} value={form.away_team_score ?? ""} onChange={(e) => setForm({ ...form, away_team_score: e.target.value ? Number(e.target.value) : undefined })} />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Data e Hora</Label>
+                      <Input type="datetime-local" value={form.start_time || ""} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Local</Label>
+                        <Input value={form.venue || ""} onChange={(e) => setForm({ ...form, venue: e.target.value })} placeholder="Maracanã" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Rodada / Fase</Label>
+                        <Input value={form.round || ""} onChange={(e) => setForm({ ...form, round: e.target.value })} placeholder="Rodada 5" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Canal de Transmissão</Label>
+                      <Input
+                        value={(form as any).broadcast_channel || ""}
+                        onChange={(e) => setForm({ ...form, broadcast_channel: e.target.value } as any)}
+                        placeholder="Ex: Globo / SporTV"
+                        list="channel-suggestions"
+                      />
+                      <datalist id="channel-suggestions">
+                        {BROADCAST_CHANNELS.map((ch) => (<option key={ch} value={ch} />))}
+                      </datalist>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 p-3">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-[hsl(var(--warning))]" />
+                        <Label className="text-sm">Destaque do dia</Label>
+                      </div>
+                      <Switch checked={form.highlight || false} onCheckedChange={(v) => setForm({ ...form, highlight: v })} />
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={upsertMutation.isPending}>
+                      {upsertMutation.isPending ? "Salvando..." : editingId ? "Atualizar Jogo" : "Criar Jogo"}
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] overflow-y-auto border-border/50 bg-card sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle className="font-display flex items-center gap-2">
-                        {editingId ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
-                        {editingId ? "Editar Jogo" : "Novo Jogo"}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Esporte</Label>
-                          <Select value={form.sport} onValueChange={(v: any) => setForm({ ...form, sport: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {SPORTS.map((s) => (
-                                <SelectItem key={s.type} value={s.type}>{s.icon} {s.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Status</Label>
-                          <Select value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="scheduled">📅 Agendado</SelectItem>
-                              <SelectItem value="live">🔴 Ao Vivo</SelectItem>
-                              <SelectItem value="finished">✅ Encerrado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Liga / Campeonato</Label>
-                        <Input value={form.league || ""} onChange={(e) => setForm({ ...form, league: e.target.value })} placeholder="Brasileirão Série A" required />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Time Casa</Label>
-                          <Input value={form.home_team_name || ""} onChange={(e) => setForm({ ...form, home_team_name: e.target.value })} placeholder="Flamengo" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Time Visitante</Label>
-                          <Input value={form.away_team_name || ""} onChange={(e) => setForm({ ...form, away_team_name: e.target.value })} placeholder="Palmeiras" required />
-                        </div>
-                      </div>
-
-                      {form.status !== "scheduled" && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs text-muted-foreground">Placar Casa</Label>
-                            <Input type="number" min={0} value={form.home_team_score ?? ""} onChange={(e) => setForm({ ...form, home_team_score: e.target.value ? Number(e.target.value) : undefined })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs text-muted-foreground">Placar Visitante</Label>
-                            <Input type="number" min={0} value={form.away_team_score ?? ""} onChange={(e) => setForm({ ...form, away_team_score: e.target.value ? Number(e.target.value) : undefined })} />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Data e Hora</Label>
-                        <Input type="datetime-local" value={form.start_time || ""} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Local</Label>
-                          <Input value={form.venue || ""} onChange={(e) => setForm({ ...form, venue: e.target.value })} placeholder="Maracanã" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Rodada / Fase</Label>
-                          <Input value={form.round || ""} onChange={(e) => setForm({ ...form, round: e.target.value })} placeholder="Rodada 5" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Canal de Transmissão</Label>
-                        <Input
-                          value={(form as any).broadcast_channel || ""}
-                          onChange={(e) => setForm({ ...form, broadcast_channel: e.target.value } as any)}
-                          placeholder="Ex: Globo / SporTV"
-                          list="channel-suggestions"
-                        />
-                        <datalist id="channel-suggestions">
-                          {BROADCAST_CHANNELS.map((ch) => (<option key={ch} value={ch} />))}
-                        </datalist>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 p-3">
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-[hsl(var(--warning))]" />
-                          <Label className="text-sm">Destaque do dia</Label>
-                        </div>
-                        <Switch checked={form.highlight || false} onCheckedChange={(v) => setForm({ ...form, highlight: v })} />
-                      </div>
-
-                      <Button type="submit" className="w-full" disabled={upsertMutation.isPending}>
-                        {upsertMutation.isPending ? "Salvando..." : editingId ? "Atualizar Jogo" : "Criar Jogo"}
-                      </Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
 
-            {/* Games */}
+            {/* Games Grid */}
             {gamesLoading ? (
               <div className="flex justify-center py-12">
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -603,7 +1013,6 @@ const Admin = () => {
                             {sc.icon} {sc.label}
                           </span>
                         </div>
-
                         <div className="p-4 space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -621,43 +1030,26 @@ const Admin = () => {
                                   {format(new Date(game.start_time), "HH:mm")}
                                 </p>
                               )}
-                              <p className="text-[10px] text-muted-foreground">
-                                {format(new Date(game.start_time), "dd/MM")}
-                              </p>
+                              <p className="text-[10px] text-muted-foreground">{format(new Date(game.start_time), "dd/MM")}</p>
                             </div>
                           </div>
-
                           {game.broadcast_channel && (
                             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                              <Tv className="h-3 w-3" />
-                              <span>{game.broadcast_channel}</span>
+                              <Tv className="h-3 w-3" /><span>{game.broadcast_channel}</span>
                             </div>
                           )}
-
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70">
                             {game.venue && <span>📍 {game.venue}</span>}
                             {game.round && <span>• {game.round}</span>}
                             {game.highlight && <span className="text-[hsl(var(--warning))]">⭐ Destaque</span>}
-                            {game.api_source !== "manual" && (
-                              <span className="ml-auto rounded bg-secondary px-1.5 py-0.5 text-[9px] font-medium">
-                                {game.api_source}
-                              </span>
-                            )}
                           </div>
                         </div>
-
                         <div className="flex border-t border-border/30">
-                          <button
-                            onClick={() => openEdit(game)}
-                            className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
-                          >
+                          <button onClick={() => openEdit(game)} className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors">
                             <Pencil className="h-3.5 w-3.5" /> Editar
                           </button>
                           <div className="w-px bg-border/30" />
-                          <button
-                            onClick={() => { if (confirm("Remover este jogo?")) deleteMutation.mutate(game.id); }}
-                            className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-                          >
+                          <button onClick={() => { if (confirm("Remover este jogo?")) deleteMutation.mutate(game.id); }} className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors">
                             <Trash2 className="h-3.5 w-3.5" /> Remover
                           </button>
                         </div>
@@ -714,227 +1106,6 @@ const Admin = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Remover este jogo?")) deleteMutation.mutate(game.id); }}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-            )}
-          </>
-        ) : (
-          /* ==================== BANNERS TAB ==================== */
-          <>
-            {/* Banner Category Filter */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
-              <button
-                onClick={() => setBannerCategory("all")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
-                  bannerCategory === "all"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Todos
-              </button>
-              {BANNER_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  onClick={() => setBannerCategory(cat.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
-                    bannerCategory === cat.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <span>{cat.icon}</span>
-                  {cat.label}
-                  {bannerCounts[cat.value] ? (
-                    <span className="rounded-full bg-background/20 px-1.5 text-[10px]">
-                      {bannerCounts[cat.value]}
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-
-            {/* Upload Banner */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {banners.length} banner{banners.length !== 1 ? "s" : ""}
-              </p>
-              <Dialog open={bannerUploadOpen} onOpenChange={setBannerUploadOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1.5">
-                    <Upload className="h-4 w-4" />
-                    Upload Banner
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="border-border/50 bg-card sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="font-display flex items-center gap-2">
-                      <Image className="h-5 w-5 text-primary" />
-                      Novo Banner
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    {/* Image upload area */}
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="relative cursor-pointer rounded-xl border-2 border-dashed border-border/50 bg-secondary/30 p-6 text-center hover:border-primary/50 transition-colors"
-                    >
-                      {bannerPreview ? (
-                        <img
-                          src={bannerPreview}
-                          alt="Preview"
-                          className="mx-auto max-h-48 rounded-lg object-contain"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <Upload className="h-8 w-8 text-muted-foreground/50" />
-                          <p className="text-sm text-muted-foreground">
-                            Clique para selecionar imagem
-                          </p>
-                          <p className="text-xs text-muted-foreground/60">
-                            JPG, PNG ou WebP
-                          </p>
-                        </div>
-                      )}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerFileChange}
-                        className="hidden"
-                      />
-                    </div>
-
-                    {/* Category */}
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Categoria</Label>
-                      <Select
-                        value={bannerUploadCategory}
-                        onValueChange={(v) => setBannerUploadCategory(v as BannerCategory)}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {BANNER_CATEGORIES.map((cat) => (
-                            <SelectItem key={cat.value} value={cat.value}>
-                              {cat.icon} {cat.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Title */}
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Título (opcional)</Label>
-                      <Input
-                        value={bannerTitle}
-                        onChange={(e) => setBannerTitle(e.target.value)}
-                        placeholder="Ex: Jogos do Dia - 18/03"
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleBannerUpload}
-                      disabled={!bannerFile || uploadBanner.isPending}
-                      className="w-full"
-                    >
-                      {uploadBanner.isPending ? "Enviando..." : "Enviar Banner"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Banner Grid */}
-            {bannersLoading ? (
-              <div className="flex justify-center py-12">
-                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : banners.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-                  <Image className="h-8 w-8 text-muted-foreground/40" />
-                </div>
-                <p className="font-display text-base font-semibold text-foreground">
-                  Nenhum banner encontrado
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Clique em "Upload Banner" para adicionar.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                <AnimatePresence mode="popLayout">
-                  {banners.map((banner) => {
-                    const cat = BANNER_CATEGORIES.find((c) => c.value === banner.category);
-                    return (
-                      <motion.div
-                        key={banner.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="group rounded-xl border border-border/50 bg-card overflow-hidden hover:border-border transition-all"
-                      >
-                        {/* Image */}
-                        <div className="relative aspect-[16/9] overflow-hidden bg-secondary">
-                          <img
-                            src={banner.image_url}
-                            alt={banner.title || cat?.label || "Banner"}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                          {/* Overlay badge */}
-                          <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 backdrop-blur-sm">
-                            <span className="text-xs">{cat?.icon}</span>
-                            <span className="text-[10px] font-medium text-foreground">{cat?.label}</span>
-                          </div>
-                          {!banner.active && (
-                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                              <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                                Inativo
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Info & Actions */}
-                        <div className="p-3 space-y-2">
-                          {banner.title && (
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {banner.title}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={banner.active}
-                                onCheckedChange={(v) =>
-                                  toggleBanner.mutate({ id: banner.id, active: v })
-                                }
-                              />
-                              <span className="text-xs text-muted-foreground">
-                                {banner.active ? "Ativo" : "Inativo"}
-                              </span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => {
-                                if (confirm("Remover este banner?"))
-                                  deleteBanner.mutate(banner);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                       </motion.div>
                     );
