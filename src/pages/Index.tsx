@@ -1,5 +1,6 @@
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
+import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { WhatsAppFab } from "@/components/public/WhatsAppFab";
