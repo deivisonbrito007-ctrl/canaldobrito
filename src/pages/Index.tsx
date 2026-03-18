@@ -22,10 +22,8 @@ const Index = () => {
   const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
 
-    if (tabId === "home" || tabId === "search") {
+    if (tabId === "home" || tabId === "search" || tabId === "highlights") {
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (tabId === "play") {
-      document.getElementById("assista")?.scrollIntoView({ behavior: "smooth" });
     } else if (tabId === "schedule") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
