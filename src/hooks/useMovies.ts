@@ -44,7 +44,7 @@ export const useAllMovies = () =>
 export const useAddMovie = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (movie: Omit<FeaturedMovie, "id" | "active" | "created_at">) => {
+    mutationFn: async (movie: Omit<FeaturedMovie, "id" | "active" | "created_at"> & { added_by?: string | null }) => {
       const { error } = await supabase.from("featured_movies").insert(movie);
       if (error) throw error;
     },

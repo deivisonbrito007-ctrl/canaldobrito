@@ -44,7 +44,7 @@ export const useAllSeries = () =>
 export const useAddSeries = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (series: Omit<FeaturedSeries, "id" | "active" | "created_at">) => {
+    mutationFn: async (series: Omit<FeaturedSeries, "id" | "active" | "created_at"> & { added_by?: string | null }) => {
       const { error } = await supabase.from("featured_series").insert(series);
       if (error) throw error;
     },
