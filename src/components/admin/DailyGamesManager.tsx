@@ -133,20 +133,6 @@ export const DailyGamesManager = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {game.is_live && (
-                        <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold animate-pulse">
-                          AO VIVO
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleToggleLive(game.id, game.is_live)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          game.is_live ? "bg-red-500/20 text-red-400" : "hover:bg-white/[0.06] text-muted-foreground"
-                        }`}
-                        title="Toggle Ao Vivo"
-                      >
-                        <Zap className="h-3.5 w-3.5" />
-                      </button>
                       <Switch
                         checked={game.active}
                         onCheckedChange={() => handleToggleActive(game.id, game.active)}
