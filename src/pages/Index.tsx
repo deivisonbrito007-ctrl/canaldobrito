@@ -79,7 +79,7 @@ const Index = () => {
             </div>
 
             <div className="space-y-8">
-              <CategoryPills onFilter={(id) => setFilter(id as FilterId)} />
+              
               <DailyBannerCarousel />
 
               {show(["sports"]) && (
