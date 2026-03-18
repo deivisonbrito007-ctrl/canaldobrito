@@ -2,29 +2,25 @@ import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 
+const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "P"];
+
 function isGameLive(game: DailyGame): boolean {
+  if (LIVE_STATUSES.includes(game.status_short)) return true;
   if (game.is_live) return true;
-  const now = new Date();
-  const [h, m] = (game.game_time || "00:00").split(":").map(Number);
-  const gameStart = new Date();
-  gameStart.setHours(h, m, 0, 0);
-  const gameEnd = new Date(gameStart.getTime() + 150 * 60 * 1000);
-  return now >= gameStart && now <= gameEnd;
+  return false;
 }
 
-function getLiveLabel(gameTime: string): string {
-  const now = new Date();
-  const [h, m] = gameTime.split(":").map(Number);
-  const gameStart = new Date();
-  gameStart.setHours(h, m, 0, 0);
-  const elapsed = Math.floor((now.getTime() - gameStart.getTime()) / 60000);
+function getLiveLabel(game: DailyGame): string {
+  const s = game.status_short;
+  const e = game.elapsed_minutes;
 
-  if (elapsed < 0) return "PRÉ";
-  if (elapsed <= 45) return `${elapsed}'`;
-  if (elapsed <= 60) return "INT";
-  if (elapsed <= 105) return `${elapsed - 15}'`;
-  if (elapsed <= 135) return "PROR";
-  return "PÊN";
+  if (s === "HT") return "INT";
+  if (s === "1H" || s === "2H") return e != null ? `${e}'` : "AO VIVO";
+  if (s === "ET") return e != null ? `${e}'` : "PROR";
+  if (s === "P") return "PÊN";
+
+  // Fallback for is_live without status_short
+  return "AO VIVO";
 }
 
 export const LiveNowSection = () => {
@@ -39,7 +35,6 @@ export const LiveNowSection = () => {
 
   const liveGames = useMemo(
     () => (games || []).filter(isGameLive),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [games]
   );
 
@@ -73,7 +68,7 @@ export const LiveNowSection = () => {
           style={{ scrollSnapType: "x mandatory" }}
         >
           {liveGames.map((game, idx) => {
-            const label = getLiveLabel(game.game_time || "00:00");
+            const label = getLiveLabel(game);
             const channels = game.channels?.join(" · ");
 
             return (

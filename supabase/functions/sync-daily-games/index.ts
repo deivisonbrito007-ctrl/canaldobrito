@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
         is_live: isLive,
         is_womens: isWomens(homeTeam, awayTeam, leagueName),
         active: true,
+        status_short: statusShort || "NS",
+        elapsed_minutes: f.fixture?.status?.elapsed ?? null,
       };
     });
 
