@@ -355,6 +355,21 @@ const Admin = () => {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label>Canal de Transmissão</Label>
+                  <Select
+                    value={(form as any).broadcast_channel || ""}
+                    onValueChange={(v) => setForm({ ...form, broadcast_channel: v } as any)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
+                    <SelectContent>
+                      {BROADCAST_CHANNELS.map((ch) => (
+                        <SelectItem key={ch} value={ch}>{ch}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex items-center gap-3">
                   <Switch
                     checked={form.highlight || false}
