@@ -128,7 +128,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
 
         <div className="p-4 space-y-3">
-          {/* Competition badge */}
+          {/* Competition badge + Live badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80`}>
@@ -136,9 +136,20 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
             </div>
-            {game.is_womens && (
-              <span className="text-[9px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-lg font-bold border border-pink-500/30">♀ FEM</span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {live && (
+                <span className="flex items-center gap-1 text-[10px] bg-destructive/20 text-destructive px-2 py-0.5 rounded-full font-bold animate-pulse border border-destructive/30">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-60" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+                  </span>
+                  AO VIVO
+                </span>
+              )}
+              {game.is_womens && (
+                <span className="text-[9px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-lg font-bold border border-pink-500/30">♀ FEM</span>
+              )}
+            </div>
           </div>
 
           {/* Competition detail / round */}
