@@ -1,10 +1,8 @@
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
-import { CategoryBar } from "@/components/public/CategoryBar";
+import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
-import { MoviesSection } from "@/components/public/MoviesSection";
-import { SeriesSection } from "@/components/public/SeriesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { WhatsAppFab } from "@/components/public/WhatsAppFab";
@@ -17,9 +15,9 @@ const Index = () => {
       <main className="flex-1">
         <DailyBannerCarousel />
 
-        <CategoryBar />
+        <div className="space-y-12 py-6 sm:py-10">
+          <LiveNowSection />
 
-        <div className="space-y-8 py-5 sm:py-8">
           <DailyGamesSection />
 
           <div id="novidades" className="px-4 sm:px-6">
@@ -28,14 +26,6 @@ const Index = () => {
 
           <div id="assista" className="px-4 sm:px-6">
             <WatchTodaySection />
-          </div>
-
-          <div className="px-4 sm:px-6">
-            <MoviesSection />
-          </div>
-
-          <div className="px-4 sm:px-6">
-            <SeriesSection />
           </div>
         </div>
       </main>

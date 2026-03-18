@@ -84,19 +84,22 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
         competition = beforeSlash;
       }
 
-      // Extract time
-      const timeMatch = compLine.match(/⏰\s*(\d{1,2})[hH:](\d{2})/);
+      // Extract time — supports "14h", "14h30", "14:30"
+      const timeMatch = compLine.match(/⏰\s*(\d{1,2})[hH:](\d{2})?/);
       if (timeMatch) {
-        game_time = `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}`;
+        const hours = timeMatch[1].padStart(2, "0");
+        const minutes = timeMatch[2] || "00";
+        game_time = `${hours}:${minutes}`;
       }
     }
 
-    // Parse channels
+    // Parse channels — handles ", " and " e " separators
     let channels: string[] = [];
     if (channelLine.includes("📺")) {
       const afterTv = channelLine.split("📺").pop() || "";
       channels = afterTv
-        .split(/,| e /)
+        .split(",")
+        .flatMap((part) => part.split(/ e (?=[A-Z])/))
         .map((c) => c.trim())
         .filter(Boolean);
     }
