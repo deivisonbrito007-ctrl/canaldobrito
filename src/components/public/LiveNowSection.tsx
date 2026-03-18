@@ -74,19 +74,19 @@ export const LiveNowSection = () => {
   return (
     <section className="space-y-3 px-3 sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="relative flex h-2.5 w-2.5">
+        <span className="relative flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
         </span>
         <h2 className="font-display text-sm sm:text-lg font-bold text-foreground">
           Ao Vivo
         </h2>
-        <span className="text-[9px] bg-destructive/20 text-destructive rounded-full px-1.5 py-0.5 font-bold">
+        <span className="text-[10px] bg-destructive/20 text-destructive rounded-full px-2 py-0.5 font-bold">
           {liveGames.length}
         </span>
       </div>
 
-      <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-3 px-3 sm:-mx-6 sm:px-6">
         {liveGames.map((game, idx) => {
           const minute = getLiveMinute(game.game_time || "00:00");
           const highlight = isHighlight(game.competition);
@@ -97,55 +97,62 @@ export const LiveNowSection = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 0.06, duration: 0.3 }}
-              className="min-w-[220px] max-w-[260px] flex-shrink-0"
+              className="min-w-[260px] max-w-[300px] flex-shrink-0"
             >
               <div
-                className={`rounded-xl glass-card p-3 border-2 animate-border-pulse-live transition-all ${
+                className={`rounded-xl glass-card p-4 border-2 animate-border-pulse-live transition-all ${
                   highlight ? "glow-live" : ""
                 }`}
               >
-                {/* Top: competition + live */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1">
-                    <span className={`text-[9px] font-bold text-primary-foreground px-1.5 py-0.5 rounded-md ${getCompColor(game.competition)}`}>
+                {/* Top: competition + live badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[10px] font-bold text-primary-foreground px-2 py-0.5 rounded-md ${getCompColor(game.competition)}`}>
                       {game.competition}
                     </span>
-                    {highlight && <Flame className="h-3 w-3 text-amber-400" />}
+                    {highlight && <Flame className="h-3.5 w-3.5 text-amber-400" />}
                   </div>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-destructive animate-pulse-live">
-                    <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-destructive animate-pulse-live">
+                    <span className="w-2 h-2 rounded-full bg-destructive" />
                     AO VIVO
                   </span>
                 </div>
 
-                {/* Teams */}
-                <div className="flex items-center justify-between gap-1.5">
-                  <p className="text-xs font-bold text-foreground flex-1 text-left truncate">
+                {/* Teams + minute */}
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-foreground flex-1 text-left truncate">
                     {game.home_team}
                   </p>
-                  <span className="text-sm font-bold text-destructive tabular-nums shrink-0">
+                  <span className="text-lg font-extrabold text-destructive tabular-nums shrink-0 min-w-[40px] text-center">
                     {minute}
                   </span>
-                  <p className="text-xs font-bold text-foreground flex-1 text-right truncate">
+                  <p className="text-sm font-bold text-foreground flex-1 text-right truncate">
                     {game.away_team}
                   </p>
                 </div>
 
-                {/* Badges */}
-                {(game.is_womens || game.competition_detail) && (
-                  <div className="flex items-center gap-1 mt-2">
-                    {game.is_womens && (
-                      <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-md font-bold">
-                        ♀ Fem
-                      </span>
-                    )}
-                    {game.competition_detail && (
-                      <span className="text-[9px] text-muted-foreground truncate">
-                        {game.competition_detail}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Channels + badges */}
+                <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                  {game.is_womens && (
+                    <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-md font-bold">
+                      ♀ Fem
+                    </span>
+                  )}
+                  {game.competition_detail && (
+                    <span className="text-[9px] text-muted-foreground truncate">
+                      {game.competition_detail}
+                    </span>
+                  )}
+                  {game.channels && game.channels.length > 0 && (
+                    <div className="flex gap-1 ml-auto">
+                      {game.channels.slice(0, 2).map((ch, i) => (
+                        <span key={i} className="text-[9px] font-semibold bg-secondary/80 text-muted-foreground px-1.5 py-0.5 rounded-md">
+                          {ch}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           );

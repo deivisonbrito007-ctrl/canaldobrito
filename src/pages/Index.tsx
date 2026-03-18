@@ -5,7 +5,6 @@ import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { WhatsAppFab } from "@/components/public/WhatsAppFab";
 
 const Index = () => {
   return (
@@ -15,7 +14,7 @@ const Index = () => {
       <main className="flex-1">
         <DailyBannerCarousel />
 
-        <div className="space-y-8 py-4 sm:space-y-12 sm:py-8">
+        <div className="space-y-10 py-6 sm:space-y-14 sm:py-10">
           <LiveNowSection />
 
           <DailyGamesSection />
@@ -31,7 +30,6 @@ const Index = () => {
       </main>
 
       <PublicFooter />
-      <WhatsAppFab />
     </div>
   );
 };

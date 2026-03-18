@@ -91,11 +91,11 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, duration: 0.25 }}
     >
-      <div className={`rounded-xl glass-card p-3 transition-all border border-border/20 ${highlight ? "border-primary/20" : ""}`}>
+      <div className={`rounded-xl glass-card p-4 transition-all border border-border/20 ${highlight ? "border-primary/20" : ""}`}>
         {/* Competition */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1">
-            <span className={`text-[9px] font-bold text-primary-foreground px-1.5 py-0.5 rounded-md ${getCompColor(game.competition)}`}>
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-bold text-primary-foreground px-2 py-0.5 rounded-md ${getCompColor(game.competition)}`}>
               {game.competition}
             </span>
             {highlight && <Flame className="h-3 w-3 text-amber-400" />}
@@ -106,23 +106,23 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
         </div>
 
         {/* Teams + time */}
-        <div className="flex items-center justify-between gap-1.5">
-          <p className="text-xs font-bold text-foreground flex-1 text-left truncate">{game.home_team}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-bold text-foreground flex-1 text-left truncate">{game.home_team}</p>
           <div className="flex items-center gap-1 shrink-0">
-            <Clock className="h-3 w-3 text-primary" />
-            <span className="text-sm font-bold text-primary tabular-nums">{game.game_time?.slice(0, 5)}</span>
+            <Clock className="h-3.5 w-3.5 text-primary" />
+            <span className="text-base font-bold text-primary tabular-nums">{game.game_time?.slice(0, 5)}</span>
           </div>
-          <p className="text-xs font-bold text-foreground flex-1 text-right truncate">{game.away_team}</p>
+          <p className="text-sm font-bold text-foreground flex-1 text-right truncate">{game.away_team}</p>
         </div>
 
         {/* Detail */}
         {game.competition_detail && (
-          <p className="text-[9px] text-muted-foreground mt-1.5 truncate">{game.competition_detail}</p>
+          <p className="text-[10px] text-muted-foreground mt-2 truncate">{game.competition_detail}</p>
         )}
 
-        {/* Channels - single line with overflow */}
+        {/* Channels */}
         {game.channels && game.channels.length > 0 && (
-          <div className="flex gap-1 mt-2 overflow-x-auto scrollbar-none">
+          <div className="flex gap-1 mt-2.5 overflow-x-auto scrollbar-none">
             {game.channels.slice(0, 3).map((ch, i) => (
               <span key={i} className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${getChannelColor(ch)}`}>
                 {ch}
@@ -168,19 +168,19 @@ export const DailyGamesSection = () => {
 
   return (
     <section id="esportes" className="space-y-4 px-3 sm:px-6">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center gap-2">
           <span className="text-base">📋</span>
           <h2 className="font-display text-sm sm:text-lg font-bold text-foreground tracking-tight">
             Programação
           </h2>
-          <span className="text-[9px] text-muted-foreground bg-secondary/60 rounded-full px-1.5 py-0.5 font-medium">
+          <span className="text-[10px] text-muted-foreground bg-secondary/60 rounded-full px-2 py-0.5 font-medium">
             {filteredGames.length}
           </span>
         </div>
 
         {/* Channel Filter */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
           <button
             onClick={() => setChannelFilter(null)}
             className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${
@@ -207,23 +207,25 @@ export const DailyGamesSection = () => {
         </div>
 
         {/* Grouped games */}
-        {(["morning", "afternoon", "night"] as const).map((group) => {
-          const groupGames = grouped[group];
-          if (!groupGames || groupGames.length === 0) return null;
-          return (
-            <div key={group} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-muted-foreground/60">{GROUP_LABELS[group]}</span>
-                <div className="flex-1 h-px bg-border/20" />
+        <div className="space-y-5">
+          {(["morning", "afternoon", "night"] as const).map((group) => {
+            const groupGames = grouped[group];
+            if (!groupGames || groupGames.length === 0) return null;
+            return (
+              <div key={group} className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-muted-foreground/60">{GROUP_LABELS[group]}</span>
+                  <div className="flex-1 h-px bg-border/20" />
+                </div>
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {groupGames.map((game, idx) => (
+                    <GameCard key={game.id} game={game} index={idx} />
+                  ))}
+                </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {groupGames.map((game, idx) => (
-                  <GameCard key={game.id} game={game} index={idx} />
-                ))}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
 
         {filteredGames.length === 0 && (
           <div className="text-center py-8">

@@ -21,7 +21,6 @@ export const DailyBannerCarousel = () => {
     if (validBanners.length > 1) setCurrent((c) => (c - 1 + validBanners.length) % validBanners.length);
   }, [validBanners.length]);
 
-  // Auto-play with progress bar
   useEffect(() => {
     if (validBanners.length <= 1) return;
     setProgress(0);
@@ -51,104 +50,100 @@ export const DailyBannerCarousel = () => {
   };
 
   if (isLoading) {
-    return (
-      <section className="px-3 sm:px-6 pt-2">
-        <Skeleton className="w-full h-[50vh] sm:h-[60vh] rounded-xl" />
-      </section>
-    );
+    return <Skeleton className="w-full h-[65vh] sm:h-[60vh]" />;
   }
 
   if (validBanners.length === 0) {
     return (
-      <section className="px-3 sm:px-6 pt-2">
+      <div className="px-3 sm:px-6 pt-2">
         <div className="rounded-xl border border-border/20 bg-secondary/30 p-8 text-center">
           <p className="text-xs text-muted-foreground/60">Nenhuma programação disponível hoje</p>
         </div>
-      </section>
+      </div>
     );
   }
 
   const banner = validBanners[current];
 
   return (
-    <section className="pt-2">
-      <div className="relative group mx-3 sm:mx-4" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        <div className="overflow-hidden rounded-xl sm:rounded-2xl premium-shadow">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={banner.id}
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              {banner.link_url ? (
-                <a href={banner.link_url} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={banner.image_url}
-                    alt={banner.title || "Programação do dia"}
-                    className="w-full h-[50vh] sm:h-[55vh] object-cover"
-                    loading="lazy"
-                    onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
-                  />
-                </a>
-              ) : (
+    <section className="relative" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div className="overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={banner.id}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            {banner.link_url ? (
+              <a href={banner.link_url} target="_blank" rel="noopener noreferrer">
                 <img
                   src={banner.image_url}
                   alt={banner.title || "Programação do dia"}
-                  className="w-full h-[50vh] sm:h-[55vh] object-cover"
-                  loading="lazy"
+                  className="w-full h-[65vh] sm:h-[60vh] object-cover"
+                  loading="eager"
                   onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
                 />
-              )}
-            </motion.div>
-          </AnimatePresence>
+              </a>
+            ) : (
+              <img
+                src={banner.image_url}
+                alt={banner.title || "Programação do dia"}
+                className="w-full h-[65vh] sm:h-[60vh] object-cover"
+                loading="eager"
+                onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-          {/* Gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80 pointer-events-none" />
+        {/* Deep gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent pointer-events-none" />
 
-          {/* Title */}
-          {banner.title && (
-            <div className="absolute bottom-10 left-3 right-3 sm:left-4 sm:right-4 pointer-events-none">
-              <p className="text-sm sm:text-base font-bold text-foreground drop-shadow-lg line-clamp-2">{banner.title}</p>
-            </div>
-          )}
+        {/* Title */}
+        {banner.title && (
+          <div className="absolute bottom-12 left-4 right-4 sm:left-6 sm:right-6 pointer-events-none">
+            <p className="text-base sm:text-xl font-bold text-foreground drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] line-clamp-2">
+              {banner.title}
+            </p>
+          </div>
+        )}
 
-          {/* Progress bar */}
-          {validBanners.length > 1 && (
-            <div className="absolute bottom-0 left-0 right-0 flex gap-1 px-3 pb-3">
-              {validBanners.map((_, i) => (
-                <div key={i} className="flex-1 h-[3px] rounded-full bg-foreground/20 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-foreground/80 transition-all duration-100 ease-linear"
-                    style={{
-                      width: i === current ? `${progress}%` : i < current ? "100%" : "0%",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Desktop arrows */}
+        {/* Progress indicators */}
         {validBanners.length > 1 && (
-          <>
-            <button
-              onClick={prev}
-              className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 rounded-full glass-card p-2 text-foreground opacity-0 group-hover:opacity-100 transition-all min-h-[44px] min-w-[44px] items-center justify-center"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={next}
-              className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 rounded-full glass-card p-2 text-foreground opacity-0 group-hover:opacity-100 transition-all min-h-[44px] min-w-[44px] items-center justify-center"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </>
+          <div className="absolute bottom-3 left-4 right-4 sm:left-6 sm:right-6 flex gap-1.5">
+            {validBanners.map((_, i) => (
+              <div key={i} className="flex-1 h-[3px] rounded-full bg-foreground/25 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-foreground/90 transition-all duration-100 ease-linear"
+                  style={{
+                    width: i === current ? `${progress}%` : i < current ? "100%" : "0%",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      {/* Desktop arrows */}
+      {validBanners.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 rounded-full glass-card p-2 text-foreground opacity-0 hover:opacity-100 transition-all min-h-[44px] min-w-[44px] items-center justify-center"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={next}
+            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 rounded-full glass-card p-2 text-foreground opacity-0 hover:opacity-100 transition-all min-h-[44px] min-w-[44px] items-center justify-center"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
+      )}
     </section>
   );
 };
