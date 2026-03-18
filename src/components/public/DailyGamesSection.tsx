@@ -218,20 +218,6 @@ export const DailyGamesSection = () => {
     return result;
   }, [games, channelFilter, compFilter]);
 
-  const filteredGames = useMemo(() => {
-    let result = upcomingGames;
-    if (channelFilter) {
-      result = result.filter((g) =>
-        g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
-      );
-    }
-    if (compFilter) {
-      result = result.filter((g) =>
-        g.competition.toLowerCase().includes(compFilter.toLowerCase())
-      );
-    }
-    return result;
-  }, [upcomingGames, channelFilter, compFilter]);
 
   const grouped = useMemo(() => {
     const groups: Record<TimeGroup, typeof filteredGames> = { morning: [], afternoon: [], night: [], dawn: [] };
