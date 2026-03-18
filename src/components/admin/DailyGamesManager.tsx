@@ -77,10 +77,6 @@ export const DailyGamesManager = () => {
           <Button size="sm" variant="ghost" onClick={() => setShowAddForm(!showAddForm)} className="text-xs">
             <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
           </Button>
-          <Button size="sm" variant="ghost" onClick={handleSyncFromAPI} disabled={syncing} className="text-xs text-primary">
-            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
-            Buscar da API
-          </Button>
           <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
           </Button>
