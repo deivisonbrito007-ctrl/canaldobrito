@@ -2,13 +2,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, Image, Film, Clapperboard, Settings, ExternalLink } from "lucide-react";
+import { LogOut, Image, Film, Clapperboard, Settings, ExternalLink, Sparkles } from "lucide-react";
 import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
 
 const adminTabs = [
   { value: "banners", label: "Banners", icon: Image, path: "/admin/banners" },
   { value: "filmes", label: "Filmes", icon: Film, path: "/admin/filmes" },
   { value: "series", label: "Séries", icon: Clapperboard, path: "/admin/series" },
+  { value: "novidades", label: "Novidades", icon: Sparkles, path: "/admin/novidades" },
   { value: "configuracoes", label: "Config", icon: Settings, path: "/admin/configuracoes" },
 ];
 
@@ -60,7 +61,7 @@ const AdminLayout = () => {
           const tab = adminTabs.find((t) => t.value === v);
           if (tab) navigate(tab.path);
         }}>
-          <TabsList className="w-full grid grid-cols-4 h-auto bg-secondary/50 border border-border/20 rounded-xl p-1">
+          <TabsList className="w-full grid grid-cols-5 h-auto bg-secondary/50 border border-border/20 rounded-xl p-1">
             {adminTabs.map((tab) => (
               <TabsTrigger
                 key={tab.value}
