@@ -11,7 +11,7 @@ import { ReleaseBanner } from "@/components/public/ReleaseBanner";
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Star } from "lucide-react";
 
 type FilterId = "all" | "movies" | "series" | "sports" | "new" | "trending";
 
@@ -22,10 +22,8 @@ const Index = () => {
   const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
 
-    if (tabId === "home" || tabId === "search") {
+    if (tabId === "home" || tabId === "search" || tabId === "highlights") {
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (tabId === "play") {
-      document.getElementById("assista")?.scrollIntoView({ behavior: "smooth" });
     } else if (tabId === "schedule") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -47,7 +45,19 @@ const Index = () => {
       <AppNavbar />
 
       <main className="relative z-10 flex-1 pb-24">
-        {activeTab === "schedule" ? (
+        {activeTab === "highlights" ? (
+          /* ── Aba Destaques ── */
+          <div className="px-4 pt-5 pb-3 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                <Star className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground font-body">Destaque da Semana</h2>
+            </div>
+            <WeeklyMoviesSection />
+            <WeeklySeriesSection />
+          </div>
+        ) : activeTab === "schedule" ? (
           /* ── Aba Programação ── */
           <div className="px-4 pt-5 pb-3 space-y-5">
             <div className="flex items-center gap-3">
@@ -80,13 +90,6 @@ const Index = () => {
 
               {show(["new", "trending"]) && <NewsReleasesSection />}
 
-              {show(["movies", "trending"]) && (
-                <div id="assista">
-                  <WeeklyMoviesSection />
-                </div>
-              )}
-
-              {show(["series", "trending"]) && <WeeklySeriesSection />}
 
               {show(["new"]) && <ReleaseBanner />}
               <BannerSections />
