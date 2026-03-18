@@ -9,13 +9,13 @@ type ContentItem = (FeaturedMovie | FeaturedSeries) & { type: "movie" | "series"
 
 const TypeBadge = ({ type }: { type: "movie" | "series" }) => (
   <div
-    className={`absolute top-2 left-2 z-10 flex items-center gap-0.5 rounded-md backdrop-blur-sm px-1.5 py-0.5 shadow-md ${
-      type === "movie" ? "bg-emerald-500/80 text-white" : "bg-blue-500/80 text-white"
+    className={`absolute top-2.5 left-2.5 z-10 flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold backdrop-blur-md border ${
+      type === "movie"
+        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/20"
+        : "bg-blue-500/20 text-blue-300 border-blue-500/20"
     }`}
   >
-    <span className="text-[9px] font-bold leading-none">
-      {type === "movie" ? "🎬" : "📺"}
-    </span>
+    {type === "movie" ? "🎬 Filme" : "📺 Série"}
   </div>
 );
 
@@ -24,47 +24,47 @@ const ContentCard = ({ item, index }: { item: ContentItem; index: number }) => {
 
   return (
     <motion.div
-      className="group"
-      initial={{ opacity: 0, y: 12 }}
+      className="snap-start shrink-0 w-[160px] sm:w-[200px]"
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
     >
-      <div className="relative overflow-hidden rounded-xl border border-border/20 bg-card aspect-[2/3] transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/20">
+      <div className="group relative overflow-hidden rounded-xl border border-border/10 bg-card aspect-[2/3] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer">
         {item.poster_url && !imgErr ? (
           <img
             src={item.poster_url}
             alt={item.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             onError={() => setImgErr(true)}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 gap-1.5">
-            <ImageOff className="h-8 w-8 text-muted-foreground/20" />
+          <div className="w-full h-full flex flex-col items-center justify-center bg-card gap-1.5">
+            <ImageOff className="h-8 w-8 text-muted-foreground/15" />
           </div>
         )}
 
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
 
         <TypeBadge type={item.type} />
 
         {item.rating && (
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-md bg-amber-500/90 backdrop-blur-sm px-1.5 py-0.5 shadow-md">
-            <Star className="h-2.5 w-2.5 text-white fill-white" />
-            <span className="text-[9px] font-bold text-white">{Number(item.rating).toFixed(1)}</span>
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-lg bg-amber-500/20 backdrop-blur-md border border-amber-500/20 px-2 py-1">
+            <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />
+            <span className="text-[9px] font-bold text-amber-300">{Number(item.rating).toFixed(1)}</span>
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-2.5 space-y-1">
-          <p className="text-[11px] sm:text-sm font-bold text-foreground leading-tight line-clamp-2 drop-shadow-lg">
+        <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
+          <p className="text-[12px] sm:text-sm font-bold text-foreground leading-tight line-clamp-2 drop-shadow-lg">
             {item.title}
           </p>
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {item.year && (
-              <span className="text-[9px] text-foreground/50 font-medium">{item.year}</span>
+              <span className="text-[10px] text-foreground/40 font-medium">{item.year}</span>
             )}
             {item.genre && (
-              <span className="text-[8px] text-primary font-semibold bg-primary/15 rounded-full px-1.5 py-0.5 border border-primary/20">
+              <span className="text-[9px] text-primary font-semibold bg-primary/10 rounded-full px-2 py-0.5 border border-primary/15">
                 {item.genre.split(",")[0]}
               </span>
             )}
@@ -91,11 +91,11 @@ export const WatchTodaySection = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4 px-4 sm:px-6">
         <SectionHeader />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex gap-3.5 overflow-hidden">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="aspect-[2/3] rounded-xl" />
+            <Skeleton key={i} className="aspect-[2/3] rounded-xl w-[160px] shrink-0" />
           ))}
         </div>
       </div>
@@ -105,9 +105,13 @@ export const WatchTodaySection = () => {
   if (items.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <SectionHeader />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="space-y-4">
+      <div className="px-4 sm:px-6">
+        <SectionHeader />
+      </div>
+      <div
+        className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 sm:px-6 pb-2"
+      >
         {items.map((item, idx) => (
           <ContentCard key={item.id} item={item} index={idx} />
         ))}
@@ -117,11 +121,11 @@ export const WatchTodaySection = () => {
 };
 
 const SectionHeader = () => (
-  <div className="flex items-center gap-2">
-    <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+  <div className="flex items-center gap-2.5">
+    <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/15">
       <Play className="h-4 w-4 text-primary" />
     </div>
-    <h2 className="font-display text-sm sm:text-lg font-bold text-foreground tracking-tight">
+    <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">
       Assista Hoje
     </h2>
   </div>
