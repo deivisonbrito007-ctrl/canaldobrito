@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, Image, Film, Clapperboard, Settings, ExternalLink } from "lucide-react";
+import { LogOut, Image, Film, Clapperboard, Settings, ExternalLink, Sparkles } from "lucide-react";
 import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
 
 const adminTabs = [
