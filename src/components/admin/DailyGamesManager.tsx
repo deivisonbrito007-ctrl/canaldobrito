@@ -17,6 +17,22 @@ export const DailyGamesManager = () => {
   const insertGames = useInsertDailyGames();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncFromAPI = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-daily-games", {
+        body: { date: selectedDate },
+      });
+      if (error) throw error;
+      toast.success(`${data.inserted} jogos importados da API!`);
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleToggleLive = (id: string, current: boolean) => {
     updateGame.mutate({ id, is_live: !current });
