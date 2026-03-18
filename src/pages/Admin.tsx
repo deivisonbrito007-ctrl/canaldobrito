@@ -358,17 +358,17 @@ const Admin = () => {
 
                 <div className="space-y-2">
                   <Label>Canal de Transmissão</Label>
-                  <Select
+                  <Input
                     value={(form as any).broadcast_channel || ""}
-                    onValueChange={(v) => setForm({ ...form, broadcast_channel: v } as any)}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
-                    <SelectContent>
-                      {BROADCAST_CHANNELS.map((ch) => (
-                        <SelectItem key={ch} value={ch}>{ch}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setForm({ ...form, broadcast_channel: e.target.value } as any)}
+                    placeholder="Ex: Globo / SporTV"
+                    list="channel-suggestions"
+                  />
+                  <datalist id="channel-suggestions">
+                    {BROADCAST_CHANNELS.map((ch) => (
+                      <option key={ch} value={ch} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="flex items-center gap-3">
