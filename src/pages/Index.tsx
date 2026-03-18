@@ -1,7 +1,7 @@
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
-import { DailyGamesSection } from "@/components/public/DailyGamesSection";
+import { BannerSections } from "@/components/public/BannerSections";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -17,7 +17,7 @@ const Index = () => {
         <div className="space-y-10 py-6 sm:space-y-14 sm:py-10">
           <LiveNowSection />
 
-          <DailyGamesSection />
+          <BannerSections />
 
           <div id="novidades">
             <NewsReleasesSection />

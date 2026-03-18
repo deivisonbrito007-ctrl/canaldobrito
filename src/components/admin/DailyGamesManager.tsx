@@ -3,8 +3,9 @@ import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDail
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Zap } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Zap, Download } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
   const today = new Date().toISOString().split("T")[0];
@@ -16,6 +17,22 @@ export const DailyGamesManager = () => {
   const insertGames = useInsertDailyGames();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncFromAPI = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-daily-games", {
+        body: { date: selectedDate },
+      });
+      if (error) throw error;
+      toast.success(`${data.inserted} jogos importados da API!`);
+    } catch (err: any) {
+      toast.error(`Erro ao sincronizar: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleToggleLive = (id: string, current: boolean) => {
     updateGame.mutate({ id, is_live: !current });
@@ -63,6 +80,10 @@ export const DailyGamesManager = () => {
           />
           <Button size="sm" variant="ghost" onClick={() => setShowAddForm(!showAddForm)} className="text-xs">
             <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleSyncFromAPI} disabled={syncing} className="text-xs text-primary">
+            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+            Buscar da API
           </Button>
           <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
