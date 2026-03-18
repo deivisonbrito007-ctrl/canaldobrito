@@ -42,8 +42,9 @@ type GameInsert = TablesInsert<"games">;
 
 const BROADCAST_CHANNELS = [
   "Globo", "SporTV", "Premiere", "ESPN", "Star+", "TNT Sports", "Max",
-  "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "Combate",
-  "UFC Fight Pass", "YouTube", "Twitch", "OneFootball",
+  "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "OneFootball",
+  "Globo / SporTV", "Premiere / Globo", "ESPN / Paramount+", "TNT Sports / Max",
+  "SporTV / ESPN", "Record / CazéTV", "Band / SporTV",
 ];
 
 const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
