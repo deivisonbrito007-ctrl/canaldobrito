@@ -14,16 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      games: {
+        Row: {
+          api_source: Database["public"]["Enums"]["api_source"] | null
+          away_team_logo: string | null
+          away_team_name: string
+          away_team_score: number | null
+          created_at: string
+          external_id: string | null
+          highlight: boolean
+          home_team_logo: string | null
+          home_team_name: string
+          home_team_score: number | null
+          id: string
+          league: string
+          league_icon: string | null
+          round: string | null
+          sport: Database["public"]["Enums"]["sport_type"]
+          start_time: string
+          status: Database["public"]["Enums"]["game_status"]
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          api_source?: Database["public"]["Enums"]["api_source"] | null
+          away_team_logo?: string | null
+          away_team_name: string
+          away_team_score?: number | null
+          created_at?: string
+          external_id?: string | null
+          highlight?: boolean
+          home_team_logo?: string | null
+          home_team_name: string
+          home_team_score?: number | null
+          id?: string
+          league: string
+          league_icon?: string | null
+          round?: string | null
+          sport: Database["public"]["Enums"]["sport_type"]
+          start_time: string
+          status?: Database["public"]["Enums"]["game_status"]
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          api_source?: Database["public"]["Enums"]["api_source"] | null
+          away_team_logo?: string | null
+          away_team_name?: string
+          away_team_score?: number | null
+          created_at?: string
+          external_id?: string | null
+          highlight?: boolean
+          home_team_logo?: string | null
+          home_team_name?: string
+          home_team_score?: number | null
+          id?: string
+          league?: string
+          league_icon?: string | null
+          round?: string | null
+          sport?: Database["public"]["Enums"]["sport_type"]
+          start_time?: string
+          status?: Database["public"]["Enums"]["game_status"]
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      api_source: "api-football" | "balldontlie" | "pandascore" | "manual"
+      app_role: "admin" | "user"
+      game_status: "scheduled" | "live" | "finished"
+      sport_type: "football" | "basketball" | "esports" | "mma"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +242,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      api_source: ["api-football", "balldontlie", "pandascore", "manual"],
+      app_role: ["admin", "user"],
+      game_status: ["scheduled", "live", "finished"],
+      sport_type: ["football", "basketball", "esports", "mma"],
+    },
   },
 } as const
