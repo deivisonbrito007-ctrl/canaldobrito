@@ -195,11 +195,28 @@ export const DailyGamesSection = () => {
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
+  const [, setTick] = useState(0);
 
-  const upcomingGames = useMemo(() => {
-    if (!games) return [];
-    return games.filter((g) => !isGameLive(g));
-  }, [games]);
+  // Re-evaluate live status every 60s
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredGames = useMemo(() => {
+    let result = games || [];
+    if (channelFilter) {
+      result = result.filter((g) =>
+        g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
+      );
+    }
+    if (compFilter) {
+      result = result.filter((g) =>
+        g.competition.toLowerCase().includes(compFilter.toLowerCase())
+      );
+    }
+    return result;
+  }, [games, channelFilter, compFilter]);
 
   const filteredGames = useMemo(() => {
     let result = upcomingGames;
