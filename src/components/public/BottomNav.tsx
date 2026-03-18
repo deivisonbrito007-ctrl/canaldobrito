@@ -1,4 +1,4 @@
-import { Home, CalendarDays, User, Play } from "lucide-react";
+import { Home, CalendarDays, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface BottomNavProps {
@@ -8,7 +8,6 @@ interface BottomNavProps {
 
 const navItems = [
   { id: "home", label: "Início", icon: Home },
-  { id: "play", label: "", icon: Play, center: true },
   { id: "schedule", label: "Programação", icon: CalendarDays },
   { id: "profile", label: "Perfil", icon: User },
 ];
@@ -28,19 +27,6 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-border/10">
       <div className="flex items-end justify-around px-2 pt-2 pb-[env(safe-area-inset-bottom,8px)]">
         {navItems.map((item) => {
-          if (item.center) {
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleTab(item.id)}
-                className="flex flex-col items-center -mt-4"
-              >
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-[0_0_20px_hsl(160,100%,45%,0.25)] transition-transform active:scale-90">
-                  <Play className="h-5 w-5 text-white fill-white" />
-                </div>
-              </button>
-            );
-          }
 
           const Icon = item.icon;
           const isActive = activeTab === item.id;
