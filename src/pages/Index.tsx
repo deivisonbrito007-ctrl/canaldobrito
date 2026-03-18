@@ -4,11 +4,12 @@ import { CategoryPills } from "@/components/public/CategoryPills";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
-import { WatchTodaySection } from "@/components/public/WatchTodaySection";
+import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
+import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { ReleaseBanner } from "@/components/public/ReleaseBanner";
-import { FeaturedSection } from "@/components/public/FeaturedSection";
+
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
@@ -72,13 +73,13 @@ const Index = () => {
 
           {show(["new", "trending"]) && <NewsReleasesSection />}
 
-          {show(["movies", "series", "trending"]) && (
+          {show(["movies", "trending"]) && (
             <div id="assista">
-              <WatchTodaySection />
+              <WeeklyMoviesSection />
             </div>
           )}
 
-          
+          {show(["series", "trending"]) && <WeeklySeriesSection />}
 
           {show(["sports"]) && (
             <div id="programacao">
@@ -87,7 +88,6 @@ const Index = () => {
           )}
 
           {show(["new"]) && <ReleaseBanner />}
-          <FeaturedSection />
           <BannerSections />
         </div>
       </main>
