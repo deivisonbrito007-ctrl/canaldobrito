@@ -1,10 +1,10 @@
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Share2 } from "lucide-react";
 
 export const WhatsAppShareButton = () => {
   const handleShare = () => {
     const url = window.location.href;
     const msg = encodeURIComponent(
-      `📺 Programação esportiva de hoje! Veja os jogos e indicações: ${url} - Brito Solutions (11) 94075-9046`
+      `📺 Confira a programação de hoje! Filmes, séries e esportes ao vivo: ${url} - Brito Solutions (11) 94075-9046`
     );
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
@@ -12,10 +12,11 @@ export const WhatsAppShareButton = () => {
   return (
     <button
       onClick={handleShare}
-      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs sm:text-sm font-medium transition-colors"
+      className="inline-flex items-center gap-2 rounded-full bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-white px-5 py-2.5 text-xs sm:text-sm font-semibold transition-all hover:scale-105 shadow-lg shadow-[hsl(142,70%,40%,0.25)] min-h-[44px]"
     >
       <MessageCircle className="h-4 w-4" />
       Compartilhar no WhatsApp
+      <Share2 className="h-3.5 w-3.5 opacity-60" />
     </button>
   );
 };
