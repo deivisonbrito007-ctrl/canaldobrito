@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Game } from "@/types/sports";
+import { Game, SportType } from "@/types/sports";
 import type { Tables } from "@/integrations/supabase/types";
 
 type GameRow = Tables<"games">;
 
-const mapRowToGame = (row: GameRow & { broadcast_channel?: string | null }): Game => ({
+const mapRowToGame = (row: GameRow): Game => ({
   id: row.id,
-  sport: row.sport,
+  sport: row.sport as SportType,
   league: row.league,
   leagueIcon: row.league_icon ?? undefined,
   homeTeam: {
@@ -27,10 +27,9 @@ const mapRowToGame = (row: GameRow & { broadcast_channel?: string | null }): Gam
   highlight: row.highlight,
   apiSource: row.api_source ?? undefined,
   externalId: row.external_id ?? undefined,
-  broadcastChannel: (row as any).broadcast_channel ?? undefined,
+  broadcastChannel: row.broadcast_channel ?? undefined,
 });
 
-// Sort: live first, then scheduled by time, finished last
 const sortGames = (games: Game[]): Game[] => {
   const statusOrder: Record<string, number> = { live: 0, scheduled: 1, finished: 2 };
   return [...games].sort((a, b) => {
@@ -52,6 +51,7 @@ export const useGames = () => {
       const { data, error } = await supabase
         .from("games")
         .select("*")
+        .in("sport", ["football", "basketball"])
         .gte("start_time", startOfDay)
         .lt("start_time", endOfDay)
         .order("start_time", { ascending: true });

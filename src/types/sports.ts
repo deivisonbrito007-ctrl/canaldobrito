@@ -1,4 +1,4 @@
-export type SportType = "football" | "basketball" | "esports" | "mma";
+export type SportType = "football" | "basketball";
 
 export type GameStatus = "scheduled" | "live" | "finished";
 
@@ -15,7 +15,7 @@ export interface Game {
   leagueIcon?: string;
   homeTeam: Team;
   awayTeam: Team;
-  startTime: string; // ISO string
+  startTime: string;
   status: GameStatus;
   venue?: string;
   round?: string;
@@ -35,6 +35,4 @@ export interface SportConfig {
 export const SPORTS: SportConfig[] = [
   { type: "football", label: "Futebol", icon: "⚽", color: "hsl(122 39% 49%)" },
   { type: "basketball", label: "Basketball", icon: "🏀", color: "hsl(25 95% 53%)" },
-  { type: "esports", label: "Esports", icon: "🎮", color: "hsl(262 83% 58%)" },
-  { type: "mma", label: "MMA", icon: "🥊", color: "hsl(0 84% 60%)" },
 ];

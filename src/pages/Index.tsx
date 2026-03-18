@@ -51,16 +51,18 @@ const Index = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <RefreshCw className="mb-4 h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Carregando transmissões...</p>
+            <p className="text-sm text-muted-foreground">Carregando programação...</p>
           </div>
         ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <Tv className="mb-4 h-12 w-12 text-muted-foreground/30" />
-            <p className="font-display text-base sm:text-lg font-semibold text-muted-foreground">
-              Nenhuma transmissão programada para hoje
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+              <Tv className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+            <p className="font-display text-base sm:text-lg font-semibold text-foreground">
+              Nenhuma transmissão programada
             </p>
-            <p className="mt-1 text-xs sm:text-sm text-muted-foreground/60">
-              Volte mais tarde ou selecione outro esporte
+            <p className="mt-2 max-w-xs text-xs sm:text-sm text-muted-foreground">
+              Não há jogos agendados para hoje. Volte mais tarde para conferir a programação atualizada.
             </p>
           </div>
         ) : (

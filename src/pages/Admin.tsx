@@ -42,8 +42,9 @@ type GameInsert = TablesInsert<"games">;
 
 const BROADCAST_CHANNELS = [
   "Globo", "SporTV", "Premiere", "ESPN", "Star+", "TNT Sports", "Max",
-  "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "Combate",
-  "UFC Fight Pass", "YouTube", "Twitch", "OneFootball",
+  "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "OneFootball",
+  "Globo / SporTV", "Premiere / Globo", "ESPN / Paramount+", "TNT Sports / Max",
+  "SporTV / ESPN", "Record / CazéTV", "Band / SporTV",
 ];
 
 const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
@@ -357,17 +358,17 @@ const Admin = () => {
 
                 <div className="space-y-2">
                   <Label>Canal de Transmissão</Label>
-                  <Select
+                  <Input
                     value={(form as any).broadcast_channel || ""}
-                    onValueChange={(v) => setForm({ ...form, broadcast_channel: v } as any)}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
-                    <SelectContent>
-                      {BROADCAST_CHANNELS.map((ch) => (
-                        <SelectItem key={ch} value={ch}>{ch}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setForm({ ...form, broadcast_channel: e.target.value } as any)}
+                    placeholder="Ex: Globo / SporTV"
+                    list="channel-suggestions"
+                  />
+                  <datalist id="channel-suggestions">
+                    {BROADCAST_CHANNELS.map((ch) => (
+                      <option key={ch} value={ch} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="flex items-center gap-3">
