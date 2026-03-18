@@ -114,6 +114,10 @@
     box-shadow: 0 0 12px hsl(var(--live) / 0.5), 0 0 24px hsl(var(--live) / 0.2);
   }
 
+  .glow-primary-subtle {
+    box-shadow: 0 0 20px hsl(142 60% 45% / 0.08), 0 0 40px hsl(142 60% 45% / 0.04);
+  }
+
   .animate-pulse-live {
     animation: pulse-live 2s ease-in-out infinite;
   }
