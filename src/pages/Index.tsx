@@ -6,13 +6,12 @@ import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
 import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
-
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { ReleaseBanner } from "@/components/public/ReleaseBanner";
-
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
+import { CalendarDays } from "lucide-react";
 
 type FilterId = "all" | "movies" | "series" | "sports" | "new" | "trending";
 
@@ -23,16 +22,13 @@ const Index = () => {
   const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
 
-    if (tabId === "home") {
+    if (tabId === "home" || tabId === "search") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (tabId === "play") {
       document.getElementById("assista")?.scrollIntoView({ behavior: "smooth" });
     } else if (tabId === "schedule") {
-      document.getElementById("programacao")?.scrollIntoView({ behavior: "smooth" });
-    } else if (tabId === "search") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    // "profile" is handled inside BottomNav (navigates to /login)
   }, []);
 
   const show = (sections: FilterId[]) => filter === "all" || sections.includes(filter);
@@ -51,45 +47,52 @@ const Index = () => {
       <AppNavbar />
 
       <main className="relative z-10 flex-1 pb-24">
-        {/* Greeting */}
-        <div className="px-4 pt-5 pb-3 space-y-1">
-          <p className="text-xs text-muted-foreground font-body">Bem-vindo de volta 👋</p>
-          <h2 className="text-lg font-bold text-foreground font-body">
-            O que vai assistir <span className="text-primary">hoje</span>?
-          </h2>
-        </div>
-
-        <div className="space-y-8">
-          <CategoryPills onFilter={(id) => setFilter(id as FilterId)} />
-
-          {/* Hero — real banners from DB */}
-          <DailyBannerCarousel />
-
-          {show(["sports"]) && (
-            <div id="esportes">
-              <LiveNowSection />
+        {activeTab === "schedule" ? (
+          /* ── Aba Programação ── */
+          <div className="px-4 pt-5 pb-3 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                <CalendarDays className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground font-body">Programação</h2>
             </div>
-          )}
-
-          {show(["new", "trending"]) && <NewsReleasesSection />}
-
-          {show(["movies", "trending"]) && (
-            <div id="assista">
-              <WeeklyMoviesSection />
+            <DailyGamesSection />
+          </div>
+        ) : (
+          /* ── Aba Home (e demais) ── */
+          <>
+            <div className="px-4 pt-5 pb-3 space-y-1">
+              <p className="text-xs text-muted-foreground font-body">Bem-vindo de volta 👋</p>
+              <h2 className="text-lg font-bold text-foreground font-body">
+                O que vai assistir <span className="text-primary">hoje</span>?
+              </h2>
             </div>
-          )}
 
-          {show(["series", "trending"]) && <WeeklySeriesSection />}
+            <div className="space-y-8">
+              <CategoryPills onFilter={(id) => setFilter(id as FilterId)} />
+              <DailyBannerCarousel />
 
-          {show(["sports"]) && (
-            <div id="programacao">
-              <DailyGamesSection />
+              {show(["sports"]) && (
+                <div id="esportes">
+                  <LiveNowSection />
+                </div>
+              )}
+
+              {show(["new", "trending"]) && <NewsReleasesSection />}
+
+              {show(["movies", "trending"]) && (
+                <div id="assista">
+                  <WeeklyMoviesSection />
+                </div>
+              )}
+
+              {show(["series", "trending"]) && <WeeklySeriesSection />}
+
+              {show(["new"]) && <ReleaseBanner />}
+              <BannerSections />
             </div>
-          )}
-
-          {show(["new"]) && <ReleaseBanner />}
-          <BannerSections />
-        </div>
+          </>
+        )}
       </main>
 
       <PublicFooter />
