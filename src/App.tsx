@@ -12,6 +12,7 @@ import AdminFilmes from "./pages/admin/AdminFilmes";
 import AdminSeries from "./pages/admin/AdminSeries";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import AdminNovidades from "./pages/admin/AdminNovidades";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
