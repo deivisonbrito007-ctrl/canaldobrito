@@ -25,8 +25,6 @@ const mapRowToGame = (row: GameRow): Game => ({
   venue: row.venue ?? undefined,
   round: row.round ?? undefined,
   highlight: row.highlight,
-  apiSource: row.api_source ?? undefined,
-  externalId: row.external_id ?? undefined,
   broadcastChannel: row.broadcast_channel ?? undefined,
 });
 
@@ -45,7 +43,6 @@ export const useGames = () => {
     queryKey: ["games"],
     queryFn: async () => {
       const today = new Date();
-      // Use UTC boundaries to catch all games for the calendar date
       const startOfDay = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())).toISOString();
       const endOfDay = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1)).toISOString();
 
