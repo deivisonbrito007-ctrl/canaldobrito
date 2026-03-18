@@ -89,11 +89,13 @@ export type Database = {
           competition_detail: string | null
           created_at: string
           date: string
+          elapsed_minutes: number | null
           game_time: string
           home_team: string
           id: string
           is_live: boolean
           is_womens: boolean
+          status_short: string
         }
         Insert: {
           active?: boolean
@@ -103,11 +105,13 @@ export type Database = {
           competition_detail?: string | null
           created_at?: string
           date?: string
+          elapsed_minutes?: number | null
           game_time: string
           home_team: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          status_short?: string
         }
         Update: {
           active?: boolean
@@ -117,11 +121,13 @@ export type Database = {
           competition_detail?: string | null
           created_at?: string
           date?: string
+          elapsed_minutes?: number | null
           game_time?: string
           home_team?: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          status_short?: string
         }
         Relationships: []
       }

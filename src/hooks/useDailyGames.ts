@@ -13,6 +13,8 @@ export interface DailyGame {
   is_live: boolean;
   is_womens: boolean;
   active: boolean;
+  status_short: string;
+  elapsed_minutes: number | null;
   created_at: string;
 }
 
