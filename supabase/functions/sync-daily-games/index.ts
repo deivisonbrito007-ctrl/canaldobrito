@@ -28,8 +28,10 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   const games: NormalizedGame[] = [];
   const today = new Date().toISOString().split("T")[0];
 
-  // League IDs: Brasileirão=71, Champions=2, Copa do Brasil=73, Libertadores=13
-  const leagues = [71, 2, 73, 13];
+  // League IDs: Brasileirão=71, Champions=2, Copa do Brasil=73, Libertadores=13,
+  // Premier League=39, La Liga=140, Serie A=135, Ligue 1=61, Bundesliga=78,
+  // Copa América=9, Mundial de Clubes=15
+  const leagues = [71, 2, 73, 13, 39, 140, 135, 61, 78];
 
   for (const leagueId of leagues) {
     try {
