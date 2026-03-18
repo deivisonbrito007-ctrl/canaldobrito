@@ -1,7 +1,8 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Clock, Flame, Trophy } from "lucide-react";
+import { isGameCurrentlyLive } from "@/lib/gameUtils";
 
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
@@ -82,13 +83,7 @@ function isHighlight(comp: string) {
 }
 
 function isGameLive(game: DailyGame): boolean {
-  if (game.is_live) return true;
-  const now = new Date();
-  const [h, m] = (game.game_time || "00:00").split(":").map(Number);
-  const start = new Date();
-  start.setHours(h, m, 0, 0);
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  return now >= start && now <= end;
+  return isGameCurrentlyLive(game.game_time, game.date);
 }
 
 type TimeGroup = "morning" | "afternoon" | "night" | "dawn";
@@ -112,6 +107,7 @@ const GROUP_ORDER: TimeGroup[] = ["morning", "afternoon", "night", "dawn"];
 
 /* ── Game Card ── */
 const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
+  const live = isGameLive(game);
   const highlight = isHighlight(game.competition);
   const compColor = getCompColor(game.competition);
   const topGradient = getTopColor(game.competition);
@@ -132,7 +128,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
 
         <div className="p-4 space-y-3">
-          {/* Competition badge */}
+          {/* Competition badge + Live badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80`}>
@@ -140,9 +136,20 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
             </div>
-            {game.is_womens && (
-              <span className="text-[9px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-lg font-bold border border-pink-500/30">♀ FEM</span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {live && (
+                <span className="flex items-center gap-1 text-[10px] bg-destructive/20 text-destructive px-2 py-0.5 rounded-full font-bold animate-pulse border border-destructive/30">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-60" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+                  </span>
+                  AO VIVO
+                </span>
+              )}
+              {game.is_womens && (
+                <span className="text-[9px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-lg font-bold border border-pink-500/30">♀ FEM</span>
+              )}
+            </div>
           </div>
 
           {/* Competition detail / round */}
@@ -188,14 +195,16 @@ export const DailyGamesSection = () => {
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
+  const [, setTick] = useState(0);
 
-  const upcomingGames = useMemo(() => {
-    if (!games) return [];
-    return games.filter((g) => !isGameLive(g));
-  }, [games]);
+  // Re-evaluate live status every 60s
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredGames = useMemo(() => {
-    let result = upcomingGames;
+    let result = games || [];
     if (channelFilter) {
       result = result.filter((g) =>
         g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
@@ -207,7 +216,8 @@ export const DailyGamesSection = () => {
       );
     }
     return result;
-  }, [upcomingGames, channelFilter, compFilter]);
+  }, [games, channelFilter, compFilter]);
+
 
   const grouped = useMemo(() => {
     const groups: Record<TimeGroup, typeof filteredGames> = { morning: [], afternoon: [], night: [], dawn: [] };

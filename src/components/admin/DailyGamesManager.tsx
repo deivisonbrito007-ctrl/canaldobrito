@@ -3,9 +3,8 @@ import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDail
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Zap, Download } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
   const today = new Date().toISOString().split("T")[0];
@@ -17,26 +16,6 @@ export const DailyGamesManager = () => {
   const insertGames = useInsertDailyGames();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-
-  const handleSyncFromAPI = async () => {
-    setSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("sync-daily-games", {
-        body: { date: selectedDate },
-      });
-      if (error) throw error;
-      toast.success(`${data.inserted} jogos importados da API!`);
-    } catch (err: any) {
-      toast.error(`Erro ao sincronizar: ${err.message}`);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleToggleLive = (id: string, current: boolean) => {
-    updateGame.mutate({ id, is_live: !current });
-  };
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
@@ -53,7 +32,6 @@ export const DailyGamesManager = () => {
   };
 
   const activeCount = games?.filter((g) => g.active).length || 0;
-  const liveCount = games?.filter((g) => g.is_live).length || 0;
 
   return (
     <div className="glass-panel rounded-2xl overflow-hidden">
@@ -65,9 +43,6 @@ export const DailyGamesManager = () => {
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             <span className="text-emerald-400 font-semibold">{activeCount}</span> ativos
-            {liveCount > 0 && (
-              <> • <span className="text-red-400 font-semibold">{liveCount}</span> ao vivo</>
-            )}
             {" "}/ {games?.length || 0} total
           </p>
         </div>
@@ -80,10 +55,6 @@ export const DailyGamesManager = () => {
           />
           <Button size="sm" variant="ghost" onClick={() => setShowAddForm(!showAddForm)} className="text-xs">
             <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleSyncFromAPI} disabled={syncing} className="text-xs text-primary">
-            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
-            Buscar da API
           </Button>
           <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
@@ -113,9 +84,9 @@ export const DailyGamesManager = () => {
             {games.map((game) => (
               <div
                 key={game.id}
-                className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
+              className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
                   !game.active ? "opacity-40" : ""
-                } ${game.is_live ? "border-red-500/30 border" : ""}`}
+                }`}
               >
                 {editingId === game.id ? (
                   <InlineEditForm
@@ -141,20 +112,6 @@ export const DailyGamesManager = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {game.is_live && (
-                        <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold animate-pulse">
-                          AO VIVO
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleToggleLive(game.id, game.is_live)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          game.is_live ? "bg-red-500/20 text-red-400" : "hover:bg-white/[0.06] text-muted-foreground"
-                        }`}
-                        title="Toggle Ao Vivo"
-                      >
-                        <Zap className="h-3.5 w-3.5" />
-                      </button>
                       <Switch
                         checked={game.active}
                         onCheckedChange={() => handleToggleActive(game.id, game.active)}
