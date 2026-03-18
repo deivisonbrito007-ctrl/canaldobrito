@@ -1,7 +1,8 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Clock, Flame, Trophy } from "lucide-react";
+import { isGameCurrentlyLive } from "@/lib/gameUtils";
 
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
