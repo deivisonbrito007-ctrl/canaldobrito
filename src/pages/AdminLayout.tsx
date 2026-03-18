@@ -2,11 +2,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, CalendarDays, Film, Clapperboard, Settings } from "lucide-react";
+import { LogOut, Image, Film, Clapperboard, Settings } from "lucide-react";
 import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
 
 const adminTabs = [
-  { value: "programacao", label: "Programação", icon: CalendarDays, path: "/admin/programacao" },
+  { value: "banners", label: "Banners", icon: Image, path: "/admin/banners" },
   { value: "filmes", label: "Filmes", icon: Film, path: "/admin/filmes" },
   { value: "series", label: "Séries", icon: Clapperboard, path: "/admin/series" },
   { value: "configuracoes", label: "Config", icon: Settings, path: "/admin/configuracoes" },
@@ -29,11 +29,10 @@ const AdminLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const currentTab = adminTabs.find((t) => location.pathname.startsWith(t.path))?.value || "programacao";
+  const currentTab = adminTabs.find((t) => location.pathname.startsWith(t.path))?.value || "banners";
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-xl">
         <div className="container flex items-center justify-between px-3 py-2 sm:px-4">
           <div className="flex items-center gap-2">
@@ -51,7 +50,6 @@ const AdminLayout = () => {
         </div>
       </header>
 
-      {/* Tabs navigation */}
       <div className="container px-3 sm:px-4 pt-3">
         <Tabs value={currentTab} onValueChange={(v) => {
           const tab = adminTabs.find((t) => t.value === v);
@@ -68,7 +66,6 @@ const AdminLayout = () => {
         </Tabs>
       </div>
 
-      {/* Content */}
       <div className="container px-3 sm:px-4 py-4">
         <Outlet />
       </div>
