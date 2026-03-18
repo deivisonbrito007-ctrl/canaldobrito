@@ -4,7 +4,8 @@ import { SportFilter } from "@/components/SportFilter";
 import { FeaturedGames } from "@/components/FeaturedGames";
 import { GameSection } from "@/components/GameSection";
 import { GameDetail } from "@/components/GameDetail";
-import { ShareWhatsApp } from "@/components/ShareWhatsApp";
+import { ShareFAB } from "@/components/ShareFAB";
+import { BannerCarousel } from "@/components/BannerCarousel";
 import { Footer } from "@/components/Footer";
 import { useGames } from "@/hooks/useGames";
 import { Game, SportType } from "@/types/sports";
@@ -46,6 +47,7 @@ const Index = () => {
       <Header games={allGames} />
 
       <main className="container flex-1 space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6">
+        <BannerCarousel />
         <SportFilter selected={selectedSport} onChange={setSelectedSport} counts={counts} />
 
         {isLoading ? (
@@ -74,7 +76,7 @@ const Index = () => {
       </main>
 
       <Footer />
-      <ShareWhatsApp games={filtered} />
+      <ShareFAB games={filtered} />
 
       <GameDetail
         game={selectedGame}
