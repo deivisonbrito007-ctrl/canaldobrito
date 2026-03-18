@@ -40,7 +40,13 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 
 type GameInsert = TablesInsert<"games">;
 
-const INITIAL_FORM: Partial<GameInsert> = {
+const BROADCAST_CHANNELS = [
+  "Globo", "SporTV", "Premiere", "ESPN", "Star+", "TNT Sports", "Max",
+  "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "Combate",
+  "UFC Fight Pass", "YouTube", "Twitch", "OneFootball",
+];
+
+const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
   sport: "football",
   league: "",
   home_team_name: "",
@@ -53,6 +59,7 @@ const INITIAL_FORM: Partial<GameInsert> = {
   api_source: "manual",
   home_team_score: undefined,
   away_team_score: undefined,
+  broadcast_channel: "",
 };
 
 const Admin = () => {
