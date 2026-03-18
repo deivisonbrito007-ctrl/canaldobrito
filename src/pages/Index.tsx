@@ -91,7 +91,7 @@ const Index = () => {
               {show(["new", "trending"]) && <NewsReleasesSection />}
 
 
-              {show(["new"]) && <ReleaseBanner />}
+              
               <BannerSections />
             </div>
           </>
