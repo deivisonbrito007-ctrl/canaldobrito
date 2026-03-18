@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, Settings, Phone, Key } from "lucide-react";
+import { Save, Loader2, Phone, Key, Info } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminConfiguracoes = () => {
@@ -31,58 +30,67 @@ const AdminConfiguracoes = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-            <Settings className="h-4 w-4 text-primary" />
+    <div className="space-y-6 max-w-2xl">
+      {/* Identidade */}
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
+          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+            <Phone className="h-4 w-4 text-emerald-400" />
+            Identidade & Contato
+          </h3>
+        </div>
+        <div className="p-5 sm:p-6 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
+            <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1]" />
+            <p className="text-[11px] text-muted-foreground/50">Número completo com código do país (ex: 5511940759046)</p>
           </div>
-          <div>
-            <CardTitle>Configurações</CardTitle>
-            <CardDescription className="mt-0.5">Gerencie as configurações globais do sistema</CardDescription>
+        </div>
+      </div>
+
+      {/* API */}
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
+          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+            <Key className="h-4 w-4 text-blue-400" />
+            Integrações & API
+          </h3>
+        </div>
+        <div className="p-5 sm:p-6 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">TMDB API Key</Label>
+            <Input placeholder="Sua chave da API do TMDB" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} type="password" className="glass-panel border-white/[0.1]" />
+            <p className="text-[11px] text-muted-foreground/50">
+              Obtenha em{" "}
+              <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">themoviedb.org</a>
+            </p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1.5 text-sm font-semibold">
-            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-            WhatsApp
-          </Label>
-          <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-          <p className="text-[11px] text-muted-foreground/60">Número completo com código do país (ex: 5511940759046)</p>
+      </div>
+
+      {/* Sobre */}
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
+          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            Sobre o Sistema
+          </h3>
         </div>
-
-        <div className="section-divider" />
-
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1.5 text-sm font-semibold">
-            <Key className="h-3.5 w-3.5 text-muted-foreground" />
-            TMDB API Key
-          </Label>
-          <Input placeholder="Sua chave da API do TMDB" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} type="password" />
-          <p className="text-[11px] text-muted-foreground/60">
-            Obtenha em{" "}
-            <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">
-              themoviedb.org
-            </a>
-          </p>
+        <div className="p-5 sm:p-6">
+          <p className="text-xs text-muted-foreground">Brito Solutions — Painel de Gerenciamento v1.0</p>
         </div>
+      </div>
 
-        <Button onClick={handleSave} disabled={updateSetting.isPending} size="lg" className="w-full sm:w-auto">
-          {updateSetting.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          Salvar Configurações
-        </Button>
-      </CardContent>
-    </Card>
+      {/* Save */}
+      <Button onClick={handleSave} disabled={updateSetting.isPending} size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/20">
+        {updateSetting.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+        Salvar Configurações
+      </Button>
+    </div>
   );
 };
 
