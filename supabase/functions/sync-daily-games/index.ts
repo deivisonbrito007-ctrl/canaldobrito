@@ -39,8 +39,37 @@ const CHANNEL_MAP: Record<string, string> = {
   "Copa do Mundo": "Globo / SporTV",
   "Eliminatórias": "Globo",
   "FIFA World Cup Qualification": "Globo",
+  "Serie A (Itália)": "ESPN / Star+",
+  // Ligas adicionais
+  "MLS": "Apple TV+",
+  "Saudi Pro League": "BandSports / CazéTV",
+  "Saudi Professional League": "BandSports / CazéTV",
+  "Liga MX": "ESPN / Star+",
+  "Primeira Liga": "ESPN / Star+",
+  "Liga Portugal": "ESPN / Star+",
+  "World Cup Qualification South America": "Globo",
+  "World Cup Qualification CONCACAF": "SporTV",
+  "World Cup Qualification Europe": "SporTV",
   // Basketball
   "NBA": "ESPN / TNT Sports",
+  // Football Americano
+  "NFL": "ESPN / NFL Game Pass",
+  "NCAAF": "ESPN",
+  // Baseball
+  "MLB": "ESPN",
+  // Tennis
+  "ATP": "ESPN / SporTV",
+  "WTA": "ESPN / SporTV",
+  // Motorsport
+  "Formula 1": "Band / F1 TV",
+  "F1": "Band / F1 TV",
+  // MMA
+  "UFC": "Combate / UFC Fight Pass",
+  // Hockey
+  "NHL": "ESPN",
+  // Golf
+  "PGA Tour": "ESPN",
+  "PGA": "ESPN",
 };
 
 function getChannel(league: string, sport: string): string | null {
