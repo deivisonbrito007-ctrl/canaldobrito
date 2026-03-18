@@ -11,7 +11,7 @@ import { ReleaseBanner } from "@/components/public/ReleaseBanner";
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Star } from "lucide-react";
 
 type FilterId = "all" | "movies" | "series" | "sports" | "new" | "trending";
 
