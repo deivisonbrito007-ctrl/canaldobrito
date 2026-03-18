@@ -242,10 +242,10 @@ export const ProgramacaoTexto = () => {
           className="min-h-[240px] bg-secondary/30 border-border/30 text-sm font-mono"
         />
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleProcess}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 min-h-[44px]"
           >
             <FileText className="h-4 w-4 mr-2" />
             Processar Texto
@@ -253,10 +253,18 @@ export const ProgramacaoTexto = () => {
           <Button
             variant="ghost"
             onClick={() => { setText(""); setParsed([]); }}
-            className="text-muted-foreground"
+            className="text-muted-foreground min-h-[44px]"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Limpar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleFillExample}
+            className="text-muted-foreground min-h-[44px]"
+          >
+            <Clipboard className="h-4 w-4 mr-2" />
+            Exemplo
           </Button>
         </div>
       </div>
