@@ -193,15 +193,34 @@ const Admin = () => {
 
       <main className="container py-6 space-y-6">
         {/* Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">{games.length} jogos cadastrados</p>
-          <Dialog open={formOpen} onOpenChange={setFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreate}>
-                <Plus className="h-4 w-4" />
-                Novo Jogo
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                toast.info("Sincronizando com APIs...");
+                try {
+                  const { data, error } = await supabase.functions.invoke("sync-daily-games");
+                  if (error) throw error;
+                  toast.success(`Sync concluída! ${data?.total || 0} jogos importados.`);
+                  queryClient.invalidateQueries({ queryKey: ["admin-games"] });
+                  queryClient.invalidateQueries({ queryKey: ["games"] });
+                } catch (err: any) {
+                  toast.error(`Erro na sync: ${err.message}`);
+                }
+              }}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Sincronizar APIs
+            </Button>
+            <Dialog open={formOpen} onOpenChange={setFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreate}>
+                  <Plus className="h-4 w-4" />
+                  Novo Jogo
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto border-border/50 bg-card sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle className="font-display">
