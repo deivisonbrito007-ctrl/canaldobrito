@@ -15,27 +15,8 @@ export const DailyGamesManager = () => {
   const deleteByDate = useDeleteDailyGamesByDate();
   const insertGames = useInsertDailyGames();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-
-  const handleSyncFromAPI = async () => {
-    setSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("sync-daily-games", {
-        body: { date: selectedDate },
-      });
-      if (error) throw error;
-      toast.success(`${data.inserted} jogos importados da API!`);
-    } catch (err: any) {
-      toast.error(`Erro ao sincronizar: ${err.message}`);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleToggleLive = (id: string, current: boolean) => {
-    updateGame.mutate({ id, is_live: !current });
-  };
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
@@ -52,7 +33,6 @@ export const DailyGamesManager = () => {
   };
 
   const activeCount = games?.filter((g) => g.active).length || 0;
-  const liveCount = games?.filter((g) => g.is_live).length || 0;
 
   return (
     <div className="glass-panel rounded-2xl overflow-hidden">
