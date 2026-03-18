@@ -1,15 +1,41 @@
+import { useState, useCallback } from "react";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { CategoryPills } from "@/components/public/CategoryPills";
-import { HeroBanner } from "@/components/public/HeroBanner";
+import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
+import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { ContinueWatchingSection } from "@/components/public/ContinueWatchingSection";
+import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { ReleaseBanner } from "@/components/public/ReleaseBanner";
 import { FeaturedSection } from "@/components/public/FeaturedSection";
 import { BannerSections } from "@/components/public/BannerSections";
+import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 
+type FilterId = "all" | "movies" | "series" | "sports" | "new" | "trending";
+
 const Index = () => {
+  const [activeTab, setActiveTab] = useState("home");
+  const [filter, setFilter] = useState<FilterId>("all");
+
+  const handleTabChange = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+
+    if (tabId === "home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (tabId === "play") {
+      document.getElementById("assista")?.scrollIntoView({ behavior: "smooth" });
+    } else if (tabId === "schedule") {
+      document.getElementById("programacao")?.scrollIntoView({ behavior: "smooth" });
+    } else if (tabId === "search") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // "profile" is handled inside BottomNav (navigates to /login)
+  }, []);
+
+  const show = (sections: FilterId[]) => filter === "all" || sections.includes(filter);
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background overflow-x-hidden">
       {/* Ambient blobs */}
@@ -33,25 +59,41 @@ const Index = () => {
         </div>
 
         <div className="space-y-8">
-          <CategoryPills />
-          <HeroBanner />
+          <CategoryPills onFilter={(id) => setFilter(id as FilterId)} />
 
-          <div id="esportes">
-            <LiveNowSection />
-          </div>
+          {/* Hero — real banners from DB */}
+          <DailyBannerCarousel />
 
-          <div id="assista">
-            <WatchTodaySection />
-          </div>
+          {show(["sports"]) && (
+            <div id="esportes">
+              <LiveNowSection />
+            </div>
+          )}
 
-          <ContinueWatchingSection />
-          <ReleaseBanner />
+          {show(["new", "trending"]) && <NewsReleasesSection />}
+
+          {show(["movies", "series", "trending"]) && (
+            <div id="assista">
+              <WatchTodaySection />
+            </div>
+          )}
+
+          {show(["movies", "series"]) && <ContinueWatchingSection />}
+
+          {show(["sports"]) && (
+            <div id="programacao">
+              <DailyGamesSection />
+            </div>
+          )}
+
+          {show(["new"]) && <ReleaseBanner />}
           <FeaturedSection />
           <BannerSections />
         </div>
       </main>
 
-      <BottomNav />
+      <PublicFooter />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 };
