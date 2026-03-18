@@ -1,0 +1,79 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface NewsRelease {
+  id: string;
+  title: string;
+  content_type: string;
+  badge_type: string;
+  image_url: string | null;
+  overview: string | null;
+  year: number | null;
+  rating: number | null;
+  tmdb_id: number | null;
+  active: boolean;
+  display_order: number;
+  added_by: string | null;
+  created_at: string;
+}
+
+export const useActiveNewsReleases = () =>
+  useQuery({
+    queryKey: ["news_releases", "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("news_releases")
+        .select("*")
+        .eq("active", true)
+        .order("display_order", { ascending: true })
+        .limit(6);
+      if (error) throw error;
+      return data as NewsRelease[];
+    },
+  });
+
+export const useAllNewsReleases = () =>
+  useQuery({
+    queryKey: ["news_releases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("news_releases")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data as NewsRelease[];
+    },
+  });
+
+export const useAddNewsRelease = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (item: Omit<NewsRelease, "id" | "active" | "created_at">) => {
+      const { error } = await supabase.from("news_releases").insert(item);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["news_releases"] }),
+  });
+};
+
+export const useToggleNewsRelease = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("news_releases").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["news_releases"] }),
+  });
+};
+
+export const useDeleteNewsRelease = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("news_releases").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["news_releases"] }),
+  });
+};

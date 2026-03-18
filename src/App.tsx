@@ -31,6 +31,7 @@ const App = () => (
               <Route path="banners" element={<AdminBanners />} />
               <Route path="filmes" element={<AdminFilmes />} />
               <Route path="series" element={<AdminSeries />} />
+              <Route path="novidades" element={<AdminNovidades />} />
               <Route path="configuracoes" element={<AdminConfiguracoes />} />
             </Route>
             <Route path="*" element={<NotFound />} />

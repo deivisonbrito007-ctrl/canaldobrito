@@ -61,7 +61,7 @@ const AdminLayout = () => {
           const tab = adminTabs.find((t) => t.value === v);
           if (tab) navigate(tab.path);
         }}>
-          <TabsList className="w-full grid grid-cols-4 h-auto bg-secondary/50 border border-border/20 rounded-xl p-1">
+          <TabsList className="w-full <TabsList className="w-full grid grid-cols-5 h-auto bg-secondary/50 border border-border/20 rounded-xl p-1"> h-auto bg-secondary/50 border border-border/20 rounded-xl p-1">
             {adminTabs.map((tab) => (
               <TabsTrigger
                 key={tab.value}
