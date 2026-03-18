@@ -28,8 +28,10 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   const games: NormalizedGame[] = [];
   const today = new Date().toISOString().split("T")[0];
 
-  // League IDs: Brasileirão=71, Champions=2, Copa do Brasil=73, Libertadores=13
-  const leagues = [71, 2, 73, 13];
+  // League IDs: Brasileirão=71, Champions=2, Copa do Brasil=73, Libertadores=13,
+  // Premier League=39, La Liga=140, Serie A=135, Ligue 1=61, Bundesliga=78,
+  // Copa América=9, Mundial de Clubes=15
+  const leagues = [71, 2, 73, 13, 39, 140, 135, 61, 78];
 
   for (const leagueId of leagues) {
     try {
@@ -69,7 +71,7 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
             status,
             venue: fixture.fixture.venue?.name || null,
             round: fixture.league.round || null,
-            highlight: leagueId === 2, // Champions League = highlight
+            highlight: [2, 39, 140, 135].includes(leagueId), // Champions, Premier, La Liga, Serie A
             api_source: "api-football",
             external_id: `apifb-${fixture.fixture.id}`,
           });
@@ -134,8 +136,8 @@ async function fetchEsports(apiKey: string): Promise<NormalizedGame[]> {
   const games: NormalizedGame[] = [];
   const today = new Date().toISOString().split("T")[0];
 
-  // CS2 and LoL
-  const videogames = ["csgo", "lol"];
+  // CS2, LoL, Valorant, Dota2
+  const videogames = ["csgo", "lol", "valorant", "dota2"];
 
   for (const vg of videogames) {
     try {
@@ -161,7 +163,8 @@ async function fetchEsports(apiKey: string): Promise<NormalizedGame[]> {
           const homeScore = results[0]?.score ?? null;
           const awayScore = results[1]?.score ?? null;
 
-          const sportLabel = vg === "csgo" ? "CS2" : "LoL";
+          const sportLabels: Record<string, string> = { csgo: "CS2", lol: "LoL", valorant: "Valorant", dota2: "Dota 2" };
+          const sportLabel = sportLabels[vg] || vg;
           const tournamentName = match.tournament?.name || match.league?.name || sportLabel;
 
           games.push({
