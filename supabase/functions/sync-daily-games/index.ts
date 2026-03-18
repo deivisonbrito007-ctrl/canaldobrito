@@ -136,8 +136,8 @@ async function fetchEsports(apiKey: string): Promise<NormalizedGame[]> {
   const games: NormalizedGame[] = [];
   const today = new Date().toISOString().split("T")[0];
 
-  // CS2 and LoL
-  const videogames = ["csgo", "lol"];
+  // CS2, LoL, Valorant, Dota2
+  const videogames = ["csgo", "lol", "valorant", "dota2"];
 
   for (const vg of videogames) {
     try {
