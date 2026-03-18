@@ -105,17 +105,26 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   console.log(`[API-Football] Fetching ${leagues.length} leagues for ${today}`);
 
   for (const leagueId of leagues) {
-    try {
-      const res = await fetch(
-        `https://v3.football.api-sports.io/fixtures?date=${today}&league=${leagueId}&season=${year}`,
-        { headers: { "x-apisports-key": apiKey } }
-      );
-      const data = await res.json();
+    let foundFixtures = false;
+    for (const season of seasons) {
+      if (foundFixtures) break;
+      try {
+        const res = await fetch(
+          `https://v3.football.api-sports.io/fixtures?date=${today}&league=${leagueId}&season=${season}`,
+          { headers: { "x-apisports-key": apiKey } }
+        );
+        const data = await res.json();
 
-      if (data.errors && Object.keys(data.errors).length > 0) {
-        console.warn(`[API-Football] League ${leagueId} errors:`, data.errors);
-        continue;
-      }
+        if (data.errors && Object.keys(data.errors).length > 0) {
+          // Try next season
+          continue;
+        }
+
+        const fixtures = data.response || [];
+        if (fixtures.length === 0) continue;
+        
+        foundFixtures = true;
+        console.log(`[API-Football] League ${leagueId} season ${season}: ${fixtures.length} fixtures`);
 
       const fixtures = data.response || [];
       console.log(`[API-Football] League ${leagueId}: ${fixtures.length} fixtures`);
