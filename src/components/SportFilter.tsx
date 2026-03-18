@@ -15,7 +15,7 @@ export const SportFilter = ({ selected, onChange, counts }: SportFilterProps) =>
   ];
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
       {filters.map(({ key, label, icon }) => {
         const isActive = selected === key;
         const count = key === "all" ? Object.values(counts).reduce((a, b) => a + b, 0) : counts[key] || 0;
@@ -24,7 +24,7 @@ export const SportFilter = ({ selected, onChange, counts }: SportFilterProps) =>
             key={key}
             onClick={() => onChange(key)}
             className={cn(
-              "relative flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all",
+              "relative flex shrink-0 snap-start items-center gap-1 sm:gap-1.5 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all",
               isActive
                 ? "bg-primary text-primary-foreground shadow-lg"
                 : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
@@ -41,7 +41,7 @@ export const SportFilter = ({ selected, onChange, counts }: SportFilterProps) =>
             <span className="relative z-10">{label}</span>
             <span
               className={cn(
-                "relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                "relative z-10 rounded-full px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold",
                 isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
               )}
             >

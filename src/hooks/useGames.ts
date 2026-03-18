@@ -5,7 +5,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type GameRow = Tables<"games">;
 
-const mapRowToGame = (row: GameRow): Game => ({
+const mapRowToGame = (row: GameRow & { broadcast_channel?: string | null }): Game => ({
   id: row.id,
   sport: row.sport,
   league: row.league,
@@ -27,13 +27,24 @@ const mapRowToGame = (row: GameRow): Game => ({
   highlight: row.highlight,
   apiSource: row.api_source ?? undefined,
   externalId: row.external_id ?? undefined,
+  broadcastChannel: (row as any).broadcast_channel ?? undefined,
 });
+
+// Sort: live first, then scheduled by time, finished last
+const sortGames = (games: Game[]): Game[] => {
+  const statusOrder: Record<string, number> = { live: 0, scheduled: 1, finished: 2 };
+  return [...games].sort((a, b) => {
+    const sa = statusOrder[a.status] ?? 1;
+    const sb = statusOrder[b.status] ?? 1;
+    if (sa !== sb) return sa - sb;
+    return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+  });
+};
 
 export const useGames = () => {
   return useQuery({
     queryKey: ["games"],
     queryFn: async () => {
-      // Get today's date range
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
@@ -46,8 +57,8 @@ export const useGames = () => {
         .order("start_time", { ascending: true });
 
       if (error) throw error;
-      return (data || []).map(mapRowToGame);
+      return sortGames((data || []).map(mapRowToGame));
     },
-    refetchInterval: 60_000, // Refresh every minute
+    refetchInterval: 60_000,
   });
 };

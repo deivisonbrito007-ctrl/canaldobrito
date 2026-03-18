@@ -14,14 +14,14 @@ export const Header = ({ games }: HeaderProps) => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="container flex items-center justify-between py-3">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Brito Solutions TV" className="h-10 w-auto" />
-          <div className="hidden sm:block">
-            <h1 className="font-display text-lg font-bold leading-tight text-foreground">
+      <div className="container flex items-center justify-between py-2 sm:py-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <img src={logo} alt="Brito Solutions TV" className="h-8 sm:h-10 w-auto" />
+          <div>
+            <h1 className="hidden sm:block font-display text-lg font-bold leading-tight text-foreground">
               Agenda Brito Solutions TV
             </h1>
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <p className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
               {format(today, "EEEE, d 'de' MMMM", { locale: ptBR })}
             </p>
@@ -29,8 +29,8 @@ export const Header = ({ games }: HeaderProps) => {
         </div>
 
         {liveCount > 0 && (
-          <div className="flex items-center gap-1.5 rounded-full bg-live/10 px-3 py-1.5 text-xs font-semibold text-live glow-live">
-            <Wifi className="h-3.5 w-3.5 animate-pulse-live" />
+          <div className="flex items-center gap-1.5 rounded-full bg-live/10 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-live glow-live">
+            <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-pulse-live" />
             {liveCount} ao vivo
           </div>
         )}
