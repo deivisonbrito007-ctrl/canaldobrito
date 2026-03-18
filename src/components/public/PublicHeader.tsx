@@ -23,13 +23,6 @@ export const PublicHeader = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-live/10 border border-live/20 px-2.5 py-1.5">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-live opacity-60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-live glow-live" />
-          </span>
-          <span className="text-[10px] sm:text-xs font-bold text-live tracking-wide">AO VIVO</span>
-        </div>
       </div>
     </header>
   );
