@@ -93,7 +93,7 @@ export const NewsReleasesSection = () => {
         <SectionHeader />
         <div className="flex gap-4 overflow-hidden sm:grid sm:grid-cols-3 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="aspect-[2/3] rounded-2xl w-[160px] shrink-0 sm:w-auto" />
+            <Skeleton key={i} className="aspect-[2/3] rounded-2xl w-[180px] shrink-0 sm:w-auto" />
           ))}
         </div>
       </div>
