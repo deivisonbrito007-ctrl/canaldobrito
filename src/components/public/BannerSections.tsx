@@ -47,15 +47,14 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
     touchRef.current = null;
   };
 
-  if (isLoading) return <Skeleton className="w-full aspect-video" />;
+  if (isLoading) return <Skeleton className="w-full aspect-video rounded-none sm:rounded-2xl sm:mx-4" />;
   if (validBanners.length === 0) return null;
 
   const banner = validBanners[current];
 
   return (
     <div className="relative group" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      {/* Full-width image, no border-radius on mobile */}
-      <div className="overflow-hidden sm:rounded-xl sm:mx-4">
+      <div className="overflow-hidden sm:rounded-2xl sm:mx-4 premium-shadow">
         <AnimatePresence mode="wait">
           <motion.img
             key={banner.id}
@@ -64,14 +63,15 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
             className="w-full aspect-video object-cover"
             loading="lazy"
             onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           />
         </AnimatePresence>
-        {/* Bottom gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background/70 to-transparent pointer-events-none" />
+        {/* Multi-stop gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
       </div>
 
       {/* Desktop arrows */}
@@ -79,13 +79,13 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
         <>
           <button
             onClick={prev}
-            className="hidden sm:flex absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-background/50 backdrop-blur-sm border border-border/30 p-2 text-foreground opacity-0 group-hover:opacity-100 transition-all hover:bg-background/80 min-h-[44px] min-w-[44px] items-center justify-center"
+            className="hidden sm:flex absolute left-6 top-1/2 -translate-y-1/2 rounded-full glass-card p-2.5 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-card/80 min-h-[44px] min-w-[44px] items-center justify-center"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={next}
-            className="hidden sm:flex absolute right-5 top-1/2 -translate-y-1/2 rounded-full bg-background/50 backdrop-blur-sm border border-border/30 p-2 text-foreground opacity-0 group-hover:opacity-100 transition-all hover:bg-background/80 min-h-[44px] min-w-[44px] items-center justify-center"
+            className="hidden sm:flex absolute right-6 top-1/2 -translate-y-1/2 rounded-full glass-card p-2.5 text-foreground opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-card/80 min-h-[44px] min-w-[44px] items-center justify-center"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -94,13 +94,15 @@ const CategoryCarousel = ({ category }: { category: BannerCategory }) => {
 
       {/* Dots */}
       {validBanners.length > 1 && (
-        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
           {validBanners.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className={`rounded-full transition-all min-h-[16px] min-w-[16px] flex items-center justify-center ${
-                i === current ? "w-5 h-1.5 bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.5)]" : "w-1.5 h-1.5 bg-foreground/30"
+              className={`rounded-full transition-all duration-300 min-h-[16px] min-w-[16px] flex items-center justify-center ${
+                i === current
+                  ? "w-6 h-2 bg-primary shadow-[0_0_10px_hsl(var(--primary)/0.5)]"
+                  : "w-2 h-2 bg-foreground/25 hover:bg-foreground/40"
               }`}
             />
           ))}
@@ -118,15 +120,18 @@ const BannerSection = ({ category }: { category: BannerCategory }) => {
 
   return (
     <motion.section
-      className="space-y-2"
-      initial={{ opacity: 0, y: 15 }}
+      className="space-y-3"
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
     >
-      <div className="flex items-center gap-2 px-4">
-        <span className="text-base">{config.emoji}</span>
-        <h2 className="font-display text-sm font-bold text-foreground">{config.label}</h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
+      <div className="flex items-center gap-2.5 px-4">
+        <span className="text-lg">{config.emoji}</span>
+        <h2 className="font-display text-sm sm:text-base font-bold text-foreground tracking-tight">{config.label}</h2>
+        <span className="text-[10px] text-muted-foreground/50 bg-secondary/60 rounded-full px-2 py-0.5 font-medium">
+          {banners.length}
+        </span>
+        <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
       </div>
       <CategoryCarousel category={category} />
     </motion.section>
@@ -135,7 +140,7 @@ const BannerSection = ({ category }: { category: BannerCategory }) => {
 
 export const BannerSections = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {CATEGORY_LIST.map((cat) => (
         <BannerSection key={cat} category={cat} />
       ))}
