@@ -175,13 +175,12 @@ const Admin = () => {
   }, [games]);
 
   const bannerStats = useMemo(() => {
-    const all = banners;
     return {
-      total: all.length,
-      active: all.filter((b) => b.active).length,
-      inactive: all.filter((b) => !b.active).length,
+      total: allBannersForStats.length,
+      active: allBannersForStats.filter((b) => b.active).length,
+      inactive: allBannersForStats.filter((b) => !b.active).length,
     };
-  }, [banners]);
+  }, [allBannersForStats]);
 
   const upsertMutation = useMutation({
     mutationFn: async (game: Partial<GameInsert> & { id?: string }) => {
