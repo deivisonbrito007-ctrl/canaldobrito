@@ -15,7 +15,6 @@ export const DailyGamesManager = () => {
   const deleteByDate = useDeleteDailyGamesByDate();
   const insertGames = useInsertDailyGames();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleToggleActive = (id: string, current: boolean) => {
