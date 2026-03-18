@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        display: ["Space Grotesk", "sans-serif"],
+        sans: ["Outfit", "sans-serif"],
+        display: ["Bebas Neue", "sans-serif"],
+        body: ["Outfit", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -43,6 +44,8 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        accent2: "hsl(var(--accent2))",
+        accent3: "hsl(var(--accent3))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -58,6 +61,7 @@ export default {
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
         amber: {
+          300: "#fcd34d",
           400: "#fbbf24",
           500: "#f59e0b",
         },
