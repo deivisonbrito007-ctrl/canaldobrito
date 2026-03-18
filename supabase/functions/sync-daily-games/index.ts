@@ -71,7 +71,7 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
             status,
             venue: fixture.fixture.venue?.name || null,
             round: fixture.league.round || null,
-            highlight: leagueId === 2, // Champions League = highlight
+            highlight: [2, 39, 140, 135].includes(leagueId), // Champions, Premier, La Liga, Serie A
             api_source: "api-football",
             external_id: `apifb-${fixture.fixture.id}`,
           });
