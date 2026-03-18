@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
@@ -7,8 +7,50 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, Calendar } from "lucide-react";
+import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, Calendar, ClipboardPaste } from "lucide-react";
 import { toast } from "sonner";
+
+const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) => void; uploading: boolean }) => {
+  const [highlight, setHighlight] = useState(false);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) onImagePasted(file);
+        return;
+      }
+    }
+  }, [onImagePasted]);
+
+  return (
+    <div
+      onPaste={handlePaste}
+      onFocus={() => setHighlight(true)}
+      onBlur={() => setHighlight(false)}
+      tabIndex={0}
+      className={`relative rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all duration-200 outline-none ${
+        highlight
+          ? "border-primary/60 bg-primary/5"
+          : "border-border/30 hover:border-border/50 bg-transparent"
+      } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+    >
+      <div className="flex flex-col items-center gap-1.5">
+        {uploading ? (
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        ) : (
+          <ClipboardPaste className="h-5 w-5 text-muted-foreground/50" />
+        )}
+        <span className="text-[11px] text-muted-foreground/70">
+          {uploading ? "Enviando..." : "Clique aqui e cole uma imagem (Ctrl+V)"}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const DailyBannerManager = () => {
   const today = new Date().toISOString().split("T")[0];
@@ -19,12 +61,10 @@ const DailyBannerManager = () => {
   const deleteBanner = useDeleteDailyBanner();
   const [uploading, setUploading] = useState(false);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadAndCreate = useCallback(async (file: File) => {
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
+      const ext = file.name?.split(".").pop() || "png";
       const path = `daily/${selectedDate}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
@@ -36,8 +76,14 @@ const DailyBannerManager = () => {
       toast.error(err.message || "Erro ao enviar banner");
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
+  }, [selectedDate, banners, createBanner]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAndCreate(file);
+    e.target.value = "";
   };
 
   const moveBanner = async (id: string, direction: "up" | "down") => {
@@ -74,6 +120,7 @@ const DailyBannerManager = () => {
             </span>
           </label>
         </div>
+        <PasteZone onImagePasted={uploadAndCreate} uploading={uploading} />
       </div>
       <div className="p-4">
         {isLoading ? (
@@ -131,12 +178,10 @@ const AdminBanners = () => {
   const [uploading, setUploading] = useState(false);
   const [activeSection, setActiveSection] = useState<"daily" | "categories" | "programacao">("daily");
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadAndCreateCategory = useCallback(async (file: File) => {
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
+      const ext = file.name?.split(".").pop() || "png";
       const path = `${selectedCategory}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
@@ -148,8 +193,14 @@ const AdminBanners = () => {
       toast.error(err.message || "Erro ao enviar banner");
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
+  }, [selectedCategory, banners, createBanner]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAndCreateCategory(file);
+    e.target.value = "";
   };
 
   const moveBanner = async (id: string, direction: "up" | "down") => {
@@ -166,7 +217,6 @@ const AdminBanners = () => {
 
   return (
     <div className="space-y-4">
-      {/* Section Toggle - scrollable on mobile */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
           { key: "daily" as const, label: "📺 Dia" },
@@ -198,7 +248,6 @@ const AdminBanners = () => {
 
       {activeSection === "categories" && (
         <>
-          {/* Category Pills - scrollable */}
           <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
             {CATEGORY_LIST.map((cat) => (
               <button
@@ -216,7 +265,7 @@ const AdminBanners = () => {
           </div>
 
           <div className="glass-panel rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-white/[0.06]">
+            <div className="p-4 border-b border-white/[0.06] space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-foreground">{CATEGORY_LABELS[selectedCategory]}</h3>
@@ -232,6 +281,7 @@ const AdminBanners = () => {
                   </span>
                 </label>
               </div>
+              <PasteZone onImagePasted={uploadAndCreateCategory} uploading={uploading} />
             </div>
             <div className="p-4">
               {isLoading ? (
