@@ -51,12 +51,11 @@ const AdminBanners = () => {
   const totalBanners = banners?.length || 0;
 
   return (
-    <div className="space-y-4">
-      {/* Category tabs */}
+    <div className="space-y-5">
       <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as BannerCategory)}>
-        <TabsList className="w-full flex-wrap h-auto gap-1">
+        <TabsList className="w-full flex-wrap h-auto gap-1 bg-secondary/50 border border-border/20 rounded-xl p-1">
           {CATEGORY_LIST.map((cat) => (
-            <TabsTrigger key={cat} value={cat} className="text-xs py-1.5 px-2">
+            <TabsTrigger key={cat} value={cat} className="text-xs py-2 px-3 rounded-lg font-semibold">
               {CATEGORY_LABELS[cat]}
             </TabsTrigger>
           ))}
@@ -64,69 +63,75 @@ const AdminBanners = () => {
       </Tabs>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
-            <CardTitle className="text-base">{CATEGORY_LABELS[selectedCategory]}</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">{activeBanners} ativos / {totalBanners} total</p>
+            <CardTitle>{CATEGORY_LABELS[selectedCategory]}</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-primary font-semibold">{activeBanners}</span> ativos / {totalBanners} total
+            </p>
           </div>
           <label className="cursor-pointer">
             <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors">
-              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            <span className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-xs font-semibold hover:brightness-110 transition-all duration-200 shadow-md shadow-primary/20 active:scale-[0.97]">
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
               {uploading ? "Enviando..." : "Upload"}
             </span>
           </label>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : !banners || banners.length === 0 ? (
-            <div className="py-8 text-center space-y-2">
-              <Image className="h-10 w-10 mx-auto text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">Nenhum banner nesta categoria</p>
-              <p className="text-xs text-muted-foreground/60">Faça upload de uma imagem para começar</p>
+            <div className="py-12 text-center space-y-3">
+              <div className="rounded-2xl bg-secondary/50 p-5 inline-block border border-border/20">
+                <Image className="h-10 w-10 text-muted-foreground/25" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Nenhum banner nesta categoria</p>
+              <p className="text-xs text-muted-foreground/50">Faça upload de uma imagem para começar</p>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {banners.map((banner, idx) => (
-                <div key={banner.id} className="rounded-lg border border-border/50 bg-secondary/20 overflow-hidden">
+                <div key={banner.id} className="rounded-xl border border-border/30 bg-secondary/20 overflow-hidden transition-all duration-200 hover:border-border/50 hover:bg-secondary/30">
                   <div className="relative aspect-[16/9]">
                     <img
                       src={banner.image_url}
                       alt={banner.title || "Banner"}
-                      className={`w-full h-full object-cover ${!banner.active ? "opacity-40 grayscale" : ""}`}
+                      className={`w-full h-full object-cover transition-all duration-300 ${!banner.active ? "opacity-30 grayscale" : ""}`}
                       loading="lazy"
                     />
                     {!banner.active && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="bg-black/60 text-foreground text-xs px-2 py-1 rounded">Inativo</span>
+                        <span className="bg-background/80 backdrop-blur-sm text-foreground/70 text-xs px-3 py-1.5 rounded-lg font-medium border border-border/30">Inativo</span>
                       </div>
                     )}
                   </div>
-                  <div className="p-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1">
+                  <div className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                       <Switch
                         checked={banner.active}
                         onCheckedChange={(v) => updateBanner.mutate({ id: banner.id, active: v })}
                       />
-                      <span className="text-[10px] text-muted-foreground">{banner.active ? "Ativo" : "Inativo"}</span>
+                      <span className={`text-[11px] font-medium ${banner.active ? "text-primary" : "text-muted-foreground/60"}`}>
+                        {banner.active ? "Ativo" : "Inativo"}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-0.5">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" disabled={idx === 0} onClick={() => moveBanner(banner.id, "up")}>
-                        <ArrowUp className="h-3 w-3" />
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled={idx === 0} onClick={() => moveBanner(banner.id, "up")}>
+                        <ArrowUp className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" disabled={idx === banners.length - 1} onClick={() => moveBanner(banner.id, "down")}>
-                        <ArrowDown className="h-3 w-3" />
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" disabled={idx === banners.length - 1} onClick={() => moveBanner(banner.id, "down")}>
+                        <ArrowDown className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-7 w-7 text-destructive"
+                        className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
                         onClick={() => { if (confirm("Excluir banner?")) deleteBanner.mutate(banner.id); }}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>

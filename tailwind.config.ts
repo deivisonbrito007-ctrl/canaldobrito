@@ -51,9 +51,16 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        live: "hsl(var(--live))",
+        live: {
+          DEFAULT: "hsl(var(--live))",
+          glow: "hsl(var(--live-glow))",
+        },
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
+        amber: {
+          400: "#fbbf24",
+          500: "#f59e0b",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2 } from "lucide-react";
+import { Search, Plus, Trash2, Star, ImageOff, Loader2, Film } from "lucide-react";
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
@@ -49,21 +49,20 @@ const AdminFilmes = () => {
 
   return (
     <div className="space-y-6">
-      {/* Search */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Buscar Filmes (TMDB)</CardTitle>
+          <CardTitle>Buscar Filmes (TMDB)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs defaultValue="search">
-            <TabsList>
-              <TabsTrigger value="search">Buscar</TabsTrigger>
-              <TabsTrigger value="trending" onClick={loadNowPlaying}>Lançamentos</TabsTrigger>
+            <TabsList className="bg-secondary/50 border border-border/20 rounded-xl p-1">
+              <TabsTrigger value="search" className="rounded-lg font-semibold text-xs">Buscar</TabsTrigger>
+              <TabsTrigger value="trending" onClick={loadNowPlaying} className="rounded-lg font-semibold text-xs">Lançamentos</TabsTrigger>
             </TabsList>
-            <TabsContent value="search" className="space-y-3">
+            <TabsContent value="search" className="space-y-3 mt-4">
               <div className="flex gap-2">
                 <Input placeholder="Nome do filme..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} />
-                <Button onClick={handleSearch} disabled={searching}>
+                <Button onClick={handleSearch} disabled={searching} size="icon">
                   {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
@@ -71,29 +70,34 @@ const AdminFilmes = () => {
             <TabsContent value="trending" />
           </Tabs>
 
-          {searching && <p className="text-sm text-muted-foreground">Buscando...</p>}
+          {searching && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Buscando...
+            </div>
+          )}
 
           {results.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {results.map((r) => (
-                <div key={r.id} className="group relative rounded-lg border border-border/30 bg-card overflow-hidden">
+                <div key={r.id} className="group relative rounded-xl border border-border/20 bg-card overflow-hidden transition-all duration-200 hover:border-border/40">
                   {r.poster_path ? (
                     <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.title || r.name} className="w-full aspect-[2/3] object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full aspect-[2/3] flex items-center justify-center bg-secondary">
-                      <ImageOff className="h-8 w-8 text-muted-foreground/40" />
+                    <div className="w-full aspect-[2/3] flex items-center justify-center bg-secondary/50">
+                      <ImageOff className="h-8 w-8 text-muted-foreground/30" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between">
-                    <p className="text-[10px] text-foreground/80 line-clamp-6">{r.overview}</p>
-                    <Button size="sm" className="w-full mt-1" onClick={() => handleAdd(r)}>
+                  <div className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-3 flex flex-col justify-between">
+                    <p className="text-[10px] text-foreground/70 line-clamp-6 leading-relaxed">{r.overview}</p>
+                    <Button size="sm" className="w-full mt-2" onClick={() => handleAdd(r)}>
                       <Plus className="h-3 w-3 mr-1" /> Adicionar
                     </Button>
                   </div>
-                  <div className="p-2">
-                    <p className="text-xs font-medium truncate">{r.title || r.name}</p>
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <Star className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
+                  <div className="p-2.5">
+                    <p className="text-xs font-semibold truncate">{r.title || r.name}</p>
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                      <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />
                       {r.vote_average?.toFixed(1)}
                       {r.release_date && ` • ${r.release_date.slice(0, 4)}`}
                     </div>
@@ -105,32 +109,43 @@ const AdminFilmes = () => {
         </CardContent>
       </Card>
 
-      {/* Added movies */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Filmes Adicionados ({movies?.length || 0})</CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle>Filmes Adicionados</CardTitle>
+            <span className="text-xs text-muted-foreground bg-secondary/60 rounded-full px-2.5 py-1 font-semibold">{movies?.length || 0}</span>
+          </div>
         </CardHeader>
         <CardContent>
           {!movies || movies.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum filme adicionado</p>
+            <div className="py-10 text-center space-y-3">
+              <div className="rounded-2xl bg-secondary/50 p-5 inline-block border border-border/20">
+                <Film className="h-8 w-8 text-muted-foreground/25" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Nenhum filme adicionado</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {movies.map((m) => (
-                <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border/50 bg-card p-2">
+                <div key={m.id} className="flex items-center gap-3 rounded-xl border border-border/20 bg-secondary/15 p-3 transition-all duration-200 hover:bg-secondary/30 hover:border-border/30">
                   {m.poster_url ? (
-                    <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded object-cover" />
+                    <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded-lg object-cover" />
                   ) : (
-                    <div className="h-14 w-10 rounded bg-secondary flex items-center justify-center">
-                      <ImageOff className="h-4 w-4 text-muted-foreground/40" />
+                    <div className="h-14 w-10 rounded-lg bg-secondary/50 flex items-center justify-center">
+                      <ImageOff className="h-4 w-4 text-muted-foreground/30" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{m.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{m.year} • ⭐ {m.rating}</p>
+                    <p className="text-sm font-semibold truncate">{m.title}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                      {m.year}
+                      <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400 inline" />
+                      {m.rating}
+                    </p>
                   </div>
                   <Switch checked={m.active} onCheckedChange={(v) => toggleMovie.mutate({ id: m.id, active: v })} />
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Remover filme?")) deleteMovie.mutate(m.id); }}>
-                    <Trash2 className="h-3 w-3" />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => { if (confirm("Remover filme?")) deleteMovie.mutate(m.id); }}>
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
