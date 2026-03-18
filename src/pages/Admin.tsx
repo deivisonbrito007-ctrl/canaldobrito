@@ -87,6 +87,9 @@ const Admin = () => {
   // Banner state
   const [bannerCategory, setBannerCategory] = useState<BannerCategory | "all">("all");
   const [bannerUploadOpen, setBannerUploadOpen] = useState(false);
+
+  // Fetch ALL banners for stats (unfiltered)
+  const { data: allBannersForStats = [] } = useBanners("all", false);
   const [bannerUploadCategory, setBannerUploadCategory] = useState<BannerCategory>("cover");
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerFile, setBannerFile] = useState<File | null>(null);
