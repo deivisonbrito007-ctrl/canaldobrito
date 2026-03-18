@@ -7,7 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminLayout from "./pages/AdminLayout";
-import AdminProgramacao from "./pages/admin/AdminProgramacao";
+import AdminBanners from "./pages/admin/AdminBanners";
 import AdminFilmes from "./pages/admin/AdminFilmes";
 import AdminSeries from "./pages/admin/AdminSeries";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
@@ -26,8 +26,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/programacao" replace />} />
-              <Route path="programacao" element={<AdminProgramacao />} />
+              <Route index element={<Navigate to="/admin/banners" replace />} />
+              <Route path="banners" element={<AdminBanners />} />
               <Route path="filmes" element={<AdminFilmes />} />
               <Route path="series" element={<AdminSeries />} />
               <Route path="configuracoes" element={<AdminConfiguracoes />} />
