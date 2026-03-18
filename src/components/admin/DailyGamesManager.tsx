@@ -105,9 +105,9 @@ export const DailyGamesManager = () => {
             {games.map((game) => (
               <div
                 key={game.id}
-                className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
+              className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
                   !game.active ? "opacity-40" : ""
-                } ${game.is_live ? "border-red-500/30 border" : ""}`}
+                }`}
               >
                 {editingId === game.id ? (
                   <InlineEditForm
