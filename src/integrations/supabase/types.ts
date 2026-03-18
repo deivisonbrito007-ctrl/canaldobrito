@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      banners: {
+        Row: {
+          active: boolean
+          category: Database["public"]["Enums"]["banner_category"]
+          created_at: string
+          expires_at: string | null
+          id: string
+          image_url: string
+          sort_order: number
+          title: string | null
+        }
+        Insert: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["banner_category"]
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          image_url: string
+          sort_order?: number
+          title?: string | null
+        }
+        Update: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["banner_category"]
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string
+          sort_order?: number
+          title?: string | null
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           api_source: Database["public"]["Enums"]["api_source"] | null
@@ -117,6 +150,13 @@ export type Database = {
     Enums: {
       api_source: "api-football" | "balldontlie" | "pandascore" | "manual"
       app_role: "admin" | "user"
+      banner_category:
+        | "cover"
+        | "football"
+        | "basketball"
+        | "ufc"
+        | "other_sports"
+        | "football_guide"
       game_status: "scheduled" | "live" | "finished"
       sport_type:
         | "football"
@@ -258,6 +298,14 @@ export const Constants = {
     Enums: {
       api_source: ["api-football", "balldontlie", "pandascore", "manual"],
       app_role: ["admin", "user"],
+      banner_category: [
+        "cover",
+        "football",
+        "basketball",
+        "ufc",
+        "other_sports",
+        "football_guide",
+      ],
       game_status: ["scheduled", "live", "finished"],
       sport_type: [
         "football",
