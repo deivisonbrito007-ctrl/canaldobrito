@@ -78,7 +78,7 @@ const Index = () => {
             </div>
           )}
 
-          {show(["movies", "series"]) && <ContinueWatchingSection />}
+          
 
           {show(["sports"]) && (
             <div id="programacao">
