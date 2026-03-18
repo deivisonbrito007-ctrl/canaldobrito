@@ -126,40 +126,38 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
         foundFixtures = true;
         console.log(`[API-Football] League ${leagueId} season ${season}: ${fixtures.length} fixtures`);
 
-      const fixtures = data.response || [];
-      console.log(`[API-Football] League ${leagueId}: ${fixtures.length} fixtures`);
+        for (const fixture of fixtures) {
+          const statusMap: Record<string, "scheduled" | "live" | "finished"> = {
+            NS: "scheduled", TBD: "scheduled",
+            "1H": "live", HT: "live", "2H": "live", ET: "live", P: "live",
+            FT: "finished", AET: "finished", PEN: "finished",
+          };
+          const status = statusMap[fixture.fixture.status.short] || "scheduled";
+          const leagueName = fixture.league.name;
 
-      for (const fixture of fixtures) {
-        const statusMap: Record<string, "scheduled" | "live" | "finished"> = {
-          NS: "scheduled", TBD: "scheduled",
-          "1H": "live", HT: "live", "2H": "live", ET: "live", P: "live",
-          FT: "finished", AET: "finished", PEN: "finished",
-        };
-        const status = statusMap[fixture.fixture.status.short] || "scheduled";
-        const leagueName = fixture.league.name;
-
-        games.push({
-          sport: "football",
-          league: leagueName,
-          league_icon: fixture.league.logo || null,
-          home_team_name: fixture.teams.home.name,
-          away_team_name: fixture.teams.away.name,
-          home_team_logo: fixture.teams.home.logo || null,
-          away_team_logo: fixture.teams.away.logo || null,
-          home_team_score: fixture.goals.home,
-          away_team_score: fixture.goals.away,
-          start_time: fixture.fixture.date,
-          status,
-          venue: fixture.fixture.venue?.name || null,
-          round: fixture.league.round || null,
-          highlight: [71, 2, 13, 39, 140].includes(leagueId),
-          api_source: "api-football",
-          external_id: `apifb-${fixture.fixture.id}`,
-          broadcast_channel: getChannel(leagueName, "football"),
-        });
+          games.push({
+            sport: "football",
+            league: leagueName,
+            league_icon: fixture.league.logo || null,
+            home_team_name: fixture.teams.home.name,
+            away_team_name: fixture.teams.away.name,
+            home_team_logo: fixture.teams.home.logo || null,
+            away_team_logo: fixture.teams.away.logo || null,
+            home_team_score: fixture.goals.home,
+            away_team_score: fixture.goals.away,
+            start_time: fixture.fixture.date,
+            status,
+            venue: fixture.fixture.venue?.name || null,
+            round: fixture.league.round || null,
+            highlight: [71, 2, 13, 39, 140].includes(leagueId),
+            api_source: "api-football",
+            external_id: `apifb-${fixture.fixture.id}`,
+            broadcast_channel: getChannel(leagueName, "football"),
+          });
+        }
+      } catch (err) {
+        console.error(`[API-Football] League ${leagueId} season ${season} error:`, err);
       }
-    } catch (err) {
-      console.error(`[API-Football] League ${leagueId} error:`, err);
     }
   }
 
