@@ -3,12 +3,16 @@ import { Link } from "react-router-dom";
 
 export const PublicFooter = () => {
   return (
-    <footer className="border-t border-border/10 bg-card/30">
-      <div className="px-4 py-6 space-y-4">
+    <footer className="pb-20">
+      <div className="section-divider" />
+      <div className="px-4 py-8 space-y-4">
         {/* Brand */}
-        <div className="flex items-center justify-center gap-2 opacity-40">
-          <img src={logo} alt="Brito Solutions" className="h-6 w-auto" />
-          <span className="text-[10px] font-semibold text-foreground/50">Brito Solutions</span>
+        <div className="flex flex-col items-center gap-2">
+          <img src={logo} alt="Brito Solutions" className="h-8 w-auto glow-primary-subtle" />
+          <span className="text-xs font-semibold text-gradient-primary">Brito Solutions</span>
+          <p className="text-[10px] text-muted-foreground/40 font-body">
+            Sua experiência premium de streaming
+          </p>
         </div>
 
         <Link
