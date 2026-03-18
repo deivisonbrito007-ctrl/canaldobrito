@@ -45,7 +45,19 @@ const Index = () => {
       <AppNavbar />
 
       <main className="relative z-10 flex-1 pb-24">
-        {activeTab === "schedule" ? (
+        {activeTab === "highlights" ? (
+          /* ── Aba Destaques ── */
+          <div className="px-4 pt-5 pb-3 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                <Star className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground font-body">Destaque da Semana</h2>
+            </div>
+            <WeeklyMoviesSection />
+            <WeeklySeriesSection />
+          </div>
+        ) : activeTab === "schedule" ? (
           /* ── Aba Programação ── */
           <div className="px-4 pt-5 pb-3 space-y-5">
             <div className="flex items-center gap-3">
