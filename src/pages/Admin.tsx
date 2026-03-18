@@ -251,7 +251,6 @@ const Admin = () => {
       venue: game.venue || "",
       round: game.round || "",
       highlight: game.highlight,
-      api_source: game.api_source || "manual",
       broadcast_channel: game.broadcast_channel || "",
     });
     setFormOpen(true);
