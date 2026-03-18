@@ -366,6 +366,7 @@ const Admin = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Table */}
