@@ -1,7 +1,8 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Flame, Radio } from "lucide-react";
+import { Flame, Radio, Tv } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 const HIGHLIGHT_COMPS = [
   "champions league", "brasileirão", "brasileirao",
@@ -14,21 +15,24 @@ function isGameLive(game: DailyGame): boolean {
   const [h, m] = (game.game_time || "00:00").split(":").map(Number);
   const gameStart = new Date();
   gameStart.setHours(h, m, 0, 0);
-  const gameEnd = new Date(gameStart.getTime() + 2 * 60 * 60 * 1000);
+  const gameEnd = new Date(gameStart.getTime() + 150 * 60 * 1000);
   return now >= gameStart && now <= gameEnd;
 }
 
-function getLiveMinute(gameTime: string): string {
+function getLivePhase(gameTime: string): { label: string; phase: string } {
   const now = new Date();
   const [h, m] = gameTime.split(":").map(Number);
   const gameStart = new Date();
   gameStart.setHours(h, m, 0, 0);
   const elapsed = Math.floor((now.getTime() - gameStart.getTime()) / 60000);
-  if (elapsed < 0) return "";
-  if (elapsed <= 45) return `${elapsed}'`;
-  if (elapsed <= 60) return "INT";
-  if (elapsed <= 105) return `${elapsed - 15}'`;
-  return "FIM";
+
+  if (elapsed < 0) return { label: "", phase: "pre" };
+  if (elapsed <= 45) return { label: `${elapsed}'`, phase: "1t" };
+  if (elapsed <= 60) return { label: "INT", phase: "int" };
+  if (elapsed <= 105) return { label: `${elapsed - 15}'`, phase: "2t" };
+  if (elapsed <= 120) return { label: "PROR", phase: "pror" };
+  if (elapsed <= 135) return { label: "PROR", phase: "pror" };
+  return { label: "PÊN", phase: "pen" };
 }
 
 function isHighlight(competition: string): boolean {
@@ -54,6 +58,15 @@ function getCompColor(comp: string) {
   return "bg-muted";
 }
 
+const PHASE_COLORS: Record<string, string> = {
+  "1t": "text-destructive",
+  "2t": "text-destructive",
+  int: "text-amber-400",
+  pror: "text-amber-400",
+  pen: "text-primary",
+  pre: "text-muted-foreground",
+};
+
 export const LiveNowSection = () => {
   const today = new Date().toISOString().split("T")[0];
   const { data: games } = useDailyGames(today);
@@ -66,6 +79,7 @@ export const LiveNowSection = () => {
 
   const liveGames = useMemo(
     () => (games || []).filter(isGameLive),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [games]
   );
 
@@ -99,8 +113,9 @@ export const LiveNowSection = () => {
       ) : (
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-3 px-3 sm:-mx-6 sm:px-6">
           {liveGames.map((game, idx) => {
-            const minute = getLiveMinute(game.game_time || "00:00");
+            const { label, phase } = getLivePhase(game.game_time || "00:00");
             const highlight = isHighlight(game.competition);
+            const phaseColor = PHASE_COLORS[phase] || "text-destructive";
 
             return (
               <motion.div
@@ -115,6 +130,7 @@ export const LiveNowSection = () => {
                     highlight ? "glow-live" : ""
                   }`}
                 >
+                  {/* Competition & Live badge */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-1.5">
                       <span className={`text-[10px] font-bold text-primary-foreground px-2 py-0.5 rounded-md ${getCompColor(game.competition)}`}>
@@ -128,33 +144,39 @@ export const LiveNowSection = () => {
                     </span>
                   </div>
 
+                  {/* Teams & Phase */}
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-bold text-foreground flex-1 text-left truncate">
                       {game.home_team}
                     </p>
-                    <span className="text-lg font-extrabold text-destructive tabular-nums shrink-0 min-w-[40px] text-center">
-                      {minute}
+                    <span className={`text-lg font-extrabold tabular-nums shrink-0 min-w-[50px] text-center ${phaseColor}`}>
+                      {label}
                     </span>
                     <p className="text-sm font-bold text-foreground flex-1 text-right truncate">
                       {game.away_team}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                  {/* Separator */}
+                  <Separator className="my-3 bg-border/30" />
+
+                  {/* Tags & Channels */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {game.is_womens && (
                       <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-md font-bold">
                         ♀ Fem
                       </span>
                     )}
                     {game.competition_detail && (
-                      <span className="text-[9px] text-muted-foreground truncate">
+                      <span className="text-[9px] text-foreground/60 truncate">
                         {game.competition_detail}
                       </span>
                     )}
                     {game.channels && game.channels.length > 0 && (
-                      <div className="flex gap-1 ml-auto">
-                        {game.channels.slice(0, 2).map((ch, i) => (
-                          <span key={i} className="text-[9px] font-semibold bg-secondary/80 text-muted-foreground px-1.5 py-0.5 rounded-md">
+                      <div className="flex items-center gap-1 ml-auto">
+                        <Tv className="h-3 w-3 text-primary" />
+                        {game.channels.map((ch, i) => (
+                          <span key={i} className="text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-md">
                             {ch}
                           </span>
                         ))}
