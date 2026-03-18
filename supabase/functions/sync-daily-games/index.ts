@@ -76,7 +76,9 @@ interface NormalizedGame {
 async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   const games: NormalizedGame[] = [];
   const today = new Date().toISOString().split("T")[0];
-  const year = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
+  // API-Football free plan limits seasons; try current year and fallback to previous
+  const seasons = [currentYear, currentYear - 1, currentYear - 2];
 
   // Brazilian + international leagues
   const leagues = [
@@ -103,52 +105,59 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   console.log(`[API-Football] Fetching ${leagues.length} leagues for ${today}`);
 
   for (const leagueId of leagues) {
-    try {
-      const res = await fetch(
-        `https://v3.football.api-sports.io/fixtures?date=${today}&league=${leagueId}&season=${year}`,
-        { headers: { "x-apisports-key": apiKey } }
-      );
-      const data = await res.json();
+    let foundFixtures = false;
+    for (const season of seasons) {
+      if (foundFixtures) break;
+      try {
+        const res = await fetch(
+          `https://v3.football.api-sports.io/fixtures?date=${today}&league=${leagueId}&season=${season}`,
+          { headers: { "x-apisports-key": apiKey } }
+        );
+        const data = await res.json();
 
-      if (data.errors && Object.keys(data.errors).length > 0) {
-        console.warn(`[API-Football] League ${leagueId} errors:`, data.errors);
-        continue;
+        if (data.errors && Object.keys(data.errors).length > 0) {
+          // Try next season
+          continue;
+        }
+
+        const fixtures = data.response || [];
+        if (fixtures.length === 0) continue;
+        
+        foundFixtures = true;
+        console.log(`[API-Football] League ${leagueId} season ${season}: ${fixtures.length} fixtures`);
+
+        for (const fixture of fixtures) {
+          const statusMap: Record<string, "scheduled" | "live" | "finished"> = {
+            NS: "scheduled", TBD: "scheduled",
+            "1H": "live", HT: "live", "2H": "live", ET: "live", P: "live",
+            FT: "finished", AET: "finished", PEN: "finished",
+          };
+          const status = statusMap[fixture.fixture.status.short] || "scheduled";
+          const leagueName = fixture.league.name;
+
+          games.push({
+            sport: "football",
+            league: leagueName,
+            league_icon: fixture.league.logo || null,
+            home_team_name: fixture.teams.home.name,
+            away_team_name: fixture.teams.away.name,
+            home_team_logo: fixture.teams.home.logo || null,
+            away_team_logo: fixture.teams.away.logo || null,
+            home_team_score: fixture.goals.home,
+            away_team_score: fixture.goals.away,
+            start_time: fixture.fixture.date,
+            status,
+            venue: fixture.fixture.venue?.name || null,
+            round: fixture.league.round || null,
+            highlight: [71, 2, 13, 39, 140].includes(leagueId),
+            api_source: "api-football",
+            external_id: `apifb-${fixture.fixture.id}`,
+            broadcast_channel: getChannel(leagueName, "football"),
+          });
+        }
+      } catch (err) {
+        console.error(`[API-Football] League ${leagueId} season ${season} error:`, err);
       }
-
-      const fixtures = data.response || [];
-      console.log(`[API-Football] League ${leagueId}: ${fixtures.length} fixtures`);
-
-      for (const fixture of fixtures) {
-        const statusMap: Record<string, "scheduled" | "live" | "finished"> = {
-          NS: "scheduled", TBD: "scheduled",
-          "1H": "live", HT: "live", "2H": "live", ET: "live", P: "live",
-          FT: "finished", AET: "finished", PEN: "finished",
-        };
-        const status = statusMap[fixture.fixture.status.short] || "scheduled";
-        const leagueName = fixture.league.name;
-
-        games.push({
-          sport: "football",
-          league: leagueName,
-          league_icon: fixture.league.logo || null,
-          home_team_name: fixture.teams.home.name,
-          away_team_name: fixture.teams.away.name,
-          home_team_logo: fixture.teams.home.logo || null,
-          away_team_logo: fixture.teams.away.logo || null,
-          home_team_score: fixture.goals.home,
-          away_team_score: fixture.goals.away,
-          start_time: fixture.fixture.date,
-          status,
-          venue: fixture.fixture.venue?.name || null,
-          round: fixture.league.round || null,
-          highlight: [71, 2, 13, 39, 140].includes(leagueId),
-          api_source: "api-football",
-          external_id: `apifb-${fixture.fixture.id}`,
-          broadcast_channel: getChannel(leagueName, "football"),
-        });
-      }
-    } catch (err) {
-      console.error(`[API-Football] League ${leagueId} error:`, err);
     }
   }
 
