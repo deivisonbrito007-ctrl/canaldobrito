@@ -90,13 +90,6 @@ const Index = () => {
 
               {show(["new", "trending"]) && <NewsReleasesSection />}
 
-              {show(["movies", "trending"]) && (
-                <div id="assista">
-                  <WeeklyMoviesSection />
-                </div>
-              )}
-
-              {show(["series", "trending"]) && <WeeklySeriesSection />}
 
               {show(["new"]) && <ReleaseBanner />}
               <BannerSections />
