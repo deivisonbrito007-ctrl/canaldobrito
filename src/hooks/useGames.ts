@@ -45,8 +45,9 @@ export const useGames = () => {
     queryKey: ["games"],
     queryFn: async () => {
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      // Use UTC boundaries to catch all games for the calendar date
+      const startOfDay = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())).toISOString();
+      const endOfDay = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1)).toISOString();
 
       const { data, error } = await supabase
         .from("games")
