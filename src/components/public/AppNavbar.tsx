@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
 
 export const AppNavbar = () => {
   const today = new Date();
@@ -9,10 +10,7 @@ export const AppNavbar = () => {
     <header className="sticky top-0 z-50 glass-nav border-b border-border/10">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          {/* Logo icon */}
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-lg">
-            <span className="text-white text-sm font-bold">▶</span>
-          </div>
+          <img src={logo} alt="Brito Solutions" className="h-9 w-9 rounded-xl object-contain" />
           <div className="leading-tight">
             <h1 className="font-display text-lg tracking-[3px] text-primary">
               BRITO SOLUTIONS
