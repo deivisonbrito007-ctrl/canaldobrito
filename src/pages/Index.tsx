@@ -73,13 +73,13 @@ const Index = () => {
 
           {show(["new", "trending"]) && <NewsReleasesSection />}
 
-          {show(["movies", "series", "trending"]) && (
+          {show(["movies", "trending"]) && (
             <div id="assista">
-              <WatchTodaySection />
+              <WeeklyMoviesSection />
             </div>
           )}
 
-          
+          {show(["series", "trending"]) && <WeeklySeriesSection />}
 
           {show(["sports"]) && (
             <div id="programacao">
@@ -88,7 +88,6 @@ const Index = () => {
           )}
 
           {show(["new"]) && <ReleaseBanner />}
-          <FeaturedSection />
           <BannerSections />
         </div>
       </main>
