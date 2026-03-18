@@ -54,6 +54,9 @@ export type Database = {
           date: string
           id: string
           image_url: string
+          link_url: string | null
+          sort_order: number
+          title: string | null
         }
         Insert: {
           active?: boolean
@@ -61,6 +64,9 @@ export type Database = {
           date: string
           id?: string
           image_url: string
+          link_url?: string | null
+          sort_order?: number
+          title?: string | null
         }
         Update: {
           active?: boolean
@@ -68,6 +74,9 @@ export type Database = {
           date?: string
           id?: string
           image_url?: string
+          link_url?: string | null
+          sort_order?: number
+          title?: string | null
         }
         Relationships: []
       }
