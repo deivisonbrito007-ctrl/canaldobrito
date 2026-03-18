@@ -35,6 +35,7 @@ const App = () => (
               <Route path="filmes" element={<AdminFilmes />} />
               <Route path="series" element={<AdminSeries />} />
               <Route path="novidades" element={<AdminNovidades />} />
+              <Route path="whatsapp" element={<AdminWhatsApp />} />
               <Route path="configuracoes" element={<AdminConfiguracoes />} />
             </Route>
             <Route path="*" element={<NotFound />} />
