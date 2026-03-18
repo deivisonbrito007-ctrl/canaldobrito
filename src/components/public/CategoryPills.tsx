@@ -9,15 +9,24 @@ const categories = [
   { id: "trending", label: "🔥 Em Alta" },
 ];
 
-export const CategoryPills = () => {
+interface CategoryPillsProps {
+  onFilter?: (id: string) => void;
+}
+
+export const CategoryPills = ({ onFilter }: CategoryPillsProps) => {
   const [active, setActive] = useState("all");
+
+  const handleClick = (id: string) => {
+    setActive(id);
+    onFilter?.(id);
+  };
 
   return (
     <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 py-1">
       {categories.map((cat) => (
         <button
           key={cat.id}
-          onClick={() => setActive(cat.id)}
+          onClick={() => handleClick(cat.id)}
           className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold font-body transition-all duration-200 touch-target ${
             active === cat.id
               ? "bg-primary text-primary-foreground shadow-[0_0_16px_hsl(160,100%,45%,0.3)]"

@@ -1,5 +1,10 @@
-import { useState } from "react";
 import { Home, Search, CalendarDays, User, Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+interface BottomNavProps {
+  activeTab: string;
+  onTabChange: (tabId: string) => void;
+}
 
 const navItems = [
   { id: "home", label: "Início", icon: Home },
@@ -9,8 +14,16 @@ const navItems = [
   { id: "profile", label: "Perfil", icon: User },
 ];
 
-export const BottomNav = () => {
-  const [active, setActive] = useState("home");
+export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
+  const navigate = useNavigate();
+
+  const handleTab = (id: string) => {
+    if (id === "profile") {
+      navigate("/login");
+      return;
+    }
+    onTabChange(id);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav border-t border-border/10">
@@ -20,7 +33,7 @@ export const BottomNav = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActive(item.id)}
+                onClick={() => handleTab(item.id)}
                 className="flex flex-col items-center -mt-4"
               >
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-[0_0_20px_hsl(160,100%,45%,0.25)] transition-transform active:scale-90">
@@ -31,12 +44,12 @@ export const BottomNav = () => {
           }
 
           const Icon = item.icon;
-          const isActive = active === item.id;
+          const isActive = activeTab === item.id;
 
           return (
             <button
               key={item.id}
-              onClick={() => setActive(item.id)}
+              onClick={() => handleTab(item.id)}
               className="flex flex-col items-center gap-1 py-1.5 px-3 touch-target relative"
             >
               {isActive && (
