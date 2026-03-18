@@ -15,16 +15,16 @@ const Index = () => {
       <main className="flex-1">
         <DailyBannerCarousel />
 
-        <div className="space-y-12 py-6 sm:py-10">
+        <div className="space-y-8 py-4 sm:space-y-12 sm:py-8">
           <LiveNowSection />
 
           <DailyGamesSection />
 
-          <div id="novidades" className="px-4 sm:px-6">
+          <div id="novidades">
             <NewsReleasesSection />
           </div>
 
-          <div id="assista" className="px-4 sm:px-6">
+          <div id="assista" className="px-3 sm:px-6">
             <WatchTodaySection />
           </div>
         </div>

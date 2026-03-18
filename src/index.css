@@ -244,4 +244,21 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Reduce blur on mobile for performance */
+  @media (max-width: 640px) {
+    .glass-card {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .glass-panel {
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+  }
 }
