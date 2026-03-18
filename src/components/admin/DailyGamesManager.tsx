@@ -3,9 +3,8 @@ import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDail
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Zap, Download } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
   const today = new Date().toISOString().split("T")[0];
