@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X } from "lucide-react";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard } from "lucide-react";
 import { toast } from "sonner";
 
 export interface ParsedGame {
@@ -38,8 +38,8 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Check for date line
-    const dateMatch = line.match(/📅.*?(\d{1,2})\/(\d{1,2})/);
+    // Check for date line — accept many emoji variants and "Dia dd/mm" patterns
+    const dateMatch = line.match(/(?:📅|📺|🗓|🗓️|\*\*Dia|Dia)\s*\**\s*(?:Dia\s*)?\**\s*(\d{1,2})\/(\d{1,2})/i);
     if (dateMatch) {
       const day = dateMatch[1].padStart(2, "0");
       const month = dateMatch[2].padStart(2, "0");
@@ -49,8 +49,8 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       continue;
     }
 
-    // Look for team line with " x "
-    if (!line.includes(" x ")) {
+    // Look for team line with " x " or " X "
+    if (!/\sx\s/i.test(line)) {
       i++;
       continue;
     }
@@ -59,20 +59,21 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
     const compLine = i + 1 < lines.length ? lines[i + 1] : "";
     const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
 
-    // Parse teams
-    const teamParts = teamLine.split(" x ").map((t) => t.trim());
+    // Parse teams (case-insensitive x)
+    const teamParts = teamLine.split(/\sx\s/i).map((t) => t.trim());
     const home_team = teamParts[0] || "";
     const away_team = teamParts[1] || "";
-    const is_womens = teamLine.includes("(F)");
+    const is_womens = /\(F\)/i.test(teamLine);
 
-    // Parse competition and time
+    // Parse competition and time — flexible emoji matching
     let competition = "";
     let competition_detail = "";
     let game_time = "00:00";
 
-    if (compLine.includes("🏆") || compLine.includes("⏰")) {
-      // Extract competition
-      const afterTrophy = compLine.split("🏆").pop() || "";
+    // Accept line with trophy emoji OR time emoji OR slash-separated format
+    if (compLine.includes("🏆") || /[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]/.test(compLine) || compLine.includes("/")) {
+      // Extract competition — after 🏆 or start of line
+      const afterTrophy = compLine.includes("🏆") ? (compLine.split("🏆").pop() || "") : compLine;
       const beforeSlash = afterTrophy.split("/")[0].trim();
       
       // Check for detail in parentheses
@@ -83,13 +84,21 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       } else {
         competition = beforeSlash;
       }
+      // Clean leftover emojis from competition name
+      competition = competition.replace(/[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛📺🏆]/g, "").trim();
 
-      // Extract time — supports "14h", "14h30", "14:30"
-      const timeMatch = compLine.match(/⏰\s*(\d{1,2})[hH:](\d{2})?/);
+      // Extract time — supports "14h", "14h30", "14:30", or just digits after time emoji
+      const timeMatch = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH:](\d{2})/);
       if (timeMatch) {
         const hours = timeMatch[1].padStart(2, "0");
         const minutes = timeMatch[2] || "00";
         game_time = `${hours}:${minutes}`;
+      } else {
+        // Try "14h" without minutes
+        const timeMatchShort = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH]\b/);
+        if (timeMatchShort) {
+          game_time = `${timeMatchShort[1].padStart(2, "0")}:00`;
+        }
       }
     }
 
@@ -128,6 +137,7 @@ export const ProgramacaoTexto = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
 
@@ -138,11 +148,17 @@ export const ProgramacaoTexto = () => {
     }
     const games = parseScheduleText(text, selectedDate);
     if (games.length === 0) {
-      toast.error("Nenhum jogo detectado. Verifique o formato do texto.");
+      toast.error("Nenhum jogo detectado. Verifique se o texto contém 'Time A x Time B'.");
       return;
     }
     setParsed(games);
-    toast.success(`${games.length} jogos detectados!`);
+    toast.success(`${games.length} jogo(s) detectado(s)!`);
+    setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  };
+
+  const handleFillExample = () => {
+    setText(PLACEHOLDER);
+    toast.info("Texto de exemplo preenchido");
   };
 
   const handlePublish = async () => {
@@ -226,10 +242,10 @@ export const ProgramacaoTexto = () => {
           className="min-h-[240px] bg-secondary/30 border-border/30 text-sm font-mono"
         />
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleProcess}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 min-h-[44px]"
           >
             <FileText className="h-4 w-4 mr-2" />
             Processar Texto
@@ -237,17 +253,25 @@ export const ProgramacaoTexto = () => {
           <Button
             variant="ghost"
             onClick={() => { setText(""); setParsed([]); }}
-            className="text-muted-foreground"
+            className="text-muted-foreground min-h-[44px]"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Limpar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleFillExample}
+            className="text-muted-foreground min-h-[44px]"
+          >
+            <Clipboard className="h-4 w-4 mr-2" />
+            Exemplo
           </Button>
         </div>
       </div>
 
       {/* Preview Section */}
       {parsed.length > 0 && (
-        <div className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
+        <div ref={previewRef} className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-foreground">
               Preview — <span className="text-emerald-400">{selectedCount}</span> de {parsed.length} jogos selecionados
