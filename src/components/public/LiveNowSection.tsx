@@ -44,11 +44,14 @@ export const LiveNowSection = () => {
   );
 
   return (
-    <section id="esportes" className="space-y-4 px-3 sm:px-6">
+    <section id="esportes" className="space-y-5 px-4 sm:px-6">
       {/* Header */}
       <div className="flex items-center gap-2.5">
-        <span className="text-base">🔴</span>
-        <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+        <span className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-50" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
+        </span>
+        <h2 className="text-lg sm:text-xl font-extrabold text-foreground tracking-tight">
           Jogos Ao Vivo
         </h2>
         {liveGames.length > 0 && (
@@ -59,14 +62,14 @@ export const LiveNowSection = () => {
       </div>
 
       {liveGames.length === 0 ? (
-        <div className="rounded-2xl bg-[hsl(0,0%,10%)] p-8 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="rounded-2xl bg-card border border-border/10 p-10 text-center">
+          <p className="text-sm text-muted-foreground/60">
             Nenhum jogo ao vivo no momento
           </p>
         </div>
       ) : (
         <div
-          className="flex gap-3 overflow-x-auto pb-3 -mx-3 px-3 sm:-mx-6 sm:px-6"
+          className="flex gap-3.5 overflow-x-auto pb-3 -mx-4 px-4 sm:-mx-6 sm:px-6 scrollbar-hide"
           style={{ scrollSnapType: "x mandatory" }}
         >
           {liveGames.map((game, idx) => {
@@ -76,25 +79,25 @@ export const LiveNowSection = () => {
             return (
               <motion.div
                 key={game.id}
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05, duration: 0.25 }}
-                className="min-w-[260px] w-[75vw] max-w-[300px] flex-shrink-0"
+                transition={{ delay: idx * 0.06, duration: 0.3 }}
+                className="min-w-[260px] w-[72vw] max-w-[300px] flex-shrink-0"
                 style={{ scrollSnapAlign: "start" }}
               >
-                <div className="rounded-2xl bg-[hsl(0,0%,10%)] p-5 shadow-lg space-y-4">
+                <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-4 glow-primary-subtle transition-shadow duration-300 hover:shadow-[0_0_30px_hsl(142,60%,45%,0.1)]">
                   {/* Competition */}
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-wider text-center">
                     🏆 {game.competition}
                   </p>
 
                   {/* Teams */}
-                  <div className="text-center space-y-1">
-                    <p className="text-[15px] sm:text-base font-bold text-foreground leading-snug">
+                  <div className="text-center space-y-1.5">
+                    <p className="text-base sm:text-lg font-bold text-foreground leading-snug">
                       {game.home_team}
                     </p>
-                    <span className="text-[11px] text-muted-foreground font-medium">vs</span>
-                    <p className="text-[15px] sm:text-base font-bold text-foreground leading-snug">
+                    <span className="text-[11px] text-muted-foreground/40 font-medium">vs</span>
+                    <p className="text-base sm:text-lg font-bold text-foreground leading-snug">
                       {game.away_team}
                     </p>
                   </div>
@@ -112,7 +115,7 @@ export const LiveNowSection = () => {
 
                   {/* Channels */}
                   {channels && (
-                    <p className="text-[11px] text-center text-muted-foreground/80 font-medium">
+                    <p className="text-[11px] text-center text-primary/80 font-semibold tracking-wide">
                       📺 {channels}
                     </p>
                   )}
