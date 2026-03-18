@@ -67,7 +67,6 @@ const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
   venue: "",
   round: "",
   highlight: false,
-  api_source: "manual",
   home_team_score: undefined,
   away_team_score: undefined,
   broadcast_channel: "",
@@ -88,6 +87,9 @@ const Admin = () => {
   // Banner state
   const [bannerCategory, setBannerCategory] = useState<BannerCategory | "all">("all");
   const [bannerUploadOpen, setBannerUploadOpen] = useState(false);
+
+  // Fetch ALL banners for stats (unfiltered)
+  const { data: allBannersForStats = [] } = useBanners("all", false);
   const [bannerUploadCategory, setBannerUploadCategory] = useState<BannerCategory>("cover");
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -173,13 +175,12 @@ const Admin = () => {
   }, [games]);
 
   const bannerStats = useMemo(() => {
-    const all = banners;
     return {
-      total: all.length,
-      active: all.filter((b) => b.active).length,
-      inactive: all.filter((b) => !b.active).length,
+      total: allBannersForStats.length,
+      active: allBannersForStats.filter((b) => b.active).length,
+      inactive: allBannersForStats.filter((b) => !b.active).length,
     };
-  }, [banners]);
+  }, [allBannersForStats]);
 
   const upsertMutation = useMutation({
     mutationFn: async (game: Partial<GameInsert> & { id?: string }) => {
@@ -250,7 +251,6 @@ const Admin = () => {
       venue: game.venue || "",
       round: game.round || "",
       highlight: game.highlight,
-      api_source: game.api_source || "manual",
       broadcast_channel: game.broadcast_channel || "",
     });
     setFormOpen(true);
@@ -440,7 +440,7 @@ const Admin = () => {
                 )}>{bannerStats.total}</span>
               </button>
               {BANNER_CATEGORIES.map((cat) => {
-                const count = banners.filter((b) => b.category === cat.value).length;
+                const count = allBannersForStats.filter((b) => b.category === cat.value).length;
                 return (
                   <button
                     key={cat.value}

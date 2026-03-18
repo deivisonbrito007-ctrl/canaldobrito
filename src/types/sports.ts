@@ -1,4 +1,4 @@
-export type SportType = "football" | "basketball" | "tennis" | "american_football" | "baseball" | "motorsport" | "mma" | "hockey" | "golf";
+export type SportType = "football" | "basketball" | "tennis" | "american_football" | "baseball" | "motorsport" | "mma" | "hockey" | "golf" | "esports";
 
 export type GameStatus = "scheduled" | "live" | "finished";
 
@@ -20,8 +20,6 @@ export interface Game {
   venue?: string;
   round?: string;
   highlight?: boolean;
-  apiSource?: "api-football" | "balldontlie" | "pandascore" | "manual";
-  externalId?: string;
   broadcastChannel?: string;
 }
 
@@ -42,4 +40,5 @@ export const SPORTS: SportConfig[] = [
   { type: "mma", label: "MMA / UFC", icon: "🥊", color: "hsl(0 85% 40%)" },
   { type: "motorsport", label: "Automobilismo", icon: "🏎️", color: "hsl(0 0% 30%)" },
   { type: "golf", label: "Golf", icon: "⛳", color: "hsl(140 50% 40%)" },
+  { type: "esports", label: "E-Sports", icon: "🎮", color: "hsl(270 60% 50%)" },
 ];
