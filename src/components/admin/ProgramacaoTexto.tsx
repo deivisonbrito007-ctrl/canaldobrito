@@ -172,6 +172,8 @@ export const ProgramacaoTexto = () => {
         ...g,
         active: true,
         is_live: false,
+        status_short: "NS",
+        elapsed_minutes: null,
       }));
       await insertGames.mutateAsync(toInsert);
       toast.success(`${selected.length} jogos publicados!`);
