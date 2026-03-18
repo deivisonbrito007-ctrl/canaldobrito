@@ -137,6 +137,7 @@ export const ProgramacaoTexto = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
 
@@ -147,11 +148,17 @@ export const ProgramacaoTexto = () => {
     }
     const games = parseScheduleText(text, selectedDate);
     if (games.length === 0) {
-      toast.error("Nenhum jogo detectado. Verifique o formato do texto.");
+      toast.error("Nenhum jogo detectado. Verifique se o texto contém 'Time A x Time B'.");
       return;
     }
     setParsed(games);
-    toast.success(`${games.length} jogos detectados!`);
+    toast.success(`${games.length} jogo(s) detectado(s)!`);
+    setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  };
+
+  const handleFillExample = () => {
+    setText(PLACEHOLDER);
+    toast.info("Texto de exemplo preenchido");
   };
 
   const handlePublish = async () => {
