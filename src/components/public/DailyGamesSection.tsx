@@ -83,13 +83,7 @@ function isHighlight(comp: string) {
 }
 
 function isGameLive(game: DailyGame): boolean {
-  if (game.is_live) return true;
-  const now = new Date();
-  const [h, m] = (game.game_time || "00:00").split(":").map(Number);
-  const start = new Date();
-  start.setHours(h, m, 0, 0);
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  return now >= start && now <= end;
+  return isGameCurrentlyLive(game.game_time, game.date);
 }
 
 type TimeGroup = "morning" | "afternoon" | "night" | "dawn";
