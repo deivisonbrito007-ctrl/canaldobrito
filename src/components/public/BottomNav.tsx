@@ -1,4 +1,4 @@
-import { Home, Search, CalendarDays, User, Play } from "lucide-react";
+import { Home, CalendarDays, User, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface BottomNavProps {
@@ -8,7 +8,6 @@ interface BottomNavProps {
 
 const navItems = [
   { id: "home", label: "Início", icon: Home },
-  { id: "search", label: "Buscar", icon: Search },
   { id: "play", label: "", icon: Play, center: true },
   { id: "schedule", label: "Programação", icon: CalendarDays },
   { id: "profile", label: "Perfil", icon: User },
