@@ -441,7 +441,7 @@ const Admin = () => {
                 )}>{bannerStats.total}</span>
               </button>
               {BANNER_CATEGORIES.map((cat) => {
-                const count = banners.filter((b) => b.category === cat.value).length;
+                const count = allBannersForStats.filter((b) => b.category === cat.value).length;
                 return (
                   <button
                     key={cat.value}
