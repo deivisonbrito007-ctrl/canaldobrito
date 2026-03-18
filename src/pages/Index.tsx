@@ -9,7 +9,7 @@ import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { ReleaseBanner } from "@/components/public/ReleaseBanner";
-import { FeaturedSection } from "@/components/public/FeaturedSection";
+
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
