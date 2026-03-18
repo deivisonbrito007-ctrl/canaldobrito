@@ -22,6 +22,7 @@ export interface Game {
   highlight?: boolean;
   apiSource?: "api-football" | "balldontlie" | "pandascore" | "manual";
   externalId?: string;
+  broadcastChannel?: string;
 }
 
 export interface SportConfig {

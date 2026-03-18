@@ -20,6 +20,7 @@ export type Database = {
           away_team_logo: string | null
           away_team_name: string
           away_team_score: number | null
+          broadcast_channel: string | null
           created_at: string
           external_id: string | null
           highlight: boolean
@@ -41,6 +42,7 @@ export type Database = {
           away_team_logo?: string | null
           away_team_name: string
           away_team_score?: number | null
+          broadcast_channel?: string | null
           created_at?: string
           external_id?: string | null
           highlight?: boolean
@@ -62,6 +64,7 @@ export type Database = {
           away_team_logo?: string | null
           away_team_name?: string
           away_team_score?: number | null
+          broadcast_channel?: string | null
           created_at?: string
           external_id?: string | null
           highlight?: boolean

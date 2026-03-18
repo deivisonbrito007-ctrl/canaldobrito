@@ -40,7 +40,13 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 
 type GameInsert = TablesInsert<"games">;
 
-const INITIAL_FORM: Partial<GameInsert> = {
+const BROADCAST_CHANNELS = [
+  "Globo", "SporTV", "Premiere", "ESPN", "Star+", "TNT Sports", "Max",
+  "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "Combate",
+  "UFC Fight Pass", "YouTube", "Twitch", "OneFootball",
+];
+
+const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
   sport: "football",
   league: "",
   home_team_name: "",
@@ -53,6 +59,7 @@ const INITIAL_FORM: Partial<GameInsert> = {
   api_source: "manual",
   home_team_score: undefined,
   away_team_score: undefined,
+  broadcast_channel: "",
 };
 
 const Admin = () => {
@@ -144,6 +151,7 @@ const Admin = () => {
       round: game.round || "",
       highlight: game.highlight,
       api_source: game.api_source || "manual",
+      broadcast_channel: (game as any).broadcast_channel || "",
     });
     setFormOpen(true);
   };
@@ -345,6 +353,21 @@ const Admin = () => {
                       placeholder="Rodada 5"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Canal de Transmissão</Label>
+                  <Select
+                    value={(form as any).broadcast_channel || ""}
+                    onValueChange={(v) => setForm({ ...form, broadcast_channel: v } as any)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
+                    <SelectContent>
+                      {BROADCAST_CHANNELS.map((ch) => (
+                        <SelectItem key={ch} value={ch}>{ch}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center gap-3">
