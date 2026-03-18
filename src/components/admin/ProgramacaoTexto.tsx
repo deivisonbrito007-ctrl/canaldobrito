@@ -252,7 +252,12 @@ export const ProgramacaoTexto = () => {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => { setText(""); setParsed([]); }}
+            onClick={() => { 
+              setText(""); 
+              setParsed([]); 
+              setEditingIdx(null);
+              toast.info("Campos limpos");
+            }}
             className="text-muted-foreground min-h-[44px]"
           >
             <Trash2 className="h-4 w-4 mr-2" />
