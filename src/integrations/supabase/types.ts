@@ -118,7 +118,17 @@ export type Database = {
       api_source: "api-football" | "balldontlie" | "pandascore" | "manual"
       app_role: "admin" | "user"
       game_status: "scheduled" | "live" | "finished"
-      sport_type: "football" | "basketball" | "esports" | "mma"
+      sport_type:
+        | "football"
+        | "basketball"
+        | "esports"
+        | "mma"
+        | "tennis"
+        | "american_football"
+        | "baseball"
+        | "motorsport"
+        | "hockey"
+        | "golf"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -249,7 +259,18 @@ export const Constants = {
       api_source: ["api-football", "balldontlie", "pandascore", "manual"],
       app_role: ["admin", "user"],
       game_status: ["scheduled", "live", "finished"],
-      sport_type: ["football", "basketball", "esports", "mma"],
+      sport_type: [
+        "football",
+        "basketball",
+        "esports",
+        "mma",
+        "tennis",
+        "american_football",
+        "baseball",
+        "motorsport",
+        "hockey",
+        "golf",
+      ],
     },
   },
 } as const

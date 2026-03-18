@@ -45,6 +45,10 @@ const BROADCAST_CHANNELS = [
   "Paramount+", "CazéTV", "Amazon Prime", "Band", "Record", "OneFootball",
   "Globo / SporTV", "Premiere / Globo", "ESPN / Paramount+", "TNT Sports / Max",
   "SporTV / ESPN", "Record / CazéTV", "Band / SporTV",
+  "Apple TV+", "BandSports / CazéTV", "ESPN / Star+",
+  "NFL Game Pass", "ESPN / NFL Game Pass", "F1 TV", "Band / F1 TV",
+  "Combate", "UFC Fight Pass", "Combate / UFC Fight Pass",
+  "ESPN / SporTV",
 ];
 
 const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {

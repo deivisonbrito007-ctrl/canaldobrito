@@ -51,7 +51,6 @@ export const useGames = () => {
       const { data, error } = await supabase
         .from("games")
         .select("*")
-        .in("sport", ["football", "basketball"])
         .gte("start_time", startOfDay)
         .lt("start_time", endOfDay)
         .order("start_time", { ascending: true });
