@@ -130,7 +130,7 @@ const AdminBanners = () => {
   const updateBanner = useUpdateBanner();
   const deleteBanner = useDeleteBanner();
   const [uploading, setUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<"daily" | "categories">("daily");
+  const [activeSection, setActiveSection] = useState<"daily" | "categories" | "programacao">("daily");
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
