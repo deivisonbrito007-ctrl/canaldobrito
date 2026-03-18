@@ -64,9 +64,6 @@ export const DailyGamesManager = () => {
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             <span className="text-emerald-400 font-semibold">{activeCount}</span> ativos
-            {liveCount > 0 && (
-              <> • <span className="text-red-400 font-semibold">{liveCount}</span> ao vivo</>
-            )}
             {" "}/ {games?.length || 0} total
           </p>
         </div>
