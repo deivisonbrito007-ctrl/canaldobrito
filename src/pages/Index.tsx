@@ -1,7 +1,6 @@
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
-import { MoviesSection } from "@/components/public/MoviesSection";
-import { SeriesSection } from "@/components/public/SeriesSection";
+import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { WhatsAppFab } from "@/components/public/WhatsAppFab";
 
@@ -14,11 +13,7 @@ const Index = () => {
         <DailyBannerCarousel />
 
         <div className="px-4 sm:px-6">
-          <MoviesSection />
-        </div>
-
-        <div className="px-4 sm:px-6">
-          <SeriesSection />
+          <WatchTodaySection />
         </div>
       </main>
 
