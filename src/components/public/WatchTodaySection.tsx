@@ -1,7 +1,7 @@
 import { useActiveMovies, type FeaturedMovie } from "@/hooks/useMovies";
 import { useActiveSeries, type FeaturedSeries } from "@/hooks/useSeries";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Play, Star, ImageOff, TrendingUp } from "lucide-react";
+import { Play, Star, ImageOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 
@@ -14,7 +14,7 @@ const TypeBadge = ({ type }: { type: "movie" | "series" }) => (
     }`}
   >
     <span className="text-[9px] font-bold leading-none">
-      {type === "movie" ? "🎬 Filme" : "📺 Série"}
+      {type === "movie" ? "🎬" : "📺"}
     </span>
   </div>
 );
@@ -29,7 +29,7 @@ const ContentCard = ({ item, index }: { item: ContentItem; index: number }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
     >
-      <div className="relative overflow-hidden rounded-xl border border-border/20 bg-card premium-shadow-sm aspect-[2/3] transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/20">
+      <div className="relative overflow-hidden rounded-xl border border-border/20 bg-card aspect-[2/3] transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/20">
         {item.poster_url && !imgErr ? (
           <img
             src={item.poster_url}
@@ -41,7 +41,6 @@ const ContentCard = ({ item, index }: { item: ContentItem; index: number }) => {
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 gap-1.5">
             <ImageOff className="h-8 w-8 text-muted-foreground/20" />
-            <span className="text-[9px] text-muted-foreground/30 font-medium">Sem imagem</span>
           </div>
         )}
 
@@ -94,7 +93,7 @@ export const WatchTodaySection = () => {
     return (
       <div className="space-y-3">
         <SectionHeader />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="aspect-[2/3] rounded-xl" />
           ))}
@@ -107,8 +106,8 @@ export const WatchTodaySection = () => {
 
   return (
     <div className="space-y-3">
-      <SectionHeader count={items.length} />
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      <SectionHeader />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((item, idx) => (
           <ContentCard key={item.id} item={item} index={idx} />
         ))}
@@ -117,21 +116,13 @@ export const WatchTodaySection = () => {
   );
 };
 
-const SectionHeader = ({ count }: { count?: number }) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-2">
-      <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
-        <Play className="h-4 w-4 text-primary" />
-      </div>
-      <h2 className="font-display text-sm sm:text-lg font-bold text-foreground tracking-tight">
-        Assista Hoje
-      </h2>
+const SectionHeader = () => (
+  <div className="flex items-center gap-2">
+    <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+      <Play className="h-4 w-4 text-primary" />
     </div>
-    {count !== undefined && (
-      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 bg-secondary/50 rounded-full px-2.5 py-0.5 border border-border/20">
-        <TrendingUp className="h-3 w-3" />
-        <span className="font-semibold">{count}</span>
-      </div>
-    )}
+    <h2 className="font-display text-sm sm:text-lg font-bold text-foreground tracking-tight">
+      Assista Hoje
+    </h2>
   </div>
 );
