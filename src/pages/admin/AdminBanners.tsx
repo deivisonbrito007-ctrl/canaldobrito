@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
+import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
+import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { useAllDailyBanners, useCreateDailyBanner, useUpdateDailyBanner, useDeleteDailyBanner } from "@/hooks/useDailyBanners";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -130,7 +132,7 @@ const AdminBanners = () => {
   const updateBanner = useUpdateBanner();
   const deleteBanner = useDeleteBanner();
   const [uploading, setUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<"daily" | "categories">("daily");
+  const [activeSection, setActiveSection] = useState<"daily" | "categories" | "programacao">("daily");
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -172,6 +174,7 @@ const AdminBanners = () => {
         {[
           { key: "daily" as const, label: "📺 Banners do Dia" },
           { key: "categories" as const, label: "📁 Por Categoria" },
+          { key: "programacao" as const, label: "📋 Programação" },
         ].map((s) => (
           <button
             key={s.key}
@@ -188,6 +191,13 @@ const AdminBanners = () => {
       </div>
 
       {activeSection === "daily" && <DailyBannerManager />}
+
+      {activeSection === "programacao" && (
+        <div className="space-y-5">
+          <ProgramacaoTexto />
+          <DailyGamesManager />
+        </div>
+      )}
 
       {activeSection === "categories" && (
         <>

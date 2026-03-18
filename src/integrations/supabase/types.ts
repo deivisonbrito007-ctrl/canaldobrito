@@ -80,6 +80,51 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_games: {
+        Row: {
+          active: boolean
+          away_team: string
+          channels: string[] | null
+          competition: string
+          competition_detail: string | null
+          created_at: string
+          date: string
+          game_time: string
+          home_team: string
+          id: string
+          is_live: boolean
+          is_womens: boolean
+        }
+        Insert: {
+          active?: boolean
+          away_team: string
+          channels?: string[] | null
+          competition?: string
+          competition_detail?: string | null
+          created_at?: string
+          date?: string
+          game_time: string
+          home_team: string
+          id?: string
+          is_live?: boolean
+          is_womens?: boolean
+        }
+        Update: {
+          active?: boolean
+          away_team?: string
+          channels?: string[] | null
+          competition?: string
+          competition_detail?: string | null
+          created_at?: string
+          date?: string
+          game_time?: string
+          home_team?: string
+          id?: string
+          is_live?: boolean
+          is_womens?: boolean
+        }
+        Relationships: []
+      }
       featured_movies: {
         Row: {
           active: boolean

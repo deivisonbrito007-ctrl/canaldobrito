@@ -1,5 +1,6 @@
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
+import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -12,6 +13,8 @@ const Index = () => {
 
       <main className="flex-1 space-y-8 py-5 sm:py-8">
         <DailyBannerCarousel />
+
+        <DailyGamesSection />
 
         <NewsReleasesSection />
 
