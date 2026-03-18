@@ -163,7 +163,8 @@ async function fetchEsports(apiKey: string): Promise<NormalizedGame[]> {
           const homeScore = results[0]?.score ?? null;
           const awayScore = results[1]?.score ?? null;
 
-          const sportLabel = vg === "csgo" ? "CS2" : "LoL";
+          const sportLabels: Record<string, string> = { csgo: "CS2", lol: "LoL", valorant: "Valorant", dota2: "Dota 2" };
+          const sportLabel = sportLabels[vg] || vg;
           const tournamentName = match.tournament?.name || match.league?.name || sportLabel;
 
           games.push({
