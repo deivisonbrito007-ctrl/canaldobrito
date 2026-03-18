@@ -1,34 +1,49 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Clock, Flame } from "lucide-react";
+import { Clock, Flame, Trophy } from "lucide-react";
 
-const COMP_COLORS: Record<string, string> = {
-  "brasileirão": "bg-emerald-500/80",
-  "brasileirao": "bg-emerald-500/80",
-  "champions league": "bg-blue-800/80",
-  "copa do brasil": "bg-yellow-500/80",
-  "liga europa": "bg-orange-500/80",
-  "concacaf": "bg-purple-600/80",
-  "la liga": "bg-orange-600/80",
-  "premier league": "bg-purple-700/80",
-  "serie a": "bg-blue-600/80",
-  "libertadores": "bg-amber-500/80",
-  "sul-americana": "bg-destructive/60",
+/* ── colour maps ── */
+const COMP_COLORS: Record<string, { bg: string; border: string }> = {
+  "brasileirão":       { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
+  "brasileirao":       { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
+  "champions league":  { bg: "bg-blue-500/20",    border: "border-blue-500/50" },
+  "copa do brasil":    { bg: "bg-yellow-500/20",   border: "border-yellow-500/50" },
+  "liga europa":       { bg: "bg-orange-500/20",   border: "border-orange-500/50" },
+  "concacaf":          { bg: "bg-purple-500/20",   border: "border-purple-500/50" },
+  "la liga":           { bg: "bg-orange-600/20",   border: "border-orange-600/50" },
+  "premier league":    { bg: "bg-purple-700/20",   border: "border-purple-700/50" },
+  "serie a":           { bg: "bg-blue-600/20",     border: "border-blue-600/50" },
+  "libertadores":      { bg: "bg-amber-500/20",    border: "border-amber-500/50" },
+  "sul-americana":     { bg: "bg-red-500/20",      border: "border-red-500/50" },
+};
+
+const COMP_TOP_COLORS: Record<string, string> = {
+  "brasileirão":       "from-emerald-500",
+  "brasileirao":       "from-emerald-500",
+  "champions league":  "from-blue-500",
+  "copa do brasil":    "from-yellow-500",
+  "liga europa":       "from-orange-500",
+  "concacaf":          "from-purple-500",
+  "la liga":           "from-orange-600",
+  "premier league":    "from-purple-700",
+  "serie a":           "from-blue-600",
+  "libertadores":      "from-amber-500",
+  "sul-americana":     "from-red-500",
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
-  "espn": "bg-destructive/80 text-primary-foreground",
-  "sportv": "bg-emerald-600 text-primary-foreground",
-  "globo": "bg-foreground/90 text-background",
-  "premiere": "bg-yellow-500 text-background",
-  "disney+": "bg-blue-900 text-primary-foreground",
-  "max": "bg-purple-700 text-primary-foreground",
-  "tnt": "bg-blue-600 text-primary-foreground",
-  "cazétv": "bg-lime-500 text-background",
-  "cazetv": "bg-lime-500 text-background",
-  "prime video": "bg-sky-400 text-background",
-  "band": "bg-emerald-500 text-primary-foreground",
+  "espn":        "bg-red-600/80 text-white",
+  "sportv":      "bg-emerald-600/80 text-white",
+  "globo":       "bg-foreground/80 text-background",
+  "premiere":    "bg-yellow-500/80 text-background",
+  "disney+":     "bg-blue-800/80 text-white",
+  "max":         "bg-purple-700/80 text-white",
+  "tnt":         "bg-blue-600/80 text-white",
+  "cazétv":      "bg-lime-500/80 text-background",
+  "cazetv":      "bg-lime-500/80 text-background",
+  "prime video": "bg-sky-500/80 text-background",
+  "band":        "bg-emerald-500/80 text-white",
 };
 
 const HIGHLIGHT_COMPS = [
@@ -38,20 +53,27 @@ const HIGHLIGHT_COMPS = [
 
 const FILTER_CHANNELS = ["ESPN", "Sportv", "Globo", "Premiere", "Disney+", "CazéTV", "TNT"];
 
-function getCompColor(comp: string) {
-  const key = comp.toLowerCase().trim();
-  for (const [k, v] of Object.entries(COMP_COLORS)) {
+const FILTER_COMPS = ["Brasileirão", "Champions League", "Libertadores", "Copa do Brasil", "Premier League"];
+
+/* ── helpers ── */
+function matchKey(input: string, map: Record<string, any>) {
+  const key = input.toLowerCase().trim();
+  for (const [k, v] of Object.entries(map)) {
     if (key.includes(k)) return v;
   }
-  return "bg-muted";
+  return null;
 }
 
-function getChannelColor(channel: string) {
-  const key = channel.toLowerCase().trim();
-  for (const [k, v] of Object.entries(CHANNEL_COLORS)) {
-    if (key.includes(k)) return v;
-  }
-  return "bg-secondary text-muted-foreground";
+function getCompColor(comp: string) {
+  return matchKey(comp, COMP_COLORS) ?? { bg: "bg-muted/30", border: "border-muted/20" };
+}
+
+function getTopColor(comp: string) {
+  return matchKey(comp, COMP_TOP_COLORS) ?? "from-muted";
+}
+
+function getChannelColor(ch: string) {
+  return matchKey(ch, CHANNEL_COLORS) ?? "bg-secondary/60 text-muted-foreground";
 }
 
 function isHighlight(comp: string) {
@@ -69,79 +91,103 @@ function isGameLive(game: DailyGame): boolean {
   return now >= start && now <= end;
 }
 
-function getTimeGroup(time: string): "morning" | "afternoon" | "night" {
+type TimeGroup = "morning" | "afternoon" | "night" | "dawn";
+
+function getTimeGroup(time: string): TimeGroup {
   const h = parseInt(time.split(":")[0], 10);
+  if (h < 6)  return "dawn";
   if (h < 13) return "morning";
   if (h < 18) return "afternoon";
   return "night";
 }
 
-const GROUP_LABELS = {
-  morning: "🌅 Manhã",
-  afternoon: "☀️ Tarde",
-  night: "🌙 Noite",
+const GROUP_META: Record<TimeGroup, { label: string; emoji: string }> = {
+  morning:   { label: "Manhã",     emoji: "🌅" },
+  afternoon: { label: "Tarde",     emoji: "☀️" },
+  night:     { label: "Noite",     emoji: "🌙" },
+  dawn:      { label: "Madrugada", emoji: "🌃" },
 };
 
+const GROUP_ORDER: TimeGroup[] = ["morning", "afternoon", "night", "dawn"];
+
+/* ── Game Card ── */
 const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
   const highlight = isHighlight(game.competition);
+  const compColor = getCompColor(game.competition);
+  const topGradient = getTopColor(game.competition);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.25 }}
+      transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
+      className="group"
     >
-      <div className={`rounded-xl glass-card p-4 transition-all border border-border/20 ${highlight ? "border-primary/20" : ""}`}>
-        {/* Competition */}
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-bold text-primary-foreground px-2 py-0.5 rounded-md ${getCompColor(game.competition)}`}>
-              {game.competition}
-            </span>
-            {highlight && <Flame className="h-3 w-3 text-amber-400" />}
-          </div>
-          {game.is_womens && (
-            <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-md font-bold">♀</span>
-          )}
-        </div>
+      <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
+        bg-card/60 backdrop-blur-xl
+        ${highlight ? "border-primary/30 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.15)]" : "border-border/20"}
+        hover:border-primary/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-0.5`}
+      >
+        {/* Top accent line */}
+        <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
 
-        {/* Teams + time */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-bold text-foreground flex-1 text-left truncate">{game.home_team}</p>
-          <div className="flex items-center gap-1 shrink-0">
-            <Clock className="h-3.5 w-3.5 text-primary" />
-            <span className="text-base font-bold text-primary tabular-nums">{game.game_time?.slice(0, 5)}</span>
-          </div>
-          <p className="text-sm font-bold text-foreground flex-1 text-right truncate">{game.away_team}</p>
-        </div>
-
-        {/* Detail */}
-        {game.competition_detail && (
-          <p className="text-[10px] text-muted-foreground mt-2 truncate">{game.competition_detail}</p>
-        )}
-
-        {/* Channels */}
-        {game.channels && game.channels.length > 0 && (
-          <div className="flex gap-1 mt-2.5 overflow-x-auto scrollbar-none">
-            {game.channels.slice(0, 3).map((ch, i) => (
-              <span key={i} className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${getChannelColor(ch)}`}>
-                {ch}
+        <div className="p-4 space-y-3">
+          {/* Competition badge */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80`}>
+                {game.competition}
               </span>
-            ))}
-            {game.channels.length > 3 && (
-              <span className="text-[9px] text-muted-foreground/50 shrink-0">+{game.channels.length - 3}</span>
+              {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
+            </div>
+            {game.is_womens && (
+              <span className="text-[9px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-lg font-bold border border-pink-500/30">♀ FEM</span>
             )}
           </div>
-        )}
+
+          {/* Competition detail / round */}
+          {game.competition_detail && (
+            <p className="text-[10px] text-muted-foreground/70 font-medium truncate -mt-1">{game.competition_detail}</p>
+          )}
+
+          {/* Teams vs layout */}
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
+            <div className="flex flex-col items-center shrink-0">
+              <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
+                <Clock className="h-3.5 w-3.5 text-primary" />
+                <span className="text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
+              </div>
+              <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-widest mt-0.5">vs</span>
+            </div>
+            <p className="text-sm font-bold text-foreground flex-1 text-right truncate leading-tight">{game.away_team}</p>
+          </div>
+
+          {/* Channels */}
+          {game.channels && game.channels.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap">
+              {game.channels.slice(0, 4).map((ch, i) => (
+                <span key={i} className={`text-[10px] font-bold px-2 py-1 rounded-lg shrink-0 ${getChannelColor(ch)}`}>
+                  {ch}
+                </span>
+              ))}
+              {game.channels.length > 4 && (
+                <span className="text-[10px] text-muted-foreground/50 self-center">+{game.channels.length - 4}</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );
 };
 
+/* ── Section ── */
 export const DailyGamesSection = () => {
   const today = new Date().toISOString().split("T")[0];
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
+  const [compFilter, setCompFilter] = useState<string | null>(null);
 
   const upcomingGames = useMemo(() => {
     if (!games) return [];
@@ -149,17 +195,24 @@ export const DailyGamesSection = () => {
   }, [games]);
 
   const filteredGames = useMemo(() => {
-    if (!channelFilter) return upcomingGames;
-    return upcomingGames.filter((g) =>
-      g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
-    );
-  }, [upcomingGames, channelFilter]);
+    let result = upcomingGames;
+    if (channelFilter) {
+      result = result.filter((g) =>
+        g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
+      );
+    }
+    if (compFilter) {
+      result = result.filter((g) =>
+        g.competition.toLowerCase().includes(compFilter.toLowerCase())
+      );
+    }
+    return result;
+  }, [upcomingGames, channelFilter, compFilter]);
 
   const grouped = useMemo(() => {
-    const groups: Record<string, typeof filteredGames> = { morning: [], afternoon: [], night: [] };
+    const groups: Record<TimeGroup, typeof filteredGames> = { morning: [], afternoon: [], night: [], dawn: [] };
     filteredGames.forEach((g) => {
-      const group = getTimeGroup(g.game_time || "00:00");
-      groups[group].push(g);
+      groups[getTimeGroup(g.game_time || "00:00")].push(g);
     });
     return groups;
   }, [filteredGames]);
@@ -167,74 +220,105 @@ export const DailyGamesSection = () => {
   if (isLoading || !games || games.length === 0) return null;
 
   return (
-    <section id="esportes" className="space-y-4 px-3 sm:px-6">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="text-base">📋</span>
-          <h2 className="font-display text-sm sm:text-lg font-bold text-foreground tracking-tight">
-            Programação
-          </h2>
-          <span className="text-[10px] text-muted-foreground bg-secondary/60 rounded-full px-2 py-0.5 font-medium">
-            {filteredGames.length}
-          </span>
+    <section id="esportes" className="space-y-5 px-3 sm:px-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+          <Trophy className="h-5 w-5 text-primary" />
         </div>
+        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">
+          Programação
+        </h2>
+        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-2.5 py-0.5 tabular-nums">
+          {filteredGames.length} jogos
+        </span>
+      </div>
 
-        {/* Channel Filter */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+      {/* Competition Filter */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+        <button
+          onClick={() => setCompFilter(null)}
+          className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+            !compFilter
+              ? "bg-primary/15 text-primary border border-primary/30"
+              : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Todas
+        </button>
+        {FILTER_COMPS.map((c) => (
           <button
-            onClick={() => setChannelFilter(null)}
-            className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${
-              !channelFilter
+            key={c}
+            onClick={() => setCompFilter(compFilter === c ? null : c)}
+            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+              compFilter === c
                 ? "bg-primary/15 text-primary border border-primary/30"
-                : "glass-panel text-muted-foreground hover:text-foreground"
+                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
             }`}
           >
-            Todos
+            {c}
           </button>
-          {FILTER_CHANNELS.map((ch) => (
-            <button
-              key={ch}
-              onClick={() => setChannelFilter(channelFilter === ch ? null : ch)}
-              className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${
-                channelFilter === ch
-                  ? "bg-primary/15 text-primary border border-primary/30"
-                  : "glass-panel text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {ch}
-            </button>
-          ))}
-        </div>
-
-        {/* Grouped games */}
-        <div className="space-y-5">
-          {(["morning", "afternoon", "night"] as const).map((group) => {
-            const groupGames = grouped[group];
-            if (!groupGames || groupGames.length === 0) return null;
-            return (
-              <div key={group} className="space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-muted-foreground/60">{GROUP_LABELS[group]}</span>
-                  <div className="flex-1 h-px bg-border/20" />
-                </div>
-                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                  {groupGames.map((game, idx) => (
-                    <GameCard key={game.id} game={game} index={idx} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {filteredGames.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-xs text-muted-foreground/60">
-              Nenhum jogo{channelFilter ? ` para ${channelFilter}` : ""}
-            </p>
-          </div>
-        )}
+        ))}
       </div>
+
+      {/* Channel Filter */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+        <button
+          onClick={() => setChannelFilter(null)}
+          className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+            !channelFilter
+              ? "bg-secondary/40 text-foreground border border-border/30"
+              : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          📺 Todos
+        </button>
+        {FILTER_CHANNELS.map((ch) => (
+          <button
+            key={ch}
+            onClick={() => setChannelFilter(channelFilter === ch ? null : ch)}
+            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+              channelFilter === ch
+                ? "bg-secondary/40 text-foreground border border-border/30"
+                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {ch}
+          </button>
+        ))}
+      </div>
+
+      {/* Grouped games — order: morning → afternoon → night → dawn */}
+      <div className="space-y-6">
+        {GROUP_ORDER.map((group) => {
+          const groupGames = grouped[group];
+          if (!groupGames || groupGames.length === 0) return null;
+          const meta = GROUP_META[group];
+          return (
+            <div key={group} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="text-base">{meta.emoji}</span>
+                <span className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{meta.label}</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
+                <span className="text-[10px] text-muted-foreground/50 tabular-nums">{groupGames.length}</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {groupGames.map((game, idx) => (
+                  <GameCard key={game.id} game={game} index={idx} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredGames.length === 0 && (
+        <div className="text-center py-10">
+          <p className="text-sm text-muted-foreground/50">
+            Nenhum jogo{channelFilter ? ` em ${channelFilter}` : ""}{compFilter ? ` de ${compFilter}` : ""}
+          </p>
+        </div>
+      )}
     </section>
   );
 };
