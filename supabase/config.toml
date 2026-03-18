@@ -1,1 +1,4 @@
 project_id = "rryvwkqupkhpdlevopkk"
+
+[functions.sync-daily-games]
+verify_jwt = false
