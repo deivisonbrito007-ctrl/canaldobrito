@@ -5,7 +5,7 @@ import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WatchTodaySection } from "@/components/public/WatchTodaySection";
-import { ContinueWatchingSection } from "@/components/public/ContinueWatchingSection";
+
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
 import { ReleaseBanner } from "@/components/public/ReleaseBanner";
 import { FeaturedSection } from "@/components/public/FeaturedSection";
