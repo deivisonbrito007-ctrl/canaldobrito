@@ -9,6 +9,7 @@ const adminTabs = [
   { value: "banners", label: "Banners", icon: Image, path: "/admin/banners" },
   { value: "filmes", label: "Filmes", icon: Film, path: "/admin/filmes" },
   { value: "series", label: "Séries", icon: Clapperboard, path: "/admin/series" },
+  { value: "novidades", label: "Novidades", icon: Sparkles, path: "/admin/novidades" },
   { value: "configuracoes", label: "Config", icon: Settings, path: "/admin/configuracoes" },
 ];
 
