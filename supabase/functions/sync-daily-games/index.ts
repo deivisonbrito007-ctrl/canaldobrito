@@ -34,7 +34,7 @@ async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   for (const leagueId of leagues) {
     try {
       const res = await fetch(
-        `https://v3.football.api-sports.io/fixtures?date=${today}&league=${leagueId}&season=2026`,
+        `https://v3.football.api-sports.io/fixtures?date=${today}&league=${leagueId}&season=${new Date().getFullYear()}`,
         {
           headers: { "x-apisports-key": apiKey },
         }
