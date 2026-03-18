@@ -47,72 +47,174 @@ export type Database = {
         }
         Relationships: []
       }
-      games: {
+      daily_banner: {
         Row: {
-          api_source: Database["public"]["Enums"]["api_source"] | null
-          away_team_logo: string | null
-          away_team_name: string
-          away_team_score: number | null
-          broadcast_channel: string | null
+          active: boolean
           created_at: string
-          external_id: string | null
-          highlight: boolean
-          home_team_logo: string | null
-          home_team_name: string
-          home_team_score: number | null
+          date: string
           id: string
-          league: string
-          league_icon: string | null
-          round: string | null
-          sport: Database["public"]["Enums"]["sport_type"]
-          start_time: string
-          status: Database["public"]["Enums"]["game_status"]
-          updated_at: string
-          venue: string | null
+          image_url: string
         }
         Insert: {
-          api_source?: Database["public"]["Enums"]["api_source"] | null
-          away_team_logo?: string | null
-          away_team_name: string
-          away_team_score?: number | null
-          broadcast_channel?: string | null
+          active?: boolean
           created_at?: string
-          external_id?: string | null
-          highlight?: boolean
-          home_team_logo?: string | null
-          home_team_name: string
-          home_team_score?: number | null
+          date: string
           id?: string
-          league: string
-          league_icon?: string | null
-          round?: string | null
-          sport: Database["public"]["Enums"]["sport_type"]
-          start_time: string
-          status?: Database["public"]["Enums"]["game_status"]
-          updated_at?: string
-          venue?: string | null
+          image_url: string
         }
         Update: {
-          api_source?: Database["public"]["Enums"]["api_source"] | null
-          away_team_logo?: string | null
-          away_team_name?: string
-          away_team_score?: number | null
-          broadcast_channel?: string | null
+          active?: boolean
           created_at?: string
-          external_id?: string | null
-          highlight?: boolean
-          home_team_logo?: string | null
-          home_team_name?: string
-          home_team_score?: number | null
+          date?: string
           id?: string
-          league?: string
-          league_icon?: string | null
-          round?: string | null
-          sport?: Database["public"]["Enums"]["sport_type"]
-          start_time?: string
-          status?: Database["public"]["Enums"]["game_status"]
+          image_url?: string
+        }
+        Relationships: []
+      }
+      featured_movies: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          created_at: string
+          genre: string | null
+          id: string
+          overview: string | null
+          poster_url: string | null
+          rating: number | null
+          title: string
+          tmdb_id: number
+          year: number | null
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          genre?: string | null
+          id?: string
+          overview?: string | null
+          poster_url?: string | null
+          rating?: number | null
+          title: string
+          tmdb_id: number
+          year?: number | null
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          genre?: string | null
+          id?: string
+          overview?: string | null
+          poster_url?: string | null
+          rating?: number | null
+          title?: string
+          tmdb_id?: number
+          year?: number | null
+        }
+        Relationships: []
+      }
+      featured_series: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          created_at: string
+          genre: string | null
+          id: string
+          overview: string | null
+          poster_url: string | null
+          rating: number | null
+          title: string
+          tmdb_id: number
+          year: number | null
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          genre?: string | null
+          id?: string
+          overview?: string | null
+          poster_url?: string | null
+          rating?: number | null
+          title: string
+          tmdb_id: number
+          year?: number | null
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          genre?: string | null
+          id?: string
+          overview?: string | null
+          poster_url?: string | null
+          rating?: number | null
+          title?: string
+          tmdb_id?: number
+          year?: number | null
+        }
+        Relationships: []
+      }
+      games: {
+        Row: {
+          active: boolean
+          away_logo: string | null
+          away_team: string
+          channel: string | null
+          competition: string
+          created_at: string
+          date: string
+          home_logo: string | null
+          home_team: string
+          id: string
+          time: string
+        }
+        Insert: {
+          active?: boolean
+          away_logo?: string | null
+          away_team: string
+          channel?: string | null
+          competition?: string
+          created_at?: string
+          date?: string
+          home_logo?: string | null
+          home_team: string
+          id?: string
+          time: string
+        }
+        Update: {
+          active?: boolean
+          away_logo?: string | null
+          away_team?: string
+          channel?: string | null
+          competition?: string
+          created_at?: string
+          date?: string
+          home_logo?: string | null
+          home_team?: string
+          id?: string
+          time?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
           updated_at?: string
-          venue?: string | null
+          value?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }
@@ -148,7 +250,6 @@ export type Database = {
       }
     }
     Enums: {
-      api_source: "api-football" | "balldontlie" | "pandascore" | "manual"
       app_role: "admin" | "user"
       banner_category:
         | "cover"
@@ -157,18 +258,6 @@ export type Database = {
         | "ufc"
         | "other_sports"
         | "football_guide"
-      game_status: "scheduled" | "live" | "finished"
-      sport_type:
-        | "football"
-        | "basketball"
-        | "esports"
-        | "mma"
-        | "tennis"
-        | "american_football"
-        | "baseball"
-        | "motorsport"
-        | "hockey"
-        | "golf"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -296,7 +385,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      api_source: ["api-football", "balldontlie", "pandascore", "manual"],
       app_role: ["admin", "user"],
       banner_category: [
         "cover",
@@ -305,19 +393,6 @@ export const Constants = {
         "ufc",
         "other_sports",
         "football_guide",
-      ],
-      game_status: ["scheduled", "live", "finished"],
-      sport_type: [
-        "football",
-        "basketball",
-        "esports",
-        "mma",
-        "tennis",
-        "american_football",
-        "baseball",
-        "motorsport",
-        "hockey",
-        "golf",
       ],
     },
   },

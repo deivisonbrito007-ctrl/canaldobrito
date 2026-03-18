@@ -1,38 +1,34 @@
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { Settings, Lock, Zap } from "lucide-react";
+import { WhatsAppShareButton } from "./WhatsAppShareButton";
 import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
 
-export const Footer = () => {
+export const PublicFooter = () => {
   const { isAdmin } = useAuth();
 
   return (
     <footer className="border-t border-border/30 bg-card/50 backdrop-blur-sm">
       <div className="container px-4 py-6 sm:py-8 space-y-4">
-        {/* Branding */}
         <div className="flex flex-col items-center gap-3">
-          <img src={logo} alt="Brito Solutions TV" className="h-10 w-auto opacity-60" />
+          <img src={logo} alt="Brito Solutions" className="h-10 w-auto opacity-60" />
           <div className="text-center">
             <p className="font-display text-sm font-bold text-foreground/70 flex items-center gap-1.5 justify-center">
               <Zap className="h-3.5 w-3.5 text-primary" />
-              Brito Solutions TV
+              Brito Solutions
             </p>
             <p className="mt-0.5 text-[10px] text-muted-foreground">
-              Sua agenda esportiva completa
+              WhatsApp: (11) 94075-9046
             </p>
           </div>
         </div>
 
-        {/* Divider */}
+        <div className="flex justify-center">
+          <WhatsAppShareButton />
+        </div>
+
         <div className="mx-auto h-px w-16 bg-border/50" />
 
-        {/* Info */}
         <div className="flex flex-col items-center gap-2 text-center">
-          <p className="text-[10px] sm:text-xs text-muted-foreground">
-            Atualizado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-          </p>
-
           {isAdmin ? (
             <a
               href="/admin"

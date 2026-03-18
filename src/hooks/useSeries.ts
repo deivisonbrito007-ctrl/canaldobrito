@@ -1,0 +1,75 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface FeaturedSeries {
+  id: string;
+  tmdb_id: number;
+  title: string;
+  poster_url: string | null;
+  overview: string | null;
+  rating: number | null;
+  year: number | null;
+  genre: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export const useActiveSeries = () =>
+  useQuery({
+    queryKey: ["featured_series", "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("featured_series")
+        .select("*")
+        .eq("active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as FeaturedSeries[];
+    },
+  });
+
+export const useAllSeries = () =>
+  useQuery({
+    queryKey: ["featured_series"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("featured_series")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as FeaturedSeries[];
+    },
+  });
+
+export const useAddSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (series: Omit<FeaturedSeries, "id" | "active" | "created_at"> & { added_by?: string | null }) => {
+      const { error } = await supabase.from("featured_series").insert(series);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
+  });
+};
+
+export const useToggleSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("featured_series").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
+  });
+};
+
+export const useDeleteSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("featured_series").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
+  });
+};
