@@ -1,4 +1,4 @@
-import { Home, Search, CalendarDays, User, Play } from "lucide-react";
+import { Home, CalendarDays, User, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface BottomNavProps {
