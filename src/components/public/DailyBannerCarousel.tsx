@@ -43,7 +43,7 @@ export const DailyBannerCarousel = () => {
           <span className="text-lg">📺</span>
           <h2 className="font-display text-sm sm:text-base font-bold text-foreground tracking-tight">Programação do Dia</h2>
         </div>
-        <Skeleton className="w-full aspect-video rounded-2xl" />
+        <Skeleton className="w-full h-[60vh] rounded-2xl" />
       </section>
     );
   }
@@ -90,7 +90,7 @@ export const DailyBannerCarousel = () => {
                   <img
                     src={banner.image_url}
                     alt={banner.title || "Programação do dia"}
-                    className="w-full aspect-video object-cover"
+                    className="w-full h-[60vh] object-cover"
                     loading="lazy"
                     onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
                   />
@@ -99,7 +99,7 @@ export const DailyBannerCarousel = () => {
                 <img
                   src={banner.image_url}
                   alt={banner.title || "Programação do dia"}
-                  className="w-full aspect-video object-cover"
+                  className="w-full h-[60vh] object-cover"
                   loading="lazy"
                   onError={() => setImgErrors((prev) => new Set(prev).add(banner.id))}
                 />
