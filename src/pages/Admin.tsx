@@ -67,7 +67,6 @@ const INITIAL_FORM: Partial<GameInsert & { broadcast_channel?: string }> = {
   venue: "",
   round: "",
   highlight: false,
-  api_source: "manual",
   home_team_score: undefined,
   away_team_score: undefined,
   broadcast_channel: "",
