@@ -271,7 +271,7 @@ export const ProgramacaoTexto = () => {
 
       {/* Preview Section */}
       {parsed.length > 0 && (
-        <div className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
+        <div ref={previewRef} className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-foreground">
               Preview — <span className="text-emerald-400">{selectedCount}</span> de {parsed.length} jogos selecionados
