@@ -13,6 +13,7 @@ import AdminSeries from "./pages/admin/AdminSeries";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import AdminNovidades from "./pages/admin/AdminNovidades";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="filmes" element={<AdminFilmes />} />
               <Route path="series" element={<AdminSeries />} />
               <Route path="novidades" element={<AdminNovidades />} />
+              <Route path="whatsapp" element={<AdminWhatsApp />} />
               <Route path="configuracoes" element={<AdminConfiguracoes />} />
             </Route>
             <Route path="*" element={<NotFound />} />
