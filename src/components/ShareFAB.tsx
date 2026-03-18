@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Game, SPORTS } from "@/types/sports";
-import { MessageCircle, Download, X, Share2 } from "lucide-react";
+import { MessageCircle, Download, X, Share2, Image } from "lucide-react";
 import { format } from "date-fns";
 import { useBanners } from "@/hooks/useBanners";
 import { cn } from "@/lib/utils";
@@ -57,13 +57,12 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
 
   const handleDownloadImage = async () => {
     if (coverBanners.length === 0) {
-      toast.error("Nenhum banner de capa disponível para baixar.");
+      toast.error("Nenhum banner de capa disponível.");
       return;
     }
 
     const imageUrl = coverBanners[0].image_url;
 
-    // Try Web Share API first (mobile)
     if (navigator.share && navigator.canShare) {
       try {
         const response = await fetch(imageUrl);
@@ -78,12 +77,11 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
           setOpen(false);
           return;
         }
-      } catch (err) {
-        // User cancelled or not supported, fall through to download
+      } catch {
+        // Fall through to download
       }
     }
 
-    // Fallback: direct download
     const link = document.createElement("a");
     link.href = imageUrl;
     link.download = "programacao-brito-solutions.jpg";
@@ -91,61 +89,82 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Imagem baixada! Poste no seu Status do WhatsApp.");
+    toast.success("Imagem baixada! Poste no seu Status.");
     setOpen(false);
   };
 
+  const fabActions = [
+    {
+      icon: <Image className="h-4 w-4 text-primary" />,
+      label: "Imagem p/ Status",
+      onClick: handleDownloadImage,
+      delay: 0.08,
+    },
+    {
+      icon: <MessageCircle className="h-4 w-4 text-[hsl(142,70%,45%)]" />,
+      label: "Enviar Texto",
+      onClick: handleShareText,
+      delay: 0,
+    },
+  ];
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <>
+      {/* Backdrop */}
       <AnimatePresence>
         {open && (
-          <>
-            {/* Download image option */}
-            <motion.button
-              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.8 }}
-              transition={{ duration: 0.15, delay: 0.05 }}
-              onClick={handleDownloadImage}
-              className="flex items-center gap-2 rounded-full bg-card border border-border/50 px-4 py-2.5 text-sm font-medium text-foreground shadow-lg active:scale-95 transition-transform"
-            >
-              <Download className="h-4 w-4 text-primary" />
-              Imagem p/ Status
-            </motion.button>
-
-            {/* Send text option */}
-            <motion.button
-              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.8 }}
-              transition={{ duration: 0.15 }}
-              onClick={handleShareText}
-              className="flex items-center gap-2 rounded-full bg-card border border-border/50 px-4 py-2.5 text-sm font-medium text-foreground shadow-lg active:scale-95 transition-transform"
-            >
-              <MessageCircle className="h-4 w-4 text-[hsl(142,70%,45%)]" />
-              Enviar Texto
-            </motion.button>
-          </>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-background/40 backdrop-blur-sm"
+          />
         )}
       </AnimatePresence>
 
-      {/* Main FAB */}
-      <button
-        onClick={() => setOpen(!open)}
-        className={cn(
-          "flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-200 active:scale-95",
-          open
-            ? "bg-card border border-border/50 text-foreground"
-            : "bg-[hsl(142,70%,45%)] text-white"
-        )}
-        aria-label="Compartilhar"
+      <div
+        className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2.5"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        {open ? (
-          <X className="h-5 w-5" />
-        ) : (
-          <Share2 className="h-5 w-5" />
-        )}
-      </button>
-    </div>
+        <AnimatePresence>
+          {open &&
+            fabActions.map((action, idx) => (
+              <motion.button
+                key={action.label}
+                initial={{ opacity: 0, y: 12, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.85 }}
+                transition={{ duration: 0.18, delay: action.delay }}
+                onClick={action.onClick}
+                className="flex items-center gap-2.5 rounded-full bg-card border border-border/60 px-4 py-3 text-sm font-medium text-foreground shadow-xl active:scale-95 transition-transform min-h-[44px]"
+              >
+                {action.icon}
+                {action.label}
+              </motion.button>
+            ))}
+        </AnimatePresence>
+
+        {/* Main FAB */}
+        <motion.button
+          onClick={() => setOpen(!open)}
+          animate={open ? { rotate: 45 } : { rotate: 0 }}
+          transition={{ duration: 0.2 }}
+          className={cn(
+            "flex h-14 w-14 items-center justify-center rounded-full shadow-xl transition-colors duration-200 active:scale-95",
+            open
+              ? "bg-card border border-border/60 text-foreground"
+              : "bg-[hsl(142,70%,45%)] text-white"
+          )}
+          aria-label="Compartilhar"
+        >
+          {open ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Share2 className="h-5 w-5" />
+          )}
+        </motion.button>
+      </div>
+    </>
   );
 };
