@@ -76,7 +76,9 @@ interface NormalizedGame {
 async function fetchFootball(apiKey: string): Promise<NormalizedGame[]> {
   const games: NormalizedGame[] = [];
   const today = new Date().toISOString().split("T")[0];
-  const year = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
+  // API-Football free plan limits seasons; try current year and fallback to previous
+  const seasons = [currentYear, currentYear - 1, currentYear - 2];
 
   // Brazilian + international leagues
   const leagues = [
