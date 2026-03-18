@@ -220,4 +220,28 @@
   .admin-stagger-3 { animation: admin-fade-in 0.5s ease-out 0.15s both; }
   .admin-stagger-4 { animation: admin-fade-in 0.5s ease-out 0.2s both; }
   .admin-stagger-5 { animation: admin-fade-in 0.5s ease-out 0.25s both; }
+
+  @keyframes border-pulse-red {
+    0%, 100% { border-color: hsl(0 85% 55% / 0.6); box-shadow: 0 0 12px hsl(0 85% 55% / 0.2); }
+    50% { border-color: hsl(0 85% 55% / 1); box-shadow: 0 0 24px hsl(0 85% 55% / 0.4); }
+  }
+  .animate-border-pulse-live {
+    animation: border-pulse-red 2s ease-in-out infinite;
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

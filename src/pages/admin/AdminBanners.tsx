@@ -192,6 +192,13 @@ const AdminBanners = () => {
 
       {activeSection === "daily" && <DailyBannerManager />}
 
+      {activeSection === "programacao" && (
+        <div className="space-y-5">
+          <ProgramacaoTexto />
+          <DailyGamesManager />
+        </div>
+      )}
+
       {activeSection === "categories" && (
         <>
           {/* Category Pills */}
