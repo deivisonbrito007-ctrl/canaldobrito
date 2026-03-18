@@ -174,6 +174,7 @@ const AdminBanners = () => {
         {[
           { key: "daily" as const, label: "📺 Banners do Dia" },
           { key: "categories" as const, label: "📁 Por Categoria" },
+          { key: "programacao" as const, label: "📋 Programação" },
         ].map((s) => (
           <button
             key={s.key}
