@@ -1,57 +1,19 @@
 import { useState } from "react";
-import { Game, SPORTS } from "@/types/sports";
 import { MessageCircle, Download, X, Share2, Image } from "lucide-react";
-import { format } from "date-fns";
 import { useBanners } from "@/hooks/useBanners";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-interface ShareFABProps {
-  games: Game[];
-}
-
-export const ShareFAB = ({ games }: ShareFABProps) => {
+export const ShareFAB = () => {
   const [open, setOpen] = useState(false);
   const { data: coverBanners = [] } = useBanners("cover", true);
 
-  const buildMessage = () => {
-    const today = format(new Date(), "dd/MM/yyyy");
-    let msg = `📺 *Agenda Brito Solutions TV* — ${today}\n\n`;
-
-    const liveGames = games.filter((g) => g.status === "live");
-    const scheduledGames = games.filter((g) => g.status === "scheduled");
-
-    if (liveGames.length > 0) {
-      msg += `🔴 *AO VIVO AGORA:*\n`;
-      liveGames.forEach((g) => {
-        const sport = SPORTS.find((s) => s.type === g.sport);
-        msg += `${sport?.icon} ${g.homeTeam.name} ${g.homeTeam.score ?? 0} × ${g.awayTeam.score ?? 0} ${g.awayTeam.name}`;
-        if (g.broadcastChannel) msg += ` 📺 ${g.broadcastChannel}`;
-        msg += `\n`;
-      });
-      msg += `\n`;
-    }
-
-    if (scheduledGames.length > 0) {
-      msg += `📅 *PRÓXIMOS JOGOS:*\n`;
-      scheduledGames.forEach((g) => {
-        const sport = SPORTS.find((s) => s.type === g.sport);
-        const time = format(new Date(g.startTime), "HH:mm");
-        msg += `${sport?.icon} ${time} — ${g.homeTeam.name} vs ${g.awayTeam.name}`;
-        if (g.broadcastChannel) msg += ` 📺 ${g.broadcastChannel}`;
-        msg += `\n`;
-      });
-      msg += `\n`;
-    }
-
-    msg += `🌐 Acesse: ${window.location.href}\n`;
-    msg += `\n_Powered by Brito Solutions TV_ ⚡`;
-    return encodeURIComponent(msg);
-  };
-
   const handleShareText = () => {
-    window.open(`https://wa.me/?text=${buildMessage()}`, "_blank");
+    const msg = encodeURIComponent(
+      `📺 *Brito Solutions TV*\n\nConfira a programação esportiva de hoje!\n\n🌐 ${window.location.href}\n\n_Powered by Brito Solutions TV_ ⚡`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
     setOpen(false);
   };
 
@@ -110,7 +72,6 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
 
   return (
     <>
-      {/* Backdrop */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -129,7 +90,7 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
       >
         <AnimatePresence>
           {open &&
-            fabActions.map((action, idx) => (
+            fabActions.map((action) => (
               <motion.button
                 key={action.label}
                 initial={{ opacity: 0, y: 12, scale: 0.85 }}
@@ -145,7 +106,6 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
             ))}
         </AnimatePresence>
 
-        {/* Main FAB */}
         <motion.button
           onClick={() => setOpen(!open)}
           animate={open ? { rotate: 45 } : { rotate: 0 }}
@@ -158,11 +118,7 @@ export const ShareFAB = ({ games }: ShareFABProps) => {
           )}
           aria-label="Compartilhar"
         >
-          {open ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Share2 className="h-5 w-5" />
-          )}
+          {open ? <X className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
         </motion.button>
       </div>
     </>
