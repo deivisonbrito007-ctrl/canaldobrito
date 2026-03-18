@@ -41,21 +41,21 @@ const AdminSeries = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
-          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+    <div className="space-y-5">
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Clapperboard className="h-4 w-4 text-purple-400" />
-            Buscar Séries (TMDB)
+            Buscar Séries
           </h3>
         </div>
-        <div className="p-5 sm:p-6 space-y-4">
-          <div className="flex gap-2">
+        <div className="p-4 space-y-3">
+          <div className="flex gap-1.5">
             {[
               { key: "search" as const, label: "Buscar", onClick: () => setTab("search") },
               { key: "popular" as const, label: "Populares", onClick: loadPopular },
             ].map((t) => (
-              <button key={t.key} onClick={t.onClick} className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-300 ${tab === t.key ? "bg-purple-500/15 text-purple-400 border border-purple-500/30" : "glass-panel text-muted-foreground/70 hover:text-foreground"}`}>
+              <button key={t.key} onClick={t.onClick} className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${tab === t.key ? "bg-purple-500/15 text-purple-400 border border-purple-500/30" : "glass-panel text-muted-foreground/70"}`}>
                 {t.label}
               </button>
             ))}
@@ -63,36 +63,34 @@ const AdminSeries = () => {
 
           {tab === "search" && (
             <div className="flex gap-2">
-              <Input placeholder="Nome da série..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="glass-panel border-white/[0.1] text-sm" />
-              <Button onClick={handleSearch} disabled={searching} size="icon" className="shrink-0">
+              <Input placeholder="Nome da série..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="glass-panel border-white/[0.1] text-sm h-10" />
+              <Button onClick={handleSearch} disabled={searching} size="icon" className="shrink-0 h-10 w-10">
                 {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
             </div>
           )}
 
-          {searching && <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" />Buscando...</div>}
+          {searching && <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" />Buscando...</div>}
 
           {results.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {results.map((r) => (
-                <div key={r.id} className="group relative rounded-xl glass-panel glass-panel-hover overflow-hidden">
+                <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden">
                   {r.poster_path ? (
                     <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.name || r.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full aspect-[2/3] flex items-center justify-center bg-white/[0.02]"><ImageOff className="h-8 w-8 text-muted-foreground/20" /></div>
+                    <div className="w-full aspect-[2/3] flex items-center justify-center bg-white/[0.02]"><ImageOff className="h-6 w-6 text-muted-foreground/20" /></div>
                   )}
-                  <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-3 flex flex-col justify-between">
-                    <p className="text-[10px] text-foreground/70 line-clamp-6 leading-relaxed">{r.overview}</p>
-                    <Button size="sm" className="w-full mt-2" onClick={() => handleAdd(r)}><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
-                  </div>
-                  <div className="p-2.5">
-                    <p className="text-xs font-semibold truncate">{r.name || r.title}</p>
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                      <Star className={`h-2.5 w-2.5 fill-current ${ratingColor(r.vote_average || 0)}`} />
-                      <span className={ratingColor(r.vote_average || 0)}>{r.vote_average?.toFixed(1)}</span>
-                      {r.first_air_date && <span>• {r.first_air_date.slice(0, 4)}</span>}
+                  <div className="p-2">
+                    <p className="text-[10px] font-semibold truncate">{r.name || r.title}</p>
+                    <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-0.5">
+                      <Star className={`h-2 w-2 fill-current ${ratingColor(r.vote_average || 0)}`} />
+                      <span>{r.vote_average?.toFixed(1)}</span>
                     </div>
                   </div>
+                  <Button size="sm" className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-0 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
                 </div>
               ))}
             </div>
@@ -100,36 +98,35 @@ const AdminSeries = () => {
         </div>
       </div>
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/[0.06]">
-          <h3 className="text-base font-bold text-foreground">Séries Adicionadas</h3>
-          <span className="text-xs font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1">{series?.length || 0}</span>
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground">Adicionadas</h3>
+          <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">{series?.length || 0}</span>
         </div>
-        <div className="p-5 sm:p-6">
+        <div className="p-4">
           {!series || series.length === 0 ? (
-            <div className="py-16 text-center space-y-4">
-              <div className="rounded-2xl glass-panel p-6 inline-block"><Clapperboard className="h-12 w-12 text-muted-foreground/20" /></div>
-              <p className="text-sm font-semibold text-muted-foreground">Nenhuma série adicionada</p>
-              <p className="text-xs text-muted-foreground/50">Busque no TMDB para adicionar séries</p>
+            <div className="py-10 text-center space-y-3">
+              <Clapperboard className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+              <p className="text-xs text-muted-foreground">Nenhuma série adicionada</p>
             </div>
           ) : (
             <div className="space-y-2">
               {series.map((s) => (
-                <div key={s.id} className="flex items-center gap-3 rounded-xl glass-panel glass-panel-hover p-3">
+                <div key={s.id} className="flex items-center gap-3 rounded-lg glass-panel p-3">
                   {s.poster_url ? (
-                    <img src={s.poster_url} alt={s.title} className="h-14 w-10 rounded-lg object-cover" />
+                    <img src={s.poster_url} alt={s.title} className="h-12 w-9 rounded-md object-cover shrink-0" />
                   ) : (
-                    <div className="h-14 w-10 rounded-lg bg-white/[0.03] flex items-center justify-center"><ImageOff className="h-4 w-4 text-muted-foreground/20" /></div>
+                    <div className="h-12 w-9 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{s.title}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs font-semibold truncate">{s.title}</p>
+                    <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
                       {s.year}
-                      {s.rating && <><Star className={`h-2.5 w-2.5 fill-current ${ratingColor(s.rating)}`} /><span className={ratingColor(s.rating)}>{s.rating}</span></>}
+                      {s.rating && <><Star className={`h-2 w-2 fill-current ${ratingColor(s.rating)}`} /><span className={ratingColor(s.rating)}>{s.rating}</span></>}
                     </p>
                   </div>
                   <Switch checked={s.active} onCheckedChange={(v) => toggleSeries.mutate({ id: s.id, active: v })} />
-                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => { if (confirm("Remover série?")) deleteSeries.mutate(s.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0" onClick={() => { if (confirm("Remover série?")) deleteSeries.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>

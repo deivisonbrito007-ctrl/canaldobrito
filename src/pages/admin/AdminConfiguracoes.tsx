@@ -30,65 +30,56 @@ const AdminConfiguracoes = () => {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      {/* Identidade */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
-          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+    <div className="space-y-4 max-w-lg">
+      {/* Contact */}
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Phone className="h-4 w-4 text-emerald-400" />
-            Identidade & Contato
+            Contato
           </h3>
         </div>
-        <div className="p-5 sm:p-6 space-y-4">
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
-            <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1]" />
-            <p className="text-[11px] text-muted-foreground/50">Número completo com código do país (ex: 5511940759046)</p>
-          </div>
+        <div className="p-4 space-y-2">
+          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
+          <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
+          <p className="text-[10px] text-muted-foreground/50">Número completo com código do país</p>
         </div>
       </div>
 
       {/* API */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
-          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Key className="h-4 w-4 text-blue-400" />
-            Integrações & API
+            API
           </h3>
         </div>
-        <div className="p-5 sm:p-6 space-y-4">
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">TMDB API Key</Label>
-            <Input placeholder="Sua chave da API do TMDB" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} type="password" className="glass-panel border-white/[0.1]" />
-            <p className="text-[11px] text-muted-foreground/50">
-              Obtenha em{" "}
-              <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">themoviedb.org</a>
-            </p>
-          </div>
+        <div className="p-4 space-y-2">
+          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">TMDB API Key</Label>
+          <Input placeholder="Sua chave da API do TMDB" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} type="password" className="glass-panel border-white/[0.1] h-10" />
+          <p className="text-[10px] text-muted-foreground/50">
+            Obtenha em{" "}
+            <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">themoviedb.org</a>
+          </p>
         </div>
       </div>
 
-      {/* Sobre */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-white/[0.06]">
-          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            Sobre o Sistema
-          </h3>
-        </div>
-        <div className="p-5 sm:p-6">
-          <p className="text-xs text-muted-foreground">Brito Solutions — Painel de Gerenciamento v1.0</p>
+      {/* About */}
+      <div className="glass-panel rounded-xl p-4">
+        <div className="flex items-center gap-2">
+          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-[10px] text-muted-foreground">Brito Solutions — Painel v1.0</p>
         </div>
       </div>
 
       {/* Save */}
-      <Button onClick={handleSave} disabled={updateSetting.isPending} size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/20">
+      <Button onClick={handleSave} disabled={updateSetting.isPending} className="w-full min-h-[48px] text-sm font-semibold shadow-lg shadow-primary/20">
         {updateSetting.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-        Salvar Configurações
+        Salvar
       </Button>
     </div>
   );
