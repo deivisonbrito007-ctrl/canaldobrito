@@ -81,12 +81,22 @@ export const NewsReleasesSection = () => {
             transition={{ duration: 0.5 }}
           >
             {hasImg ? (
-              <img
-                src={item.image_url!}
-                alt={item.title}
-                className="w-full h-full object-cover"
-                onError={() => setImgErrors((s) => new Set(s).add(item.id))}
-              />
+              <>
+                {/* Blurred background fill */}
+                <img
+                  src={item.image_url!}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
+                  aria-hidden="true"
+                />
+                {/* Main image — fully visible */}
+                <img
+                  src={item.image_url!}
+                  alt={item.title}
+                  className="relative w-full h-full object-contain z-[1]"
+                  onError={() => setImgErrors((s) => new Set(s).add(item.id))}
+                />
+              </>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-card">
                 <ImageOff className="h-10 w-10 text-muted-foreground/20" />
