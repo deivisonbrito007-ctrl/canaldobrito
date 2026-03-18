@@ -1,6 +1,6 @@
 import { Game } from "@/types/sports";
 import { GameCard } from "./GameCard";
-import { Star } from "lucide-react";
+import { Flame } from "lucide-react";
 
 interface FeaturedGamesProps {
   games: Game[];
@@ -13,8 +13,10 @@ export const FeaturedGames = ({ games, onSelect }: FeaturedGamesProps) => {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
-        <Star className="h-5 w-5 text-primary" />
-        <h2 className="font-display text-lg font-bold text-foreground">Destaques do Dia</h2>
+        <Flame className="h-5 w-5 text-[hsl(var(--live))]" />
+        <h2 className="font-display text-base sm:text-lg font-bold text-foreground">
+          {games.some((g) => g.status === "live") ? "Ao Vivo & Destaques" : "Destaques do Dia"}
+        </h2>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {games.map((game) => (

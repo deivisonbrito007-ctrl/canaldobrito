@@ -6,76 +6,90 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
+    --background: 220 20% 4%;
     --foreground: 210 40% 96%;
 
-    --card: 217 33% 10%;
+    --card: 220 18% 8%;
     --card-foreground: 210 40% 96%;
 
-    --popover: 217 33% 10%;
+    --popover: 220 18% 8%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 122 39% 49%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 210 100% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 15%;
+    --secondary: 220 15% 13%;
     --secondary-foreground: 210 40% 96%;
 
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 220 15% 13%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 122 39% 49%;
-    --accent-foreground: 222 47% 6%;
+    --accent: 210 100% 52%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 122 39% 49%;
+    --border: 220 15% 14%;
+    --input: 220 15% 14%;
+    --ring: 210 100% 52%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 222 47% 6%;
+    --sidebar-background: 220 20% 4%;
     --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 122 39% 49%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 217 33% 15%;
+    --sidebar-primary: 210 100% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 13%;
     --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 122 39% 49%;
+    --sidebar-border: 220 15% 14%;
+    --sidebar-ring: 210 100% 52%;
 
-    /* Custom tokens */
-    --live: 145 100% 50%;
-    --live-glow: 145 100% 50%;
-    --warning: 45 93% 47%;
+    /* Status tokens */
+    --live: 0 85% 55%;
+    --live-glow: 0 85% 55%;
+    --warning: 40 95% 50%;
     --info: 210 100% 56%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(122 39% 49%), hsl(145 63% 42%));
-    --gradient-card: linear-gradient(180deg, hsl(217 33% 12%), hsl(217 33% 8%));
-    --shadow-glow: 0 0 20px hsl(122 39% 49% / 0.15);
+    /* Channel colors */
+    --channel-globo: 0 0% 95%;
+    --channel-sportv: 145 60% 45%;
+    --channel-premiere: 30 90% 50%;
+    --channel-espn: 0 85% 50%;
+    --channel-tnt: 270 60% 55%;
+    --channel-band: 210 80% 50%;
+    --channel-record: 25 90% 50%;
+    --channel-paramount: 215 90% 55%;
+    --channel-cazétv: 160 70% 45%;
+    --channel-amazon: 200 80% 50%;
+    --channel-max: 260 70% 55%;
+    --channel-default: 210 30% 40%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 52%), hsl(220 90% 60%));
+    --gradient-card: linear-gradient(180deg, hsl(220 18% 10%), hsl(220 18% 6%));
+    --shadow-glow: 0 0 20px hsl(210 100% 52% / 0.15);
   }
 
   .dark {
-    --background: 222 47% 6%;
+    --background: 220 20% 4%;
     --foreground: 210 40% 96%;
-    --card: 217 33% 10%;
+    --card: 220 18% 8%;
     --card-foreground: 210 40% 96%;
-    --popover: 217 33% 10%;
+    --popover: 220 18% 8%;
     --popover-foreground: 210 40% 96%;
-    --primary: 122 39% 49%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 217 33% 15%;
+    --primary: 210 100% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 13%;
     --secondary-foreground: 210 40% 96%;
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 122 39% 49%;
-    --accent-foreground: 222 47% 6%;
+    --muted: 220 15% 13%;
+    --muted-foreground: 215 15% 50%;
+    --accent: 210 100% 52%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 122 39% 49%;
+    --border: 220 15% 14%;
+    --input: 220 15% 14%;
+    --ring: 210 100% 52%;
   }
 }
 
@@ -96,17 +110,34 @@
 
 @layer utilities {
   .text-gradient-primary {
-    background: linear-gradient(135deg, hsl(122 39% 49%), hsl(145 63% 49%));
+    background: linear-gradient(135deg, hsl(210 100% 52%), hsl(220 90% 65%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px hsl(122 39% 49% / 0.2), 0 0 40px hsl(122 39% 49% / 0.1);
+    box-shadow: 0 0 20px hsl(210 100% 52% / 0.2), 0 0 40px hsl(210 100% 52% / 0.1);
   }
 
   .glow-live {
-    box-shadow: 0 0 12px hsl(145 100% 50% / 0.4), 0 0 24px hsl(145 100% 50% / 0.2);
+    box-shadow: 0 0 12px hsl(var(--live) / 0.5), 0 0 24px hsl(var(--live) / 0.25);
+  }
+
+  .animate-pulse-live {
+    animation: pulse-live 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }

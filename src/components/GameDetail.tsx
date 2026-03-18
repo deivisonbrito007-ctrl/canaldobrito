@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { format } from "date-fns";
 import { MapPin, Clock, Trophy, Tv } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GameDetailProps {
   game: Game | null;
@@ -20,6 +21,14 @@ const GameDetailContent = ({ game }: { game: Game }) => {
 
   return (
     <div className="space-y-4">
+      {/* Broadcast Channel - TOP PRIORITY */}
+      {game.broadcastChannel && (
+        <div className="flex items-center justify-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-5 py-3.5">
+          <Tv className="h-5 w-5 text-primary" />
+          <span className="font-display text-base sm:text-lg font-bold text-foreground">{game.broadcastChannel}</span>
+        </div>
+      )}
+
       {/* Status */}
       <div className="flex justify-center">
         {game.status === "live" && <LiveBadge />}
@@ -41,7 +50,7 @@ const GameDetailContent = ({ game }: { game: Game }) => {
 
         <div className="flex flex-col items-center gap-1">
           {game.status === "scheduled" ? (
-            <span className="font-display text-2xl sm:text-3xl font-black text-muted-foreground">{time}</span>
+            <span className="font-display text-3xl sm:text-4xl font-black text-foreground">{time}</span>
           ) : (
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="font-display text-3xl sm:text-4xl font-black">{game.homeTeam.score ?? 0}</span>
@@ -57,28 +66,20 @@ const GameDetailContent = ({ game }: { game: Game }) => {
         </div>
       </div>
 
-      {/* Broadcast Channel - highlighted */}
-      {game.broadcastChannel && (
-        <div className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5">
-          <Tv className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">{game.broadcastChannel}</span>
-        </div>
-      )}
-
       {/* Info grid */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        <div className="flex items-center gap-2 rounded-lg bg-secondary/30 px-3 py-2 text-sm">
+        <div className="flex items-center gap-2 rounded-lg bg-secondary/30 px-3 py-2.5 text-sm">
           <Clock className="h-4 w-4 text-muted-foreground" />
           <span>{time}</span>
         </div>
         {game.venue && (
-          <div className="flex items-center gap-2 rounded-lg bg-secondary/30 px-3 py-2 text-sm">
+          <div className="flex items-center gap-2 rounded-lg bg-secondary/30 px-3 py-2.5 text-sm">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span className="truncate">{game.venue}</span>
           </div>
         )}
         {game.round && (
-          <div className="flex items-center gap-2 rounded-lg bg-secondary/30 px-3 py-2 text-sm">
+          <div className="flex items-center gap-2 rounded-lg bg-secondary/30 px-3 py-2.5 text-sm col-span-2">
             <Trophy className="h-4 w-4 text-muted-foreground" />
             <span>{game.round}</span>
           </div>
