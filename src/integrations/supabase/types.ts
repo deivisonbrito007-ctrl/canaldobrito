@@ -206,6 +206,54 @@ export type Database = {
         }
         Relationships: []
       }
+      news_releases: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          badge_type: string
+          content_type: string
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          overview: string | null
+          rating: number | null
+          title: string
+          tmdb_id: number | null
+          year: number | null
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          badge_type?: string
+          content_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          overview?: string | null
+          rating?: number | null
+          title: string
+          tmdb_id?: number | null
+          year?: number | null
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          badge_type?: string
+          content_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          overview?: string | null
+          rating?: number | null
+          title?: string
+          tmdb_id?: number | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
