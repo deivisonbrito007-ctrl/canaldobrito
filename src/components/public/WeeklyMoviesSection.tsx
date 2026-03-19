@@ -2,20 +2,31 @@ import { useActiveMovies } from "@/hooks/useMovies";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Film, Star, ImageOff } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
+import { ContentDetailSheet } from "./ContentDetailSheet";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const MovieCard = ({ item, index }: { item: ReturnType<typeof useActiveMovies>["data"] extends (infer T)[] | undefined ? T : never; index: number }) => {
+type MovieItem = NonNullable<ReturnType<typeof useActiveMovies>["data"]>[number];
+
+const MovieCard = ({ item, index, onSelect }: { item: MovieItem; index: number; onSelect: () => void }) => {
   const [imgErr, setImgErr] = useState(false);
 
   return (
     <motion.div
       className="snap-start shrink-0 w-[170px] sm:w-[180px]"
+      style={{ willChange: "transform, opacity" }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
     >
-      <div className="group relative overflow-hidden rounded-xl border border-border/10 bg-card aspect-[2/3] transition-all duration-250 hover:scale-[1.04] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer">
+      <div
+        className="group relative overflow-hidden rounded-xl border border-border/10 bg-card aspect-[2/3] transition-all duration-250 hover:scale-[1.04] active:scale-[0.97] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer"
+        onClick={onSelect}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && onSelect()}
+        aria-label={`Ver detalhes de ${item.title}`}
+      >
         {item.poster_url && !imgErr ? (
           <img
             src={item.poster_url}
@@ -65,6 +76,7 @@ const MovieCard = ({ item, index }: { item: ReturnType<typeof useActiveMovies>["
 
 export const WeeklyMoviesSection = () => {
   const { data: movies, isLoading } = useActiveMovies();
+  const [selected, setSelected] = useState<MovieItem | null>(null);
 
   if (isLoading) {
     return (
@@ -84,14 +96,19 @@ export const WeeklyMoviesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4">
-        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" hideBrand />
+        <SectionHeader icon={Film} title={`Filmes (${movies.length})`} subtitle="Destaques da semana" hideBrand />
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {movies.map((item, idx) => (
-          <MovieCard key={item.id} item={item} index={idx} />
+          <MovieCard key={item.id} item={item} index={idx} onSelect={() => setSelected(item)} />
         ))}
       </div>
+
+      <ContentDetailSheet
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        item={selected ? { ...selected, content_type: "movie" } : null}
+      />
     </div>
   );
 };
-
