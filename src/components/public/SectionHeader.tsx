@@ -14,7 +14,7 @@ export const SectionHeader = ({ icon: Icon, title, subtitle, badge }: SectionHea
     </div>
     <div className="flex flex-col gap-0.5">
       <h2 className="font-body text-[15px] sm:text-base font-bold text-foreground leading-tight tracking-tight">
-        {title} <span className="text-primary">Brito Solutions</span>
+        {title} <span className="text-foreground/70">Brito Solutions</span>
       </h2>
       <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide leading-none">
         {subtitle}

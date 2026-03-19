@@ -10,10 +10,11 @@ export const AppNavbar = () => {
     <header className="sticky top-0 z-50 glass-nav">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Brito Solutions" className="h-11 w-11 rounded-xl object-contain glow-primary-subtle" />
+          <img src={logo} alt="Brito Solutions" className="h-10 w-auto object-contain" />
           <div className="leading-tight">
-            <h1 className="font-display text-xl tracking-[2px] text-gradient-primary">
-              BRITO SOLUTIONS
+            <h1 className="font-body text-lg font-bold tracking-tight">
+              <span className="text-foreground">Brito</span>{" "}
+              <span className="text-primary">Solutions</span>
             </h1>
             <p className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize font-body font-medium">
               <CalendarDays className="h-3 w-3" />

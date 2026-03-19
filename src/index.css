@@ -105,7 +105,7 @@
   }
 
   .text-gradient-primary {
-    background: linear-gradient(135deg, hsl(160 100% 45%), hsl(190 100% 50%));
+    background: linear-gradient(135deg, hsl(0 0% 95%), hsl(160 100% 45%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
