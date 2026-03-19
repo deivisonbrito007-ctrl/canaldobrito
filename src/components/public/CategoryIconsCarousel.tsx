@@ -47,7 +47,7 @@ export const CategoryIconsCarousel = () => (
     {/* Auto-scroll marquee */}
     <div className="overflow-hidden marquee-container marquee-mask">
       <div className="marquee-track flex gap-3 w-max">
-        {tripled.map((cat, i) => (
+        {carouselItems.map((cat, i) => (
           <div
             key={`${cat.label}-${i}`}
             className={`shrink-0 flex items-center gap-2.5 px-4 py-3 rounded-xl
