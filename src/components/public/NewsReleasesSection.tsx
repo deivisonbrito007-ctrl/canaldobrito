@@ -96,7 +96,7 @@ export const NewsReleasesSection = () => {
       </div>
 
       <div
-        className="relative mx-4 h-[360px] sm:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden select-none cursor-pointer"
+        className="relative mx-4 h-[300px] sm:h-[360px] rounded-2xl sm:rounded-3xl overflow-hidden select-none cursor-pointer"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onClick={handleCardClick}
