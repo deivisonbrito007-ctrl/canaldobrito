@@ -64,11 +64,14 @@ const AdminNovidades = () => {
                 <SelectItem value="series">📺 Série</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={badgeType} onValueChange={(v) => setBadgeType(v as any)}>
+            <Select value={badgeType} onValueChange={(v) => setBadgeType(v)}>
               <SelectTrigger className="glass-panel border-white/[0.1] h-10 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="novidade">🔥 Novidade</SelectItem>
                 <SelectItem value="lancamento">🆕 Lançamento</SelectItem>
+                <SelectItem value="nova_temporada">📺 Nova Temporada</SelectItem>
+                <SelectItem value="estreia">⭐ Estreia</SelectItem>
+                <SelectItem value="exclusivo">👑 Exclusivo</SelectItem>
               </SelectContent>
             </Select>
           </div>
