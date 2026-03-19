@@ -69,7 +69,7 @@ export const WeeklySeriesSection = () => {
   if (isLoading) {
     return (
       <div className="space-y-4 px-4">
-        <SectionHeader icon={Clapperboard} title="Séries" subtitle="Destaques da semana" />
+        <SectionHeader icon={Clapperboard} title="Séries" subtitle="Destaques da semana" hideBrand />
         <div className="flex gap-3.5 overflow-hidden">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="aspect-[2/3] rounded-xl w-[150px] shrink-0" />
@@ -84,7 +84,7 @@ export const WeeklySeriesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4">
-        <SectionHeader icon={Clapperboard} title="Séries" subtitle="Destaques da semana" />
+        <SectionHeader icon={Clapperboard} title="Séries" subtitle="Destaques da semana" hideBrand />
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {series.map((item, idx) => (
