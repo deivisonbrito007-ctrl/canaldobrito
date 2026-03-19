@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, Image, Film, Clapperboard, Sparkles, Trophy, FileText } from "lucide-react";
+import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
 
 const useCountUp = (target: number, duration = 800) => {
   const [count, setCount] = useState(0);
