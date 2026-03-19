@@ -2,7 +2,8 @@ import { useDailyGames } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { isGameCurrentlyLive } from "@/lib/gameUtils";
-import { Radio } from "lucide-react";
+import { Radio, Zap } from "lucide-react";
+import { SectionHeader } from "./SectionHeader";
 
 export const LiveNowSection = () => {
   const today = new Date().toISOString().split("T")[0];
