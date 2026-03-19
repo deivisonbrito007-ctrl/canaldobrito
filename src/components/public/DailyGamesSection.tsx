@@ -62,8 +62,8 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 const HIGHLIGHT_COMPS = [
-  "champions league", "brasileirão", "brasileirao",
-  "libertadores", "copa do brasil", "premier league",
+  "champions league", "brasileirão", "brasileirao", "campeonato brasileiro",
+  "libertadores", "copa do brasil", "premier league", "campeonato inglês",
 ];
 
 const FILTER_CHANNELS = ["ESPN", "Sportv", "Globo", "Premiere", "Disney+", "CazéTV", "TNT"];
