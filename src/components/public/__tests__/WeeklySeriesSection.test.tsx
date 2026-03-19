@@ -24,7 +24,7 @@ describe("WeeklySeriesSection", () => {
   it("renders loading skeletons when loading", () => {
     mockedUseActiveSeries.mockReturnValue({ data: undefined, isLoading: true } as any);
     const { container } = render(<WeeklySeriesSection />, { wrapper });
-    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".skeleton-shimmer").length).toBeGreaterThan(0);
   });
 
   it("returns null when no series", () => {

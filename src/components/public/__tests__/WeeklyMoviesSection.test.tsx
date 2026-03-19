@@ -25,7 +25,7 @@ describe("WeeklyMoviesSection", () => {
   it("renders loading skeletons when loading", () => {
     mockedUseActiveMovies.mockReturnValue({ data: undefined, isLoading: true } as any);
     const { container } = render(<WeeklyMoviesSection />, { wrapper });
-    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".skeleton-shimmer").length).toBeGreaterThan(0);
   });
 
   it("returns null when no movies", () => {
