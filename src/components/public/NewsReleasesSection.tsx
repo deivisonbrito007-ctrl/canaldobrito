@@ -152,7 +152,7 @@ export const NewsReleasesSection = () => {
 
         {/* Content bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 space-y-2 z-10">
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white leading-tight line-clamp-2 drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)]">
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white leading-tight line-clamp-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
             {item.title}
           </h2>
 
