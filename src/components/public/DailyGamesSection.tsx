@@ -191,15 +191,18 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
 
 /* ── Section ── */
 export const DailyGamesSection = () => {
-  const today = new Date().toISOString().split("T")[0];
+  const [today, setToday] = useState(() => getLocalDateString());
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
-  // Re-evaluate live status every 60s
+  // Re-evaluate live status every 60s + reset date at midnight
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 60000);
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+      setToday(getLocalDateString());
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
