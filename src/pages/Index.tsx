@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { SectionHeader } from "@/components/public/SectionHeader";
-import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
+// import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
+import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
