@@ -170,9 +170,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           {game.channels && game.channels.length > 0 && (
             <div className="flex gap-1.5 flex-wrap">
               {game.channels.slice(0, 4).map((ch, i) => (
-                <span key={i} className={`text-[10px] font-bold px-2 py-1 rounded-lg shrink-0 ${getChannelColor(ch)}`}>
-                  {ch}
-                </span>
+                <ChannelBadge key={i} name={ch} />
               ))}
               {game.channels.length > 4 && (
                 <span className="text-[10px] text-muted-foreground/50 self-center">+{game.channels.length - 4}</span>
