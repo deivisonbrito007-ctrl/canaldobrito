@@ -10,7 +10,7 @@ const MovieCard = ({ item, index }: { item: ReturnType<typeof useActiveMovies>["
 
   return (
     <motion.div
-      className="snap-start shrink-0 w-[150px] sm:w-[180px]"
+      className="snap-start shrink-0 w-[170px] sm:w-[180px]"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
