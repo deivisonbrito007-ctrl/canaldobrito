@@ -44,16 +44,18 @@ export const LiveNowSection = () => {
       </div>
 
       {liveGames.length === 0 ? (
-        <div className="mx-4 rounded-2xl border border-border/10 bg-card p-6 flex flex-col items-center gap-3 text-center">
-          <div className="p-3 rounded-full bg-muted/50">
-            <Radio className="h-5 w-5 text-muted-foreground" />
+        <div className="mx-4 rounded-2xl border border-border/10 bg-card p-3 flex items-center gap-3">
+          <div className="p-2 rounded-full bg-muted/50 shrink-0">
+            <Radio className="h-4 w-4 text-muted-foreground" />
           </div>
-          <p className="text-sm font-semibold text-muted-foreground font-body">
-            Nenhum jogo ao vivo no momento
-          </p>
-          <p className="text-xs text-muted-foreground/60 font-body">
-            Os jogos aparecerão aqui automaticamente quando começarem
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-muted-foreground font-body">
+              Nenhum jogo ao vivo
+            </p>
+            <p className="text-[11px] text-muted-foreground/60 font-body">
+              Aparecerão aqui quando começarem
+            </p>
+          </div>
         </div>
       ) : (
         <div className="flex gap-3.5 overflow-x-auto scrollbar-hide px-4 pb-2" style={{ scrollSnapType: "x mandatory" }}>

@@ -1,10 +1,12 @@
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ChannelConfig = {
   emoji: string;
   bg: string;
   text: string;
   border: string;
+  short?: string;
 };
 
 const CHANNEL_MAP: Record<string, ChannelConfig> = {
@@ -16,16 +18,17 @@ const CHANNEL_MAP: Record<string, ChannelConfig> = {
   cazétv:       { emoji: "🎮", bg: "bg-lime-500/20",    text: "text-lime-400",    border: "border-lime-500/30" },
   cazetv:       { emoji: "🎮", bg: "bg-lime-500/20",    text: "text-lime-400",    border: "border-lime-500/30" },
   tnt:          { emoji: "💥", bg: "bg-blue-600/20",    text: "text-blue-400",    border: "border-blue-500/30" },
-  "prime video":{ emoji: "▶️", bg: "bg-sky-500/20",     text: "text-sky-400",     border: "border-sky-500/30" },
+  "prime video":{ emoji: "▶️", bg: "bg-sky-500/20",     text: "text-sky-400",     border: "border-sky-500/30", short: "Prime" },
   band:         { emoji: "📡", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
-  bandsports:   { emoji: "📡", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+  bandsports:   { emoji: "📡", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30", short: "BandSp" },
   bandplay:     { emoji: "📡", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
   max:          { emoji: "🎬", bg: "bg-purple-700/20",  text: "text-purple-400",  border: "border-purple-500/30" },
-  "hbo max":    { emoji: "🎬", bg: "bg-purple-700/20",  text: "text-purple-400",  border: "border-purple-500/30" },
+  "hbo max":    { emoji: "🎬", bg: "bg-purple-700/20",  text: "text-purple-400",  border: "border-purple-500/30", short: "HBO" },
   record:       { emoji: "📺", bg: "bg-blue-500/20",    text: "text-blue-400",    border: "border-blue-500/30" },
-  "canal goat": { emoji: "🐐", bg: "bg-amber-500/20",  text: "text-amber-400",   border: "border-amber-500/30" },
-  "ge tv":      { emoji: "📱", bg: "bg-orange-500/20",  text: "text-orange-400",  border: "border-orange-500/30" },
+  "canal goat": { emoji: "🐐", bg: "bg-amber-500/20",  text: "text-amber-400",   border: "border-amber-500/30", short: "GOAT" },
+  "ge tv":      { emoji: "📱", bg: "bg-orange-500/20",  text: "text-orange-400",  border: "border-orange-500/30", short: "ge" },
   space:        { emoji: "🚀", bg: "bg-indigo-500/20",  text: "text-indigo-400",  border: "border-indigo-500/30" },
+  "esporte na band": { emoji: "📡", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30", short: "Band YT" },
 };
 
 const FALLBACK: ChannelConfig = {
@@ -54,11 +57,13 @@ interface ChannelBadgeProps {
 }
 
 export const ChannelBadge = ({ name, className }: ChannelBadgeProps) => {
+  const isMobile = useIsMobile();
+
   if (isCanalDoBrito(name)) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0",
+          "inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shrink-0",
           "bg-gradient-to-r from-red-600/25 to-amber-500/20 text-amber-300",
           "border border-amber-500/40 shadow-[0_0_8px_hsl(40,80%,50%,0.15)]",
           className
@@ -69,17 +74,18 @@ export const ChannelBadge = ({ name, className }: ChannelBadgeProps) => {
           alt="Canal do Brito"
           className="h-3.5 w-3.5 rounded-sm object-contain"
         />
-        {name}
+        {isMobile ? "Brito" : name}
       </span>
     );
   }
 
   const config = matchChannel(name);
+  const displayName = isMobile && config.short ? config.short : name;
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0 border",
+        "inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shrink-0 border",
         config.bg,
         config.text,
         config.border,
@@ -87,7 +93,7 @@ export const ChannelBadge = ({ name, className }: ChannelBadgeProps) => {
       )}
     >
       <span className="text-[9px] leading-none">{config.emoji}</span>
-      {name}
+      {displayName}
     </span>
   );
 };
