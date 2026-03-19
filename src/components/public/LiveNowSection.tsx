@@ -58,9 +58,7 @@ export const LiveNowSection = () => {
       ) : (
         <div className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory">
           {liveGames.map((game, idx) => {
-            const elapsed = DEBUG_FORCE_LIVE
-              ? [23, 67, 41][idx % 3]
-              : getElapsedMinutes(game.game_time, game.date);
+            const elapsed = getElapsedMinutes(game.game_time, game.date);
 
             return (
               <motion.div
