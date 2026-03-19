@@ -1,9 +1,15 @@
 import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Star, ImageOff } from "lucide-react";
+import { Sparkles, Star, ImageOff, Clock, Tv } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { SectionHeader } from "./SectionHeader";
 import { useState, useEffect, useCallback, useRef } from "react";
+
+const formatRuntime = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
+};
 
 export const NewsReleasesSection = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
@@ -14,7 +20,6 @@ export const NewsReleasesSection = () => {
 
   const total = items?.length ?? 0;
 
-  // Reset current when items change to avoid out-of-bounds
   useEffect(() => {
     setCurrent(0);
   }, [total]);
@@ -146,15 +151,47 @@ export const NewsReleasesSection = () => {
         )}
 
         {/* Content bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 space-y-2 z-10">
-          <span className="inline-block rounded-full bg-white/10 border border-white/10 px-2.5 py-0.5 text-[10px] font-semibold text-white/70 backdrop-blur-sm">
-            {item.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
-            {item.year ? ` · ${item.year}` : ""}
-          </span>
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 space-y-1.5 z-10">
+          {/* Meta line: type · year · runtime/seasons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70 backdrop-blur-sm">
+              {item.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
+              {item.year ? ` · ${item.year}` : ""}
+            </span>
+            {item.runtime && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] font-medium text-white/60 backdrop-blur-sm">
+                <Clock className="h-2.5 w-2.5" />
+                {formatRuntime(item.runtime)}
+              </span>
+            )}
+            {item.seasons && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[10px] font-medium text-white/60 backdrop-blur-sm">
+                <Tv className="h-2.5 w-2.5" />
+                {item.seasons} temporada{item.seasons > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {/* Genres */}
+          {item.genres && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {item.genres.split(", ").slice(0, 3).map((g) => (
+                <span key={g} className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[9px] font-medium text-white/50">
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
 
           <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white leading-tight line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
             {item.title}
           </h2>
+
+          {item.tagline && (
+            <p className="text-[11px] italic text-white/50 drop-shadow-md line-clamp-1">
+              "{item.tagline}"
+            </p>
+          )}
 
           {item.overview && (
             <p className="text-xs text-white/65 leading-relaxed line-clamp-2 max-w-[90%] drop-shadow-md">

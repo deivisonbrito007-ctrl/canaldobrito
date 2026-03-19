@@ -55,6 +55,12 @@ Deno.serve(async (req) => {
       case "tv_videos":
         url = `${BASE}/tv/${encodeURIComponent(query || "")}/videos?language=pt-BR&api_key=${apiKey}`;
         break;
+      case "movie_details":
+        url = `${BASE}/movie/${encodeURIComponent(query || "")}?language=pt-BR&api_key=${apiKey}`;
+        break;
+      case "tv_details":
+        url = `${BASE}/tv/${encodeURIComponent(query || "")}?language=pt-BR&api_key=${apiKey}`;
+        break;
       default:
         return new Response(
           JSON.stringify({ error: "Invalid action" }),
