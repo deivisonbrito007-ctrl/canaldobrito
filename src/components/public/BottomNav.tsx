@@ -1,5 +1,4 @@
-import { Home, CalendarDays, User, Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Home, CalendarDays, Star } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -10,17 +9,10 @@ const navItems = [
   { id: "home", label: "Início", icon: Home },
   { id: "highlights", label: "Destaques", icon: Star },
   { id: "schedule", label: "Programação", icon: CalendarDays },
-  { id: "profile", label: "Perfil", icon: User },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
-  const navigate = useNavigate();
-
   const handleTab = (id: string) => {
-    if (id === "profile") {
-      navigate("/login");
-      return;
-    }
     onTabChange(id);
   };
 
