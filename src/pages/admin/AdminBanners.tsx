@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, Calendar, ClipboardPaste, Clock } from "lucide-react";
+import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, ClipboardPaste, Clock } from "lucide-react";
+import { formatCountdown } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
 const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) => void; uploading: boolean }) => {
