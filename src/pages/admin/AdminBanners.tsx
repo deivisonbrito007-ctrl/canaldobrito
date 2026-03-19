@@ -140,7 +140,6 @@ const AdminBanners = () => {
     <div className="space-y-4">
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
-          { key: "daily" as const, label: "📺 Dia" },
           { key: "categories" as const, label: "📁 Categorias" },
           { key: "programacao" as const, label: "📋 Programação" },
         ].map((s) => (
