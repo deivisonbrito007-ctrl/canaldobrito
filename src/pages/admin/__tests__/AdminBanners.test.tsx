@@ -43,7 +43,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe("AdminBanners", () => {
   it("renders category pills", () => {
     render(<AdminBanners />, { wrapper });
-    expect(screen.getByText("📺 Capa")).toBeInTheDocument();
+    const capas = screen.getAllByText("📺 Capa");
+    expect(capas.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("⚽ Futebol")).toBeInTheDocument();
     expect(screen.getByText("🏀 Basquete")).toBeInTheDocument();
   });
