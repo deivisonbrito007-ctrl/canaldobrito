@@ -59,7 +59,7 @@ export const useAddNewsRelease = () => {
 export const useUpdateNewsRelease = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...fields }: { id: string } & Partial<Pick<NewsRelease, "active" | "badge_type">>) => {
+    mutationFn: async ({ id, ...fields }: { id: string } & Partial<Pick<NewsRelease, "active" | "badge_type" | "display_order" | "title" | "overview">>) => {
       const { error } = await supabase.from("news_releases").update(fields).eq("id", id);
       if (error) throw error;
     },
