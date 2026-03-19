@@ -14,7 +14,7 @@ const categories = [
 const doubled = [...categories, ...categories];
 
 export const CategoryIconsCarousel = () => (
-  <section className="px-4 sm:px-6 py-6 space-y-5">
+  <section className="px-4 sm:px-6 py-4 space-y-3">
     {/* Premium message — Dual Tone branding */}
     <motion.div
       initial={{ opacity: 0, y: 12 }}
