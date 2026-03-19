@@ -49,6 +49,7 @@ export const NewsReleasesSection = () => {
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchRef.current = e.touches[0].clientX;
+    didSwipe.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -56,10 +57,26 @@ export const NewsReleasesSection = () => {
     if (touchRef.current === null) return;
     const diff = e.changedTouches[0].clientX - touchRef.current;
     if (Math.abs(diff) > 50) {
+      didSwipe.current = true;
       setCurrent((c) => diff < 0 ? (c + 1) % total : (c - 1 + total) % total);
     }
     touchRef.current = null;
     startTimer();
+  };
+
+  const handleCardClick = () => {
+    if (didSwipe.current) return;
+    const current_item = items?.[safeIndex];
+    if (!current_item) return;
+    setSelectedItem(current_item);
+    setSheetOpen(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const handleSheetClose = () => {
+    setSheetOpen(false);
+    setSelectedItem(null);
+    if (total > 1) startTimer();
   };
 
   if (isLoading) {
