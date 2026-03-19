@@ -25,6 +25,7 @@ const AdminConfiguracoes = () => {
     try {
       await updateSetting.mutateAsync({ key: "whatsapp", value: whatsapp });
       await updateSetting.mutateAsync({ key: "tmdb_api_key", value: tmdbKey });
+      await updateSetting.mutateAsync({ key: "site_url", value: siteUrl });
       toast.success("Configurações salvas!");
     } catch (err: any) {
       toast.error(err.message);
