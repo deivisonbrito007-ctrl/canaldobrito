@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square } from "lucide-react";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export interface ParsedGame {
@@ -157,17 +157,40 @@ export const ProgramacaoTexto = () => {
     toast.info("Texto de exemplo preenchido");
   };
 
+  const isDateInPast = (dateStr: string): boolean => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const midnight = new Date(y, m - 1, d, 0, 0, 0);
+    return midnight.getTime() <= Date.now();
+  };
+
+  const getScheduleLabel = (): { text: string; isPast: boolean } => {
+    const [, m, d] = selectedDate.split("-");
+    const past = isDateInPast(selectedDate);
+    return {
+      text: past
+        ? "⚠️ Data no passado — será publicado imediatamente"
+        : `Ativa em ${d}/${m} às 00:00`,
+      isPast: past,
+    };
+  };
+
   const buildInsertPayload = (selected: ParsedGame[]) => {
     return selected.map(({ selected: _, ...g }) => {
       let publishAt: string | null = null;
+      let active = true;
+
       if (scheduleMidnight) {
-        // Use local date components to ensure midnight is interpreted as LOCAL time
         const [y, m, d] = g.date.split("-").map(Number);
-        publishAt = new Date(y, m - 1, d, 0, 0, 0).toISOString();
+        const midnight = new Date(y, m - 1, d, 0, 0, 0);
+        if (midnight.getTime() > Date.now()) {
+          publishAt = midnight.toISOString();
+          active = false;
+        }
       }
+
       return {
         ...g,
-        active: scheduleMidnight ? false : true,
+        active,
         is_live: false,
         status_short: "NS",
         elapsed_minutes: null,
@@ -251,21 +274,34 @@ export const ProgramacaoTexto = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Default date */}
             <div className="space-y-1.5">
-              <label className="text-[11px] text-muted-foreground font-medium">Data padrão</label>
+              <label className="text-[11px] text-muted-foreground font-medium">Data dos jogos</label>
               <Input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="text-xs h-10 glass-panel border-white/[0.1]"
               />
+              <p className="text-[9px] text-muted-foreground">Usado quando o texto não contém 📅 com data</p>
             </div>
 
             {/* Schedule midnight */}
-            <div className="flex items-center gap-3 p-3 rounded-xl glass-panel border border-amber-500/20 bg-amber-500/[0.03]">
+            <div className={`flex items-center gap-3 p-3 rounded-xl glass-panel border ${
+              scheduleMidnight && getScheduleLabel().isPast
+                ? "border-destructive/30 bg-destructive/[0.05]"
+                : "border-amber-500/20 bg-amber-500/[0.03]"
+            }`}>
               <Clock className="h-4 w-4 text-amber-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-foreground">Agendar 00:00</p>
-                <p className="text-[9px] text-muted-foreground leading-tight">Ativa automaticamente à meia-noite</p>
+                <p className="text-[11px] font-semibold text-foreground">Agendar publicação</p>
+                {scheduleMidnight ? (
+                  <p className={`text-[9px] leading-tight font-medium ${
+                    getScheduleLabel().isPast ? "text-destructive" : "text-emerald-400"
+                  }`}>
+                    {getScheduleLabel().text}
+                  </p>
+                ) : (
+                  <p className="text-[9px] text-muted-foreground leading-tight">Publica à meia-noite da data dos jogos</p>
+                )}
               </div>
               <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
             </div>
