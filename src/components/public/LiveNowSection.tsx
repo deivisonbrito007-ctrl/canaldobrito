@@ -6,10 +6,6 @@ import { Radio, Zap, Clock } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ChannelBadge } from "./ChannelBadge";
 
-// 🔧 TESTE: Mudar para false quando terminar o teste
-const DEBUG_FORCE_LIVE = false;
-const DEBUG_LIVE_COUNT = 3;
-
 export const LiveNowSection = () => {
   const [today, setToday] = useState(() => getLocalDateString());
   const { data: games } = useDailyGames(today);
@@ -24,11 +20,7 @@ export const LiveNowSection = () => {
   }, []);
 
   const liveGames = useMemo(() => {
-    const allGames = games || [];
-    if (DEBUG_FORCE_LIVE && allGames.length > 0) {
-      return allGames.slice(0, DEBUG_LIVE_COUNT);
-    }
-    return allGames.filter((g) => isGameCurrentlyLive(g.game_time, g.date));
+    return (games || []).filter((g) => isGameCurrentlyLive(g.game_time, g.date));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [games, Math.floor(Date.now() / 60000)]);
 
