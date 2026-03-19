@@ -286,15 +286,16 @@ export const DailyGamesSection = () => {
         </button>
         {FILTER_COMPS.map((c) => (
           <button
-            key={c}
-            onClick={() => setCompFilter(compFilter === c ? null : c)}
+            key={c.label}
+            onClick={() => setCompFilter(compFilter === c.label ? null : c.label)}
             className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              compFilter === c
+              compFilter === c.label
                 ? "bg-primary/15 text-primary border border-primary/30"
                 : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
             }`}
           >
-            {c}
+            <span className="sm:hidden">{c.short}</span>
+            <span className="hidden sm:inline">{c.label}</span>
           </button>
         ))}
       </div>
