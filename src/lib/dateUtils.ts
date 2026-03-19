@@ -12,3 +12,11 @@ export function formatCountdown(publishAt: string): string {
   const diffDays = Math.floor(diffH / 24);
   return diffDays === 1 ? "Publica amanhã" : `Publica em ${diffDays}d`;
 }
+
+export function getScheduleDate(hoursOffset: number = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(hoursOffset, 0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
