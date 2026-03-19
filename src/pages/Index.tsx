@@ -34,7 +34,7 @@ const Index = () => {
 
       <AppNavbar />
 
-      <main className="relative z-10 flex-1 pb-24">
+      <main className="relative z-10 flex-1 pb-28">
         {activeTab === "highlights" ? (
           /* ── Aba Destaques ── */
           <div className="px-4 pt-5 pb-3 space-y-6">

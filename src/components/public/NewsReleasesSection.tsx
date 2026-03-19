@@ -194,7 +194,7 @@ export const NewsReleasesSection = () => {
           )}
 
           {item.overview && (
-            <p className="hidden min-[380px]:block text-xs text-white/70 leading-relaxed line-clamp-2 max-w-[90%] drop-shadow-md">
+            <p className="text-xs text-white/70 leading-relaxed line-clamp-2 max-w-[90%] drop-shadow-md">
               {item.overview}
             </p>
           )}
