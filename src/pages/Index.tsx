@@ -37,10 +37,14 @@ const Index = () => {
       <main className="relative z-10 flex-1 pb-28">
         {activeTab === "highlights" ? (
           /* ── Aba Destaques ── */
-          <div className="px-4 pt-5 pb-3 space-y-6">
-            <SectionHeader icon={Star} title="Destaques" subtitle="Seleção da semana" />
+          <div className="pt-5 pb-3 space-y-6">
+            <div className="px-4">
+              <SectionHeader icon={Star} title="Destaques" subtitle="Seleção da semana" />
+            </div>
             <WeeklyMoviesSection />
             <WeeklySeriesSection />
+            {/* Empty state when no content */}
+            <HighlightsEmptyState />
           </div>
         ) : activeTab === "schedule" ? (
           /* ── Aba Programação ── */
