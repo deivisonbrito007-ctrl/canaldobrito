@@ -11,7 +11,7 @@ const categories = [
   { icon: Flame, label: "Em Alta", color: "from-pink-500/20 to-pink-600/10" },
 ];
 
-const doubled = [...categories, ...categories];
+const tripled = [...categories, ...categories, ...categories];
 
 export const CategoryIconsCarousel = () => (
   <section className="px-4 sm:px-6 py-4 space-y-3">
