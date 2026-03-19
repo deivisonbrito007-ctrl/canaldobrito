@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square } from "lucide-react";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export interface ParsedGame {
