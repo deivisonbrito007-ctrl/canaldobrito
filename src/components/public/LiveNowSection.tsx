@@ -2,7 +2,8 @@ import { useDailyGames } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { isGameCurrentlyLive } from "@/lib/gameUtils";
-import { Radio } from "lucide-react";
+import { Radio, Zap } from "lucide-react";
+import { SectionHeader } from "./SectionHeader";
 
 export const LiveNowSection = () => {
   const today = new Date().toISOString().split("T")[0];
@@ -22,23 +23,19 @@ export const LiveNowSection = () => {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between px-4">
-        <div className="flex items-center gap-2.5">
-          <span className="text-lg">⚽</span>
-          <div className="flex flex-col">
-            <h2 className="font-display text-xl tracking-[2px] text-foreground leading-tight">
-              Ao Vivo <span className="text-primary">Brito Solutions</span>
-            </h2>
-            <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
-              Acompanhe os jogos em tempo real
-            </p>
-          </div>
-          {liveGames.length > 0 && (
-            <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums">
-              {liveGames.length}
-            </span>
-          )}
-        </div>
+      <div className="px-4">
+        <SectionHeader
+          icon={Zap}
+          title="Ao Vivo"
+          subtitle="Acompanhe os jogos em tempo real"
+          badge={
+            liveGames.length > 0 ? (
+              <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums">
+                {liveGames.length}
+              </span>
+            ) : undefined
+          }
+        />
       </div>
 
       {liveGames.length === 0 ? (

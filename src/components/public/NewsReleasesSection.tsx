@@ -2,6 +2,7 @@ import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Star, ImageOff } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { SectionHeader } from "./SectionHeader";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 export const NewsReleasesSection = () => {
@@ -48,7 +49,7 @@ export const NewsReleasesSection = () => {
   if (isLoading) {
     return (
       <div className="px-4 space-y-4">
-        <SectionHeader />
+        <SectionHeader icon={Sparkles} title="Novidades" subtitle="Filmes e séries em destaque" />
         <Skeleton className="h-[360px] sm:h-[420px] rounded-2xl sm:rounded-3xl" />
       </div>
     );
@@ -62,7 +63,7 @@ export const NewsReleasesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4 sm:px-6">
-        <SectionHeader />
+        <SectionHeader icon={Sparkles} title="Novidades" subtitle="Filmes e séries em destaque" />
       </div>
 
       <div
@@ -176,19 +177,3 @@ export const NewsReleasesSection = () => {
     </div>
   );
 };
-
-const SectionHeader = () => (
-  <div className="flex items-center gap-2.5">
-    <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/15 shadow-[0_0_8px_hsl(var(--primary)/0.15)]">
-      <Sparkles className="h-4 w-4 text-primary" />
-    </div>
-    <div className="flex flex-col">
-      <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">
-        Novidades <span className="text-primary">Brito Solutions</span>
-      </h2>
-      <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
-        Filmes e séries em destaque
-      </p>
-    </div>
-  </div>
-);

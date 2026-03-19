@@ -1,6 +1,7 @@
 import { useActiveMovies } from "@/hooks/useMovies";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Film, Star, ImageOff } from "lucide-react";
+import { SectionHeader } from "./SectionHeader";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -68,7 +69,7 @@ export const WeeklyMoviesSection = () => {
   if (isLoading) {
     return (
       <div className="space-y-4 px-4">
-        <SectionHeader />
+        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" />
         <div className="flex gap-3.5 overflow-hidden">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="aspect-[2/3] rounded-xl w-[150px] shrink-0" />
@@ -83,7 +84,7 @@ export const WeeklyMoviesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4">
-        <SectionHeader />
+        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" />
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {movies.map((item, idx) => (
@@ -94,18 +95,3 @@ export const WeeklyMoviesSection = () => {
   );
 };
 
-const SectionHeader = () => (
-  <div className="flex items-center gap-2.5">
-    <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/15 shadow-[0_0_8px_hsl(var(--primary)/0.15)]">
-      <Film className="h-4 w-4 text-primary" />
-    </div>
-    <div className="flex flex-col">
-      <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">
-        Filmes <span className="text-primary">Brito Solutions</span>
-      </h2>
-      <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
-        Destaques da semana
-      </p>
-    </div>
-  </div>
-);
