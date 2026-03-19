@@ -4,10 +4,12 @@ import { useAllBanners } from "@/hooks/useBanners";
 import { useAllMovies } from "@/hooks/useMovies";
 import { useAllSeries } from "@/hooks/useSeries";
 import { useAllNewsReleases } from "@/hooks/useNewsReleases";
+import { useAllDailyGames } from "@/hooks/useDailyGames";
+import { getLocalDateString } from "@/lib/gameUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Image, Film, Clapperboard, Sparkles } from "lucide-react";
+import { Calendar, Image, Film, Clapperboard, Sparkles, Trophy, FileText } from "lucide-react";
 
 const useCountUp = (target: number, duration = 800) => {
   const [count, setCount] = useState(0);
@@ -31,6 +33,7 @@ const statCards = [
   { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", route: "/admin/filmes" },
   { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", route: "/admin/series" },
   { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", route: "/admin/novidades" },
+  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", route: "/admin/banners" },
 ];
 
 const quickActions = [
@@ -38,6 +41,7 @@ const quickActions = [
   { label: "Filme", path: "/admin/filmes", color: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20", icon: Film },
   { label: "Série", path: "/admin/series", color: "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20", icon: Clapperboard },
   { label: "Novidade", path: "/admin/novidades", color: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20", icon: Sparkles },
+  { label: "Programação", path: "/admin/banners", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
 ];
 
 const AdminDashboard = () => {
@@ -46,8 +50,9 @@ const AdminDashboard = () => {
   const { data: movies, isLoading: loadingMovies } = useAllMovies();
   const { data: series, isLoading: loadingSeries } = useAllSeries();
   const { data: news, isLoading: loadingNews } = useAllNewsReleases();
+  const { data: todayGames, isLoading: loadingGames } = useAllDailyGames(getLocalDateString());
 
-  const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews;
+  const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
 
   const totalBanners = banners?.length || 0;
   const activeBanners = banners?.filter((b) => b.active).length || 0;
@@ -57,14 +62,17 @@ const AdminDashboard = () => {
   const activeSeries = series?.filter((s) => s.active).length || 0;
   const totalNews = news?.length || 0;
   const activeNews = news?.filter((n) => n.active).length || 0;
+  const totalGames = todayGames?.length || 0;
+  const activeGames = todayGames?.filter((g) => g.active).length || 0;
 
   const bCount = useCountUp(totalBanners);
   const mCount = useCountUp(totalMovies);
   const sCount = useCountUp(totalSeries);
   const nCount = useCountUp(totalNews);
+  const gCount = useCountUp(totalGames);
 
-  const counts: Record<string, number> = { banners: bCount, filmes: mCount, series: sCount, novidades: nCount };
-  const actives: Record<string, number> = { banners: activeBanners, filmes: activeMovies, series: activeSeries, novidades: activeNews };
+  const counts: Record<string, number> = { banners: bCount, filmes: mCount, series: sCount, novidades: nCount, jogos: gCount };
+  const actives: Record<string, number> = { banners: activeBanners, filmes: activeMovies, series: activeSeries, novidades: activeNews, jogos: activeGames };
   const todayFormatted = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
   return (
@@ -83,7 +91,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {statCards.map((card, i) => (
           <div
             key={card.key}
@@ -116,7 +124,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-2 gap-2">
           {quickActions.map((action) => (
             <button
-              key={action.path}
+              key={action.label}
               onClick={() => navigate(action.path)}
               className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color}`}
             >
