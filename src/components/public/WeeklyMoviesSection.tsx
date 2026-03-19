@@ -95,18 +95,3 @@ export const WeeklyMoviesSection = () => {
   );
 };
 
-const SectionHeader = () => (
-  <div className="flex items-center gap-2.5">
-    <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/15 shadow-[0_0_8px_hsl(var(--primary)/0.15)]">
-      <Film className="h-4 w-4 text-primary" />
-    </div>
-    <div className="flex flex-col">
-      <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">
-        Filmes <span className="text-primary">Brito Solutions</span>
-      </h2>
-      <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
-        Destaques da semana
-      </p>
-    </div>
-  </div>
-);
