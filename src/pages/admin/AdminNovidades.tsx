@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2, Sparkles } from "lucide-react";
+import { Search, Plus, Trash2, Star, ImageOff, Loader2, Sparkles, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
-const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
+const TMDB_IMG = "https://image.tmdb.org/t/p/w780";
 const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
 
 const AdminNovidades = () => {
@@ -46,6 +46,21 @@ const AdminNovidades = () => {
     } catch (err: any) { toast.error(err.message); }
   };
 
+  const handleReorder = async (index: number, direction: "up" | "down") => {
+    if (!items) return;
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= items.length) return;
+    const a = items[index];
+    const b = items[swapIndex];
+    try {
+      await Promise.all([
+        updateItem.mutateAsync({ id: a.id, display_order: b.display_order }),
+        updateItem.mutateAsync({ id: b.id, display_order: a.display_order }),
+      ]);
+      toast.success("Ordem atualizada!");
+    } catch (err: any) { toast.error(err.message); }
+  };
+
   return (
     <div className="space-y-5">
       <div className="glass-panel rounded-xl overflow-hidden">
@@ -56,7 +71,6 @@ const AdminNovidades = () => {
           </h3>
         </div>
         <div className="p-4 space-y-3">
-          {/* Filters - stacked on mobile */}
           <div className="grid grid-cols-2 gap-2">
             <Select value={searchType} onValueChange={(v) => { setSearchType(v as any); setResults([]); }}>
               <SelectTrigger className="glass-panel border-white/[0.1] h-10 text-xs"><SelectValue /></SelectTrigger>
@@ -125,8 +139,30 @@ const AdminNovidades = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {items.map((m) => (
+              {items.map((m, idx) => (
                 <div key={m.id} className="flex items-center gap-3 rounded-lg glass-panel p-3">
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 rounded"
+                      disabled={idx === 0}
+                      onClick={() => handleReorder(idx, "up")}
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 rounded"
+                      disabled={idx === items.length - 1}
+                      onClick={() => handleReorder(idx, "down")}
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+
                   {m.image_url ? (
                     <img src={m.image_url} alt={m.title} className="h-12 w-9 rounded-md object-cover shrink-0" />
                   ) : (

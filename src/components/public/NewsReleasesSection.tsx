@@ -14,6 +14,13 @@ export const NewsReleasesSection = () => {
 
   const total = items?.length ?? 0;
 
+  // Reset current when items change to avoid out-of-bounds
+  useEffect(() => {
+    setCurrent(0);
+  }, [total]);
+
+  const safeIndex = total > 0 ? Math.min(current, total - 1) : 0;
+
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -57,7 +64,9 @@ export const NewsReleasesSection = () => {
 
   if (!items || items.length === 0) return null;
 
-  const item = items[current];
+  const item = items[safeIndex];
+  if (!item) return null;
+
   const hasImg = item.image_url && !imgErrors.has(item.id);
 
   return (
@@ -83,14 +92,12 @@ export const NewsReleasesSection = () => {
           >
             {hasImg ? (
               <>
-                {/* Blurred background fill */}
                 <img
                   src={item.image_url!}
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
                   aria-hidden="true"
                 />
-                {/* Main image — fully visible */}
                 <img
                   src={item.image_url!}
                   alt={item.title}
@@ -140,7 +147,6 @@ export const NewsReleasesSection = () => {
 
         {/* Content bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 space-y-2 z-10">
-          {/* Content type pill */}
           <span className="inline-block rounded-full bg-white/10 border border-white/10 px-2.5 py-0.5 text-[10px] font-semibold text-white/70 backdrop-blur-sm">
             {item.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
             {item.year ? ` · ${item.year}` : ""}
@@ -157,25 +163,30 @@ export const NewsReleasesSection = () => {
           )}
         </div>
 
-        {/* Dots */}
+        {/* Slide indicator + Dots */}
         {total > 1 && (
-          <div className="absolute bottom-3 right-4 flex gap-1.5 z-10">
-            {items.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                className={`rounded-full transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center -m-4 ${""}`}
-                aria-label={`Slide ${i + 1}`}
-              >
-                <span
-                  className={`block rounded-full transition-all duration-300 ${
-                    i === current
-                      ? "w-5 h-2 bg-primary"
-                      : "w-2 h-2 bg-white/30"
-                  }`}
-                />
-              </button>
-            ))}
+          <div className="absolute bottom-3 right-4 flex items-center gap-2 z-10">
+            <span className="text-[10px] font-bold text-white/50">
+              {safeIndex + 1}/{total}
+            </span>
+            <div className="flex gap-1.5">
+              {items.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className="p-1.5"
+                  aria-label={`Slide ${i + 1}`}
+                >
+                  <span
+                    className={`block rounded-full transition-all duration-300 ${
+                      i === safeIndex
+                        ? "w-5 h-2 bg-primary"
+                        : "w-2 h-2 bg-white/30"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
