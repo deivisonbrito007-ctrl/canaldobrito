@@ -137,8 +137,17 @@ const AdminNovidades = () => {
                       <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
                         {m.content_type === "movie" ? "Filme" : "Série"}
                       </span>
-                      <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${m.badge_type === "lancamento" ? "bg-purple-500/80" : "bg-orange-500/80"}`}>
-                        {m.badge_type === "lancamento" ? "Lanç." : "Nov."}
+                      <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${
+                        m.badge_type === "lancamento" ? "bg-purple-500/80" :
+                        m.badge_type === "nova_temporada" ? "bg-blue-500/80" :
+                        m.badge_type === "estreia" ? "bg-emerald-500/80" :
+                        m.badge_type === "exclusivo" ? "bg-amber-500/80" :
+                        "bg-orange-500/80"
+                      }`}>
+                        {m.badge_type === "lancamento" ? "Lanç." :
+                         m.badge_type === "nova_temporada" ? "Nova Temp." :
+                         m.badge_type === "estreia" ? "Estreia" :
+                         m.badge_type === "exclusivo" ? "Exclusivo" : "Nov."}
                       </span>
                       {m.year && <span>{m.year}</span>}
                     </div>
