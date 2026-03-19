@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, ClipboardPaste, Clock } from "lucide-react";
-import { formatCountdown } from "@/lib/dateUtils";
+import { formatCountdown, getScheduleDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
 const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) => void; uploading: boolean }) => {
@@ -85,7 +85,8 @@ const AdminBanners = () => {
   const deleteBanner = useDeleteBanner();
   const [uploading, setUploading] = useState(false);
   const [activeSection, setActiveSection] = useState<"categories" | "programacao">("categories");
-  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleMode, setScheduleMode] = useState<"none" | "00" | "06" | "12" | "custom">("00");
+  const [scheduleDate, setScheduleDate] = useState(() => getScheduleDate(0));
 
   const uploadAndCreateCategory = useCallback(async (file: File) => {
     setUploading(true);
@@ -104,21 +105,19 @@ const AdminBanners = () => {
         sort_order: maxOrder + 1,
       };
 
-      if (scheduleDate) {
-        // scheduleDate from datetime-local is "YYYY-MM-DDTHH:MM" (no timezone)
-        // new Date() interprets it as local time, .toISOString() converts to UTC
+      if (scheduleMode !== "none" && scheduleDate) {
         bannerData.publish_at = new Date(scheduleDate).toISOString();
         bannerData.active = false;
       }
 
       await createBanner.mutateAsync(bannerData);
-      toast.success(scheduleDate ? "Banner agendado!" : "Banner adicionado!");
+      toast.success(scheduleMode !== "none" && scheduleDate ? "Banner agendado!" : "Banner adicionado!");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar banner");
     } finally {
       setUploading(false);
     }
-  }, [selectedCategory, banners, createBanner, scheduleDate]);
+  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -226,33 +225,49 @@ const AdminBanners = () => {
 
             {/* Schedule zone — visually separated */}
             <div className="p-4 border-b border-amber-500/10 bg-amber-500/[0.03]">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
                 <span className="text-[11px] font-semibold text-amber-400">Agendamento</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex gap-1.5 flex-wrap mb-2">
+                {([
+                  { key: "00" as const, label: "Amanhã 00h" },
+                  { key: "06" as const, label: "Amanhã 06h" },
+                  { key: "12" as const, label: "Amanhã 12h" },
+                  { key: "custom" as const, label: "Personalizado" },
+                  { key: "none" as const, label: "Sem agendamento" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => {
+                      setScheduleMode(opt.key);
+                      if (opt.key === "00") setScheduleDate(getScheduleDate(0));
+                      else if (opt.key === "06") setScheduleDate(getScheduleDate(6));
+                      else if (opt.key === "12") setScheduleDate(getScheduleDate(12));
+                      else if (opt.key === "none") setScheduleDate("");
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                      scheduleMode === opt.key
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        : "glass-panel text-muted-foreground/70 hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {scheduleMode === "custom" && (
                 <Input
                   type="datetime-local"
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
-                  className="flex-1 text-xs h-9 glass-panel border-amber-500/20 focus-visible:ring-amber-500/30"
-                  placeholder="Sem agendamento"
+                  className="text-xs h-9 glass-panel border-amber-500/20 focus-visible:ring-amber-500/30 mb-2"
                 />
-                {scheduleDate ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setScheduleDate("")}
-                    className="h-9 text-xs text-muted-foreground shrink-0"
-                  >
-                    Limpar
-                  </Button>
-                ) : null}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                {scheduleDate
-                  ? `⏰ Próximo banner ficará inativo até ${new Date(scheduleDate).toLocaleString("pt-BR")}`
-                  : "Sem agendamento — banners serão publicados imediatamente"}
+              )}
+              <p className="text-[10px] text-muted-foreground">
+                {scheduleMode === "none"
+                  ? "Banners serão publicados imediatamente"
+                  : `⏰ Agendado para ${new Date(scheduleDate).toLocaleString("pt-BR")}`}
               </p>
             </div>
 
