@@ -1,35 +1,51 @@
 
 
-# Melhorias na Tela de Login
+# Auditoria do Portal Mobile
 
 ## Problemas Identificados
 
-1. **Visual básico demais** — fundo plano sem profundidade, card simples sem destaque visual
-2. **Sem feedback visual de segurança** — apenas um ícone de cadeado no botão, sem transmitir confiança
-3. **Erro exibido sem destaque** — mensagem de erro é só texto vermelho, fácil de ignorar
-4. **Link "Voltar" usa `<a>` em vez de React Router** — causa reload completo da página
-5. **Sem toggle de visibilidade da senha** — comum em telas de login modernas
-6. **Sem redirecionamento automático** — se o usuário já está logado como admin, deveria ir direto para `/admin`
+### 1. Variáveis de debug ainda no código
+- `LiveNowSection.tsx` ainda tem `DEBUG_FORCE_LIVE` e `DEBUG_LIVE_COUNT` no código. Mesmo desativadas, poluem o componente e podem ser ativadas acidentalmente.
 
-## Plano de Melhorias
+### 2. App.css com estilos não utilizados
+- O arquivo `src/App.css` contém estilos do template Vite padrão (`logo-spin`, `.read-the-docs`, `#root` com padding/text-align) que conflitam com o layout e não são usados.
 
-### 1. Redirect se já autenticado
-- Usar `useAuth()` para checar `isAdmin` e redirecionar com `<Navigate>` se já logado
+### 3. Footer sobreposto pelo BottomNav
+- O `PublicFooter` tem `pb-20` mas o conteúdo pode ficar parcialmente coberto pelo bottom nav fixo dependendo do safe-area-inset.
 
-### 2. Visual mais premium
-- Adicionar gradient sutil no fundo (`from-[#0a0a0f] via-[#0d1117] to-[#0a0a0f]`)
-- Glow effect atrás do card com `before:` pseudo-element via classe
-- Logo maior (`h-16`) com leve animação de entrada
+### 4. Acessibilidade — botões sem aria-label
+- Os botões do `BottomNav` não possuem `aria-label`, dificultando navegação por leitores de tela.
+- Botões de filtro no `DailyGamesSection` também não têm labels acessíveis.
 
-### 3. Toggle mostrar/ocultar senha
-- Botão com ícone `Eye`/`EyeOff` dentro do campo de senha
+### 5. NewsReleasesSection — overview escondido em telas < 380px
+- O texto de descrição usa `hidden min-[380px]:block`, cortando informação importante em telas de 320px.
 
-### 4. Erro com estilo melhor
-- Usar div com background `bg-destructive/10` e borda `border-destructive/30` em vez de texto simples
+### 6. Performance — motion animations sem `layout` ou `willChange`
+- Muitos cards usam `framer-motion` com animações de entrada mas sem `will-change: transform` para otimizar GPU.
 
-### 5. Link "Voltar" com React Router
-- Trocar `<a href="/">` por `<Link to="/">` para evitar reload
+### 7. CategoryIconsCarousel — marquee pode causar motion sickness
+- O auto-scroll infinito não respeita `prefers-reduced-motion`.
 
-### Arquivo alterado
-- `src/pages/Login.tsx`
+## Plano de Correções
+
+### Arquivo: `src/components/public/LiveNowSection.tsx`
+- Remover `DEBUG_FORCE_LIVE`, `DEBUG_LIVE_COUNT` e toda lógica condicional de debug.
+
+### Arquivo: `src/App.css`
+- Limpar estilos não utilizados do template Vite (manter arquivo mínimo ou vazio).
+
+### Arquivo: `src/components/public/BottomNav.tsx`
+- Adicionar `aria-label={item.label}` nos botões de navegação.
+
+### Arquivo: `src/components/public/NewsReleasesSection.tsx`
+- Trocar `hidden min-[380px]:block` por `block` para mostrar overview em todas as telas (com `line-clamp-2`).
+
+### Arquivo: `src/components/public/CategoryIconsCarousel.tsx`
+- Adicionar `@media (prefers-reduced-motion: reduce)` para pausar o marquee.
+
+### Arquivo: `src/index.css`
+- Adicionar regra para pausar animações quando `prefers-reduced-motion` está ativo.
+
+### Arquivo: `src/pages/Index.tsx`
+- Aumentar `pb-24` para `pb-28` no main para garantir espaço extra para o bottom nav com safe-area.
 
