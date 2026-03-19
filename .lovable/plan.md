@@ -1,24 +1,31 @@
 
 
-# Adicionar botão "Assine Já" ao lado do branding Brito Solutions
+# Remover feature "Banner do Dia" (daily_banner) do sistema
 
-## O que será feito
+## Escopo
 
-Adicionar um botão CTA "Assine Já" ao lado do nome "Brito Solutions" no `CategoryIconsCarousel`, que direciona para o WhatsApp da Brito Solutions com uma mensagem pré-formatada de interesse em assinatura.
+A feature `daily_banner` existe em 3 locais e não é usada no frontend público (o componente `DailyBannerCarousel` não é importado em nenhuma página). A remoção é segura.
 
 ## Mudanças
 
-### `src/components/public/CategoryIconsCarousel.tsx`
-- Reorganizar o header para layout `flex` com o nome à esquerda e o botão à direita
-- Adicionar botão "Assine Já" com ícone do WhatsApp (SVG inline), estilizado em verde WhatsApp (`hsl(142,70%,38%)`)
-- Ao clicar, abre `https://wa.me/5511940759046?text=...` com mensagem: "Olá! Tenho interesse em assinar o plano Brito Solutions 📺"
-- Botão compacto com animação hover (scale + brilho), bordas arredondadas, min-height 44px para acessibilidade
+### 1. `src/pages/admin/AdminBanners.tsx`
+- Remover import do `useDailyBanners` (linha 5)
+- Remover componente `DailyBannerManager` (linhas 72-230 aprox.)
+- Remover a aba "📺 Dia" do array de seções (linha 261)
+- Remover o render condicional `activeSection === "daily"` (linha 279)
+- Ajustar `activeSection` default de `"daily"` para `"categories"`
 
-### Sugestões adicionais
-- **Pulse sutil**: animação `animate-pulse` discreta no botão para chamar atenção na primeira visita
-- **Ícone WhatsApp**: usar SVG do WhatsApp (já presente no projeto via `WhatsAppFab`) para consistência visual
+### 2. Arquivos a deletar
+- `src/hooks/useDailyBanners.ts` — hooks CRUD do daily_banner
+- `src/components/public/DailyBannerCarousel.tsx` — componente público (não usado)
 
-## Resultado esperado
-- Branding "Brito Solutions" à esquerda, botão "Assine Já" à direita na mesma linha
-- Toque no botão abre WhatsApp com mensagem de interesse pré-preenchida
+### 3. Tabela `daily_banner`
+- A tabela no banco permanece intacta (não causa problemas). Se quiser remover futuramente, pode ser feito via migration.
+
+## Impacto
+- Zero impacto no sistema atual — o `DailyBannerCarousel` não é importado em nenhuma página pública
+- O admin perde apenas a aba "Dia" que será substituída pela aba "Categorias" como default
+
+## Sugestão adicional
+- Trocar o default do admin de banners para abrir direto em "Categorias" já que é a aba mais utilizada
 
