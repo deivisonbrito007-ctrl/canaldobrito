@@ -2,9 +2,13 @@ import { useDailyGames } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes } from "@/lib/gameUtils";
-import { Radio, Zap } from "lucide-react";
+import { Radio, Zap, Clock } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ChannelBadge } from "./ChannelBadge";
+
+// 🔧 TESTE: Mudar para false quando terminar o teste
+const DEBUG_FORCE_LIVE = true;
+const DEBUG_LIVE_COUNT = 3;
 
 export const LiveNowSection = () => {
   const [today, setToday] = useState(() => getLocalDateString());
@@ -14,20 +18,22 @@ export const LiveNowSection = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setTick((t) => t + 1);
-      // Reset date at midnight automatically
       setToday(getLocalDateString());
     }, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  const liveGames = useMemo(
-    () => (games || []).filter((g) => isGameCurrentlyLive(g.game_time, g.date)),
+  const liveGames = useMemo(() => {
+    const allGames = games || [];
+    if (DEBUG_FORCE_LIVE && allGames.length > 0) {
+      return allGames.slice(0, DEBUG_LIVE_COUNT);
+    }
+    return allGames.filter((g) => isGameCurrentlyLive(g.game_time, g.date));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [games, Math.floor(Date.now() / 60000)]
-  );
+  }, [games, Math.floor(Date.now() / 60000)]);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div className="px-4">
         <SectionHeader
           icon={Zap}
@@ -35,8 +41,8 @@ export const LiveNowSection = () => {
           subtitle="Acompanhe os jogos em tempo real"
           badge={
             liveGames.length > 0 ? (
-              <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums">
-                {liveGames.length}
+              <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums animate-pulse">
+                {liveGames.length} ao vivo
               </span>
             ) : undefined
           }
@@ -58,52 +64,75 @@ export const LiveNowSection = () => {
           </div>
         </div>
       ) : (
-        <div className="flex gap-3.5 overflow-x-auto scrollbar-hide px-4 pb-2" style={{ scrollSnapType: "x mandatory" }}>
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory">
           {liveGames.map((game, idx) => {
-            const elapsed = getElapsedMinutes(game.game_time, game.date);
+            const elapsed = DEBUG_FORCE_LIVE
+              ? [23, 67, 41][idx % 3]
+              : getElapsedMinutes(game.game_time, game.date);
+
             return (
               <motion.div
                 key={game.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06, duration: 0.3 }}
-                className="min-w-[280px] w-[78vw] max-w-[320px] shrink-0"
-                style={{ scrollSnapAlign: "start" }}
+                className="min-w-[260px] w-[75vw] max-w-[300px] shrink-0 snap-start"
               >
-                <div className="rounded-2xl bg-card border border-border/10 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.12)] cursor-pointer">
-                  <div className="h-1 bg-gradient-to-r from-destructive via-destructive/80 to-destructive/40" />
-                  <div className="p-4 space-y-3 relative">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-destructive/5 rounded-full blur-2xl" />
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[2px] text-center font-body">
-                      🏆 {game.competition}
-                    </p>
+                <div className="rounded-2xl bg-card border border-destructive/20 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.15)]">
+                  {/* Accent bar */}
+                  <div className="h-1 bg-gradient-to-r from-destructive via-destructive/60 to-transparent" />
+
+                  <div className="p-3.5 space-y-2.5 relative">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/5 rounded-full blur-2xl" />
+
+                    {/* Competition + Live indicator */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider truncate max-w-[55%] font-body">
+                        🏆 {game.competition}
+                      </p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-60" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                        </span>
+                        <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
+                          {elapsed !== null ? `${elapsed}' ⚽` : "AO VIVO"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Teams */}
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-bold text-foreground flex-1 text-left truncate leading-tight font-body">
+                        {game.home_team}
+                      </p>
+                      <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
+                        <span className="text-[11px] font-extrabold text-destructive font-body">VS</span>
+                      </div>
+                      <p className="text-[14px] font-bold text-foreground flex-1 text-right truncate leading-tight font-body">
+                        {game.away_team}
+                      </p>
+                    </div>
+
+                    {/* Time + Channels */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 text-center">
-                        <p className="text-sm font-bold text-foreground font-body leading-tight">{game.home_team}</p>
+                      <div className="flex items-center gap-1 text-muted-foreground/60">
+                        <Clock className="h-3 w-3" />
+                        <span className="text-[10px] font-medium tabular-nums font-body">
+                          {game.game_time?.slice(0, 5)}
+                        </span>
                       </div>
-                      <div className="shrink-0 px-3 py-1.5 rounded-lg bg-destructive/90 shadow-[0_0_12px_hsl(0,84%,60%,0.3)]">
-                        <span className="font-display text-[22px] text-white tracking-wider">vs</span>
-                      </div>
-                      <div className="flex-1 text-center">
-                        <p className="text-sm font-bold text-foreground font-body leading-tight">{game.away_team}</p>
-                      </div>
+                      {game.channels && game.channels.length > 0 && (
+                        <div className="flex gap-1 flex-wrap justify-end">
+                          {game.channels.slice(0, 2).map((ch) => (
+                            <ChannelBadge key={ch} name={ch} />
+                          ))}
+                          {game.channels.length > 2 && (
+                            <span className="text-[9px] text-muted-foreground/50 self-center">+{game.channels.length - 2}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center justify-center gap-1.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-60" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-                      </span>
-                      <span className="text-xs font-bold text-destructive tabular-nums font-body">
-                        {elapsed !== null ? `${elapsed}' ⚽` : "● AO VIVO"}
-                      </span>
-                    </div>
-                    {game.channels && game.channels.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 justify-center">
-                        {game.channels.map((ch) => (
-                          <ChannelBadge key={ch} name={ch} />
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               </motion.div>
