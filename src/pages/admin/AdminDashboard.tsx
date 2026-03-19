@@ -119,6 +119,9 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Upcoming Activations */}
+      <UpcomingActivations />
+
       {/* Quick Actions */}
       <div>
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ações Rápidas</h2>
