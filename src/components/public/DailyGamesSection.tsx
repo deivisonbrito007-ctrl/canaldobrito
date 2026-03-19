@@ -164,7 +164,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
 
           {/* Teams vs layout */}
           <div className="flex items-center gap-3">
-            <p className="text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
+            <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
             <div className="flex flex-col items-center shrink-0">
               <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
                 <Clock className="h-3.5 w-3.5 text-primary" />
