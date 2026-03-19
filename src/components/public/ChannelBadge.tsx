@@ -1,3 +1,4 @@
+import React from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -56,44 +57,50 @@ interface ChannelBadgeProps {
   className?: string;
 }
 
-export const ChannelBadge = ({ name, className }: ChannelBadgeProps) => {
-  const isMobile = useIsMobile();
+export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>(
+  ({ name, className }, ref) => {
+    const isMobile = useIsMobile();
 
-  if (isCanalDoBrito(name)) {
+    if (isCanalDoBrito(name)) {
+      return (
+        <span
+          ref={ref}
+          className={cn(
+            "inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shrink-0",
+            "bg-gradient-to-r from-red-600/25 to-amber-500/20 text-amber-300",
+            "border border-amber-500/40 shadow-[0_0_8px_hsl(40,80%,50%,0.15)]",
+            className
+          )}
+        >
+          <img
+            src="/canal_do_brito_logo.png"
+            alt="Canal do Brito"
+            className="h-3.5 w-3.5 rounded-sm object-contain"
+          />
+          {isMobile ? "Brito" : name}
+        </span>
+      );
+    }
+
+    const config = matchChannel(name);
+    const displayName = isMobile && config.short ? config.short : name;
+
     return (
       <span
+        ref={ref}
         className={cn(
-          "inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shrink-0",
-          "bg-gradient-to-r from-red-600/25 to-amber-500/20 text-amber-300",
-          "border border-amber-500/40 shadow-[0_0_8px_hsl(40,80%,50%,0.15)]",
+          "inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shrink-0 border",
+          config.bg,
+          config.text,
+          config.border,
           className
         )}
       >
-        <img
-          src="/canal_do_brito_logo.png"
-          alt="Canal do Brito"
-          className="h-3.5 w-3.5 rounded-sm object-contain"
-        />
-        {isMobile ? "Brito" : name}
+        <span className="text-[9px] leading-none">{config.emoji}</span>
+        {displayName}
       </span>
     );
   }
+);
 
-  const config = matchChannel(name);
-  const displayName = isMobile && config.short ? config.short : name;
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shrink-0 border",
-        config.bg,
-        config.text,
-        config.border,
-        className
-      )}
-    >
-      <span className="text-[9px] leading-none">{config.emoji}</span>
-      {displayName}
-    </span>
-  );
-};
+ChannelBadge.displayName = "ChannelBadge";
