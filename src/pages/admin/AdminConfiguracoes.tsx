@@ -11,6 +11,7 @@ const AdminConfiguracoes = () => {
   const updateSetting = useUpdateSetting();
   const [whatsapp, setWhatsapp] = useState("");
   const [tmdbKey, setTmdbKey] = useState("");
+  const [siteUrl, setSiteUrl] = useState("");
 
   useEffect(() => {
     if (settings) {
