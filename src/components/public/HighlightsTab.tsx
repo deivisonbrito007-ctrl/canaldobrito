@@ -1,4 +1,5 @@
 import { Star, Film } from "lucide-react";
+
 import { SectionHeader } from "./SectionHeader";
 import { WeeklyMoviesSection } from "./WeeklyMoviesSection";
 import { WeeklySeriesSection } from "./WeeklySeriesSection";
