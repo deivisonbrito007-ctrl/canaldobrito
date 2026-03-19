@@ -5,19 +5,19 @@ export const PublicFooter = () => {
   return (
     <footer className="pb-20">
       <div className="section-divider" />
-      <div className="px-4 py-8 space-y-4">
+      <div className="px-4 py-10 space-y-5">
         {/* Brand */}
-        <div className="flex flex-col items-center gap-2">
-          <img src={logo} alt="Brito Solutions" className="h-8 w-auto glow-primary-subtle" />
-          <span className="text-xs font-semibold text-gradient-primary">Brito Solutions</span>
-          <p className="text-[10px] text-muted-foreground/40 font-body">
+        <div className="flex flex-col items-center gap-3">
+          <img src={logo} alt="Brito Solutions" className="h-12 w-auto glow-primary-subtle" />
+          <span className="text-base font-bold text-gradient-primary">Brito Solutions</span>
+          <p className="text-xs text-muted-foreground/60 font-body">
             Sua experiência premium de streaming
           </p>
         </div>
 
         <Link
           to="/login"
-          className="block text-center text-[9px] text-muted-foreground/15 hover:text-muted-foreground/40 transition-colors"
+          className="block text-center text-[10px] text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors"
         >
           © {new Date().getFullYear()} Brito Solutions
         </Link>
