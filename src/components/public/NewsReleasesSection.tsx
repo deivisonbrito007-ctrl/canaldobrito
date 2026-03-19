@@ -124,7 +124,7 @@ export const NewsReleasesSection = () => {
             {item.badge_type === "lancamento" ? "🆕 Lançamento" :
              item.badge_type === "nova_temporada" ? "📺 Nova Temporada" :
              item.badge_type === "estreia" ? "⭐ Estreia" :
-             item.badge_type === "exclusivo" ? "👑 Exclusivo" : "🔥 Em Alta"}
+             item.badge_type === "exclusivo" ? "👑 Exclusivo" : "🔥 Novidade"}
           </span>
         </div>
 
