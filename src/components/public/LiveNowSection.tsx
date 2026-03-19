@@ -7,7 +7,7 @@ import { SectionHeader } from "./SectionHeader";
 import { ChannelBadge } from "./ChannelBadge";
 
 // 🔧 TESTE: Mudar para false quando terminar o teste
-const DEBUG_FORCE_LIVE = true;
+const DEBUG_FORCE_LIVE = false;
 const DEBUG_LIVE_COUNT = 3;
 
 export const LiveNowSection = () => {
