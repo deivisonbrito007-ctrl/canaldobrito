@@ -19,12 +19,18 @@ interface ContentDetailSheetProps {
   } | null;
 }
 
+const findYouTubeTrailer = (results: any[]) => {
+  return (
+    results.find((v: any) => v.type === "Trailer" && v.site === "YouTube") ||
+    results.find((v: any) => v.site === "YouTube")
+  );
+};
+
 export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetProps) => {
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [loadingTrailer, setLoadingTrailer] = useState(false);
   const [expandOverview, setExpandOverview] = useState(false);
 
-  // Fetch trailer whenever sheet opens with a valid tmdb_id
   useEffect(() => {
     if (!open || !item?.tmdb_id) {
       setTrailerKey(null);
@@ -38,16 +44,34 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
       setTrailerKey(null);
       setLoadingTrailer(true);
       setExpandOverview(false);
+
+      const isTv = item.content_type === "series" || item.content_type === "tv";
+
       try {
-        const action = item.content_type === "series" || item.content_type === "tv" ? "tv_videos" : "movie_videos";
+        // 1. Try pt-BR first
+        const actionPt = isTv ? "tv_videos" : "movie_videos";
         const { data, error } = await supabase.functions.invoke("tmdb-proxy", {
-          body: { action, query: String(item.tmdb_id) },
+          body: { action: actionPt, query: String(item.tmdb_id) },
         });
         if (cancelled) return;
+
         if (!error && data?.results) {
-          const trailer = data.results.find(
-            (v: any) => v.type === "Trailer" && v.site === "YouTube"
-          ) || data.results.find((v: any) => v.site === "YouTube");
+          const trailer = findYouTubeTrailer(data.results);
+          if (trailer) {
+            setTrailerKey(trailer.key);
+            return;
+          }
+        }
+
+        // 2. Fallback: fetch without language filter (EN)
+        const actionEn = isTv ? "tv_videos_en" : "movie_videos_en";
+        const { data: dataEn, error: errorEn } = await supabase.functions.invoke("tmdb-proxy", {
+          body: { action: actionEn, query: String(item.tmdb_id) },
+        });
+        if (cancelled) return;
+
+        if (!errorEn && dataEn?.results) {
+          const trailer = findYouTubeTrailer(dataEn.results);
           if (trailer) setTrailerKey(trailer.key);
         }
       } catch (e) {
@@ -71,7 +95,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -80,7 +104,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
 
           {/* Sheet */}
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-card border-t border-border/30"
+            className="fixed bottom-0 left-0 right-0 z-[60] max-h-[85vh] overflow-y-auto rounded-t-3xl bg-card border-t border-border/30"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -99,7 +123,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
               <X className="h-5 w-5" />
             </button>
 
-            <div className="px-4 pb-8 space-y-4">
+            <div className="px-4 pb-24 space-y-4">
               {/* Header with poster */}
               <div className="flex gap-3">
                 {poster && (
@@ -171,7 +195,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                 </div>
               )}
 
-              {!loadingTrailer && !trailerKey && !loadingTrailer && item.tmdb_id && (
+              {!loadingTrailer && !trailerKey && item.tmdb_id && (
                 <a
                   href={`https://www.themoviedb.org/${item.content_type === "series" || item.content_type === "tv" ? "tv" : "movie"}/${item.tmdb_id}`}
                   target="_blank"
