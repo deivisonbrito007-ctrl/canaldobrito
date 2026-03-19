@@ -58,7 +58,7 @@ const Index = () => {
               </h2>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-6">
               
               {/* <DailyBannerCarousel /> */}
               <CategoryIconsCarousel />
