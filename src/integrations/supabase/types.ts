@@ -22,6 +22,7 @@ export type Database = {
           expires_at: string | null
           id: string
           image_url: string
+          publish_at: string | null
           sort_order: number
           title: string | null
         }
@@ -32,6 +33,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           image_url: string
+          publish_at?: string | null
           sort_order?: number
           title?: string | null
         }
@@ -42,6 +44,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           image_url?: string
+          publish_at?: string | null
           sort_order?: number
           title?: string | null
         }
@@ -95,6 +98,7 @@ export type Database = {
           id: string
           is_live: boolean
           is_womens: boolean
+          publish_at: string | null
           status_short: string
         }
         Insert: {
@@ -111,6 +115,7 @@ export type Database = {
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          publish_at?: string | null
           status_short?: string
         }
         Update: {
@@ -127,6 +132,7 @@ export type Database = {
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          publish_at?: string | null
           status_short?: string
         }
         Relationships: []
