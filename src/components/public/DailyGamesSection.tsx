@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
 import { isGameCurrentlyLive, getLocalDateString } from "@/lib/gameUtils";
-
+import { ChannelBadge } from "./ChannelBadge";
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
   "brasileirão":          { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
@@ -47,19 +47,6 @@ const COMP_TOP_COLORS: Record<string, string> = {
   "copa do rei":          "from-yellow-600",
 };
 
-const CHANNEL_COLORS: Record<string, string> = {
-  "espn":        "bg-red-600/80 text-white",
-  "sportv":      "bg-emerald-600/80 text-white",
-  "globo":       "bg-foreground/80 text-background",
-  "premiere":    "bg-yellow-500/80 text-background",
-  "disney+":     "bg-blue-800/80 text-white",
-  "max":         "bg-purple-700/80 text-white",
-  "tnt":         "bg-blue-600/80 text-white",
-  "cazétv":      "bg-lime-500/80 text-background",
-  "cazetv":      "bg-lime-500/80 text-background",
-  "prime video": "bg-sky-500/80 text-background",
-  "band":        "bg-emerald-500/80 text-white",
-};
 
 const HIGHLIGHT_COMPS = [
   "champions league", "brasileirão", "brasileirao", "campeonato brasileiro",
@@ -85,10 +72,6 @@ function getCompColor(comp: string) {
 
 function getTopColor(comp: string) {
   return matchKey(comp, COMP_TOP_COLORS) ?? "from-muted";
-}
-
-function getChannelColor(ch: string) {
-  return matchKey(ch, CHANNEL_COLORS) ?? "bg-secondary/60 text-muted-foreground";
 }
 
 function isHighlight(comp: string) {
@@ -188,9 +171,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           {game.channels && game.channels.length > 0 && (
             <div className="flex gap-1.5 flex-wrap">
               {game.channels.slice(0, 4).map((ch, i) => (
-                <span key={i} className={`text-[10px] font-bold px-2 py-1 rounded-lg shrink-0 ${getChannelColor(ch)}`}>
-                  {ch}
-                </span>
+                <ChannelBadge key={i} name={ch} />
               ))}
               {game.channels.length > 4 && (
                 <span className="text-[10px] text-muted-foreground/50 self-center">+{game.channels.length - 4}</span>
