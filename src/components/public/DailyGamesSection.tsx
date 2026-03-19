@@ -27,17 +27,24 @@ const COMP_COLORS: Record<string, { bg: string; border: string }> = {
 };
 
 const COMP_TOP_COLORS: Record<string, string> = {
-  "brasileirão":       "from-emerald-500",
-  "brasileirao":       "from-emerald-500",
-  "champions league":  "from-blue-500",
-  "copa do brasil":    "from-yellow-500",
-  "liga europa":       "from-orange-500",
-  "concacaf":          "from-purple-500",
-  "la liga":           "from-orange-600",
-  "premier league":    "from-purple-700",
-  "serie a":           "from-blue-600",
-  "libertadores":      "from-amber-500",
-  "sul-americana":     "from-red-500",
+  "brasileirão":          "from-emerald-500",
+  "brasileirao":          "from-emerald-500",
+  "campeonato brasileiro":"from-emerald-500",
+  "champions league":     "from-blue-500",
+  "copa do brasil":       "from-yellow-500",
+  "liga europa":          "from-orange-500",
+  "europa league":        "from-orange-500",
+  "conference league":    "from-teal-500",
+  "concacaf":             "from-purple-500",
+  "la liga":              "from-orange-600",
+  "premier league":       "from-purple-700",
+  "campeonato inglês":    "from-purple-700",
+  "campeonato turco":     "from-red-600",
+  "serie a":              "from-blue-600",
+  "libertadores":         "from-amber-500",
+  "sul-americana":        "from-red-500",
+  "copa de la reina":     "from-pink-500",
+  "copa do rei":          "from-yellow-600",
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
