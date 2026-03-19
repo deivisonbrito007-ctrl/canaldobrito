@@ -1,65 +1,34 @@
 
 
-# Auditar Banners + Testes + Verificar Agendamento Automatico
+# Auto-agendar banners para 00:00 do dia seguinte
 
-## 1. Auditoria do fluxo de Categorias (Banners)
+## Problema
+Atualmente o admin precisa selecionar manualmente a data/hora no campo `datetime-local` cada vez que quer agendar um banner. O usuario quer que ao fazer upload, o banner ja fique automaticamente agendado para as 00:00 do dia seguinte.
 
-**OK - Funcionando:**
-- Upload via arquivo e PasteZone
-- Agendamento com `publish_at` / `active: false`
-- Toggle ativo/inativo, reordenacao, exclusao
-- Query publica filtra `active: true`
-- 6 categorias renderizadas no frontend
+## Solucao
 
-**Problemas encontrados:**
-1. **Import nao usado**: `Calendar` importado mas nunca utilizado no AdminBanners
-2. **Reordenacao por grupo**: botao down desabilitado por indice do grupo de data, nao da lista global -- pode causar inconsistencia de `sort_order`
+### Mudancas em `src/pages/admin/AdminBanners.tsx`
 
-## 2. Verificacao do Sistema de Agendamento Automatico
+1. **Substituir o campo datetime-local por um sistema de "modo de agendamento"**:
+   - Adicionar um toggle (Switch) "Agendar para amanha 00h" que, quando ativo, pre-preenche automaticamente o `scheduleDate` com `amanha 00:00` no fuso local
+   - Manter o campo datetime-local visivel abaixo para quem quiser ajustar manualmente a data/hora
+   - Quando o toggle e ativado, calcular automaticamente: `tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0,0,0,0)`
 
-**Status atual (logs):** A Edge Function `activate-scheduled` esta rodando a cada minuto via pg_cron e retornando `activated_banners: 0, activated_games: 0` sem erros -- funcionando corretamente.
+2. **Adicionar botoes rapidos de agendamento**:
+   - "Amanha 00h" (default)
+   - "Amanha 06h"
+   - "Amanha 12h"
+   - "Personalizado" (mostra o datetime-local)
+   - Esses botoes preenchem o campo `scheduleDate` automaticamente
 
-**O que sera verificado/testado:**
-- Invocar a Edge Function diretamente e confirmar resposta 200
-- Consultar o banco para verificar se existe algum banner com `publish_at` pendente e `active = false`
-- Confirmar que o cron job esta registrado no `cron.job` table
-- Verificar que a referencia a `daily_banner` NAO existe na Edge Function (ja confirmado -- nao existe, so `banners` e `daily_games`)
+3. **Logica de upload permanece igual** — o campo `scheduleDate` ja controla se o banner vai como `active: false` com `publish_at`
 
-**Acoes se necessario:**
-- Se o cron job nao estiver registrado, criar via SQL direto (nao migration) com a URL e anon key corretas
+### Mudancas em `src/lib/dateUtils.ts`
 
-## 3. Testes Unitarios
+- Adicionar helper `getNextMidnight(): string` que retorna o proximo dia as 00:00 no formato compativel com `datetime-local` (`YYYY-MM-DDTHH:MM`)
 
-### `src/lib/dateUtils.ts` (novo)
-- Extrair `formatCountdown` do AdminBanners para arquivo testavel
-
-### `src/lib/dateUtils.test.ts` (novo)
-- Testar: "Em breve" (passado), minutos, horas, dias, "amanha"
-
-### `src/components/public/__tests__/BannerSections.test.tsx` (novo)
-- Testar render com banners mockados por categoria
-- Testar estado vazio e skeleton
-
-### `src/pages/admin/__tests__/AdminBanners.test.tsx` (novo)
-- Testar render das category pills
-- Testar troca de categoria
-
-### Rodar suite completa apos criar os testes
-
-## 4. Melhorias UI
-
-- Remover import `Calendar` nao usado
-- Adicionar drag-and-drop na PasteZone (alem do paste)
-
-## Resumo
-
-| Arquivo | Mudanca |
-|---------|---------|
-| `src/lib/dateUtils.ts` | Novo -- extrair formatCountdown |
-| `src/lib/dateUtils.test.ts` | Novo -- testes |
-| `src/components/public/__tests__/BannerSections.test.tsx` | Novo -- testes |
-| `src/pages/admin/__tests__/AdminBanners.test.tsx` | Novo -- testes |
-| `src/pages/admin/AdminBanners.tsx` | Remover Calendar import, importar formatCountdown de dateUtils |
-| `supabase/functions/activate-scheduled` | Verificar execucao via invoke + logs |
-| Verificar cron job no banco | Query `cron.job` para confirmar registro |
+## Resultado
+- Upload com 1 clique ja agenda para amanha 00h automaticamente
+- Opcoes rapidas para outros horarios comuns
+- Campo manual ainda disponivel para datas customizadas
 
