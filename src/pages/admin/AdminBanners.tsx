@@ -28,9 +28,30 @@ const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) =
     }
   }, [onImagePasted]);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setHighlight(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setHighlight(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setHighlight(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      onImagePasted(file);
+    }
+  }, [onImagePasted]);
+
   return (
     <div
       onPaste={handlePaste}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onFocus={() => setHighlight(true)}
       onBlur={() => setHighlight(false)}
       tabIndex={0}
@@ -47,7 +68,7 @@ const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) =
           <ClipboardPaste className="h-5 w-5 text-muted-foreground/50" />
         )}
         <span className="text-[11px] text-muted-foreground/70">
-          {uploading ? "Enviando..." : "Clique aqui e cole uma imagem (Ctrl+V)"}
+          {uploading ? "Enviando..." : "Cole (Ctrl+V) ou arraste uma imagem aqui"}
         </span>
       </div>
     </div>
