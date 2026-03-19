@@ -1,6 +1,6 @@
 import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Star, ImageOff, Clock, Tv } from "lucide-react";
+import { NewsBannerSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { AnimatePresence, motion } from "framer-motion";
 import { SectionHeader } from "./SectionHeader";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -61,8 +61,8 @@ export const NewsReleasesSection = () => {
   if (isLoading) {
     return (
       <div className="px-4 space-y-4">
-        <SectionHeader icon={Sparkles} title="Novidades" subtitle="Filmes e séries em destaque" />
-        <Skeleton className="h-[360px] sm:h-[420px] rounded-2xl sm:rounded-3xl" />
+        <SectionHeaderSkeleton />
+        <NewsBannerSkeleton />
       </div>
     );
   }
