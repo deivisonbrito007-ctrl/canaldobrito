@@ -2,6 +2,7 @@ import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Star, ImageOff } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { SectionHeader } from "./SectionHeader";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 export const NewsReleasesSection = () => {
