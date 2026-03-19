@@ -41,7 +41,7 @@ const quickActions = [
   { label: "Filme", path: "/admin/filmes", color: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20", icon: Film },
   { label: "Série", path: "/admin/series", color: "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20", icon: Clapperboard },
   { label: "Novidade", path: "/admin/novidades", color: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20", icon: Sparkles },
-  { label: "Programação", path: "/admin/banners", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
+  { label: "Programação", path: "/admin/programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
 ];
 
 const AdminDashboard = () => {

@@ -2,20 +2,31 @@ import { useActiveSeries } from "@/hooks/useSeries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clapperboard, Star, ImageOff } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
+import { ContentDetailSheet } from "./ContentDetailSheet";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const SeriesCard = ({ item, index }: { item: ReturnType<typeof useActiveSeries>["data"] extends (infer T)[] | undefined ? T : never; index: number }) => {
+type SeriesItem = NonNullable<ReturnType<typeof useActiveSeries>["data"]>[number];
+
+const SeriesCard = ({ item, index, onSelect }: { item: SeriesItem; index: number; onSelect: () => void }) => {
   const [imgErr, setImgErr] = useState(false);
 
   return (
     <motion.div
       className="snap-start shrink-0 w-[170px] sm:w-[180px]"
+      style={{ willChange: "transform, opacity" }}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
     >
-      <div className="group relative overflow-hidden rounded-xl border border-border/10 bg-card aspect-[2/3] transition-all duration-250 hover:scale-[1.04] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer">
+      <div
+        className="group relative overflow-hidden rounded-xl border border-border/10 bg-card aspect-[2/3] transition-all duration-250 hover:scale-[1.04] active:scale-[0.97] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer"
+        onClick={onSelect}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && onSelect()}
+        aria-label={`Ver detalhes de ${item.title}`}
+      >
         {item.poster_url && !imgErr ? (
           <img
             src={item.poster_url}
@@ -65,6 +76,7 @@ const SeriesCard = ({ item, index }: { item: ReturnType<typeof useActiveSeries>[
 
 export const WeeklySeriesSection = () => {
   const { data: series, isLoading } = useActiveSeries();
+  const [selected, setSelected] = useState<SeriesItem | null>(null);
 
   if (isLoading) {
     return (
@@ -84,14 +96,19 @@ export const WeeklySeriesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4">
-        <SectionHeader icon={Clapperboard} title="Séries" subtitle="Destaques da semana" hideBrand />
+        <SectionHeader icon={Clapperboard} title={`Séries (${series.length})`} subtitle="Destaques da semana" hideBrand />
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {series.map((item, idx) => (
-          <SeriesCard key={item.id} item={item} index={idx} />
+          <SeriesCard key={item.id} item={item} index={idx} onSelect={() => setSelected(item)} />
         ))}
       </div>
+
+      <ContentDetailSheet
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        item={selected ? { ...selected, content_type: "series" } : null}
+      />
     </div>
   );
 };
-
