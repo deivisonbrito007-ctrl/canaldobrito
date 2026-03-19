@@ -77,7 +77,7 @@ const AdminBanners = () => {
   const updateBanner = useUpdateBanner();
   const deleteBanner = useDeleteBanner();
   const [uploading, setUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<"daily" | "categories" | "programacao">("daily");
+  const [activeSection, setActiveSection] = useState<"categories" | "programacao">("categories");
   const [scheduleDate, setScheduleDate] = useState("");
 
   const uploadAndCreateCategory = useCallback(async (file: File) => {
