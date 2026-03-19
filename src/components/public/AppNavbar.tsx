@@ -1,4 +1,4 @@
-import { Search, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import logo from "@/assets/canal_do_brito_logo.png";
