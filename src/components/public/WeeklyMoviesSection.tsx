@@ -1,8 +1,8 @@
 import { useActiveMovies } from "@/hooks/useMovies";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Film, Star, ImageOff } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ContentDetailSheet } from "./ContentDetailSheet";
+import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
