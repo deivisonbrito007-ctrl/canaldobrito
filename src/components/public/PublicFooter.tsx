@@ -8,8 +8,11 @@ export const PublicFooter = () => {
       <div className="px-4 py-10 space-y-5">
         {/* Brand */}
         <div className="flex flex-col items-center gap-3">
-          <img src={logo} alt="Brito Solutions" className="h-12 w-auto glow-primary-subtle" />
-          <span className="text-base font-bold text-gradient-primary">Brito Solutions</span>
+          <img src={logo} alt="Brito Solutions" className="h-12 w-auto object-contain" />
+          <span className="font-body text-lg font-bold tracking-tight">
+            <span className="text-foreground">Brito</span>{" "}
+            <span className="text-primary">Solutions</span>
+          </span>
           <p className="text-xs text-muted-foreground/60 font-body">
             Sua experiência premium de streaming
           </p>
