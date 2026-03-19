@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,36 +22,44 @@ interface ContentDetailSheetProps {
 export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetProps) => {
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [loadingTrailer, setLoadingTrailer] = useState(false);
-  const [triedTrailer, setTriedTrailer] = useState(false);
+  const [expandOverview, setExpandOverview] = useState(false);
 
-  const fetchTrailer = async () => {
-    if (!item?.tmdb_id || triedTrailer) return;
-    setLoadingTrailer(true);
-    setTriedTrailer(true);
-    try {
-      const action = item.content_type === "series" || item.content_type === "tv" ? "tv_videos" : "movie_videos";
-      const { data, error } = await supabase.functions.invoke("tmdb-proxy", {
-        body: { action, query: String(item.tmdb_id) },
-      });
-      if (!error && data?.results) {
-        const trailer = data.results.find(
-          (v: any) => v.type === "Trailer" && v.site === "YouTube"
-        ) || data.results.find((v: any) => v.site === "YouTube");
-        if (trailer) setTrailerKey(trailer.key);
-      }
-    } catch (e) {
-      console.error("Trailer fetch error:", e);
-    } finally {
+  // Fetch trailer whenever sheet opens with a valid tmdb_id
+  useEffect(() => {
+    if (!open || !item?.tmdb_id) {
+      setTrailerKey(null);
       setLoadingTrailer(false);
+      setExpandOverview(false);
+      return;
     }
-  };
 
-  // Reset state when item changes
-  const handleOpen = () => {
-    setTrailerKey(null);
-    setTriedTrailer(false);
+    let cancelled = false;
+    const fetchTrailer = async () => {
+      setTrailerKey(null);
+      setLoadingTrailer(true);
+      setExpandOverview(false);
+      try {
+        const action = item.content_type === "series" || item.content_type === "tv" ? "tv_videos" : "movie_videos";
+        const { data, error } = await supabase.functions.invoke("tmdb-proxy", {
+          body: { action, query: String(item.tmdb_id) },
+        });
+        if (cancelled) return;
+        if (!error && data?.results) {
+          const trailer = data.results.find(
+            (v: any) => v.type === "Trailer" && v.site === "YouTube"
+          ) || data.results.find((v: any) => v.site === "YouTube");
+          if (trailer) setTrailerKey(trailer.key);
+        }
+      } catch (e) {
+        console.error("Trailer fetch error:", e);
+      } finally {
+        if (!cancelled) setLoadingTrailer(false);
+      }
+    };
+
     fetchTrailer();
-  };
+    return () => { cancelled = true; };
+  }, [open, item?.tmdb_id, item?.content_type]);
 
   if (!item) return null;
 
@@ -77,9 +85,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            onAnimationComplete={(def: any) => {
-              if (def.y === 0) handleOpen();
-            }}
           >
             {/* Handle */}
             <div className="sticky top-0 z-10 flex justify-center pt-3 pb-2 bg-card rounded-t-3xl">
@@ -94,14 +99,14 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
               <X className="h-5 w-5" />
             </button>
 
-            <div className="px-5 pb-8 space-y-5">
+            <div className="px-4 pb-8 space-y-4">
               {/* Header with poster */}
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 {poster && (
                   <img
                     src={poster}
                     alt={item.title}
-                    className="w-28 h-auto rounded-xl object-cover border border-border/20 premium-shadow-sm"
+                    className="w-24 h-auto rounded-xl object-cover border border-border/20 premium-shadow-sm"
                   />
                 )}
                 <div className="flex-1 space-y-2 pt-1">
@@ -124,16 +129,26 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                 </div>
               </div>
 
-              {/* Overview */}
+              {/* Overview with expand */}
               {item.overview && (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {item.overview}
-                </p>
+                <div>
+                  <p className={`text-sm text-muted-foreground leading-relaxed ${!expandOverview ? "line-clamp-4" : ""}`}>
+                    {item.overview}
+                  </p>
+                  {item.overview.length > 200 && (
+                    <button
+                      onClick={() => setExpandOverview(!expandOverview)}
+                      className="text-xs text-primary font-semibold mt-1"
+                    >
+                      {expandOverview ? "Ver menos" : "Ver mais"}
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Trailer */}
               {loadingTrailer && (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               )}
@@ -156,7 +171,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                 </div>
               )}
 
-              {!loadingTrailer && !trailerKey && triedTrailer && item.tmdb_id && (
+              {!loadingTrailer && !trailerKey && !loadingTrailer && item.tmdb_id && (
                 <a
                   href={`https://www.themoviedb.org/${item.content_type === "series" || item.content_type === "tv" ? "tv" : "movie"}/${item.tmdb_id}`}
                   target="_blank"
