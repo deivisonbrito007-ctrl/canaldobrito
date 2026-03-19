@@ -164,7 +164,9 @@ export const ProgramacaoTexto = () => {
       is_live: false,
       status_short: "NS",
       elapsed_minutes: null,
-      publish_at: scheduleMidnight ? `${g.date}T00:00:00` : null,
+      // Convert local midnight to UTC ISO string so the Edge Function
+      // activates at exactly 00:00 in the admin's local timezone
+      publish_at: scheduleMidnight ? new Date(`${g.date}T00:00:00`).toISOString() : null,
     }));
   };
 
