@@ -16,7 +16,10 @@ export const NewsReleasesSection = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
   const [current, setCurrent] = useState(0);
   const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
+  const [selectedItem, setSelectedItem] = useState<typeof items extends (infer T)[] | undefined ? T | null : never>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const touchRef = useRef<number | null>(null);
+  const didSwipe = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const total = items?.length ?? 0;
