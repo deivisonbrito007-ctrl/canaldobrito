@@ -12,21 +12,21 @@ import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton } from "@/co
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
 
-const HighlightsEmptyState = () => {
-  const { data: movies, isLoading: lm } = useActiveMovies();
-  const { data: series, isLoading: ls } = useActiveSeries();
-  if (lm || ls) return null;
-  if ((movies?.length || 0) > 0 || (series?.length || 0) > 0) return null;
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
-      <div className="p-4 rounded-2xl bg-muted/30 border border-border/10">
-        <Film className="h-8 w-8 text-muted-foreground/30" />
-      </div>
-      <p className="text-sm font-semibold text-muted-foreground">Nenhum destaque esta semana</p>
-      <p className="text-xs text-muted-foreground/60">Volte em breve para novos filmes e séries.</p>
-    </div>
-  );
-};
+const HighlightsFallback = () => (
+  <div className="pt-5 pb-3 space-y-6">
+    <div className="px-4"><SectionHeaderSkeleton /></div>
+    <PosterRowSkeleton />
+    <div className="px-4"><SectionHeaderSkeleton /></div>
+    <PosterRowSkeleton />
+  </div>
+);
+
+const ScheduleFallback = () => (
+  <div className="px-4 pt-5 pb-3 space-y-5">
+    <SectionHeaderSkeleton />
+    {[0, 1, 2].map((i) => <GameCardSkeleton key={i} index={i} />)}
+  </div>
+);
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -51,24 +51,14 @@ const Index = () => {
 
       <main className="relative z-10 flex-1 pb-28">
         {activeTab === "highlights" ? (
-          /* ── Aba Destaques ── */
-          <div className="pt-5 pb-3 space-y-6">
-            <div className="px-4">
-              <SectionHeader icon={Star} title="Destaques" subtitle="Seleção da semana" />
-            </div>
-            <WeeklyMoviesSection />
-            <WeeklySeriesSection />
-            {/* Empty state when no content */}
-            <HighlightsEmptyState />
-          </div>
+          <Suspense fallback={<HighlightsFallback />}>
+            <HighlightsTab />
+          </Suspense>
         ) : activeTab === "schedule" ? (
-          /* ── Aba Programação ── */
-          <div className="px-4 pt-5 pb-3 space-y-5">
-            <SectionHeader icon={CalendarDays} title="Programação" subtitle="Jogos do dia" />
-            <DailyGamesSection />
-          </div>
+          <Suspense fallback={<ScheduleFallback />}>
+            <ScheduleTab />
+          </Suspense>
         ) : (
-          /* ── Aba Home (e demais) ── */
           <>
             <div className="px-4 pt-4 pb-2 space-y-1">
               <p className="text-xs text-muted-foreground font-body">Bem-vindo de volta 👋</p>
@@ -78,8 +68,6 @@ const Index = () => {
             </div>
 
             <div className="space-y-6">
-              
-              {/* <DailyBannerCarousel /> */}
               <CategoryIconsCarousel />
 
               <div id="esportes">
@@ -88,8 +76,6 @@ const Index = () => {
 
               <NewsReleasesSection />
 
-
-              
               <BannerSections />
             </div>
           </>
