@@ -1,35 +1,23 @@
 import { useState, useCallback } from "react";
 import { AppNavbar } from "@/components/public/AppNavbar";
-import { CategoryPills } from "@/components/public/CategoryPills";
 import { DailyBannerCarousel } from "@/components/public/DailyBannerCarousel";
 import { LiveNowSection } from "@/components/public/LiveNowSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
 import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 import { DailyGamesSection } from "@/components/public/DailyGamesSection";
-import { ReleaseBanner } from "@/components/public/ReleaseBanner";
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { CalendarDays, Star } from "lucide-react";
 
-type FilterId = "all" | "movies" | "series" | "sports" | "new" | "trending";
-
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
-  const [filter, setFilter] = useState<FilterId>("all");
 
   const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
-
-    if (tabId === "home" || tabId === "search" || tabId === "highlights") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (tabId === "schedule") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-
-  const show = (sections: FilterId[]) => filter === "all" || sections.includes(filter);
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background overflow-x-hidden">
