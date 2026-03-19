@@ -63,7 +63,7 @@ export const NewsReleasesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4 sm:px-6">
-        <SectionHeader />
+        <SectionHeader icon={Sparkles} title="Novidades" subtitle="Filmes e séries em destaque" />
       </div>
 
       <div
