@@ -274,21 +274,34 @@ export const ProgramacaoTexto = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Default date */}
             <div className="space-y-1.5">
-              <label className="text-[11px] text-muted-foreground font-medium">Data padrão</label>
+              <label className="text-[11px] text-muted-foreground font-medium">Data dos jogos</label>
               <Input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="text-xs h-10 glass-panel border-white/[0.1]"
               />
+              <p className="text-[9px] text-muted-foreground">Usado quando o texto não contém 📅 com data</p>
             </div>
 
             {/* Schedule midnight */}
-            <div className="flex items-center gap-3 p-3 rounded-xl glass-panel border border-amber-500/20 bg-amber-500/[0.03]">
+            <div className={`flex items-center gap-3 p-3 rounded-xl glass-panel border ${
+              scheduleMidnight && getScheduleLabel().isPast
+                ? "border-destructive/30 bg-destructive/[0.05]"
+                : "border-amber-500/20 bg-amber-500/[0.03]"
+            }`}>
               <Clock className="h-4 w-4 text-amber-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-foreground">Agendar 00:00</p>
-                <p className="text-[9px] text-muted-foreground leading-tight">Ativa automaticamente à meia-noite</p>
+                <p className="text-[11px] font-semibold text-foreground">Agendar publicação</p>
+                {scheduleMidnight ? (
+                  <p className={`text-[9px] leading-tight font-medium ${
+                    getScheduleLabel().isPast ? "text-destructive" : "text-emerald-400"
+                  }`}>
+                    {getScheduleLabel().text}
+                  </p>
+                ) : (
+                  <p className="text-[9px] text-muted-foreground leading-tight">Publica à meia-noite da data dos jogos</p>
+                )}
               </div>
               <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
             </div>
