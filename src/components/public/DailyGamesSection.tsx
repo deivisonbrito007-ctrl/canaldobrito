@@ -68,7 +68,7 @@ const HIGHLIGHT_COMPS = [
 
 const FILTER_CHANNELS = ["ESPN", "Sportv", "Globo", "Premiere", "Disney+", "CazéTV", "TNT"];
 
-const FILTER_COMPS = ["Brasileirão", "Champions League", "Libertadores", "Copa do Brasil", "Premier League"];
+const FILTER_COMPS = ["Brasileirão", "Campeonato Brasileiro", "Champions League", "Libertadores", "Copa do Brasil", "Europa League", "Conference League"];
 
 /* ── helpers ── */
 function matchKey(input: string, map: Record<string, any>) {
