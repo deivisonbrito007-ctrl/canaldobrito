@@ -1,71 +1,39 @@
 
 
-# Auditoria Completa da Aba Programacao + Agendamento + Testes
+# Melhorar UX do Agendamento — Clareza na Data de Ativação
 
-## Auditoria do Fluxo
+## Problema
 
-**Funcionando corretamente:**
-- Parser de texto detecta jogos, datas, competicoes, horarios e canais
-- Preview com selecao individual, edicao inline, agrupamento por data
-- Publicar e Republicar (limpa + insere) funcionam
-- Toggle "Agendar 00:00" define `active: false` e `publish_at` com data local convertida para UTC
-- Edge Function `activate-scheduled` roda a cada minuto via pg_cron (confirmado: jobid 2, schedule `* * * * *`)
-- Cron job esta registrado e executando sem erros (logs confirmam 0 erros)
-- DailyGamesManager lista jogos por data com status agendado/ativo
-- Nenhum jogo ou banner pendente de ativacao no momento (tabelas limpas)
+O campo "Data padrão" serve para definir a data dos jogos (ex: 19/03). Quando o toggle "Agendar 00:00" está ativo, o sistema agenda para 00:00 **dessa mesma data**. Isso causa confusão:
+- Se a data é hoje (19/03) e já passou da meia-noite, o agendamento fica no passado
+- O admin não sabe se vai publicar "hoje à meia-noite" ou "amanhã à meia-noite"
 
-**Problema encontrado no agendamento:**
-- Linha 169 do ProgramacaoTexto: `new Date(\`${g.date}T00:00:00\`).toISOString()` — quando `g.date` e uma data **futura** (ex: amanha), o `new Date("2026-03-20T00:00:00")` e interpretado como **UTC 00:00**, nao local. Em fuso UTC-3 (Brasil), isso significa que o `publish_at` sera `2026-03-20T00:00:00.000Z` que corresponde a `19/03 21:00 local` — os jogos serao ativados **3 horas antes** da meia-noite local
-- **Correcao**: usar o construtor com componentes locais: `new Date(year, month-1, day, 0, 0, 0).toISOString()` para garantir que 00:00 local seja convertido corretamente para UTC
+## Solução
 
-## Plano de Execucao
+### 1. Mudar a lógica: "Agendar 00:00" sempre agenda para 00:00 do **dia seguinte à data selecionada**... NÃO. Na verdade o correto é: a data do jogo É a data do jogo. Se o admin coloca 20/03, os jogos são do dia 20/03 e o agendamento deveria ativar na meia-noite do dia 20/03.
 
-### 1. Corrigir timezone no agendamento (ProgramacaoTexto.tsx)
-- Linha 169: substituir `new Date(\`${g.date}T00:00:00\`)` por construcao com componentes de data local para garantir que `publish_at` represente exatamente meia-noite no fuso do admin
+**Proposta mais clara**: Tornar o label e o feedback explícitos sobre quando vai ativar.
 
-### 2. Testes unitarios
+### Mudanças em `src/components/admin/ProgramacaoTexto.tsx`
 
-**`src/components/admin/__tests__/ProgramacaoTexto.test.tsx`** (novo):
-- Testar parser: deteccao de jogos, datas, competicoes, horarios, canais
-- Testar parser com multiplas datas
-- Testar caso vazio (sem "x")
-- Testar deteccao de feminino `(F)`
+1. **Renomear o toggle** de "Agendar 00:00" para algo mais claro:
+   - Label: **"Agendar publicação"**
+   - Sublabel dinâmico: **"Ativa em {data selecionada} às 00:00"**
+   - Se a data selecionada já passou, mostrar aviso em vermelho: **"⚠️ Data no passado — será ativado imediatamente"**
 
-**`src/lib/dateUtils.test.ts`** (atualizar):
-- Adicionar teste para `getScheduleDate` se nao existir
+2. **Adicionar validação visual**:
+   - Se `scheduleMidnight` está ativo e a data é hoje ou passada, mostrar badge de aviso
+   - Se a data é futura, mostrar badge verde: "Publica em X dias"
 
-### 3. Rodar suite completa de testes
+3. **Ajustar o `buildInsertPayload`**: Se a data selecionada já passou (00:00 dessa data < agora), não definir `publish_at` — publicar imediatamente e avisar o admin com toast
 
-### 4. Melhorias UI sugeridas
-- **Dashboard**: link "Programacao" no quick actions aponta para `/admin/banners` generico — mudar para incluir state ou query param indicando aba programacao
-- **DailyGamesManager**: mostrar countdown para jogos agendados (reutilizar `formatCountdown` de dateUtils)
-- **ProgramacaoTexto**: ao ativar "Agendar 00:00", mostrar a data/hora exata em que sera ativado (ex: "Ativa em 20/03/2026 00:00") como feedback visual
+4. **Melhorar o campo "Data padrão"**:
+   - Renomear label para **"Data dos jogos"** (mais claro)
+   - Adicionar sublabel: "Usado quando o texto não contém 📅 com data"
 
-## Resumo de mudancas
+## Resumo de mudanças
 
-| Arquivo | Mudanca |
+| Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin/ProgramacaoTexto.tsx` | Corrigir timezone do publish_at (bug critico) |
-| `src/components/admin/__tests__/ProgramacaoTexto.test.tsx` | Novo - testes do parser |
-| `src/lib/dateUtils.test.ts` | Verificar cobertura existente |
-| Rodar suite completa | Validar todos os testes |
-
-## Detalhes tecnicos
-
-O bug de timezone e o mais critico. Atualmente:
-```text
-Admin no Brasil (UTC-3) agenda para 20/03 00:00
--> new Date("2026-03-20T00:00:00") = UTC 00:00
--> Convertido para local = 19/03 21:00
--> Edge Function ativa 3h antes do esperado
-```
-
-Correcao:
-```text
-const [y, m, d] = g.date.split("-").map(Number);
-new Date(y, m - 1, d, 0, 0, 0).toISOString()
--> Constroi meia-noite LOCAL
--> toISOString() converte para UTC corretamente (ex: 2026-03-20T03:00:00Z para UTC-3)
--> Edge Function ativa exatamente a meia-noite local
-```
+| `src/components/admin/ProgramacaoTexto.tsx` | Renomear labels, adicionar feedback visual dinâmico, validar data passada |
 
