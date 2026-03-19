@@ -47,19 +47,6 @@ const COMP_TOP_COLORS: Record<string, string> = {
   "copa do rei":          "from-yellow-600",
 };
 
-const CHANNEL_COLORS: Record<string, string> = {
-  "espn":        "bg-red-600/80 text-white",
-  "sportv":      "bg-emerald-600/80 text-white",
-  "globo":       "bg-foreground/80 text-background",
-  "premiere":    "bg-yellow-500/80 text-background",
-  "disney+":     "bg-blue-800/80 text-white",
-  "max":         "bg-purple-700/80 text-white",
-  "tnt":         "bg-blue-600/80 text-white",
-  "cazétv":      "bg-lime-500/80 text-background",
-  "cazetv":      "bg-lime-500/80 text-background",
-  "prime video": "bg-sky-500/80 text-background",
-  "band":        "bg-emerald-500/80 text-white",
-};
 
 const HIGHLIGHT_COMPS = [
   "champions league", "brasileirão", "brasileirao", "campeonato brasileiro",
