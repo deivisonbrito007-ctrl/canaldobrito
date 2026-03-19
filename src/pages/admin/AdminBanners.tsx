@@ -157,7 +157,7 @@ const AdminBanners = () => {
         ))}
       </div>
 
-      {activeSection === "daily" && <DailyBannerManager />}
+      
 
       {activeSection === "programacao" && (
         <div className="space-y-4">
