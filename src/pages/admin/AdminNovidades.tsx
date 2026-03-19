@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease, useUpdateNewsRelease } from "@/hooks/useNewsReleases";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -11,6 +12,24 @@ import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w780";
 const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
+
+const fetchTMDBDetails = async (tmdbId: number, type: "movie" | "series") => {
+  try {
+    const action = type === "movie" ? "movie_details" : "tv_details";
+    const { data, error } = await supabase.functions.invoke("tmdb-proxy", {
+      body: { action, query: String(tmdbId) },
+    });
+    if (error) return null;
+    return {
+      genres: data?.genres?.map((g: { name: string }) => g.name).join(", ") || null,
+      runtime: type === "movie" ? (data?.runtime || null) : null,
+      seasons: type === "series" ? (data?.number_of_seasons || null) : null,
+      tagline: data?.tagline || null,
+    };
+  } catch {
+    return null;
+  }
+};
 
 const AdminNovidades = () => {
   const { user } = useAuth();
@@ -23,6 +42,7 @@ const AdminNovidades = () => {
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
   const [badgeType, setBadgeType] = useState<string>("novidade");
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   const handleSearch = () => {
     if (query.trim()) search(searchType === "movie" ? "search_movie" : "search_tv", query);
@@ -31,7 +51,9 @@ const AdminNovidades = () => {
   const handleAdd = async (r: TMDBResult) => {
     const existing = items?.find((m) => m.tmdb_id === r.id && m.content_type === searchType);
     if (existing) { toast.info("Item já adicionado"); return; }
+    setAddingId(r.id);
     try {
+      const details = await fetchTMDBDetails(r.id, searchType);
       await addItem.mutateAsync({
         tmdb_id: r.id, title: r.title || r.name || "",
         content_type: searchType, badge_type: badgeType,
@@ -41,9 +63,14 @@ const AdminNovidades = () => {
         year: (r.release_date || r.first_air_date) ? parseInt(r.release_date || r.first_air_date || "") : null,
         display_order: items?.length ?? 0,
         added_by: user?.id || null,
+        genres: details?.genres || null,
+        runtime: details?.runtime || null,
+        seasons: details?.seasons || null,
+        tagline: details?.tagline || null,
       });
-      toast.success("Item adicionado!");
+      toast.success("Item adicionado com detalhes!");
     } catch (err: any) { toast.error(err.message); }
+    setAddingId(null);
   };
 
   const handleReorder = async (index: number, direction: "up" | "down") => {
@@ -116,8 +143,8 @@ const AdminNovidades = () => {
                       <span>{r.vote_average?.toFixed(1)}</span>
                     </div>
                   </div>
-                  <Button size="sm" className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-0 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
-                    <Plus className="h-3 w-3 mr-1" /> Add
+                  <Button size="sm" className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-0 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-opacity" onClick={() => handleAdd(r)} disabled={addingId === r.id}>
+                    {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />} Add
                   </Button>
                 </div>
               ))}
@@ -141,24 +168,11 @@ const AdminNovidades = () => {
             <div className="space-y-2">
               {items.map((m, idx) => (
                 <div key={m.id} className="flex items-center gap-3 rounded-lg glass-panel p-3">
-                  {/* Reorder buttons */}
                   <div className="flex flex-col gap-0.5 shrink-0">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 rounded"
-                      disabled={idx === 0}
-                      onClick={() => handleReorder(idx, "up")}
-                    >
+                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded" disabled={idx === 0} onClick={() => handleReorder(idx, "up")}>
                       <ArrowUp className="h-3 w-3" />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 rounded"
-                      disabled={idx === items.length - 1}
-                      onClick={() => handleReorder(idx, "down")}
-                    >
+                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded" disabled={idx === items.length - 1} onClick={() => handleReorder(idx, "down")}>
                       <ArrowDown className="h-3 w-3" />
                     </Button>
                   </div>
@@ -170,7 +184,7 @@ const AdminNovidades = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{m.title}</p>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className={`rounded px-1.5 py-0.5 font-bold text-white text-[9px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
                         {m.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
                       </span>
@@ -188,6 +202,11 @@ const AdminNovidades = () => {
                       </Select>
                       {m.year && <span className="text-[9px] text-muted-foreground/60">{m.year}</span>}
                     </div>
+                    {m.genres && (
+                      <p className="text-[9px] text-muted-foreground/50 mt-0.5 truncate">{m.genres}</p>
+                    )}
+                    {m.runtime && <span className="text-[9px] text-muted-foreground/40">{Math.floor(m.runtime / 60)}h {m.runtime % 60}min</span>}
+                    {m.seasons && <span className="text-[9px] text-muted-foreground/40">{m.seasons} temporada{m.seasons > 1 ? "s" : ""}</span>}
                   </div>
                   <Switch checked={m.active} onCheckedChange={(v) => toggleItem.mutate({ id: m.id, active: v })} />
                   <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0" onClick={() => { if (confirm("Remover item?")) deleteItem.mutate(m.id); }}><Trash2 className="h-4 w-4" /></Button>
