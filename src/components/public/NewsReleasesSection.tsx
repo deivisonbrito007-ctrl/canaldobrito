@@ -49,7 +49,7 @@ export const NewsReleasesSection = () => {
   if (isLoading) {
     return (
       <div className="px-4 space-y-4">
-        <SectionHeader />
+        <SectionHeader icon={Sparkles} title="Novidades" subtitle="Filmes e séries em destaque" />
         <Skeleton className="h-[360px] sm:h-[420px] rounded-2xl sm:rounded-3xl" />
       </div>
     );
