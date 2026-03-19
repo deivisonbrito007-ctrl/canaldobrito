@@ -51,14 +51,14 @@ const Index = () => {
         ) : (
           /* ── Aba Home (e demais) ── */
           <>
-            <div className="px-4 pt-5 pb-3 space-y-1">
+            <div className="px-4 pt-4 pb-2 space-y-1">
               <p className="text-xs text-muted-foreground font-body">Bem-vindo de volta 👋</p>
               <h2 className="text-lg font-bold text-foreground font-body">
                 O que vai assistir <span className="text-primary">hoje</span>?
               </h2>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-6">
               
               {/* <DailyBannerCarousel /> */}
               <CategoryIconsCarousel />
