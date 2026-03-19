@@ -3,6 +3,7 @@ import { Sparkles, Star, ImageOff, Clock, Tv } from "lucide-react";
 import { NewsBannerSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { AnimatePresence, motion } from "framer-motion";
 import { SectionHeader } from "./SectionHeader";
+import { ContentDetailSheet } from "./ContentDetailSheet";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const formatRuntime = (minutes: number) => {
@@ -15,7 +16,10 @@ export const NewsReleasesSection = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
   const [current, setCurrent] = useState(0);
   const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
+  const [selectedItem, setSelectedItem] = useState<typeof items extends (infer T)[] | undefined ? T | null : never>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const touchRef = useRef<number | null>(null);
+  const didSwipe = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const total = items?.length ?? 0;
@@ -45,6 +49,7 @@ export const NewsReleasesSection = () => {
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchRef.current = e.touches[0].clientX;
+    didSwipe.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -52,10 +57,26 @@ export const NewsReleasesSection = () => {
     if (touchRef.current === null) return;
     const diff = e.changedTouches[0].clientX - touchRef.current;
     if (Math.abs(diff) > 50) {
+      didSwipe.current = true;
       setCurrent((c) => diff < 0 ? (c + 1) % total : (c - 1 + total) % total);
     }
     touchRef.current = null;
     startTimer();
+  };
+
+  const handleCardClick = () => {
+    if (didSwipe.current) return;
+    const current_item = items?.[safeIndex];
+    if (!current_item) return;
+    setSelectedItem(current_item);
+    setSheetOpen(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const handleSheetClose = () => {
+    setSheetOpen(false);
+    setSelectedItem(null);
+    if (total > 1) startTimer();
   };
 
   if (isLoading) {
@@ -81,9 +102,10 @@ export const NewsReleasesSection = () => {
       </div>
 
       <div
-        className="relative mx-4 h-[360px] sm:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden select-none"
+        className="relative mx-4 h-[360px] sm:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden select-none cursor-pointer"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
+        onClick={handleCardClick}
       >
         {/* Background */}
         <AnimatePresence mode="wait">
@@ -227,6 +249,21 @@ export const NewsReleasesSection = () => {
           </div>
         )}
       </div>
+
+      <ContentDetailSheet
+        open={sheetOpen}
+        onClose={handleSheetClose}
+        item={selectedItem ? {
+          title: selectedItem.title,
+          overview: selectedItem.overview,
+          poster_url: selectedItem.image_url,
+          rating: selectedItem.rating,
+          year: selectedItem.year,
+          genre: selectedItem.genres,
+          tmdb_id: selectedItem.tmdb_id,
+          content_type: selectedItem.content_type,
+        } : null}
+      />
     </div>
   );
 };
