@@ -271,10 +271,14 @@ export type Database = {
           content_type: string
           created_at: string
           display_order: number
+          genres: string | null
           id: string
           image_url: string | null
           overview: string | null
           rating: number | null
+          runtime: number | null
+          seasons: number | null
+          tagline: string | null
           title: string
           tmdb_id: number | null
           year: number | null
@@ -286,10 +290,14 @@ export type Database = {
           content_type?: string
           created_at?: string
           display_order?: number
+          genres?: string | null
           id?: string
           image_url?: string | null
           overview?: string | null
           rating?: number | null
+          runtime?: number | null
+          seasons?: number | null
+          tagline?: string | null
           title: string
           tmdb_id?: number | null
           year?: number | null
@@ -301,10 +309,14 @@ export type Database = {
           content_type?: string
           created_at?: string
           display_order?: number
+          genres?: string | null
           id?: string
           image_url?: string | null
           overview?: string | null
           rating?: number | null
+          runtime?: number | null
+          seasons?: number | null
+          tagline?: string | null
           title?: string
           tmdb_id?: number | null
           year?: number | null
