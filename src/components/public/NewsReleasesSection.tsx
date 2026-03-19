@@ -179,11 +179,16 @@ export const NewsReleasesSection = () => {
 
 const SectionHeader = () => (
   <div className="flex items-center gap-2.5">
-    <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/15">
+    <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/15 shadow-[0_0_8px_hsl(var(--primary)/0.15)]">
       <Sparkles className="h-4 w-4 text-primary" />
     </div>
-    <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">
-      Novidades
-    </h2>
+    <div className="flex flex-col">
+      <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">
+        Novidades <span className="text-primary">Brito Solutions</span>
+      </h2>
+      <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
+        Filmes e séries em destaque
+      </p>
+    </div>
   </div>
 );
