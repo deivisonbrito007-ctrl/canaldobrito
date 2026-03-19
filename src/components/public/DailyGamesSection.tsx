@@ -72,10 +72,10 @@ function getCompColor(comp: string) {
 
 function getTopColor(comp: string) {
   return matchKey(comp, COMP_TOP_COLORS) ?? "from-muted";
-}
 
-
-
+function isHighlight(comp: string) {
+  const key = comp.toLowerCase().trim();
+  return HIGHLIGHT_COMPS.some((c) => key.includes(c));
 }
 
 function isGameLive(game: DailyGame): boolean {
