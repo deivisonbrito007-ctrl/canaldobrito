@@ -44,15 +44,15 @@ const MovieCard = ({ item, index }: { item: ReturnType<typeof useActiveMovies>["
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
-          <p className="text-[12px] sm:text-sm font-bold text-foreground leading-tight line-clamp-2 drop-shadow-lg font-body">
+          <p className="text-[13px] sm:text-sm font-bold text-foreground leading-tight line-clamp-2 drop-shadow-lg font-body">
             {item.title}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             {item.year && (
-              <span className="text-[10px] text-foreground/40 font-medium font-body">{item.year}</span>
+              <span className="text-[10px] text-foreground/50 font-medium font-body">{item.year}</span>
             )}
             {item.genre && (
-              <span className="text-[9px] text-primary font-semibold bg-primary/10 rounded-full px-2 py-0.5 border border-primary/15 font-body">
+              <span className="text-[10px] text-primary font-semibold bg-primary/15 rounded-full px-2.5 py-0.5 border border-primary/20 font-body">
                 {item.genre.split(",")[0]}
               </span>
             )}

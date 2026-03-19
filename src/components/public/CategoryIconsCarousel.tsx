@@ -26,8 +26,8 @@ export const CategoryIconsCarousel = () => (
         <span className="text-foreground">Brito </span>
         <span className="text-primary">Solutions</span>
       </h3>
-      <p className="text-xs sm:text-sm text-muted-foreground/80 font-body leading-relaxed max-w-md">
-        Sua experiência premium de streaming com o canal informativo que você precisa dos seus esportes, filmes e séries favoritos
+      <p className="text-xs sm:text-sm text-muted-foreground/80 font-body leading-relaxed max-w-md line-clamp-1 sm:line-clamp-2">
+        Sua experiência premium de streaming — esportes, filmes e séries
       </p>
     </motion.div>
 

@@ -186,7 +186,7 @@ export const NewsReleasesSection = () => {
           {item.genres && (
             <div className="flex items-center gap-1.5 flex-wrap">
               {item.genres.split(", ").slice(0, 3).map((g) => (
-                <span key={g} className="rounded-full bg-white/[0.1] px-2 py-0.5 text-[10px] font-medium text-white/60">
+                <span key={g} className="rounded-full bg-white/[0.12] px-2.5 py-0.5 text-[11px] font-medium text-white/70">
                   {g}
                 </span>
               ))}
