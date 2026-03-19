@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease } from "@/hooks/useNewsReleases";
+import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease, useUpdateNewsRelease } from "@/hooks/useNewsReleases";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ const AdminNovidades = () => {
   const { data: items } = useAllNewsReleases();
   const addItem = useAddNewsRelease();
   const toggleItem = useToggleNewsRelease();
+  const updateItem = useUpdateNewsRelease();
   const deleteItem = useDeleteNewsRelease();
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
@@ -133,23 +134,23 @@ const AdminNovidades = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{m.title}</p>
-                    <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60 mt-0.5 flex-wrap">
-                      <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
-                        {m.content_type === "movie" ? "Filme" : "Série"}
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className={`rounded px-1.5 py-0.5 font-bold text-white text-[9px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
+                        {m.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
                       </span>
-                      <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${
-                        m.badge_type === "lancamento" ? "bg-purple-500/80" :
-                        m.badge_type === "nova_temporada" ? "bg-blue-500/80" :
-                        m.badge_type === "estreia" ? "bg-emerald-500/80" :
-                        m.badge_type === "exclusivo" ? "bg-amber-500/80" :
-                        "bg-orange-500/80"
-                      }`}>
-                        {m.badge_type === "lancamento" ? "Lançamento" :
-                         m.badge_type === "nova_temporada" ? "Nova Temporada" :
-                         m.badge_type === "estreia" ? "Estreia" :
-                         m.badge_type === "exclusivo" ? "Exclusivo" : "Novidade"}
-                      </span>
-                      {m.year && <span>{m.year}</span>}
+                      <Select value={m.badge_type} onValueChange={(v) => updateItem.mutate({ id: m.id, badge_type: v })}>
+                        <SelectTrigger className="h-6 w-auto min-w-[110px] text-[9px] font-bold border-white/[0.1] bg-white/[0.03] px-2 py-0 gap-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="novidade">🔥 Novidade</SelectItem>
+                          <SelectItem value="lancamento">🆕 Lançamento</SelectItem>
+                          <SelectItem value="nova_temporada">📺 Nova Temporada</SelectItem>
+                          <SelectItem value="estreia">⭐ Estreia</SelectItem>
+                          <SelectItem value="exclusivo">👑 Exclusivo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {m.year && <span className="text-[9px] text-muted-foreground/60">{m.year}</span>}
                     </div>
                   </div>
                   <Switch checked={m.active} onCheckedChange={(v) => toggleItem.mutate({ id: m.id, active: v })} />
