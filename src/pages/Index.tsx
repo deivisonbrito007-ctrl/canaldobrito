@@ -37,10 +37,17 @@ const Index = () => {
           /* ── Aba Destaques ── */
           <div className="px-4 pt-5 pb-3 space-y-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/20 shadow-[0_0_8px_hsl(var(--primary)/0.15)]">
                 <Star className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-lg font-bold text-foreground font-body">Destaque da Semana</h2>
+              <div className="flex flex-col">
+                <h2 className="text-lg font-bold text-foreground font-body leading-tight">
+                  Destaques <span className="text-primary">Brito Solutions</span>
+                </h2>
+                <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
+                  Seleção da semana
+                </p>
+              </div>
             </div>
             <WeeklyMoviesSection />
             <WeeklySeriesSection />
@@ -49,10 +56,17 @@ const Index = () => {
           /* ── Aba Programação ── */
           <div className="px-4 pt-5 pb-3 space-y-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/15 border border-primary/20 shadow-[0_0_8px_hsl(var(--primary)/0.15)]">
                 <CalendarDays className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-lg font-bold text-foreground font-body">Programação</h2>
+              <div className="flex flex-col">
+                <h2 className="text-lg font-bold text-foreground font-body leading-tight">
+                  Programação <span className="text-primary">Brito Solutions</span>
+                </h2>
+                <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
+                  Jogos do dia
+                </p>
+              </div>
             </div>
             <DailyGamesSection />
           </div>
