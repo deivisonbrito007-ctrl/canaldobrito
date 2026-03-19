@@ -11,16 +11,16 @@ const categories = [
   { icon: Flame, label: "Em Alta", color: "from-pink-500/20 to-pink-600/10" },
 ];
 
-const doubled = [...categories, ...categories];
+const tripled = [...categories, ...categories, ...categories];
 
 export const CategoryIconsCarousel = () => (
-  <section className="px-4 sm:px-6 py-4 space-y-3">
+  <section className="py-4 space-y-3">
     {/* Premium message — Dual Tone branding */}
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="space-y-1.5"
+      className="px-4 sm:px-6 space-y-1.5"
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-lg sm:text-xl font-extrabold tracking-tight font-body">
@@ -45,9 +45,9 @@ export const CategoryIconsCarousel = () => (
     </motion.div>
 
     {/* Auto-scroll marquee */}
-    <div className="overflow-hidden marquee-container">
+    <div className="overflow-hidden marquee-container marquee-mask">
       <div className="marquee-track flex gap-3 w-max">
-        {doubled.map((cat, i) => (
+        {tripled.map((cat, i) => (
           <div
             key={`${cat.label}-${i}`}
             className={`shrink-0 flex items-center gap-2.5 px-4 py-3 rounded-xl
