@@ -114,12 +114,17 @@ export const NewsReleasesSection = () => {
         <div className="absolute top-3 left-3 z-10">
           <span
             className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm ${
-              item.badge_type === "lancamento"
-                ? "bg-purple-500/70"
-                : "bg-orange-500/70"
+              item.badge_type === "lancamento" ? "bg-purple-500/70" :
+              item.badge_type === "nova_temporada" ? "bg-blue-500/70" :
+              item.badge_type === "estreia" ? "bg-emerald-500/70" :
+              item.badge_type === "exclusivo" ? "bg-amber-500/70" :
+              "bg-orange-500/70"
             }`}
           >
-            {item.badge_type === "lancamento" ? "🆕 Lançamento" : "🔥 Em Alta"}
+            {item.badge_type === "lancamento" ? "🆕 Lançamento" :
+             item.badge_type === "nova_temporada" ? "📺 Nova Temporada" :
+             item.badge_type === "estreia" ? "⭐ Estreia" :
+             item.badge_type === "exclusivo" ? "👑 Exclusivo" : "🔥 Em Alta"}
           </span>
         </div>
 

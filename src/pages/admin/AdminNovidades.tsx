@@ -21,7 +21,7 @@ const AdminNovidades = () => {
   const deleteItem = useDeleteNewsRelease();
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
-  const [badgeType, setBadgeType] = useState<"novidade" | "lancamento">("novidade");
+  const [badgeType, setBadgeType] = useState<string>("novidade");
 
   const handleSearch = () => {
     if (query.trim()) search(searchType === "movie" ? "search_movie" : "search_tv", query);
@@ -64,11 +64,14 @@ const AdminNovidades = () => {
                 <SelectItem value="series">📺 Série</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={badgeType} onValueChange={(v) => setBadgeType(v as any)}>
+            <Select value={badgeType} onValueChange={(v) => setBadgeType(v)}>
               <SelectTrigger className="glass-panel border-white/[0.1] h-10 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="novidade">🔥 Novidade</SelectItem>
                 <SelectItem value="lancamento">🆕 Lançamento</SelectItem>
+                <SelectItem value="nova_temporada">📺 Nova Temporada</SelectItem>
+                <SelectItem value="estreia">⭐ Estreia</SelectItem>
+                <SelectItem value="exclusivo">👑 Exclusivo</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -134,8 +137,17 @@ const AdminNovidades = () => {
                       <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
                         {m.content_type === "movie" ? "Filme" : "Série"}
                       </span>
-                      <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${m.badge_type === "lancamento" ? "bg-purple-500/80" : "bg-orange-500/80"}`}>
-                        {m.badge_type === "lancamento" ? "Lanç." : "Nov."}
+                      <span className={`rounded px-1 py-0.5 font-bold text-white text-[8px] ${
+                        m.badge_type === "lancamento" ? "bg-purple-500/80" :
+                        m.badge_type === "nova_temporada" ? "bg-blue-500/80" :
+                        m.badge_type === "estreia" ? "bg-emerald-500/80" :
+                        m.badge_type === "exclusivo" ? "bg-amber-500/80" :
+                        "bg-orange-500/80"
+                      }`}>
+                        {m.badge_type === "lancamento" ? "Lanç." :
+                         m.badge_type === "nova_temporada" ? "Nova Temp." :
+                         m.badge_type === "estreia" ? "Estreia" :
+                         m.badge_type === "exclusivo" ? "Exclusivo" : "Nov."}
                       </span>
                       {m.year && <span>{m.year}</span>}
                     </div>
