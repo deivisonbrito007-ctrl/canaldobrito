@@ -1,7 +1,7 @@
 import { Search, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import logo from "@/assets/logo_brito_solutions_sem_fundo.png";
+import logo from "@/assets/canal_do_brito_logo.png";
 
 export const AppNavbar = () => {
   const today = new Date();
@@ -10,11 +10,11 @@ export const AppNavbar = () => {
     <header className="sticky top-0 z-50 glass-nav">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Brito Solutions" className="h-10 w-auto object-contain" />
+          <img src={logo} alt="Canal do Brito" className="h-11 w-auto object-contain" />
           <div className="leading-tight">
             <h1 className="font-body text-lg font-bold tracking-tight">
-              <span className="text-foreground">Brito</span>{" "}
-              <span className="text-primary">Solutions</span>
+              <span className="text-foreground">Canal do</span>{" "}
+              <span className="text-primary">Brito</span>
             </h1>
             <p className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize font-body font-medium">
               <CalendarDays className="h-3 w-3" />

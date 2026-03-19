@@ -33,7 +33,7 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6 rounded-2xl border border-border/50 bg-card p-8">
         <div className="flex flex-col items-center gap-3">
-          <img src={logo} alt="Brito Solutions" className="h-12 w-auto" />
+          <img src={logo} alt="Canal do Brito" className="h-14 w-auto" />
           <h1 className="font-display text-xl font-bold text-foreground">Admin Login</h1>
           <p className="text-sm text-muted-foreground">Acesso restrito à administração</p>
         </div>
