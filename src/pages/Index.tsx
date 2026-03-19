@@ -70,13 +70,11 @@ const Index = () => {
               
               <DailyBannerCarousel />
 
-              {show(["sports"]) && (
-                <div id="esportes">
-                  <LiveNowSection />
-                </div>
-              )}
+              <div id="esportes">
+                <LiveNowSection />
+              </div>
 
-              {show(["new", "trending"]) && <NewsReleasesSection />}
+              <NewsReleasesSection />
 
 
               

@@ -1,7 +1,7 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Clock, Flame, Trophy } from "lucide-react";
+import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
 import { isGameCurrentlyLive } from "@/lib/gameUtils";
 
 /* ── colour maps ── */
