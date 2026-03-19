@@ -1,51 +1,53 @@
 
 
-# Auditoria do Portal Mobile
+# Auditoria Aba Destaques + Testes + Melhorias
 
 ## Problemas Identificados
 
-### 1. Variáveis de debug ainda no código
-- `LiveNowSection.tsx` ainda tem `DEBUG_FORCE_LIVE` e `DEBUG_LIVE_COUNT` no código. Mesmo desativadas, poluem o componente e podem ser ativadas acidentalmente.
+### 1. Cards sem interação na aba Destaques (bug principal)
+`WeeklyMoviesSection` e `WeeklySeriesSection` renderizam cards com `cursor-pointer` mas **sem onClick**. O `ContentDetailSheet` (que mostra detalhes + trailer) existe e funciona nos componentes antigos (`MoviesSection`, `SeriesSection`), mas nunca foi integrado nos componentes da aba Destaques.
 
-### 2. App.css com estilos não utilizados
-- O arquivo `src/App.css` contém estilos do template Vite padrão (`logo-spin`, `.read-the-docs`, `#root` com padding/text-align) que conflitam com o layout e não são usados.
+### 2. Sem estado vazio na aba Destaques
+Se não houver filmes nem séries ativos, a aba Destaques fica completamente em branco (ambos retornam `null`).
 
-### 3. Footer sobreposto pelo BottomNav
-- O `PublicFooter` tem `pb-20` mas o conteúdo pode ficar parcialmente coberto pelo bottom nav fixo dependendo do safe-area-inset.
+### 3. Dashboard: "Jogos Hoje" e "Programação" apontam para rota errada
+No `AdminDashboard`, o card "Jogos Hoje" e o botão "+ Programação" apontam para `/admin/banners` em vez de uma rota dedicada (ou pelo menos a aba de programação).
 
-### 4. Acessibilidade — botões sem aria-label
-- Os botões do `BottomNav` não possuem `aria-label`, dificultando navegação por leitores de tela.
-- Botões de filtro no `DailyGamesSection` também não têm labels acessíveis.
+### 4. Testes inexistentes para componentes públicos
+Apenas `gameUtils.test.ts` e `example.test.ts` existem. Nenhum teste cobre os componentes da aba Destaques.
 
-### 5. NewsReleasesSection — overview escondido em telas < 380px
-- O texto de descrição usa `hidden min-[380px]:block`, cortando informação importante em telas de 320px.
-
-### 6. Performance — motion animations sem `layout` ou `willChange`
-- Muitos cards usam `framer-motion` com animações de entrada mas sem `will-change: transform` para otimizar GPU.
-
-### 7. CategoryIconsCarousel — marquee pode causar motion sickness
-- O auto-scroll infinito não respeita `prefers-reduced-motion`.
+---
 
 ## Plano de Correções
 
-### Arquivo: `src/components/public/LiveNowSection.tsx`
-- Remover `DEBUG_FORCE_LIVE`, `DEBUG_LIVE_COUNT` e toda lógica condicional de debug.
+### Arquivo: `src/components/public/WeeklyMoviesSection.tsx`
+- Adicionar estado `selectedMovie` e `ContentDetailSheet`
+- Adicionar `onClick` no card que seta o filme selecionado
+- Adicionar `will-change: transform` no motion.div para GPU optimization
 
-### Arquivo: `src/App.css`
-- Limpar estilos não utilizados do template Vite (manter arquivo mínimo ou vazio).
-
-### Arquivo: `src/components/public/BottomNav.tsx`
-- Adicionar `aria-label={item.label}` nos botões de navegação.
-
-### Arquivo: `src/components/public/NewsReleasesSection.tsx`
-- Trocar `hidden min-[380px]:block` por `block` para mostrar overview em todas as telas (com `line-clamp-2`).
-
-### Arquivo: `src/components/public/CategoryIconsCarousel.tsx`
-- Adicionar `@media (prefers-reduced-motion: reduce)` para pausar o marquee.
-
-### Arquivo: `src/index.css`
-- Adicionar regra para pausar animações quando `prefers-reduced-motion` está ativo.
+### Arquivo: `src/components/public/WeeklySeriesSection.tsx`
+- Mesmo tratamento: estado `selectedSeries` + `ContentDetailSheet` + `onClick`
 
 ### Arquivo: `src/pages/Index.tsx`
-- Aumentar `pb-24` para `pb-28` no main para garantir espaço extra para o bottom nav com safe-area.
+- Adicionar estado vazio na aba Destaques quando `movies` e `series` estão vazios, com mensagem e ícone
+
+### Arquivo: `src/pages/admin/AdminDashboard.tsx`
+- Corrigir rota do card "Jogos Hoje" para apontar para rota correta (ou manter `/admin/banners` com nota)
+- Corrigir rota do botão "+ Programação"
+
+### Novos testes: `src/components/public/__tests__/WeeklyMoviesSection.test.tsx`
+- Testar renderização com dados mockados
+- Testar estado de loading (skeletons)
+- Testar estado vazio (retorna null)
+
+### Novos testes: `src/components/public/__tests__/WeeklySeriesSection.test.tsx`
+- Mesma cobertura do anterior
+
+---
+
+## Sugestões de Melhorias Adicionais
+
+1. **Lazy load das abas** -- As abas Destaques e Programacao carregam dados mesmo quando o usuario esta na Home. Usar renderizacao condicional nos hooks ou React.lazy para evitar requests desnecessarios.
+2. **Haptic feedback visual nos cards** -- Adicionar `active:scale-[0.97]` nos cards de filme/serie para feedback tactil ao tocar no mobile.
+3. **Contador de itens no header** -- Mostrar quantidade de filmes/series na aba Destaques (ex: "Filmes (5)") para dar contexto ao usuario.
 
