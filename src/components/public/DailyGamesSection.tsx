@@ -248,7 +248,7 @@ export const DailyGamesSection = () => {
 
   if (!games || games.length === 0) {
     return (
-      <section className="space-y-5 px-3 sm:px-6">
+      <section className="space-y-5">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
             <Trophy className="h-5 w-5 text-primary" />
