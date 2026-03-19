@@ -1,6 +1,7 @@
 import { useActiveSeries } from "@/hooks/useSeries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clapperboard, Star, ImageOff } from "lucide-react";
+import { SectionHeader } from "./SectionHeader";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
