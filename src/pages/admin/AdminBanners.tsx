@@ -117,7 +117,7 @@ const AdminBanners = () => {
     } finally {
       setUploading(false);
     }
-  }, [selectedCategory, banners, createBanner, scheduleDate]);
+  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
