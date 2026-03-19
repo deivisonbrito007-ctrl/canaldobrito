@@ -118,19 +118,13 @@ export const NewsReleasesSection = () => {
               item.badge_type === "nova_temporada" ? "bg-blue-500/70" :
               item.badge_type === "estreia" ? "bg-emerald-500/70" :
               item.badge_type === "exclusivo" ? "bg-amber-500/70" :
-             "bg-orange-500/70"
+              "bg-orange-500/70"
             }`}
           >
             {item.badge_type === "lancamento" ? "🆕 Lançamento" :
              item.badge_type === "nova_temporada" ? "📺 Nova Temporada" :
              item.badge_type === "estreia" ? "⭐ Estreia" :
              item.badge_type === "exclusivo" ? "👑 Exclusivo" : "🔥 Novidade"}
-            }`}
-          >
-            {item.badge_type === "lancamento" ? "🆕 Lançamento" :
-             item.badge_type === "nova_temporada" ? "📺 Nova Temporada" :
-             item.badge_type === "estreia" ? "⭐ Estreia" :
-             item.badge_type === "exclusivo" ? "👑 Exclusivo" : "🔥 Em Alta"}
           </span>
         </div>
 

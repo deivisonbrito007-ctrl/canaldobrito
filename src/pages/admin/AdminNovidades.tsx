@@ -144,10 +144,10 @@ const AdminNovidades = () => {
                         m.badge_type === "exclusivo" ? "bg-amber-500/80" :
                         "bg-orange-500/80"
                       }`}>
-                        {m.badge_type === "lancamento" ? "Lanç." :
-                         m.badge_type === "nova_temporada" ? "Nova Temp." :
+                        {m.badge_type === "lancamento" ? "Lançamento" :
+                         m.badge_type === "nova_temporada" ? "Nova Temporada" :
                          m.badge_type === "estreia" ? "Estreia" :
-                         m.badge_type === "exclusivo" ? "Exclusivo" : "Nov."}
+                         m.badge_type === "exclusivo" ? "Exclusivo" : "Novidade"}
                       </span>
                       {m.year && <span>{m.year}</span>}
                     </div>
