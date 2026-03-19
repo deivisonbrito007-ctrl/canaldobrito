@@ -202,7 +202,8 @@ const AdminBanners = () => {
     setUploading(true);
     try {
       const ext = file.name?.split(".").pop() || "png";
-      const path = `${selectedCategory}/${Date.now()}.${ext}`;
+      const today = new Date().toISOString().split("T")[0];
+      const path = `${selectedCategory}/${today}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
@@ -215,6 +216,8 @@ const AdminBanners = () => {
       };
 
       if (scheduleDate) {
+        // scheduleDate from datetime-local is "YYYY-MM-DDTHH:MM" (no timezone)
+        // new Date() interprets it as local time, .toISOString() converts to UTC
         bannerData.publish_at = new Date(scheduleDate).toISOString();
         bannerData.active = false;
       }
@@ -375,50 +378,70 @@ const AdminBanners = () => {
                   <p className="text-xs text-muted-foreground">Nenhum banner nesta categoria</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {banners.map((banner, idx) => (
-                    <div key={banner.id} className="rounded-xl glass-panel overflow-hidden">
-                      <div className="relative aspect-[16/9]">
-                        <img src={banner.image_url} alt={banner.title || "Banner"} className={`w-full h-full object-cover ${!banner.active ? "opacity-30 grayscale" : ""}`} loading="lazy" />
-                        <div className="absolute top-2 right-2 flex items-center gap-1">
-                          {isScheduled(banner) && (
-                            <Badge className="bg-amber-500/90 text-white border-0 text-[9px] px-1.5 py-0.5">
-                              <Clock className="h-2.5 w-2.5 mr-0.5" />
-                              Agendado
-                            </Badge>
-                          )}
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${banner.active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"}`}>
-                            {banner.active ? "ATIVO" : "OFF"}
-                          </span>
+                <div className="space-y-5">
+                  {(() => {
+                    // Group banners by date
+                    const grouped: Record<string, typeof banners> = {};
+                    banners.forEach((b) => {
+                      const dateKey = new Date(b.created_at).toLocaleDateString("pt-BR");
+                      if (!grouped[dateKey]) grouped[dateKey] = [];
+                      grouped[dateKey]!.push(b);
+                    });
+                    const dateKeys = Object.keys(grouped);
+                    return dateKeys.map((dateKey) => (
+                      <div key={dateKey}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[11px] font-bold text-foreground">📅 {dateKey}</span>
+                          <span className="text-[10px] text-muted-foreground">— {grouped[dateKey]!.length} banner{grouped[dateKey]!.length !== 1 ? "s" : ""}</span>
+                        </div>
+                        <div className="space-y-3">
+                          {grouped[dateKey]!.map((banner, idx) => (
+                            <div key={banner.id} className="rounded-xl glass-panel overflow-hidden">
+                              <div className="relative aspect-[16/9]">
+                                <img src={banner.image_url} alt={banner.title || "Banner"} className={`w-full h-full object-cover ${!banner.active ? "opacity-30 grayscale" : ""}`} loading="lazy" />
+                                <div className="absolute top-2 right-2 flex items-center gap-1">
+                                  {isScheduled(banner) && (
+                                    <Badge className="bg-amber-500/90 text-white border-0 text-[9px] px-1.5 py-0.5">
+                                      <Clock className="h-2.5 w-2.5 mr-0.5" />
+                                      Agendado
+                                    </Badge>
+                                  )}
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${banner.active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"}`}>
+                                    {banner.active ? "ATIVO" : "OFF"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="p-3 space-y-1">
+                                {isScheduled(banner) && banner.publish_at && (
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-[10px] text-amber-400/80">
+                                      ⏰ {new Date(banner.publish_at).toLocaleString("pt-BR")}
+                                    </p>
+                                    <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0">
+                                      {formatCountdown(banner.publish_at)}
+                                    </Badge>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Switch checked={banner.active} onCheckedChange={(v) => updateBanner.mutate({ id: banner.id, active: v })} />
+                                    <span className={`text-[10px] font-medium ${banner.active ? "text-emerald-400" : "text-muted-foreground/60"}`}>
+                                      {banner.active ? "Ativo" : "Off"}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === 0} onClick={() => moveBanner(banner.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === grouped[dateKey]!.length - 1} onClick={() => moveBanner(banner.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => { if (confirm("Excluir banner?")) deleteBanner.mutate(banner.id); }}><Trash2 className="h-4 w-4" /></Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="p-3 space-y-1">
-                        {isScheduled(banner) && banner.publish_at && (
-                          <div className="flex items-center gap-2">
-                            <p className="text-[10px] text-amber-400/80">
-                              ⏰ {new Date(banner.publish_at).toLocaleString("pt-BR")}
-                            </p>
-                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0">
-                              {formatCountdown(banner.publish_at)}
-                            </Badge>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Switch checked={banner.active} onCheckedChange={(v) => updateBanner.mutate({ id: banner.id, active: v })} />
-                            <span className={`text-[10px] font-medium ${banner.active ? "text-emerald-400" : "text-muted-foreground/60"}`}>
-                              {banner.active ? "Ativo" : "Off"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === 0} onClick={() => moveBanner(banner.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === banners.length - 1} onClick={() => moveBanner(banner.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => { if (confirm("Excluir banner?")) deleteBanner.mutate(banner.id); }}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               )}
             </div>
