@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes } from "@/lib/gameUtils";
 import { Radio, Zap } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
+import { ChannelBadge } from "./ChannelBadge";
 
 export const LiveNowSection = () => {
   const [today, setToday] = useState(() => getLocalDateString());
