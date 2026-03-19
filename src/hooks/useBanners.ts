@@ -11,6 +11,7 @@ export interface Banner {
   active: boolean;
   sort_order: number;
   expires_at: string | null;
+  publish_at: string | null;
   created_at: string;
 }
 
@@ -55,8 +56,8 @@ export const useAllBanners = (category?: BannerCategory) =>
 export const useCreateBanner = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (banner: { image_url: string; title?: string; category: BannerCategory; sort_order?: number }) => {
-      const { error } = await supabase.from("banners").insert(banner);
+    mutationFn: async (banner: { image_url: string; title?: string; category: BannerCategory; sort_order?: number; publish_at?: string; active?: boolean }) => {
+      const { error } = await supabase.from("banners").insert(banner as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["banners"] }),
@@ -67,7 +68,7 @@ export const useUpdateBanner = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Banner> & { id: string }) => {
-      const { error } = await supabase.from("banners").update(updates).eq("id", id);
+      const { error } = await supabase.from("banners").update(updates as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["banners"] }),

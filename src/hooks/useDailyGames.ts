@@ -15,6 +15,7 @@ export interface DailyGame {
   active: boolean;
   status_short: string;
   elapsed_minutes: number | null;
+  publish_at: string | null;
   created_at: string;
 }
 
@@ -52,7 +53,7 @@ export const useInsertDailyGames = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (games: Omit<DailyGame, "id" | "created_at">[]) => {
-      const { error } = await supabase.from("daily_games").insert(games);
+      const { error } = await supabase.from("daily_games").insert(games as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["daily_games"] }),
@@ -63,7 +64,7 @@ export const useUpdateDailyGame = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<DailyGame> & { id: string }) => {
-      const { error } = await supabase.from("daily_games").update(updates).eq("id", id);
+      const { error } = await supabase.from("daily_games").update(updates as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["daily_games"] }),

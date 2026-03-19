@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, Calendar, ClipboardPaste } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, Calendar, ClipboardPaste, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) => void; uploading: boolean }) => {
@@ -177,6 +178,7 @@ const AdminBanners = () => {
   const deleteBanner = useDeleteBanner();
   const [uploading, setUploading] = useState(false);
   const [activeSection, setActiveSection] = useState<"daily" | "categories" | "programacao">("daily");
+  const [scheduleDate, setScheduleDate] = useState("");
 
   const uploadAndCreateCategory = useCallback(async (file: File) => {
     setUploading(true);
@@ -187,14 +189,26 @@ const AdminBanners = () => {
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
       const maxOrder = banners?.reduce((max, b) => Math.max(max, b.sort_order), 0) || 0;
-      await createBanner.mutateAsync({ image_url: publicUrl, category: selectedCategory, sort_order: maxOrder + 1 });
-      toast.success("Banner adicionado!");
+
+      const bannerData: any = {
+        image_url: publicUrl,
+        category: selectedCategory,
+        sort_order: maxOrder + 1,
+      };
+
+      if (scheduleDate) {
+        bannerData.publish_at = new Date(scheduleDate).toISOString();
+        bannerData.active = false;
+      }
+
+      await createBanner.mutateAsync(bannerData);
+      toast.success(scheduleDate ? "Banner agendado!" : "Banner adicionado!");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar banner");
     } finally {
       setUploading(false);
     }
-  }, [selectedCategory, banners, createBanner]);
+  }, [selectedCategory, banners, createBanner, scheduleDate]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,6 +228,8 @@ const AdminBanners = () => {
 
   const activeBanners = banners?.filter((b) => b.active).length || 0;
   const totalBanners = banners?.length || 0;
+
+  const isScheduled = (banner: any) => banner.publish_at && !banner.active;
 
   return (
     <div className="space-y-4">
@@ -281,6 +297,34 @@ const AdminBanners = () => {
                   </span>
                 </label>
               </div>
+
+              {/* Schedule field */}
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 text-amber-400" />
+                <label className="text-[11px] text-muted-foreground font-medium">Agendar para:</label>
+                <Input
+                  type="datetime-local"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="flex-1 text-xs h-9 glass-panel border-white/[0.1]"
+                />
+                {scheduleDate && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setScheduleDate("")}
+                    className="h-8 text-xs text-muted-foreground"
+                  >
+                    Limpar
+                  </Button>
+                )}
+              </div>
+              {scheduleDate && (
+                <p className="text-[10px] text-amber-400/80">
+                  ⏰ Próximo banner será criado como agendado (inativo até a data)
+                </p>
+              )}
+
               <PasteZone onImagePasted={uploadAndCreateCategory} uploading={uploading} />
             </div>
             <div className="p-4">
@@ -297,23 +341,36 @@ const AdminBanners = () => {
                     <div key={banner.id} className="rounded-xl glass-panel overflow-hidden">
                       <div className="relative aspect-[16/9]">
                         <img src={banner.image_url} alt={banner.title || "Banner"} className={`w-full h-full object-cover ${!banner.active ? "opacity-30 grayscale" : ""}`} loading="lazy" />
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                          {isScheduled(banner) && (
+                            <Badge className="bg-amber-500/90 text-white border-0 text-[9px] px-1.5 py-0.5">
+                              <Clock className="h-2.5 w-2.5 mr-0.5" />
+                              Agendado
+                            </Badge>
+                          )}
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${banner.active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"}`}>
                             {banner.active ? "ATIVO" : "OFF"}
                           </span>
                         </div>
                       </div>
-                      <div className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Switch checked={banner.active} onCheckedChange={(v) => updateBanner.mutate({ id: banner.id, active: v })} />
-                          <span className={`text-[10px] font-medium ${banner.active ? "text-emerald-400" : "text-muted-foreground/60"}`}>
-                            {banner.active ? "Ativo" : "Off"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === 0} onClick={() => moveBanner(banner.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === banners.length - 1} onClick={() => moveBanner(banner.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => { if (confirm("Excluir banner?")) deleteBanner.mutate(banner.id); }}><Trash2 className="h-4 w-4" /></Button>
+                      <div className="p-3 space-y-1">
+                        {isScheduled(banner) && banner.publish_at && (
+                          <p className="text-[10px] text-amber-400/80">
+                            ⏰ Publica em: {new Date(banner.publish_at).toLocaleString("pt-BR")}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Switch checked={banner.active} onCheckedChange={(v) => updateBanner.mutate({ id: banner.id, active: v })} />
+                            <span className={`text-[10px] font-medium ${banner.active ? "text-emerald-400" : "text-muted-foreground/60"}`}>
+                              {banner.active ? "Ativo" : "Off"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === 0} onClick={() => moveBanner(banner.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/[0.06]" disabled={idx === banners.length - 1} onClick={() => moveBanner(banner.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => { if (confirm("Excluir banner?")) deleteBanner.mutate(banner.id); }}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
                         </div>
                       </div>
                     </div>
