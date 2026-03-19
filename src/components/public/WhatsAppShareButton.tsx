@@ -1,10 +1,12 @@
 import { MessageCircle, Share2 } from "lucide-react";
+import { useSiteUrl } from "@/hooks/useSiteUrl";
 
 export const WhatsAppShareButton = () => {
+  const siteUrl = useSiteUrl();
+
   const handleShare = () => {
-    const url = window.location.href;
     const msg = encodeURIComponent(
-      `📺 Confira a programação de hoje! Filmes, séries e esportes ao vivo: ${url} - Brito Solutions (11) 94075-9046`
+      `📺 Confira a programação de hoje! Filmes, séries e esportes ao vivo: ${siteUrl} - Brito Solutions (11) 94075-9046`
     );
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };

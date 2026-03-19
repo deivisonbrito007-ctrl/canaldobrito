@@ -3,7 +3,7 @@ import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, Phone, Key, Info } from "lucide-react";
+import { Save, Loader2, Phone, Key, Info, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminConfiguracoes = () => {
@@ -11,11 +11,13 @@ const AdminConfiguracoes = () => {
   const updateSetting = useUpdateSetting();
   const [whatsapp, setWhatsapp] = useState("");
   const [tmdbKey, setTmdbKey] = useState("");
+  const [siteUrl, setSiteUrl] = useState("");
 
   useEffect(() => {
     if (settings) {
       setWhatsapp(settings.whatsapp || "");
       setTmdbKey(settings.tmdb_api_key || "");
+      setSiteUrl(settings.site_url || "");
     }
   }, [settings]);
 
@@ -23,6 +25,7 @@ const AdminConfiguracoes = () => {
     try {
       await updateSetting.mutateAsync({ key: "whatsapp", value: whatsapp });
       await updateSetting.mutateAsync({ key: "tmdb_api_key", value: tmdbKey });
+      await updateSetting.mutateAsync({ key: "site_url", value: siteUrl });
       toast.success("Configurações salvas!");
     } catch (err: any) {
       toast.error(err.message);
@@ -47,6 +50,21 @@ const AdminConfiguracoes = () => {
           <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
           <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
           <p className="text-[10px] text-muted-foreground/50">Número completo com código do país</p>
+        </div>
+      </div>
+
+      {/* Site URL */}
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Globe className="h-4 w-4 text-purple-400" />
+            URL do Site
+          </h3>
+        </div>
+        <div className="p-4 space-y-2">
+          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">URL Pública</Label>
+          <Input placeholder="https://meusite.lovable.app" value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
+          <p className="text-[10px] text-muted-foreground/50">URL pública do site usada nos links de compartilhamento (WhatsApp, etc). Publique o app e cole a URL aqui.</p>
         </div>
       </div>
 

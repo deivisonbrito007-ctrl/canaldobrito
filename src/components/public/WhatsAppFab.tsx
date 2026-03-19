@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useSiteUrl } from "@/hooks/useSiteUrl";
 
 export const WhatsAppFab = () => {
   const [visible, setVisible] = useState(true);
+  const siteUrl = useSiteUrl();
 
   useEffect(() => {
     let lastScroll = 0;
@@ -16,9 +18,8 @@ export const WhatsAppFab = () => {
   }, []);
 
   const handleShare = () => {
-    const url = window.location.href;
     const msg = encodeURIComponent(
-      `📺 Confira a programação de hoje! Filmes, séries e esportes ao vivo: ${url} - Brito Solutions`
+      `📺 Confira a programação de hoje! Filmes, séries e esportes ao vivo: ${siteUrl} - Brito Solutions`
     );
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { useActiveMovies } from "@/hooks/useMovies";
 import { useActiveSeries } from "@/hooks/useSeries";
+import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Download, Copy, Check, MessageCircle, Zap, Play, Clock } from "lucide-react";
 import { format } from "date-fns";
@@ -350,7 +351,7 @@ const AdminWhatsApp = () => {
   const { data: movies } = useActiveMovies();
   const { data: series } = useActiveSeries();
 
-  const siteUrl = window.location.origin;
+  const siteUrl = useSiteUrl();
 
   const gameData: GameData[] = (games ?? []).map((g) => ({
     home_team: g.home_team,
