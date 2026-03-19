@@ -300,6 +300,22 @@
     animation: border-pulse-red 2s ease-in-out infinite;
   }
 
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted) / 0.3) 0%,
+      hsl(var(--muted) / 0.6) 40%,
+      hsl(var(--muted) / 0.3) 80%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+
   .section-divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, hsl(var(--border) / 0.5), transparent);
