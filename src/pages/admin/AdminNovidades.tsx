@@ -18,6 +18,7 @@ const AdminNovidades = () => {
   const { data: items } = useAllNewsReleases();
   const addItem = useAddNewsRelease();
   const toggleItem = useToggleNewsRelease();
+  const updateItem = useUpdateNewsRelease();
   const deleteItem = useDeleteNewsRelease();
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
