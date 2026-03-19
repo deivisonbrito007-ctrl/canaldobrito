@@ -249,6 +249,21 @@ export const NewsReleasesSection = () => {
           </div>
         )}
       </div>
+
+      <ContentDetailSheet
+        open={sheetOpen}
+        onClose={handleSheetClose}
+        item={selectedItem ? {
+          title: selectedItem.title,
+          overview: selectedItem.overview,
+          poster_url: selectedItem.image_url,
+          rating: selectedItem.rating,
+          year: selectedItem.year,
+          genre: selectedItem.genres,
+          tmdb_id: selectedItem.tmdb_id,
+          content_type: selectedItem.content_type,
+        } : null}
+      />
     </div>
   );
 };
