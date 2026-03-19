@@ -105,9 +105,7 @@ const AdminBanners = () => {
         sort_order: maxOrder + 1,
       };
 
-      if (scheduleDate) {
-        // scheduleDate from datetime-local is "YYYY-MM-DDTHH:MM" (no timezone)
-        // new Date() interprets it as local time, .toISOString() converts to UTC
+      if (scheduleMode !== "none" && scheduleDate) {
         bannerData.publish_at = new Date(scheduleDate).toISOString();
         bannerData.active = false;
       }
