@@ -227,7 +227,29 @@ export const DailyGamesSection = () => {
     return groups;
   }, [filteredGames]);
 
-  if (isLoading || !games || games.length === 0) return null;
+  if (isLoading) return null;
+
+  if (!games || games.length === 0) {
+    return (
+      <section className="space-y-5 px-3 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+            <Trophy className="h-5 w-5 text-primary" />
+          </div>
+          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">
+            Programação
+          </h2>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+          <div className="p-4 rounded-2xl bg-muted/20 border border-border/20">
+            <CalendarOff className="h-8 w-8 text-muted-foreground/40" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground/60">Nenhum jogo programado para hoje</p>
+          <p className="text-xs text-muted-foreground/40">Volte mais tarde para conferir a agenda</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="esportes" className="space-y-5 px-3 sm:px-6">
