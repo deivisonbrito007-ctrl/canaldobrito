@@ -4,6 +4,7 @@ import { useAllBanners } from "@/hooks/useBanners";
 import { useAllMovies } from "@/hooks/useMovies";
 import { useAllSeries } from "@/hooks/useSeries";
 import { useAllNewsReleases } from "@/hooks/useNewsReleases";
+import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, Image, Film, Clapperboard, Sparkles } from "lucide-react";
@@ -26,10 +27,10 @@ const useCountUp = (target: number, duration = 800) => {
 };
 
 const statCards = [
-  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]" },
-  { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]" },
-  { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]" },
-  { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]" },
+  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", route: "/admin/banners" },
+  { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", route: "/admin/filmes" },
+  { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", route: "/admin/series" },
+  { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", route: "/admin/novidades" },
 ];
 
 const quickActions = [
@@ -41,22 +42,29 @@ const quickActions = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: banners } = useAllBanners();
-  const { data: movies } = useAllMovies();
-  const { data: series } = useAllSeries();
-  const { data: news } = useAllNewsReleases();
+  const { data: banners, isLoading: loadingBanners } = useAllBanners();
+  const { data: movies, isLoading: loadingMovies } = useAllMovies();
+  const { data: series, isLoading: loadingSeries } = useAllSeries();
+  const { data: news, isLoading: loadingNews } = useAllNewsReleases();
 
+  const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews;
+
+  const totalBanners = banners?.length || 0;
   const activeBanners = banners?.filter((b) => b.active).length || 0;
   const totalMovies = movies?.length || 0;
+  const activeMovies = movies?.filter((m) => m.active).length || 0;
   const totalSeries = series?.length || 0;
+  const activeSeries = series?.filter((s) => s.active).length || 0;
   const totalNews = news?.length || 0;
+  const activeNews = news?.filter((n) => n.active).length || 0;
 
-  const bCount = useCountUp(activeBanners);
+  const bCount = useCountUp(totalBanners);
   const mCount = useCountUp(totalMovies);
   const sCount = useCountUp(totalSeries);
   const nCount = useCountUp(totalNews);
 
   const counts: Record<string, number> = { banners: bCount, filmes: mCount, series: sCount, novidades: nCount };
+  const actives: Record<string, number> = { banners: activeBanners, filmes: activeMovies, series: activeSeries, novidades: activeNews };
   const todayFormatted = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
   return (
@@ -74,19 +82,30 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Stats grid - 2 cols on mobile */}
+      {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {statCards.map((card, i) => (
           <div
             key={card.key}
-            className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97]`}
-            onClick={() => navigate(`/admin/${card.key === "banners" ? "banners" : card.key === "filmes" ? "filmes" : card.key === "series" ? "series" : "novidades"}`)}
+            className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] cursor-pointer`}
+            onClick={() => navigate(card.route)}
           >
-            <div className="flex flex-col items-center text-center gap-2">
-              <card.icon className={`h-5 w-5 ${card.color}`} />
-              <p className={`text-2xl font-black ${card.color}`}>{counts[card.key]}</p>
-              <p className="text-[10px] text-muted-foreground">{card.label}</p>
-            </div>
+            {isLoading ? (
+              <div className="flex flex-col items-center text-center gap-2">
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <Skeleton className="h-7 w-10 rounded" />
+                <Skeleton className="h-3 w-16 rounded" />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center gap-2">
+                <card.icon className={`h-5 w-5 ${card.color}`} />
+                <p className={`text-2xl font-black ${card.color}`}>{counts[card.key]}</p>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">{card.label}</p>
+                  <p className="text-[9px] text-muted-foreground/60">{actives[card.key]} ativos</p>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -99,7 +118,7 @@ const AdminDashboard = () => {
             <button
               key={action.path}
               onClick={() => navigate(action.path)}
-              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] ${action.color}`}
+              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color}`}
             >
               <action.icon className="h-4 w-4" />
               + {action.label}
