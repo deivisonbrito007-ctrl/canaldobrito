@@ -97,9 +97,7 @@ export const LiveNowSection = () => {
                     {game.channels && game.channels.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 justify-center">
                         {game.channels.map((ch) => (
-                          <span key={ch} className="text-[9px] rounded-md border border-border/20 px-2 py-0.5 text-muted-foreground font-body">
-                            {ch}
-                          </span>
+                          <ChannelBadge key={ch} name={ch} />
                         ))}
                       </div>
                     )}
