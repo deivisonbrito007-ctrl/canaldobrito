@@ -3,6 +3,7 @@ import { Sparkles, Star, ImageOff, Clock, Tv } from "lucide-react";
 import { NewsBannerSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { AnimatePresence, motion } from "framer-motion";
 import { SectionHeader } from "./SectionHeader";
+import { ContentDetailSheet } from "./ContentDetailSheet";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const formatRuntime = (minutes: number) => {
