@@ -269,7 +269,7 @@ export const DailyGamesSection = () => {
   }
 
   return (
-    <section id="esportes" className="space-y-5 px-3 sm:px-6">
+    <section id="esportes" className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
