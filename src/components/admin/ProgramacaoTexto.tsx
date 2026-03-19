@@ -158,16 +158,22 @@ export const ProgramacaoTexto = () => {
   };
 
   const buildInsertPayload = (selected: ParsedGame[]) => {
-    return selected.map(({ selected: _, ...g }) => ({
-      ...g,
-      active: scheduleMidnight ? false : true,
-      is_live: false,
-      status_short: "NS",
-      elapsed_minutes: null,
-      // Convert local midnight to UTC ISO string so the Edge Function
-      // activates at exactly 00:00 in the admin's local timezone
-      publish_at: scheduleMidnight ? new Date(`${g.date}T00:00:00`).toISOString() : null,
-    }));
+    return selected.map(({ selected: _, ...g }) => {
+      let publishAt: string | null = null;
+      if (scheduleMidnight) {
+        // Use local date components to ensure midnight is interpreted as LOCAL time
+        const [y, m, d] = g.date.split("-").map(Number);
+        publishAt = new Date(y, m - 1, d, 0, 0, 0).toISOString();
+      }
+      return {
+        ...g,
+        active: scheduleMidnight ? false : true,
+        is_live: false,
+        status_short: "NS",
+        elapsed_minutes: null,
+        publish_at: publishAt,
+      };
+    });
   };
 
   const handlePublish = async () => {
@@ -334,7 +340,10 @@ export const ProgramacaoTexto = () => {
               {scheduleMidnight && (
                 <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20">
                   <Clock className="h-2.5 w-2.5 mr-1" />
-                  Agendado 00:00
+                  Agendado 00:00 ({sortedDates.map(d => {
+                    const [, m, day] = d.split("-");
+                    return `${day}/${m}`;
+                  }).join(", ")})
                 </Badge>
               )}
               <div className="ml-auto flex items-center gap-1">
