@@ -72,6 +72,7 @@ function getCompColor(comp: string) {
 
 function getTopColor(comp: string) {
   return matchKey(comp, COMP_TOP_COLORS) ?? "from-muted";
+}
 
 function isHighlight(comp: string) {
   const key = comp.toLowerCase().trim();
