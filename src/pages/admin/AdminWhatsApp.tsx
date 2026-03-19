@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { useActiveMovies } from "@/hooks/useMovies";
 import { useActiveSeries } from "@/hooks/useSeries";
+import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Download, Copy, Check, MessageCircle, Zap, Play, Clock } from "lucide-react";
 import { format } from "date-fns";
