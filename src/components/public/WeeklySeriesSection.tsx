@@ -96,11 +96,16 @@ export const WeeklySeriesSection = () => {
 
 const SectionHeader = () => (
   <div className="flex items-center gap-2.5">
-    <div className="p-1.5 rounded-lg bg-secondary/10 border border-secondary/15">
+    <div className="p-1.5 rounded-lg bg-gradient-to-br from-secondary/20 to-accent/15 border border-secondary/15 shadow-[0_0_8px_hsl(var(--secondary)/0.15)]">
       <Clapperboard className="h-4 w-4 text-secondary" />
     </div>
-    <h2 className="font-display text-xl tracking-[2px] text-foreground">
-      Destaque da Semana · Séries
-    </h2>
+    <div className="flex flex-col">
+      <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">
+        Séries <span className="text-primary">Brito Solutions</span>
+      </h2>
+      <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
+        Destaques da semana
+      </p>
+    </div>
   </div>
 );

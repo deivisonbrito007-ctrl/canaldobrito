@@ -25,9 +25,14 @@ export const LiveNowSection = () => {
       <div className="flex items-center justify-between px-4">
         <div className="flex items-center gap-2.5">
           <span className="text-lg">⚽</span>
-          <h2 className="font-display text-xl tracking-[2px] text-foreground">
-            Jogos Ao Vivo
-          </h2>
+          <div className="flex flex-col">
+            <h2 className="font-display text-xl tracking-[2px] text-foreground leading-tight">
+              Ao Vivo <span className="text-primary">Brito Solutions</span>
+            </h2>
+            <p className="text-[10px] text-muted-foreground/60 font-body tracking-wide">
+              Acompanhe os jogos em tempo real
+            </p>
+          </div>
           {liveGames.length > 0 && (
             <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums">
               {liveGames.length}
