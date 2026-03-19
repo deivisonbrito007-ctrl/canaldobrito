@@ -84,7 +84,7 @@ export const WeeklyMoviesSection = () => {
   return (
     <div className="space-y-4">
       <div className="px-4">
-        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" />
+        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" hideBrand />
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {movies.map((item, idx) => (
