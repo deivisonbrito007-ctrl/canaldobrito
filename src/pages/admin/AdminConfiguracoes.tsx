@@ -17,6 +17,7 @@ const AdminConfiguracoes = () => {
     if (settings) {
       setWhatsapp(settings.whatsapp || "");
       setTmdbKey(settings.tmdb_api_key || "");
+      setSiteUrl(settings.site_url || "");
     }
   }, [settings]);
 
