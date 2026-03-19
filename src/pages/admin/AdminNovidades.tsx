@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease } from "@/hooks/useNewsReleases";
+import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease, useUpdateNewsRelease } from "@/hooks/useNewsReleases";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
