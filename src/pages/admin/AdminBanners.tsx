@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
-import { useAllDailyBanners, useCreateDailyBanner, useUpdateDailyBanner, useDeleteDailyBanner } from "@/hooks/useDailyBanners";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
