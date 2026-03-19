@@ -1,4 +1,4 @@
-import { Search, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import logo from "@/assets/canal_do_brito_logo.png";
@@ -23,9 +23,6 @@ export const AppNavbar = () => {
           </div>
         </div>
 
-        <button className="h-10 w-10 rounded-full border border-border/30 flex items-center justify-center touch-target transition-all hover:border-primary/30 hover:glow-primary-subtle">
-          <Search className="h-4 w-4 text-muted-foreground" />
-        </button>
       </div>
       <div className="section-divider" />
     </header>
