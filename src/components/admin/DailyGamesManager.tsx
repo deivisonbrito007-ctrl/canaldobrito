@@ -115,7 +115,7 @@ export const DailyGamesManager = () => {
                           {isScheduled && (
                             <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0 shrink-0">
                               <Clock className="h-2.5 w-2.5 mr-0.5" />
-                              Agendado
+                              {formatCountdown(game.publish_at!)}
                             </Badge>
                           )}
                         </div>

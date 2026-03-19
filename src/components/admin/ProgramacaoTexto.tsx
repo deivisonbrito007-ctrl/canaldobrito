@@ -340,7 +340,10 @@ export const ProgramacaoTexto = () => {
               {scheduleMidnight && (
                 <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20">
                   <Clock className="h-2.5 w-2.5 mr-1" />
-                  Agendado 00:00
+                  Agendado 00:00 ({sortedDates.map(d => {
+                    const [, m, day] = d.split("-");
+                    return `${day}/${m}`;
+                  }).join(", ")})
                 </Badge>
               )}
               <div className="ml-auto flex items-center gap-1">
