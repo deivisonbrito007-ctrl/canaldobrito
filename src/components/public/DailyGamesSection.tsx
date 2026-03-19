@@ -55,7 +55,15 @@ const HIGHLIGHT_COMPS = [
 
 const FILTER_CHANNELS = ["ESPN", "Sportv", "Globo", "Premiere", "Disney+", "CazéTV", "TNT"];
 
-const FILTER_COMPS = ["Brasileirão", "Campeonato Brasileiro", "Champions League", "Libertadores", "Copa do Brasil", "Europa League", "Conference League"];
+const FILTER_COMPS: { label: string; short: string }[] = [
+  { label: "Brasileirão", short: "Brasileirão" },
+  { label: "Campeonato Brasileiro", short: "Camp. Brasileiro" },
+  { label: "Champions League", short: "Champions" },
+  { label: "Libertadores", short: "Libertadores" },
+  { label: "Copa do Brasil", short: "Copa BR" },
+  { label: "Europa League", short: "Europa L." },
+  { label: "Conference League", short: "Conference" },
+];
 
 /* ── helpers ── */
 function matchKey(input: string, map: Record<string, any>) {
@@ -128,7 +136,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           {/* Competition badge + Live badge */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[160px]`}>
                 {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
@@ -156,7 +164,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
 
           {/* Teams vs layout */}
           <div className="flex items-center gap-3">
-            <p className="text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
+            <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
             <div className="flex flex-col items-center shrink-0">
               <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
                 <Clock className="h-3.5 w-3.5 text-primary" />
@@ -164,17 +172,17 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               </div>
               <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-widest mt-0.5">vs</span>
             </div>
-            <p className="text-sm font-bold text-foreground flex-1 text-right truncate leading-tight">{game.away_team}</p>
+            <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-right truncate leading-tight">{game.away_team}</p>
           </div>
 
           {/* Channels */}
           {game.channels && game.channels.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap">
-              {game.channels.slice(0, 4).map((ch, i) => (
+            <div className="flex gap-1 flex-wrap">
+              {game.channels.slice(0, 3).map((ch, i) => (
                 <ChannelBadge key={i} name={ch} />
               ))}
-              {game.channels.length > 4 && (
-                <span className="text-[10px] text-muted-foreground/50 self-center">+{game.channels.length - 4}</span>
+              {game.channels.length > 3 && (
+                <span className="text-[10px] text-muted-foreground/50 self-center">+{game.channels.length - 3}</span>
               )}
             </div>
           )}
@@ -278,15 +286,16 @@ export const DailyGamesSection = () => {
         </button>
         {FILTER_COMPS.map((c) => (
           <button
-            key={c}
-            onClick={() => setCompFilter(compFilter === c ? null : c)}
+            key={c.label}
+            onClick={() => setCompFilter(compFilter === c.label ? null : c.label)}
             className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              compFilter === c
+              compFilter === c.label
                 ? "bg-primary/15 text-primary border border-primary/30"
                 : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
             }`}
           >
-            {c}
+            <span className="sm:hidden">{c.short}</span>
+            <span className="hidden sm:inline">{c.label}</span>
           </button>
         ))}
       </div>
