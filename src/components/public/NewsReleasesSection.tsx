@@ -119,8 +119,8 @@ export const NewsReleasesSection = () => {
         </AnimatePresence>
 
         {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
 
         {/* Badge top-left */}
         <div className="absolute top-3 left-3 z-10">
