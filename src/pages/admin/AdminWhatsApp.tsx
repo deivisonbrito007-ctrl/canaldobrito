@@ -351,7 +351,7 @@ const AdminWhatsApp = () => {
   const { data: movies } = useActiveMovies();
   const { data: series } = useActiveSeries();
 
-  const siteUrl = window.location.origin;
+  const siteUrl = useSiteUrl();
 
   const gameData: GameData[] = (games ?? []).map((g) => ({
     home_team: g.home_team,

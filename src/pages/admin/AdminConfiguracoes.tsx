@@ -53,6 +53,21 @@ const AdminConfiguracoes = () => {
         </div>
       </div>
 
+      {/* Site URL */}
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Globe className="h-4 w-4 text-purple-400" />
+            URL do Site
+          </h3>
+        </div>
+        <div className="p-4 space-y-2">
+          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">URL Pública</Label>
+          <Input placeholder="https://meusite.lovable.app" value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
+          <p className="text-[10px] text-muted-foreground/50">URL pública do site usada nos links de compartilhamento (WhatsApp, etc). Publique o app e cole a URL aqui.</p>
+        </div>
+      </div>
+
       {/* API */}
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="p-4 border-b border-white/[0.06]">
