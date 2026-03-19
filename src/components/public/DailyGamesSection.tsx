@@ -2,7 +2,7 @@ import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
-import { isGameCurrentlyLive } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString } from "@/lib/gameUtils";
 
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
