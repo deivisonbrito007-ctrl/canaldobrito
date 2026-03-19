@@ -168,52 +168,23 @@ export const NewsReleasesSection = () => {
 
         {/* Content bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 space-y-2 z-10">
-          <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white leading-tight line-clamp-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
+          <h2 className="font-display text-xl sm:text-2xl font-extrabold text-white leading-tight line-clamp-2 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
             {item.title}
           </h2>
 
-          {item.tagline && (
-            <p className="text-[11px] italic text-white/60 drop-shadow-md line-clamp-1">
-              "{item.tagline}"
-            </p>
-          )}
-
-          {/* Meta line: type · year · runtime/seasons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Compact meta line */}
+          <div className="flex items-center gap-2">
             <span className="inline-flex items-center rounded-full bg-white/15 border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/85 backdrop-blur-sm">
               {item.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
               {item.year ? ` · ${item.year}` : ""}
             </span>
-            {item.runtime && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/15 px-3 py-1.5 text-[11px] font-medium text-white/75 backdrop-blur-sm">
-                <Clock className="h-3 w-3" />
-                {formatRuntime(item.runtime)}
-              </span>
-            )}
-            {item.seasons && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/15 px-3 py-1.5 text-[11px] font-medium text-white/75 backdrop-blur-sm">
-                <Tv className="h-3 w-3" />
-                {item.seasons} temp{item.seasons > 1 ? "s" : ""}
-              </span>
-            )}
           </div>
 
-          {/* Genres */}
-          {item.genres && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {item.genres.split(", ").slice(0, 3).map((g) => (
-                <span key={g} className="rounded-full bg-white/[0.12] px-2.5 py-0.5 text-[11px] font-medium text-white/70">
-                  {g}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {item.overview && (
-            <p className="text-xs text-white/70 leading-relaxed line-clamp-2 max-w-[90%] drop-shadow-md">
-              {item.overview}
-            </p>
-          )}
+          {/* Tap hint */}
+          <div className="flex items-center gap-1 text-[10px] text-white/40 font-medium">
+            <ChevronUp className="h-3 w-3" />
+            Toque para detalhes
+          </div>
         </div>
 
         {/* Slide indicator + Dots */}
