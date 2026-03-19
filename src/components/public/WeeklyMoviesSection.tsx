@@ -69,7 +69,7 @@ export const WeeklyMoviesSection = () => {
   if (isLoading) {
     return (
       <div className="space-y-4 px-4">
-        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" />
+        <SectionHeader icon={Film} title="Filmes" subtitle="Destaques da semana" hideBrand />
         <div className="flex gap-3.5 overflow-hidden">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="aspect-[2/3] rounded-xl w-[150px] shrink-0" />
