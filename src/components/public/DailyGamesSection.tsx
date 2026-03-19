@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
 import { isGameCurrentlyLive, getLocalDateString } from "@/lib/gameUtils";
-
+import { ChannelBadge } from "./ChannelBadge";
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
   "brasileirão":          { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
