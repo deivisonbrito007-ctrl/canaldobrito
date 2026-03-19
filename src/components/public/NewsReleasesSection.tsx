@@ -164,18 +164,18 @@ export const NewsReleasesSection = () => {
 
           {/* Meta line: type · year · runtime/seasons */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center rounded-full bg-white/15 border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white/80 backdrop-blur-sm">
+            <span className="inline-flex items-center rounded-full bg-white/15 border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/85 backdrop-blur-sm">
               {item.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
               {item.year ? ` · ${item.year}` : ""}
             </span>
             {item.runtime && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/15 px-2.5 py-1 text-[11px] font-medium text-white/70 backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/15 px-3 py-1.5 text-[11px] font-medium text-white/75 backdrop-blur-sm">
                 <Clock className="h-3 w-3" />
                 {formatRuntime(item.runtime)}
               </span>
             )}
             {item.seasons && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/15 px-2.5 py-1 text-[11px] font-medium text-white/70 backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/15 px-3 py-1.5 text-[11px] font-medium text-white/75 backdrop-blur-sm">
                 <Tv className="h-3 w-3" />
                 {item.seasons} temp{item.seasons > 1 ? "s" : ""}
               </span>
