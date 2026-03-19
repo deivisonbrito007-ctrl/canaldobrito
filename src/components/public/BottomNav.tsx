@@ -28,6 +28,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
             <button
               key={item.id}
               onClick={() => handleTab(item.id)}
+              aria-label={item.label}
               className="flex flex-col items-center gap-1 py-1.5 px-3 touch-target relative"
             >
               {isActive && (
