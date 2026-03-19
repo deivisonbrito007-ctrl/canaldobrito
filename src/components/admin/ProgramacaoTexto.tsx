@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard } from "lucide-react";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export interface ParsedGame {
@@ -38,7 +38,6 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Check for date line — accept many emoji variants and "Dia dd/mm" patterns
     const dateMatch = line.match(/(?:📅|📺|🗓|🗓️|\*\*Dia|Dia)\s*\**\s*(?:Dia\s*)?\**\s*(\d{1,2})\/(\d{1,2})/i);
     if (dateMatch) {
       const day = dateMatch[1].padStart(2, "0");
@@ -49,7 +48,6 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       continue;
     }
 
-    // Look for team line with " x " or " X "
     if (!/\sx\s/i.test(line)) {
       i++;
       continue;
@@ -59,24 +57,19 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
     const compLine = i + 1 < lines.length ? lines[i + 1] : "";
     const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
 
-    // Parse teams (case-insensitive x)
     const teamParts = teamLine.split(/\sx\s/i).map((t) => t.trim());
     const home_team = teamParts[0] || "";
     const away_team = teamParts[1] || "";
     const is_womens = /\(F\)/i.test(teamLine);
 
-    // Parse competition and time — flexible emoji matching
     let competition = "";
     let competition_detail = "";
     let game_time = "00:00";
 
-    // Accept line with trophy emoji OR time emoji OR slash-separated format
     if (compLine.includes("🏆") || /[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]/.test(compLine) || compLine.includes("/")) {
-      // Extract competition — after 🏆 or start of line
       const afterTrophy = compLine.includes("🏆") ? (compLine.split("🏆").pop() || "") : compLine;
       const beforeSlash = afterTrophy.split("/")[0].trim();
       
-      // Check for detail in parentheses
       const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
       if (detailMatch) {
         competition_detail = detailMatch[1];
@@ -84,17 +77,14 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       } else {
         competition = beforeSlash;
       }
-      // Clean leftover emojis from competition name
       competition = competition.replace(/[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛📺🏆]/g, "").trim();
 
-      // Extract time — supports "14h", "14h30", "14:30", or just digits after time emoji
       const timeMatch = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH:](\d{2})/);
       if (timeMatch) {
         const hours = timeMatch[1].padStart(2, "0");
         const minutes = timeMatch[2] || "00";
         game_time = `${hours}:${minutes}`;
       } else {
-        // Try "14h" without minutes
         const timeMatchShort = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH]\b/);
         if (timeMatchShort) {
           game_time = `${timeMatchShort[1].padStart(2, "0")}:00`;
@@ -102,7 +92,6 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       }
     }
 
-    // Parse channels — handles ", " and " e " separators
     let channels: string[] = [];
     if (channelLine.includes("📺")) {
       const afterTv = channelLine.split("📺").pop() || "";
@@ -137,6 +126,7 @@ export const ProgramacaoTexto = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [scheduleMidnight, setScheduleMidnight] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
@@ -161,6 +151,17 @@ export const ProgramacaoTexto = () => {
     toast.info("Texto de exemplo preenchido");
   };
 
+  const buildInsertPayload = (selected: ParsedGame[]) => {
+    return selected.map(({ selected: _, ...g }) => ({
+      ...g,
+      active: scheduleMidnight ? false : true,
+      is_live: false,
+      status_short: "NS",
+      elapsed_minutes: null,
+      publish_at: scheduleMidnight ? `${g.date}T00:00:00` : null,
+    }));
+  };
+
   const handlePublish = async () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) {
@@ -168,15 +169,11 @@ export const ProgramacaoTexto = () => {
       return;
     }
     try {
-      const toInsert = selected.map(({ selected: _, ...g }) => ({
-        ...g,
-        active: true,
-        is_live: false,
-        status_short: "NS",
-        elapsed_minutes: null,
-      }));
+      const toInsert = buildInsertPayload(selected);
       await insertGames.mutateAsync(toInsert);
-      toast.success(`${selected.length} jogos publicados!`);
+      toast.success(scheduleMidnight
+        ? `${selected.length} jogos agendados para meia-noite!`
+        : `${selected.length} jogos publicados!`);
       setParsed([]);
       setText("");
     } catch (err: any) {
@@ -189,18 +186,11 @@ export const ProgramacaoTexto = () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
     try {
-      // Get unique dates
       const dates = [...new Set(selected.map((g) => g.date))];
       for (const d of dates) {
         await deleteByDate.mutateAsync(d);
       }
-      const toInsert = selected.map(({ selected: _, ...g }) => ({
-        ...g,
-        active: true,
-        is_live: false,
-        status_short: "NS",
-        elapsed_minutes: null,
-      }));
+      const toInsert = buildInsertPayload(selected);
       await insertGames.mutateAsync(toInsert);
       toast.success(`Republicado! ${selected.length} jogos.`);
       setParsed([]);
@@ -237,6 +227,16 @@ export const ProgramacaoTexto = () => {
             onChange={(e) => setSelectedDate(e.target.value)}
             className="w-auto text-xs h-9 glass-panel border-white/[0.1]"
           />
+        </div>
+
+        {/* Schedule midnight toggle */}
+        <div className="flex items-center gap-3 p-3 rounded-xl glass-panel border border-amber-500/20">
+          <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-foreground">Agendar para meia-noite</p>
+            <p className="text-[10px] text-muted-foreground">Jogos ficam inativos e ativam automaticamente às 00:00 da data do jogo</p>
+          </div>
+          <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
         </div>
 
         <Textarea
@@ -281,10 +281,16 @@ export const ProgramacaoTexto = () => {
       {/* Preview Section */}
       {parsed.length > 0 && (
         <div ref={previewRef} className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-base font-bold text-foreground">
               Preview — <span className="text-emerald-400">{selectedCount}</span> de {parsed.length} jogos selecionados
             </h3>
+            {scheduleMidnight && (
+              <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-lg font-semibold">
+                <Clock className="h-3 w-3" />
+                Agendado para 00:00
+              </span>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -351,7 +357,7 @@ export const ProgramacaoTexto = () => {
               ) : (
                 <Check className="h-4 w-4 mr-2" />
               )}
-              Publicar {selectedCount} Jogos
+              {scheduleMidnight ? `Agendar ${selectedCount} Jogos` : `Publicar ${selectedCount} Jogos`}
             </Button>
             <Button
               onClick={handleRepublish}
