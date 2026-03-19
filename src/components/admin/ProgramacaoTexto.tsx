@@ -157,17 +157,40 @@ export const ProgramacaoTexto = () => {
     toast.info("Texto de exemplo preenchido");
   };
 
+  const isDateInPast = (dateStr: string): boolean => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const midnight = new Date(y, m - 1, d, 0, 0, 0);
+    return midnight.getTime() <= Date.now();
+  };
+
+  const getScheduleLabel = (): { text: string; isPast: boolean } => {
+    const [, m, d] = selectedDate.split("-");
+    const past = isDateInPast(selectedDate);
+    return {
+      text: past
+        ? "⚠️ Data no passado — será publicado imediatamente"
+        : `Ativa em ${d}/${m} às 00:00`,
+      isPast: past,
+    };
+  };
+
   const buildInsertPayload = (selected: ParsedGame[]) => {
     return selected.map(({ selected: _, ...g }) => {
       let publishAt: string | null = null;
+      let active = true;
+
       if (scheduleMidnight) {
-        // Use local date components to ensure midnight is interpreted as LOCAL time
         const [y, m, d] = g.date.split("-").map(Number);
-        publishAt = new Date(y, m - 1, d, 0, 0, 0).toISOString();
+        const midnight = new Date(y, m - 1, d, 0, 0, 0);
+        if (midnight.getTime() > Date.now()) {
+          publishAt = midnight.toISOString();
+          active = false;
+        }
       }
+
       return {
         ...g,
-        active: scheduleMidnight ? false : true,
+        active,
         is_live: false,
         status_short: "NS",
         elapsed_minutes: null,
