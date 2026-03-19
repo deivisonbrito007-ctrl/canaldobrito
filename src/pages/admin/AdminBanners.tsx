@@ -202,7 +202,8 @@ const AdminBanners = () => {
     setUploading(true);
     try {
       const ext = file.name?.split(".").pop() || "png";
-      const path = `${selectedCategory}/${Date.now()}.${ext}`;
+      const today = new Date().toISOString().split("T")[0];
+      const path = `${selectedCategory}/${today}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
