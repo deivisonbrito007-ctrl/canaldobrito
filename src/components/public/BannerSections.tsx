@@ -108,7 +108,7 @@ const CoverSection = () => {
         </div>
         <div className="flex gap-3.5 overflow-hidden px-4">
           {[1, 2].map((i) => (
-            <Skeleton key={i} className="aspect-[4/3] rounded-xl w-[260px] shrink-0" />
+            <Skeleton key={i} className="h-[200px] rounded-xl w-[300px] sm:w-[360px] shrink-0" />
           ))}
         </div>
       </div>
