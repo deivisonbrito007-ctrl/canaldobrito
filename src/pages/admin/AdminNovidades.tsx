@@ -21,7 +21,7 @@ const AdminNovidades = () => {
   const deleteItem = useDeleteNewsRelease();
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
-  const [badgeType, setBadgeType] = useState<"novidade" | "lancamento">("novidade");
+  const [badgeType, setBadgeType] = useState<string>("novidade");
 
   const handleSearch = () => {
     if (query.trim()) search(searchType === "movie" ? "search_movie" : "search_tv", query);
