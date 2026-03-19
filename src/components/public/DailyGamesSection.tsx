@@ -6,17 +6,24 @@ import { isGameCurrentlyLive, getLocalDateString } from "@/lib/gameUtils";
 
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
-  "brasileirão":       { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
-  "brasileirao":       { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
-  "champions league":  { bg: "bg-blue-500/20",    border: "border-blue-500/50" },
-  "copa do brasil":    { bg: "bg-yellow-500/20",   border: "border-yellow-500/50" },
-  "liga europa":       { bg: "bg-orange-500/20",   border: "border-orange-500/50" },
-  "concacaf":          { bg: "bg-purple-500/20",   border: "border-purple-500/50" },
-  "la liga":           { bg: "bg-orange-600/20",   border: "border-orange-600/50" },
-  "premier league":    { bg: "bg-purple-700/20",   border: "border-purple-700/50" },
-  "serie a":           { bg: "bg-blue-600/20",     border: "border-blue-600/50" },
-  "libertadores":      { bg: "bg-amber-500/20",    border: "border-amber-500/50" },
-  "sul-americana":     { bg: "bg-red-500/20",      border: "border-red-500/50" },
+  "brasileirão":          { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
+  "brasileirao":          { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
+  "campeonato brasileiro":{ bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
+  "champions league":     { bg: "bg-blue-500/20",    border: "border-blue-500/50" },
+  "copa do brasil":       { bg: "bg-yellow-500/20",   border: "border-yellow-500/50" },
+  "liga europa":          { bg: "bg-orange-500/20",   border: "border-orange-500/50" },
+  "europa league":        { bg: "bg-orange-500/20",   border: "border-orange-500/50" },
+  "conference league":    { bg: "bg-teal-500/20",     border: "border-teal-500/50" },
+  "concacaf":             { bg: "bg-purple-500/20",   border: "border-purple-500/50" },
+  "la liga":              { bg: "bg-orange-600/20",   border: "border-orange-600/50" },
+  "premier league":       { bg: "bg-purple-700/20",   border: "border-purple-700/50" },
+  "campeonato inglês":    { bg: "bg-purple-700/20",   border: "border-purple-700/50" },
+  "campeonato turco":     { bg: "bg-red-600/20",      border: "border-red-600/50" },
+  "serie a":              { bg: "bg-blue-600/20",     border: "border-blue-600/50" },
+  "libertadores":         { bg: "bg-amber-500/20",    border: "border-amber-500/50" },
+  "sul-americana":        { bg: "bg-red-500/20",      border: "border-red-500/50" },
+  "copa de la reina":     { bg: "bg-pink-500/20",     border: "border-pink-500/50" },
+  "copa do rei":          { bg: "bg-yellow-600/20",   border: "border-yellow-600/50" },
 };
 
 const COMP_TOP_COLORS: Record<string, string> = {
