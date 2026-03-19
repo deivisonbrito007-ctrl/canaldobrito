@@ -111,7 +111,7 @@ const AdminBanners = () => {
       }
 
       await createBanner.mutateAsync(bannerData);
-      toast.success(scheduleDate ? "Banner agendado!" : "Banner adicionado!");
+      toast.success(scheduleMode !== "none" && scheduleDate ? "Banner agendado!" : "Banner adicionado!");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar banner");
     } finally {
