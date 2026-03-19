@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock } from "lucide-react";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square } from "lucide-react";
 import { toast } from "sonner";
 
 export interface ParsedGame {
@@ -120,6 +121,11 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   return games;
 }
 
+function formatDatePt(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export const ProgramacaoTexto = () => {
   const today = new Date().toISOString().split("T")[0];
   const [text, setText] = useState("");
@@ -204,169 +210,254 @@ export const ProgramacaoTexto = () => {
     setParsed((prev) => prev.map((g, i) => (i === idx ? { ...g, selected: !g.selected } : g)));
   };
 
+  const toggleAll = (selectAll: boolean) => {
+    setParsed((prev) => prev.map((g) => ({ ...g, selected: selectAll })));
+  };
+
   const updateGame = (idx: number, updates: Partial<ParsedGame>) => {
     setParsed((prev) => prev.map((g, i) => (i === idx ? { ...g, ...updates } : g)));
   };
 
   const selectedCount = parsed.filter((g) => g.selected).length;
 
+  // Group games by date for preview
+  const gamesByDate = parsed.reduce<Record<string, { games: ParsedGame[]; indices: number[] }>>((acc, game, idx) => {
+    if (!acc[game.date]) acc[game.date] = { games: [], indices: [] };
+    acc[game.date].games.push(game);
+    acc[game.date].indices.push(idx);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.keys(gamesByDate).sort();
+
   return (
     <div className="space-y-5">
-      {/* Input Section */}
-      <div className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-bold text-foreground">Programação por Texto</h3>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground font-medium">Data padrão:</label>
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto text-xs h-9 glass-panel border-white/[0.1]"
-          />
-        </div>
-
-        {/* Schedule midnight toggle */}
-        <div className="flex items-center gap-3 p-3 rounded-xl glass-panel border border-amber-500/20">
-          <Clock className="h-4 w-4 text-amber-400 shrink-0" />
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-foreground">Agendar para meia-noite</p>
-            <p className="text-[10px] text-muted-foreground">Jogos ficam inativos e ativam automaticamente às 00:00 da data do jogo</p>
+      {/* STEP 1 — Configuration */}
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/20 text-primary text-[11px] font-bold">1</span>
+            <h3 className="text-sm font-bold text-foreground">Configuração</h3>
           </div>
-          <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
-        </div>
 
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={PLACEHOLDER}
-          className="min-h-[240px] bg-secondary/30 border-border/30 text-sm font-mono"
-        />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Default date */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-muted-foreground font-medium">Data padrão</label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="text-xs h-10 glass-panel border-white/[0.1]"
+              />
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleProcess}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 min-h-[44px]"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Processar Texto
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => { 
-              setText(""); 
-              setParsed([]); 
-              setEditingIdx(null);
-              toast.info("Campos limpos");
-            }}
-            className="text-muted-foreground min-h-[44px]"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Limpar
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleFillExample}
-            className="text-muted-foreground min-h-[44px]"
-          >
-            <Clipboard className="h-4 w-4 mr-2" />
-            Exemplo
-          </Button>
+            {/* Schedule midnight */}
+            <div className="flex items-center gap-3 p-3 rounded-xl glass-panel border border-amber-500/20 bg-amber-500/[0.03]">
+              <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-foreground">Agendar 00:00</p>
+                <p className="text-[9px] text-muted-foreground leading-tight">Ativa automaticamente à meia-noite</p>
+              </div>
+              <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Preview Section */}
-      {parsed.length > 0 && (
-        <div ref={previewRef} className="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-base font-bold text-foreground">
-              Preview — <span className="text-emerald-400">{selectedCount}</span> de {parsed.length} jogos selecionados
-            </h3>
-            {scheduleMidnight && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-lg font-semibold">
-                <Clock className="h-3 w-3" />
-                Agendado para 00:00
-              </span>
-            )}
+      {/* STEP 2 — Text input */}
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/20 text-primary text-[11px] font-bold">2</span>
+            <h3 className="text-sm font-bold text-foreground">Texto da Programação</h3>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {parsed.map((game, idx) => (
-              <div
-                key={idx}
-                className={`rounded-xl glass-panel p-3 space-y-2 transition-all duration-200 ${
-                  !game.selected ? "opacity-40" : ""
-                }`}
-              >
-                {editingIdx === idx ? (
-                  <EditGameForm
-                    game={game}
-                    onSave={(updates) => { updateGame(idx, updates); setEditingIdx(null); }}
-                    onCancel={() => setEditingIdx(null)}
-                  />
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-foreground truncate">
-                          {game.home_team} x {game.away_team}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          ⏰ {game.game_time} • {game.competition}
-                          {game.competition_detail ? ` · ${game.competition_detail}` : ""}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground/60">
-                          📺 {game.channels.join(", ") || "—"}
-                        </p>
-                        {game.is_womens && (
-                          <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
-                            Feminino
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => setEditingIdx(idx)}
-                          className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <Switch
-                          checked={game.selected}
-                          onCheckedChange={() => toggleGame(idx)}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={PLACEHOLDER}
+            className="min-h-[200px] bg-secondary/30 border-border/30 text-sm font-mono"
+          />
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2">
             <Button
-              onClick={handlePublish}
-              disabled={insertGames.isPending || selectedCount === 0}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8"
+              onClick={handleProcess}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 min-h-[44px]"
             >
-              {insertGames.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Check className="h-4 w-4 mr-2" />
-              )}
-              {scheduleMidnight ? `Agendar ${selectedCount} Jogos` : `Publicar ${selectedCount} Jogos`}
+              <FileText className="h-4 w-4 mr-2" />
+              Processar
             </Button>
             <Button
-              onClick={handleRepublish}
+              variant="ghost"
+              onClick={() => {
+                setText("");
+                setParsed([]);
+                setEditingIdx(null);
+                toast.info("Campos limpos");
+              }}
+              className="text-muted-foreground min-h-[44px]"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Limpar
+            </Button>
+            <Button
               variant="outline"
-              disabled={deleteByDate.isPending || selectedCount === 0}
-              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+              onClick={handleFillExample}
+              className="text-muted-foreground min-h-[44px]"
             >
-              Limpar e Republicar
+              <Clipboard className="h-4 w-4 mr-2" />
+              Exemplo
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* STEP 3 — Preview (only after processing) */}
+      {parsed.length > 0 && (
+        <div ref={previewRef} className="glass-panel rounded-2xl overflow-hidden">
+          {/* Summary bar */}
+          <div className="p-4 border-b border-white/[0.06] bg-secondary/20">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/20 text-primary text-[11px] font-bold">3</span>
+              <h3 className="text-sm font-bold text-foreground">Preview</h3>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+              <Badge variant="outline" className="border-white/[0.1] text-foreground font-semibold">
+                {parsed.length} jogos
+              </Badge>
+              <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 font-semibold">
+                {selectedCount} selecionados
+              </Badge>
+              {scheduleMidnight && (
+                <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20">
+                  <Clock className="h-2.5 w-2.5 mr-1" />
+                  Agendado 00:00
+                </Badge>
+              )}
+              <div className="ml-auto flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleAll(true)}
+                  className="h-7 text-[10px] text-muted-foreground px-2"
+                >
+                  <CheckSquare className="h-3 w-3 mr-1" />
+                  Todos
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleAll(false)}
+                  className="h-7 text-[10px] text-muted-foreground px-2"
+                >
+                  <Square className="h-3 w-3 mr-1" />
+                  Nenhum
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Games grouped by date */}
+          <div className="p-4 sm:p-5 space-y-5">
+            {sortedDates.map((date) => {
+              const group = gamesByDate[date];
+              const dateSelectedCount = group.games.filter((g) => g.selected).length;
+              return (
+                <div key={date}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-foreground">
+                      📅 {formatDatePt(date)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      — {group.games.length} jogo{group.games.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-semibold">
+                      ({dateSelectedCount} selecionados)
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {group.games.map((game, localIdx) => {
+                      const globalIdx = group.indices[localIdx];
+                      return (
+                        <div
+                          key={globalIdx}
+                          className={`rounded-xl glass-panel p-3 space-y-2 transition-all duration-200 ${
+                            !game.selected ? "opacity-40" : ""
+                          }`}
+                        >
+                          {editingIdx === globalIdx ? (
+                            <EditGameForm
+                              game={game}
+                              onSave={(updates) => { updateGame(globalIdx, updates); setEditingIdx(null); }}
+                              onCancel={() => setEditingIdx(null)}
+                            />
+                          ) : (
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-foreground truncate">
+                                  {game.home_team} x {game.away_team}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  ⏰ {game.game_time} • {game.competition}
+                                  {game.competition_detail ? ` · ${game.competition_detail}` : ""}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground/60">
+                                  📺 {game.channels.join(", ") || "—"}
+                                </p>
+                                {game.is_womens && (
+                                  <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
+                                    Feminino
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => setEditingIdx(globalIdx)}
+                                  className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <Switch
+                                  checked={game.selected}
+                                  onCheckedChange={() => toggleGame(globalIdx)}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Sticky action bar */}
+          <div className="p-4 border-t border-white/[0.06] bg-background/80 backdrop-blur-sm sticky bottom-0">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handlePublish}
+                disabled={insertGames.isPending || selectedCount === 0}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8"
+              >
+                {insertGames.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                {scheduleMidnight ? `Agendar ${selectedCount}` : `Publicar ${selectedCount}`}
+              </Button>
+              <Button
+                onClick={handleRepublish}
+                variant="outline"
+                disabled={deleteByDate.isPending || selectedCount === 0}
+                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+              >
+                Limpar e Republicar
+              </Button>
+            </div>
           </div>
         </div>
       )}

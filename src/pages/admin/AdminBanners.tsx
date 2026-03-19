@@ -53,6 +53,23 @@ const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) =
   );
 };
 
+// --- Helpers ---
+function formatCountdown(publishAt: string): string {
+  const now = new Date();
+  const target = new Date(publishAt);
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) return "Em breve";
+  const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffH < 1) {
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    return `Publica em ${diffMin}min`;
+  }
+  if (diffH < 24) return `Publica em ${diffH}h`;
+  const diffDays = Math.floor(diffH / 24);
+  return diffDays === 1 ? "Publica amanhã" : `Publica em ${diffDays}d`;
+}
+
+// --- Daily Banner Manager (unchanged logic) ---
 const DailyBannerManager = () => {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
@@ -170,6 +187,7 @@ const DailyBannerManager = () => {
   );
 };
 
+// --- Main AdminBanners ---
 const AdminBanners = () => {
   const [selectedCategory, setSelectedCategory] = useState<BannerCategory>("cover");
   const { data: banners, isLoading } = useAllBanners(selectedCategory);
@@ -227,6 +245,8 @@ const AdminBanners = () => {
   };
 
   const activeBanners = banners?.filter((b) => b.active).length || 0;
+  const scheduledBanners = banners?.filter((b) => b.publish_at && !b.active).length || 0;
+  const inactiveBanners = banners?.filter((b) => !b.active && !b.publish_at).length || 0;
   const totalBanners = banners?.length || 0;
 
   const isScheduled = (banner: any) => banner.publish_at && !banner.active;
@@ -264,6 +284,7 @@ const AdminBanners = () => {
 
       {activeSection === "categories" && (
         <>
+          {/* Category pills */}
           <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
             {CATEGORY_LIST.map((cat) => (
               <button
@@ -281,52 +302,70 @@ const AdminBanners = () => {
           </div>
 
           <div className="glass-panel rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-white/[0.06] space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">{CATEGORY_LABELS[selectedCategory]}</h3>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    <span className="text-emerald-400 font-semibold">{activeBanners}</span>/{totalBanners}
-                  </p>
+            {/* Header: Title + Status counters */}
+            <div className="p-4 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-foreground">{CATEGORY_LABELS[selectedCategory]}</h3>
+                <div className="flex items-center gap-3 text-[10px]">
+                  <span className="text-emerald-400 font-semibold">{activeBanners} ativos</span>
+                  {scheduledBanners > 0 && (
+                    <span className="text-amber-400 font-semibold">{scheduledBanners} agendados</span>
+                  )}
+                  {inactiveBanners > 0 && (
+                    <span className="text-muted-foreground">{inactiveBanners} inativos</span>
+                  )}
+                  <span className="text-muted-foreground/50">{totalBanners} total</span>
                 </div>
-                <label className="cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-4 h-10 text-xs font-semibold hover:brightness-110 transition-all active:scale-[0.97]">
-                    {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                    Upload
-                  </span>
-                </label>
               </div>
 
-              {/* Schedule field */}
-              <div className="flex items-center gap-2">
+              {/* Upload zone */}
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <label className="cursor-pointer shrink-0">
+                    <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-4 h-10 text-xs font-semibold hover:brightness-110 transition-all active:scale-[0.97]">
+                      {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      Upload
+                    </span>
+                  </label>
+                </div>
+                <PasteZone onImagePasted={uploadAndCreateCategory} uploading={uploading} />
+              </div>
+            </div>
+
+            {/* Schedule zone — visually separated */}
+            <div className="p-4 border-b border-amber-500/10 bg-amber-500/[0.03]">
+              <div className="flex items-center gap-2 mb-2">
                 <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <label className="text-[11px] text-muted-foreground font-medium">Agendar para:</label>
+                <span className="text-[11px] font-semibold text-amber-400">Agendamento</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <Input
                   type="datetime-local"
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
-                  className="flex-1 text-xs h-9 glass-panel border-white/[0.1]"
+                  className="flex-1 text-xs h-9 glass-panel border-amber-500/20 focus-visible:ring-amber-500/30"
+                  placeholder="Sem agendamento"
                 />
-                {scheduleDate && (
+                {scheduleDate ? (
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => setScheduleDate("")}
-                    className="h-8 text-xs text-muted-foreground"
+                    className="h-9 text-xs text-muted-foreground shrink-0"
                   >
                     Limpar
                   </Button>
-                )}
+                ) : null}
               </div>
-              {scheduleDate && (
-                <p className="text-[10px] text-amber-400/80">
-                  ⏰ Próximo banner será criado como agendado (inativo até a data)
-                </p>
-              )}
-
-              <PasteZone onImagePasted={uploadAndCreateCategory} uploading={uploading} />
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {scheduleDate
+                  ? `⏰ Próximo banner ficará inativo até ${new Date(scheduleDate).toLocaleString("pt-BR")}`
+                  : "Sem agendamento — banners serão publicados imediatamente"}
+              </p>
             </div>
+
+            {/* Banner list */}
             <div className="p-4">
               {isLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
@@ -355,9 +394,14 @@ const AdminBanners = () => {
                       </div>
                       <div className="p-3 space-y-1">
                         {isScheduled(banner) && banner.publish_at && (
-                          <p className="text-[10px] text-amber-400/80">
-                            ⏰ Publica em: {new Date(banner.publish_at).toLocaleString("pt-BR")}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[10px] text-amber-400/80">
+                              ⏰ {new Date(banner.publish_at).toLocaleString("pt-BR")}
+                            </p>
+                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0">
+                              {formatCountdown(banner.publish_at)}
+                            </Badge>
+                          </div>
                         )}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">

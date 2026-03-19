@@ -3,7 +3,8 @@ import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDail
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export const DailyGamesManager = () => {
@@ -32,6 +33,7 @@ export const DailyGamesManager = () => {
   };
 
   const activeCount = games?.filter((g) => g.active).length || 0;
+  const scheduledCount = games?.filter((g) => g.publish_at && !g.active && new Date(g.publish_at) > new Date()).length || 0;
 
   return (
     <div className="glass-panel rounded-2xl overflow-hidden">
@@ -41,10 +43,13 @@ export const DailyGamesManager = () => {
             <Calendar className="h-4 w-4 text-emerald-400" />
             Jogos Publicados
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            <span className="text-emerald-400 font-semibold">{activeCount}</span> ativos
-            {" "}/ {games?.length || 0} total
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-emerald-400 font-semibold">{activeCount} ativos</span>
+            {scheduledCount > 0 && (
+              <span className="text-xs text-amber-400 font-semibold">{scheduledCount} agendados</span>
+            )}
+            <span className="text-xs text-muted-foreground/50">{games?.length || 0} total</span>
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-3 sm:mt-0">
           <Input
@@ -81,55 +86,66 @@ export const DailyGamesManager = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {games.map((game) => (
-              <div
-                key={game.id}
-              className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
-                  !game.active ? "opacity-40" : ""
-                }`}
-              >
-                {editingId === game.id ? (
-                  <InlineEditForm
-                    game={game}
-                    onSave={(updates) => {
-                      updateGame.mutate({ id: game.id, ...updates });
-                      setEditingId(null);
-                    }}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">
-                        {game.home_team} x {game.away_team}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        ⏰ {game.game_time?.slice(0, 5)} • {game.competition}
-                        {game.competition_detail ? ` · ${game.competition_detail}` : ""}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground/60">
-                        📺 {game.channels?.join(", ") || "—"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Switch
-                        checked={game.active}
-                        onCheckedChange={() => handleToggleActive(game.id, game.active)}
-                      />
-                      <button onClick={() => setEditingId(game.id)} className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => { if (confirm("Excluir jogo?")) deleteGame.mutate(game.id); }}
-                        className="p-1 rounded hover:bg-destructive/10 text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
+            {games.map((game) => {
+              const isScheduled = game.publish_at && !game.active && new Date(game.publish_at) > new Date();
+              return (
+                <div
+                  key={game.id}
+                  className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
+                    !game.active && !isScheduled ? "opacity-40" : ""
+                  }`}
+                >
+                  {editingId === game.id ? (
+                    <InlineEditForm
+                      game={game}
+                      onSave={(updates) => {
+                        updateGame.mutate({ id: game.id, ...updates });
+                        setEditingId(null);
+                      }}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  ) : (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-foreground truncate">
+                            {game.home_team} x {game.away_team}
+                          </p>
+                          {isScheduled && (
+                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0 shrink-0">
+                              <Clock className="h-2.5 w-2.5 mr-0.5" />
+                              Agendado
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          ⏰ {game.game_time?.slice(0, 5)} • {game.competition}
+                          {game.competition_detail ? ` · ${game.competition_detail}` : ""}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/60">
+                          📺 {game.channels?.join(", ") || "—"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Switch
+                          checked={game.active}
+                          onCheckedChange={() => handleToggleActive(game.id, game.active)}
+                        />
+                        <button onClick={() => setEditingId(game.id)} className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => { if (confirm("Excluir jogo?")) deleteGame.mutate(game.id); }}
+                          className="p-1 rounded hover:bg-destructive/10 text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
