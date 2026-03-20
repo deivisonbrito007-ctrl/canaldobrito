@@ -272,7 +272,7 @@ const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] })
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-3">
+        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-2.5 sm:mt-3">
           {games.map((game, idx) => (
             <GameCard key={game.id} game={game} index={idx} />
           ))}
