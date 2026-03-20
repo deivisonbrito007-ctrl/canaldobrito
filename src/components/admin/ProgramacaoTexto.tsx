@@ -399,6 +399,29 @@ export const ProgramacaoTexto = () => {
               <Clipboard className="h-4 w-4 mr-2" />
               Exemplo
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={readingImage}
+              className="text-muted-foreground min-h-[44px]"
+            >
+              {readingImage ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4 mr-2" />
+              )}
+              {readingImage ? "Lendo..." : "📷 Ler Imagem"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleReadImage(file);
+              }}
+            />
           </div>
         </div>
       </div>
