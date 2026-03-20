@@ -12,16 +12,20 @@ Formato EXATO obrigatório:
 
 📅**Dia DD/MM**
 
+FORMATO A — Jogos com dois adversários (futebol, basquete, vôlei):
 Time A x Time B
 🏆 Competição (fase/detalhe se houver) / ⏰ HHhMM
 📺 Canal1, Canal2
 
-Time C x Time D
-🏆 Competição / ⏰ HHhMM
+FORMATO B — Esportes individuais ou de evento SEM adversário direto (tênis, F1, automobilismo, MMA):
+Nome do Evento ou Torneio
+🎾 Competição (detalhe) / ⏰ HHhMM
 📺 Canal1
 
+⚠️ IMPORTANTE: Para esportes do FORMATO B, NÃO invente adversários. NÃO use "x ?" ou "x TBD". Use APENAS o nome do evento/torneio na primeira linha.
+
 Regras:
-- Use "x" minúsculo para separar times
+- Use "x" minúsculo para separar times APENAS no formato A
 - Horário no formato HHhMM (ex: 19h00, 16h30)
 - Se houver múltiplas datas, crie um bloco 📅 para cada
 - Se o jogo for feminino, adicione (F) após o time visitante
@@ -31,14 +35,33 @@ Regras:
 
 Identificação de esportes:
 - Para basquete (NBA, NBB, EuroLeague, WNBA), use 🏀 antes da competição
-- Para tênis (ATP, WTA, Roland Garros, Wimbledon), use 🎾 antes da competição
-- Para Fórmula 1, automobilismo e motovelocidade (F1, GP, Grande Prêmio, MotoGP, Moto2, Moto3, Formula E, E-Prix, IndyCar, Stock Car, Automobilismo), use 🏎️ antes da competição
-- Para MMA (UFC, Bellator, PFL), use 🥊 antes da competição
+- Para tênis (ATP, WTA, Roland Garros, Wimbledon, Masters), use 🎾 antes da competição → FORMATO B
+- Para Fórmula 1, automobilismo e motovelocidade (F1, GP, Grande Prêmio, MotoGP, Moto2, Moto3, Formula E, E-Prix, IndyCar, Stock Car, Automobilismo), use 🏎️ antes da competição → FORMATO B
+- Para MMA (UFC, Bellator, PFL), use 🥊 antes da competição → FORMATO B
 - Para vôlei (Superliga, Liga das Nações), use 🏐 antes da competição
 - Para futebol, use 🏆 normalmente (padrão)
-Exemplo basquete: 🏀 NBA / ⏰ 22h00
-Exemplo F1: 🏎️ Fórmula 1 (GP do Brasil) / ⏰ 14h00
-Exemplo automobilismo: 🏎️ Automobilismo (Moto2) / ⏰ 10h00`;
+
+Exemplos formato A:
+Flamengo x Palmeiras
+🏆 Brasileirão / ⏰ 19h00
+📺 Sportv
+
+Lakers x Celtics
+🏀 NBA / ⏰ 22h00
+📺 ESPN
+
+Exemplos formato B:
+ATP Masters 1000
+🎾 Tênis (Indian Wells) / ⏰ 20h00
+📺 ESPN 2
+
+GP da Arábia Saudita
+🏎️ Fórmula 1 (Classificação) / ⏰ 13h00
+📺 Band, BandSports
+
+UFC 315
+🥊 MMA (Card Principal) / ⏰ 23h00
+📺 Combate`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

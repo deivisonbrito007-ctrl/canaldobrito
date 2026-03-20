@@ -32,6 +32,56 @@ Barcelona x Real Madrid
 🏆 La Liga / ⏰ 16h30
 📺 ESPN, Star+`;
 
+const SPORT_EMOJI_RE = /[🏆🎾🏎️🥊🏀🏐]/;
+const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🥊|🏀|🏐|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+
+function isCompetitionLine(line: string): boolean {
+  return COMP_LINE_RE.test(line);
+}
+
+function parseCompAndTime(compLine: string) {
+  let competition = "";
+  let competition_detail = "";
+  let game_time = "00:00";
+
+  // Remove sport emojis to get competition name
+  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐]/g, "");
+  const afterEmoji = cleaned;
+  const beforeSlash = afterEmoji.split("/")[0].trim();
+
+  const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
+  if (detailMatch) {
+    competition_detail = detailMatch[1];
+    competition = beforeSlash.replace(/\([^)]+\)/, "").trim();
+  } else {
+    competition = beforeSlash;
+  }
+  competition = competition.replace(/[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛📺]/g, "").trim();
+
+  const timeMatch = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH:](\d{2})/);
+  if (timeMatch) {
+    game_time = `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}`;
+  } else {
+    const timeMatchShort = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH]\b/);
+    if (timeMatchShort) {
+      game_time = `${timeMatchShort[1].padStart(2, "0")}:00`;
+    }
+  }
+
+  return { competition, competition_detail, game_time };
+}
+
+function cleanupGame(game: ParsedGame): ParsedGame {
+  // Clean "x ?" or "x?" patterns from away_team
+  let away = game.away_team.trim();
+  if (away === "?" || away === "") away = "";
+
+  // Clean "Something x ?" from home_team
+  let home = game.home_team.replace(/\s*x\s*\?\s*$/, "").trim();
+
+  return { ...game, home_team: home, away_team: away };
+}
+
 function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
@@ -41,6 +91,7 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   while (i < lines.length) {
     const line = lines[i];
 
+    // Date detection
     const dateMatch = line.match(/(?:📅|📺|🗓|🗓️|\*\*Dia|Dia)\s*\**\s*(?:Dia\s*)?\**\s*(\d{1,2})\/(\d{1,2})/i);
     if (dateMatch) {
       const day = dateMatch[1].padStart(2, "0");
@@ -51,73 +102,55 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       continue;
     }
 
-    if (!/\sx\s/i.test(line)) {
-      i++;
+    const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
+    const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
+
+    // FORMAT A: line has " x " → two teams
+    if (/\sx\s/i.test(line)) {
+      const teamParts = line.split(/\sx\s/i).map((t) => t.trim());
+      const home_team = teamParts[0] || "";
+      const away_team = teamParts[1] || "";
+      const is_womens = /\(F\)/i.test(line);
+
+      const { competition, competition_detail, game_time } = isCompetitionLine(nextLine)
+        ? parseCompAndTime(nextLine)
+        : { competition: "", competition_detail: "", game_time: "00:00" };
+
+      let channels: string[] = [];
+      if (channelLine.includes("📺")) {
+        const afterTv = channelLine.split("📺").pop() || "";
+        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+      }
+
+      games.push(cleanupGame({
+        home_team, away_team, competition, competition_detail, game_time,
+        channels, is_womens, date: currentDate, selected: true,
+      }));
+      i += 3;
       continue;
     }
 
-    const teamLine = line;
-    const compLine = i + 1 < lines.length ? lines[i + 1] : "";
-    const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
+    // FORMAT B: line has NO " x " but next line is a competition line → event/individual sport
+    if (isCompetitionLine(nextLine)) {
+      const home_team = line;
+      const { competition, competition_detail, game_time } = parseCompAndTime(nextLine);
 
-    const teamParts = teamLine.split(/\sx\s/i).map((t) => t.trim());
-    const home_team = teamParts[0] || "";
-    const away_team = teamParts[1] || "";
-    const is_womens = /\(F\)/i.test(teamLine);
-
-    let competition = "";
-    let competition_detail = "";
-    let game_time = "00:00";
-
-    if (compLine.includes("🏆") || /[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]/.test(compLine) || compLine.includes("/")) {
-      const afterTrophy = compLine.includes("🏆") ? (compLine.split("🏆").pop() || "") : compLine;
-      const beforeSlash = afterTrophy.split("/")[0].trim();
-      
-      const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
-      if (detailMatch) {
-        competition_detail = detailMatch[1];
-        competition = beforeSlash.replace(/\([^)]+\)/, "").trim();
-      } else {
-        competition = beforeSlash;
+      let channels: string[] = [];
+      if (channelLine.includes("📺")) {
+        const afterTv = channelLine.split("📺").pop() || "";
+        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
       }
-      competition = competition.replace(/[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛📺🏆]/g, "").trim();
 
-      const timeMatch = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH:](\d{2})/);
-      if (timeMatch) {
-        const hours = timeMatch[1].padStart(2, "0");
-        const minutes = timeMatch[2] || "00";
-        game_time = `${hours}:${minutes}`;
-      } else {
-        const timeMatchShort = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH]\b/);
-        if (timeMatchShort) {
-          game_time = `${timeMatchShort[1].padStart(2, "0")}:00`;
-        }
-      }
+      games.push(cleanupGame({
+        home_team, away_team: "", competition, competition_detail, game_time,
+        channels, is_womens: false, date: currentDate, selected: true,
+      }));
+      i += 3;
+      continue;
     }
 
-    let channels: string[] = [];
-    if (channelLine.includes("📺")) {
-      const afterTv = channelLine.split("📺").pop() || "";
-      channels = afterTv
-        .split(",")
-        .flatMap((part) => part.split(/ e (?=[A-Z])/))
-        .map((c) => c.trim())
-        .filter(Boolean);
-    }
-
-    games.push({
-      home_team,
-      away_team,
-      competition,
-      competition_detail,
-      game_time,
-      channels,
-      is_womens,
-      date: currentDate,
-      selected: true,
-    });
-
-    i += 3;
+    // Skip unrecognized lines
+    i++;
   }
 
   return games;
