@@ -1,69 +1,42 @@
 
-## O que verifiquei
 
-Há 2 problemas distintos no projeto agora:
+# Feature: Leitura de Imagem com IA para Programação
 
-1. **Erro fatal anterior: `doubled is not defined`**
-   - No código atual de `CategoryIconsCarousel.tsx`, **não existe mais `doubled`**.
-   - O arquivo já usa `const tripled = [...]` e renderiza `tripled.map(...)`.
-   - Também não encontrei nenhuma ocorrência de `doubled` no `src/`.
-   - Isso indica forte chance de **preview/HMR servindo bundle antigo** ou estado inconsistente do ambiente.
+## Resumo
 
-2. **Erros/warnings reais que ainda permanecem**
-   - Os logs mostram:
-     - `Function components cannot be given refs` em `ContentDetailSheet`
-     - `Function components cannot be given refs` em `BannerCard`
-   - O `vite.config.ts` **já está com `dedupe` de React**, então esse problema **não é** o caso clássico de React duplicado.
-   - A causa mais provável é o uso de componentes funcionais simples em contextos onde alguma lib espera repassar `ref` (especialmente com `framer-motion` / composição de componentes).
+Adicionar botão "📷 Ler Imagem" no ProgramacaoTexto que permite ao admin enviar uma foto de programação esportiva e ter o texto extraído automaticamente no formato esperado pelo parser.
 
-## Plano de correção
+## Alterações
 
-### 1) Eliminar a causa do crash residual do carrossel
-- Revisar o componente do carrossel para garantir que:
-  - só exista `tripled`
-  - não haja referência indireta antiga em helper/import exportado
-- Fazer uma pequena refatoração defensiva:
-  - renomear a lista renderizada para algo explícito como `carouselItems`
-  - manter a declaração imediatamente acima do componente
-- Objetivo: reduzir risco de preview ficar preso em símbolo antigo do HMR.
+### 1. Criar edge function `read-schedule-image`
+- Recebe imagem em base64 via POST
+- Chama Lovable AI Gateway com modelo `google/gemini-2.5-flash` (multimodal, rápido e barato)
+- System prompt instrui o modelo a retornar texto no formato exato do parser:
+  ```
+  📅**Dia DD/MM**
+  Time A x Time B
+  🏆 Competição (detalhe) / ⏰ HHhMM
+  📺 Canal1, Canal2
+  ```
+- Sem streaming — resposta única
+- CORS headers incluídos
+- Tratamento de erros 429/402
 
-### 2) Corrigir os warnings de `ref` em `ContentDetailSheet`
-- Ajustar `ContentDetailSheet` para ser compatível com componentes que tentam anexar `ref`.
-- A abordagem mais segura será:
-  - converter o componente para `React.forwardRef`, **ou**
-  - remover a necessidade de receber `ref` na composição atual, mantendo `motion.div` apenas em elementos DOM.
-- Isso deve eliminar o warning vindo de `NewsReleasesSection`.
+### 2. Atualizar `ProgramacaoTexto.tsx`
+- Adicionar botão "📷 Ler Imagem" ao lado dos botões existentes
+- Input file oculto para aceitar imagens
+- Converter imagem para base64 e chamar edge function via `supabase.functions.invoke`
+- Preencher o textarea com o resultado retornado
+- Loading state durante processamento
+- Toast de sucesso/erro
 
-### 3) Corrigir os warnings de `ref` em `BannerCard`
-- Aplicar a mesma estratégia em `BannerCard`:
-  - converter para `forwardRef`, **ou**
-  - reorganizar para que `motion.div` envolva apenas um elemento DOM sem passar ref para o componente funcional.
-- Isso resolve o warning disparado em `CategorySection`.
-
-### 4) Revisar composição com Framer Motion
-- Fazer uma checagem rápida nos componentes públicos que usam `motion` + componentes locais:
-  - `BannerSections`
-  - `NewsReleasesSection`
-  - `ContentDetailSheet`
-- Objetivo: garantir que nenhum componente funcional simples esteja sendo tratado como alvo de `ref`.
-
-### 5) Validação após ajuste
-- Confirmar que:
-  - a home não fica em tela branca
-  - o carrossel renderiza sem erro
-  - os warnings de `ref` desaparecem do console
-  - o marquee continua sem corte abrupto nas bordas
-
-## Sugestões adicionais
-
-Se quiser aproveitar a correção, eu recomendo também:
-- simplificar o cabeçalho promocional dentro de `CategoryIconsCarousel` se ele estiver “pesando” visualmente
-- desacelerar um pouco o marquee em desktop
-- pausar automaticamente o marquee em hover e em foco por acessibilidade
-- adicionar fallback visual caso o ambiente entre em estado inconsistente novamente
+### 3. Atualizar `supabase/config.toml`
+- Adicionar entrada para `read-schedule-image` com `verify_jwt = false`
 
 ## Detalhes técnicos
 
-- `vite.config.ts` já está correto para deduplicação de React, então **não vale insistir nessa linha**.
-- O próximo passo certo é corrigir a compatibilidade de `ref` nos componentes compostos.
-- O erro `doubled` parece ser **resíduo de bundle antigo**, mas vale blindar o componente com uma refatoração mínima para evitar nova inconsistência de HMR.
+- Modelo: `google/gemini-2.5-flash` — suporta imagens, custo baixo, já incluso no Lovable Cloud
+- `LOVABLE_API_KEY` já está configurado nos secrets
+- A imagem é enviada como data URI base64 no campo `image_url` do array de messages
+- Nenhum secret adicional necessário
+
