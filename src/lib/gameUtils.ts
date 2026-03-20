@@ -30,6 +30,10 @@ export const SPORT_LABEL: Record<SportType, string> = {
   volleyball: 'Vôlei',
 };
 
+/** Sports that don't have two adversarial teams (e.g. motorsport) */
+const NON_ADVERSARIAL: SportType[] = ['f1'];
+export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
+
 /** Detect sport type from competition name */
 export function detectSportType(competition: string): SportType {
   const c = competition.toLowerCase();
