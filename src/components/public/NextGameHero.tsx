@@ -134,7 +134,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
                   </span>
                 )}
               </div>
-              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-right truncate">
+              <p className="text-sm sm:text-lg font-bold text-foreground flex-1 text-right truncate min-w-0">
                 {nextGame.away_team}
               </p>
             </div>
