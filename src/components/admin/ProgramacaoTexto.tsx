@@ -161,6 +161,49 @@ export const ProgramacaoTexto = () => {
     toast.info("Texto de exemplo preenchido");
   };
 
+  const handleReadImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx 10MB)");
+      return;
+    }
+
+    setReadingImage(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("read-schedule-image", {
+        body: { image: base64 },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const extracted = data?.text?.trim();
+      if (!extracted) {
+        toast.error("Não foi possível extrair texto da imagem");
+        return;
+      }
+
+      setText((prev) => (prev ? prev + "\n\n" + extracted : extracted));
+      toast.success("Programação extraída da imagem!");
+    } catch (err: any) {
+      console.error("Image read error:", err);
+      toast.error(err.message || "Erro ao ler imagem");
+    } finally {
+      setReadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const isDateInPast = (dateStr: string): boolean => {
     const [y, m, d] = dateStr.split("-").map(Number);
     const midnight = new Date(y, m - 1, d, 0, 0, 0);
