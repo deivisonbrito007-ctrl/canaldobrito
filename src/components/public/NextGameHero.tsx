@@ -71,7 +71,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
             <div className="flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 text-primary" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Próximo jogo
+                {nonAdversarial ? "Próximo evento" : "Próximo jogo"}
               </span>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
