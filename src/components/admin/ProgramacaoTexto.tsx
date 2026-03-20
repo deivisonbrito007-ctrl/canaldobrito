@@ -139,7 +139,6 @@ export const ProgramacaoTexto = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
-  const deleteByDate = useDeleteDailyGamesByDate();
 
   const handleProcess = () => {
     if (!text.trim()) {
