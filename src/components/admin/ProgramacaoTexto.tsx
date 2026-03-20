@@ -242,6 +242,7 @@ export const ProgramacaoTexto = () => {
         status_short: "NS",
         elapsed_minutes: null,
         publish_at: publishAt,
+        sport_type: detectSportType(g.competition),
       };
     });
   };

@@ -88,7 +88,7 @@ function isHighlight(comp: string) {
 }
 
 function isGameLive(game: DailyGame): boolean {
-  return isGameCurrentlyLive(game.game_time, game.date);
+  return isGameCurrentlyLive(game.game_time, game.date, (game.sport_type || 'football') as SportType);
 }
 
 type TimeGroup = "morning" | "afternoon" | "night" | "dawn";
