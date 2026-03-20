@@ -200,6 +200,7 @@ export const DailyGamesSection = () => {
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
+  const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
   // Re-evaluate live status every 60s + reset date at midnight
