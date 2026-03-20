@@ -379,7 +379,7 @@ export const DailyGamesSection = () => {
   }
 
   return (
-    <section id="esportes" className="space-y-4">
+    <section id="esportes" className="space-y-4 w-full min-w-0 overflow-hidden">
       {/* Header with integrated stats */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20">
