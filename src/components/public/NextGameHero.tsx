@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Clock, Zap } from "lucide-react";
 import { type DailyGame } from "@/hooks/useDailyGames";
-import { getMinutesUntilStart, formatCountdown, isGameCurrentlyLive, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { getMinutesUntilStart, formatCountdown, isGameCurrentlyLive, isNonAdversarial, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 
 const COMP_GRADIENTS: Record<string, string> = {
