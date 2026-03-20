@@ -212,8 +212,16 @@ export const DailyGamesSection = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const availableSports = useMemo(() => {
+    const types = new Set((games || []).map((g) => (g.sport_type || 'football') as SportType));
+    return Array.from(types);
+  }, [games]);
+
   const filteredGames = useMemo(() => {
     let result = games || [];
+    if (sportFilter) {
+      result = result.filter((g) => (g.sport_type || 'football') === sportFilter);
+    }
     if (channelFilter) {
       result = result.filter((g) =>
         g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
@@ -225,7 +233,7 @@ export const DailyGamesSection = () => {
       );
     }
     return result;
-  }, [games, channelFilter, compFilter]);
+  }, [games, channelFilter, compFilter, sportFilter]);
 
 
   const grouped = useMemo(() => {
