@@ -209,7 +209,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           )}
 
           {/* Teams vs layout / Event layout */}
-          {isNonAdversarial(sportType) ? (
+          {(isNonAdversarial(sportType) || !game.away_team) ? (
             <div className="flex items-center gap-3">
               <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-center leading-tight">
                 {game.home_team}
