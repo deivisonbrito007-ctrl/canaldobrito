@@ -162,7 +162,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[130px] sm:max-w-[160px]`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[160px] sm:max-w-[200px]`}>
                 {sportEmoji} {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
