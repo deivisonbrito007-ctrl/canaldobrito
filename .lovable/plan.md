@@ -1,49 +1,72 @@
 
 
-# Auditoria e Correções do Fluxo de Programação
+# Melhorias UX/UI na Aba Programação
 
-## Problemas Encontrados
+## Análise atual
 
-### 1. Dados existentes com `sport_type` errado
-Todos os 22 jogos no banco estão com `sport_type: "football"`, incluindo jogos de NBA ("NBA League Pass"), Tênis ("Tênis"), Vôlei ("Vôlei") e Automobilismo ("Automobilismo"). O `detectSportType` só é aplicado na inserção — jogos antigos nunca foram atualizados.
+A aba Programação é funcional mas básica: um SectionHeader seguido de filtros (esporte, competição, canal) e cards agrupados por período. Oportunidades de melhoria:
 
-### 2. `detectSportType` não cobre "Automobilismo"
-Jogos de Moto2, Moto3, Formula-e e "Automobilismo" caem no fallback `football`. Faltam palavras-chave: `automobilismo`, `moto2`, `moto3`, `motogp`, `formula-e`, `formula e`, `e-prix`, `indycar`, `stock car`.
+1. **Sem resumo visual do dia** — o usuário não tem uma visão rápida antes de rolar
+2. **3 linhas de filtros empilhadas** — ocupa muito espaço vertical, confuso
+3. **Cards sem interatividade** — não há ação ao tocar (ex: notificação, lembrete)
+4. **Sem contagem regressiva** — jogos próximos não têm destaque temporal
+5. **Sem "próximo jogo"** — não há hero/destaque para o jogo mais iminente
+6. **Filtros estáticos** — competições hardcoded, não refletem os dados reais do dia
 
-### 3. Bug no regex de F1
-Linha 38 de `gameUtils.ts`: `\b(fórmula 1|...\bgp\b)\b` tem `\b` aninhado dentro do grupo, causando match incorreto.
+## Plano de melhorias
 
-### 4. Regex de vôlei não detecta "Vôlei" sozinho corretamente
-A competição "Vôlei" do banco deveria ser detectada, mas o regex usa `\b` que pode falhar com caracteres acentuados.
+### 1. Hero "Próximo Jogo" no topo
+Card destacado com o próximo jogo que ainda não começou:
+- Fundo com gradiente da cor da competição
+- Contagem regressiva animada ("Começa em 1h 23min")
+- Times em destaque grande
+- Canais e emoji do esporte
+- Desaparece quando o jogo fica ao vivo (migra para LiveNowSection)
 
-## Plano de Correções
+### 2. Resumo visual do dia (Stats Bar)
+Barra horizontal compacta logo abaixo do hero:
+- Total de jogos | Ao vivo agora | Próximas horas
+- Ícones dos esportes presentes no dia com contagem
+- Atualiza a cada 60s
 
-### 1. Corrigir `detectSportType` em `src/lib/gameUtils.ts`
-- Adicionar detecção de `automobilismo`, `moto2`, `moto3`, `motogp`, `formula-e`, `formula e`, `e-prix`, `indycar`, `stock car` como `f1` (motorsport)
-- Corrigir regex do GP: remover `\b` aninhado
-- Melhorar regex de vôlei para detectar "Vôlei" isolado
+### 3. Filtros unificados em uma única linha
+Combinar os 3 filtros (esporte, competição, canal) em um sistema de tabs compacto:
+- Primeira linha: pills de esporte (já existem, manter)
+- Segunda linha: combinar competição + canal em uma única barra com separador visual
+- Remover filtros hardcoded — gerar dinamicamente a partir dos jogos do dia
+- Mostrar contagem de jogos ao lado de cada filtro ativo
 
-### 2. Migration para corrigir dados existentes
-```sql
-UPDATE daily_games SET sport_type = 'basketball' WHERE competition ILIKE '%NBA%';
-UPDATE daily_games SET sport_type = 'tennis' WHERE competition ILIKE '%Tênis%' OR competition ILIKE '%ATP%' OR competition ILIKE '%WTA%';
-UPDATE daily_games SET sport_type = 'volleyball' WHERE competition ILIKE '%Vôlei%' OR competition ILIKE '%volei%';
-UPDATE daily_games SET sport_type = 'f1' WHERE competition ILIKE '%Automobilismo%' OR competition ILIKE '%Formula%' OR competition ILIKE '%Moto%';
-```
+### 4. Cards com micro-interações
+- Adicionar botão "🔔" para lembrete (salva no localStorage, dispara notificação do browser)
+- Indicador "Começa em Xmin" para jogos nas próximas 2 horas (amarelo pulsante)
+- Swipe horizontal no card para revelar ação de compartilhar via WhatsApp
+- Transição suave quando jogo muda de "agendado" para "ao vivo"
 
-### 3. Atualizar testes em `gameUtils.test.ts`
-- Adicionar testes para automobilismo, moto2, formula-e, stock car
-- Corrigir/verificar teste existente do GP
+### 5. Separadores de período mais visuais
+Em vez de apenas emoji + texto + linha:
+- Ícone animado (sol girando, lua com estrelas)
+- Quantidade de jogos do período no badge
+- Colapsável (tap para esconder/mostrar jogos do período)
 
-### 4. Atualizar prompt da IA (`read-schedule-image`)
-- Incluir `🏎️` para automobilismo/motovelocidade (Moto2, Moto3, Formula-e)
-
-### 5. Parser: suporte a eventos sem "x" (sugestão futura)
-Eventos como F1, tênis individual e MMA muitas vezes não têm formato "Time A x Time B". Atualmente o parser ignora essas linhas se não tiver ` x `. Isso já funciona via workaround (ex: "Moto3 x Grande Prêmio do Brasil") mas poderia ser melhorado futuramente.
+### 6. Empty state persuasivo
+Quando não há jogos com o filtro ativo:
+- Ilustração SVG temática
+- Sugestão de remover filtros
+- Botão "Ver todos os jogos"
 
 ## Arquivos modificados
-- `src/lib/gameUtils.ts` — corrigir regex e adicionar motorsport
-- `src/lib/gameUtils.test.ts` — novos testes
-- `supabase/migrations/` — corrigir sport_type dos dados existentes
-- `supabase/functions/read-schedule-image/index.ts` — prompt para automobilismo
+
+- `src/components/public/ScheduleTab.tsx` — adicionar hero "Próximo Jogo" e stats bar
+- `src/components/public/DailyGamesSection.tsx` — filtros dinâmicos, cards interativos, períodos colapsáveis
+- `src/components/public/NextGameHero.tsx` — novo componente hero com contagem regressiva
+- `src/components/public/DayStatsBar.tsx` — novo componente resumo do dia
+- `src/lib/gameUtils.ts` — helper `getNextUpcomingGame()` e `getTimeUntilStart()`
+
+## Prioridade de impacto
+
+1. Hero "Próximo Jogo" com countdown — maior impacto visual e engajamento
+2. Filtros dinâmicos — remove dados hardcoded, mais inteligente
+3. Stats bar — contexto rápido do dia
+4. Cards interativos (lembrete + "começa em") — retenção
+5. Períodos colapsáveis — organização
 
