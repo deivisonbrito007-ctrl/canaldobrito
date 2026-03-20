@@ -34,10 +34,10 @@ export const SPORT_LABEL: Record<SportType, string> = {
 export function detectSportType(competition: string): SportType {
   const c = competition.toLowerCase();
   if (/\b(nba|nbb|euroleague|wnba|basquete)\b/i.test(c)) return 'basketball';
-  if (/\b(atp|wta|roland garros|wimbledon|us open|australian open|tênis|tenis)\b/i.test(c)) return 'tennis';
-  if (/\b(fórmula 1|formula 1|f1|grande prêmio|grande premio|\bgp\b)\b/i.test(c)) return 'f1';
+  if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
+  if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|stock car|e-prix)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';
-  if (/\b(superliga|liga das nações.*vôlei|liga das nacoes.*volei|vôlei|volei)\b/i.test(c)) return 'volleyball';
+  if (/\b(superliga)\b/i.test(c) || /v[oô]lei/i.test(c) || /liga das na[çc][oõ]es.*v[oô]lei/i.test(c)) return 'volleyball';
   return 'football';
 }
 
