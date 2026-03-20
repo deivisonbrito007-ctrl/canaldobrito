@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface ParsedGame {
@@ -133,7 +134,9 @@ export const ProgramacaoTexto = () => {
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [scheduleMidnight, setScheduleMidnight] = useState(false);
+  const [readingImage, setReadingImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
 
@@ -155,6 +158,49 @@ export const ProgramacaoTexto = () => {
   const handleFillExample = () => {
     setText(PLACEHOLDER);
     toast.info("Texto de exemplo preenchido");
+  };
+
+  const handleReadImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx 10MB)");
+      return;
+    }
+
+    setReadingImage(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("read-schedule-image", {
+        body: { image: base64 },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const extracted = data?.text?.trim();
+      if (!extracted) {
+        toast.error("Não foi possível extrair texto da imagem");
+        return;
+      }
+
+      setText((prev) => (prev ? prev + "\n\n" + extracted : extracted));
+      toast.success("Programação extraída da imagem!");
+    } catch (err: any) {
+      console.error("Image read error:", err);
+      toast.error(err.message || "Erro ao ler imagem");
+    } finally {
+      setReadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const isDateInPast = (dateStr: string): boolean => {
@@ -353,6 +399,29 @@ export const ProgramacaoTexto = () => {
               <Clipboard className="h-4 w-4 mr-2" />
               Exemplo
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={readingImage}
+              className="text-muted-foreground min-h-[44px]"
+            >
+              {readingImage ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4 mr-2" />
+              )}
+              {readingImage ? "Lendo..." : "📷 Ler Imagem"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleReadImage(file);
+              }}
+            />
           </div>
         </div>
       </div>
