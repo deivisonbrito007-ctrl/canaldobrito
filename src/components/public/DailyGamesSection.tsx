@@ -148,7 +148,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
-      className="group"
+      className="group min-w-0"
     >
       <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
         bg-card/60 backdrop-blur-xl
