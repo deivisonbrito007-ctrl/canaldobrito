@@ -98,7 +98,7 @@ export const LiveNowSection = () => {
                     </div>
 
                     {/* Teams */}
-                    {isF1 ? (
+                    {(isF1 || isNonAdversarial(sportType) || !game.away_team) ? (
                       <div className="text-center">
                         <p className="text-[14px] font-bold text-foreground leading-tight font-body">
                           {game.home_team}
