@@ -148,7 +148,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
-      className="group"
+      className="group min-w-0"
     >
       <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
         bg-card/60 backdrop-blur-xl
@@ -162,7 +162,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[160px] sm:max-w-[200px]`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[45vw] sm:max-w-[200px]`}>
                 {sportEmoji} {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
@@ -223,12 +223,12 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
               <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 min-w-0 text-left truncate leading-tight">{game.home_team}</p>
               <div className="flex flex-col items-center shrink-0">
-                <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-2.5 py-1.5 border border-primary/20">
-                  <Clock className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
+                <div className="flex items-center gap-1 bg-primary/10 rounded-lg px-2 py-1 border border-primary/20">
+                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
+                  <span className="text-xs sm:text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
                 </div>
                 <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-widest mt-0.5">vs</span>
               </div>
@@ -379,7 +379,7 @@ export const DailyGamesSection = () => {
   }
 
   return (
-    <section id="esportes" className="space-y-4">
+    <section id="esportes" className="space-y-4 w-full min-w-0 overflow-hidden">
       {/* Header with integrated stats */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20">
