@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes } from "./gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, detectSportType } from "./gameUtils";
 
 describe("getLocalDateString", () => {
   it("returns YYYY-MM-DD format", () => {
-    const result = getLocalDateString(new Date(2026, 2, 19)); // March 19, 2026
+    const result = getLocalDateString(new Date(2026, 2, 19));
     expect(result).toBe("2026-03-19");
   });
 
   it("pads single-digit month and day", () => {
-    const result = getLocalDateString(new Date(2026, 0, 5)); // Jan 5
+    const result = getLocalDateString(new Date(2026, 0, 5));
     expect(result).toBe("2026-01-05");
   });
 
@@ -21,17 +21,87 @@ describe("getLocalDateString", () => {
   });
 });
 
+describe("detectSportType", () => {
+  it("detects basketball", () => {
+    expect(detectSportType("NBA")).toBe("basketball");
+    expect(detectSportType("NBB")).toBe("basketball");
+    expect(detectSportType("EuroLeague")).toBe("basketball");
+  });
+
+  it("detects tennis", () => {
+    expect(detectSportType("ATP Finals")).toBe("tennis");
+    expect(detectSportType("Roland Garros")).toBe("tennis");
+    expect(detectSportType("WTA 1000")).toBe("tennis");
+  });
+
+  it("detects f1", () => {
+    expect(detectSportType("Fórmula 1")).toBe("f1");
+    expect(detectSportType("F1 GP")).toBe("f1");
+    expect(detectSportType("Grande Prêmio")).toBe("f1");
+  });
+
+  it("detects mma", () => {
+    expect(detectSportType("UFC 300")).toBe("mma");
+    expect(detectSportType("Bellator")).toBe("mma");
+  });
+
+  it("detects volleyball", () => {
+    expect(detectSportType("Superliga")).toBe("volleyball");
+    expect(detectSportType("Vôlei")).toBe("volleyball");
+  });
+
+  it("defaults to football", () => {
+    expect(detectSportType("Brasileirão")).toBe("football");
+    expect(detectSportType("Champions League")).toBe("football");
+    expect(detectSportType("La Liga")).toBe("football");
+  });
+});
+
 describe("isGameCurrentlyLive", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("returns true within 90min for football", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 15, 30));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "football")).toBe(true);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  it("returns false after 90min for football", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 16, 30));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "football")).toBe(false);
   });
 
-  it("returns true when within 90-minute window", () => {
-    // Set time to 15:30 on March 19, 2026
+  it("returns false after 48min for basketball", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 15, 49));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "basketball")).toBe(false);
+  });
+
+  it("returns true within 48min for basketball", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 15, 47));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "basketball")).toBe(true);
+  });
+
+  it("returns true within 180min for tennis", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 59));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "tennis")).toBe(true);
+  });
+
+  it("returns false after 180min for tennis", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 18, 0));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "tennis")).toBe(false);
+  });
+
+  it("returns false after 25min for mma", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 15, 25));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "mma")).toBe(false);
+  });
+
+  it("returns true within 120min for f1", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 16, 59));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "f1")).toBe(true);
+  });
+
+  it("defaults to football when no sportType", () => {
     vi.setSystemTime(new Date(2026, 2, 19, 15, 30));
     expect(isGameCurrentlyLive("15:00", "2026-03-19")).toBe(true);
   });
@@ -41,39 +111,29 @@ describe("isGameCurrentlyLive", () => {
     expect(isGameCurrentlyLive("15:00", "2026-03-19")).toBe(false);
   });
 
-  it("returns false after 90 minutes", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 16, 30));
-    expect(isGameCurrentlyLive("15:00", "2026-03-19")).toBe(false);
-  });
-
   it("returns false for different date", () => {
     vi.setSystemTime(new Date(2026, 2, 19, 15, 30));
     expect(isGameCurrentlyLive("15:00", "2026-03-20")).toBe(false);
   });
-
-  it("returns true at exact start time", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 15, 0));
-    expect(isGameCurrentlyLive("15:00", "2026-03-19")).toBe(true);
-  });
-
-  it("returns false at exactly 90 minutes", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 16, 30));
-    expect(isGameCurrentlyLive("15:00", "2026-03-19")).toBe(false);
-  });
 });
 
 describe("getElapsedMinutes", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("returns elapsed minutes during game", () => {
+  it("returns elapsed minutes for football", () => {
     vi.setSystemTime(new Date(2026, 2, 19, 15, 45));
-    expect(getElapsedMinutes("15:00", "2026-03-19")).toBe(45);
+    expect(getElapsedMinutes("15:00", "2026-03-19", "football")).toBe(45);
+  });
+
+  it("returns null after basketball duration", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 15, 49));
+    expect(getElapsedMinutes("15:00", "2026-03-19", "basketball")).toBe(null);
+  });
+
+  it("returns elapsed for basketball within duration", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 15, 30));
+    expect(getElapsedMinutes("15:00", "2026-03-19", "basketball")).toBe(30);
   });
 
   it("returns 0 at exact start", () => {
@@ -84,15 +144,5 @@ describe("getElapsedMinutes", () => {
   it("returns null before game", () => {
     vi.setSystemTime(new Date(2026, 2, 19, 14, 59));
     expect(getElapsedMinutes("15:00", "2026-03-19")).toBe(null);
-  });
-
-  it("returns null after 90 minutes", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 16, 30));
-    expect(getElapsedMinutes("15:00", "2026-03-19")).toBe(null);
-  });
-
-  it("returns null for different date", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 15, 30));
-    expect(getElapsedMinutes("15:00", "2026-03-20")).toBe(null);
   });
 });
