@@ -81,3 +81,31 @@ export function getElapsedMinutes(gameTime: string, gameDate: string, sportType:
   if (elapsed < 0 || elapsed >= duration) return null;
   return elapsed;
 }
+
+/**
+ * Returns minutes until a game starts, or null if game already started or passed.
+ */
+export function getMinutesUntilStart(gameTime: string, gameDate: string): number | null {
+  const now = new Date();
+  if (gameDate !== getLocalDateString(now)) return null;
+
+  const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
+  const gameMinutes = gh * 60 + gm;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const diff = gameMinutes - nowMinutes;
+  if (diff <= 0) return null;
+  return diff;
+}
+
+/**
+ * Formats minutes into a human-readable countdown string (pt-BR).
+ */
+export function formatCountdown(minutes: number): string {
+  if (minutes < 1) return "Agora!";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
