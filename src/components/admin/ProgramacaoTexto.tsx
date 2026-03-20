@@ -134,8 +134,11 @@ export const ProgramacaoTexto = () => {
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [scheduleMidnight, setScheduleMidnight] = useState(false);
+  const [readingImage, setReadingImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const insertGames = useInsertDailyGames();
+  const deleteByDate = useDeleteDailyGamesByDate();
   const deleteByDate = useDeleteDailyGamesByDate();
 
   const handleProcess = () => {
