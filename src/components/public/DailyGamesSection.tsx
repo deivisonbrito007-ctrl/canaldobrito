@@ -2,7 +2,7 @@ import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
-import { isGameCurrentlyLive, getLocalDateString } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
