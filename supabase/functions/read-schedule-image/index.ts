@@ -32,12 +32,13 @@ Regras:
 Identificação de esportes:
 - Para basquete (NBA, NBB, EuroLeague, WNBA), use 🏀 antes da competição
 - Para tênis (ATP, WTA, Roland Garros, Wimbledon), use 🎾 antes da competição
-- Para Fórmula 1 (F1, GP, Grande Prêmio), use 🏎️ antes da competição
+- Para Fórmula 1, automobilismo e motovelocidade (F1, GP, Grande Prêmio, MotoGP, Moto2, Moto3, Formula E, E-Prix, IndyCar, Stock Car, Automobilismo), use 🏎️ antes da competição
 - Para MMA (UFC, Bellator, PFL), use 🥊 antes da competição
 - Para vôlei (Superliga, Liga das Nações), use 🏐 antes da competição
 - Para futebol, use 🏆 normalmente (padrão)
 Exemplo basquete: 🏀 NBA / ⏰ 22h00
-Exemplo F1: 🏎️ Fórmula 1 (GP do Brasil) / ⏰ 14h00`;
+Exemplo F1: 🏎️ Fórmula 1 (GP do Brasil) / ⏰ 14h00
+Exemplo automobilismo: 🏎️ Automobilismo (Moto2) / ⏰ 10h00`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

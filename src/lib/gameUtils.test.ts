@@ -38,6 +38,16 @@ describe("detectSportType", () => {
     expect(detectSportType("Fórmula 1")).toBe("f1");
     expect(detectSportType("F1 GP")).toBe("f1");
     expect(detectSportType("Grande Prêmio")).toBe("f1");
+    expect(detectSportType("Automobilismo")).toBe("f1");
+    expect(detectSportType("MotoGP")).toBe("f1");
+    expect(detectSportType("Moto2")).toBe("f1");
+    expect(detectSportType("Moto3")).toBe("f1");
+    expect(detectSportType("Formula E")).toBe("f1");
+    expect(detectSportType("Formula-e")).toBe("f1");
+    expect(detectSportType("Stock Car")).toBe("f1");
+    expect(detectSportType("IndyCar")).toBe("f1");
+    expect(detectSportType("E-Prix de São Paulo")).toBe("f1");
+    expect(detectSportType("GP do Brasil")).toBe("f1");
   });
 
   it("detects mma", () => {
