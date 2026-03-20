@@ -290,6 +290,7 @@ export const DailyGamesSection = () => {
   const [compFilter, setCompFilter] = useState<string | null>(null);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  const [openFilter, setOpenFilter] = useState<"sport" | "comp" | "channel" | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -343,6 +344,18 @@ export const DailyGamesSection = () => {
     return groups;
   }, [filteredGames]);
 
+  const liveCount = useMemo(() => (games || []).filter(isGameLive).length, [games]);
+
+  const hasActiveFilters = !!sportFilter || !!channelFilter || !!compFilter;
+  const toggleFilter = (cat: "sport" | "comp" | "channel") => setOpenFilter((prev) => (prev === cat ? null : cat));
+  const clearAll = () => { setSportFilter(null); setChannelFilter(null); setCompFilter(null); setOpenFilter(null); };
+
+  /* Active filter labels for chips */
+  const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
+  if (sportFilter) activeChips.push({ key: "sport", label: `${SPORT_EMOJI[sportFilter as SportType] || '⚽'} ${SPORT_LABEL[sportFilter as SportType] || sportFilter}`, onRemove: () => setSportFilter(null) });
+  if (compFilter) activeChips.push({ key: "comp", label: `🏆 ${compFilter}`, onRemove: () => setCompFilter(null) });
+  if (channelFilter) activeChips.push({ key: "channel", label: `📺 ${channelFilter}`, onRemove: () => setChannelFilter(null) });
+
   if (isLoading) return null;
 
   if (!games || games.length === 0) {
@@ -364,22 +377,6 @@ export const DailyGamesSection = () => {
       </section>
     );
   }
-
-  const hasActiveFilters = !!sportFilter || !!channelFilter || !!compFilter;
-
-  const liveCount = useMemo(() => (games || []).filter(isGameLive).length, [games]);
-
-  type FilterCategory = "sport" | "comp" | "channel" | null;
-  const [openFilter, setOpenFilter] = useState<FilterCategory>(null);
-
-  const toggleFilter = (cat: FilterCategory) => setOpenFilter((prev) => (prev === cat ? null : cat));
-  const clearAll = () => { setSportFilter(null); setChannelFilter(null); setCompFilter(null); setOpenFilter(null); };
-
-  /* Active filter labels for chips */
-  const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
-  if (sportFilter) activeChips.push({ key: "sport", label: `${SPORT_EMOJI[sportFilter as SportType] || '⚽'} ${SPORT_LABEL[sportFilter as SportType] || sportFilter}`, onRemove: () => setSportFilter(null) });
-  if (compFilter) activeChips.push({ key: "comp", label: `🏆 ${compFilter}`, onRemove: () => setCompFilter(null) });
-  if (channelFilter) activeChips.push({ key: "channel", label: `📺 ${channelFilter}`, onRemove: () => setChannelFilter(null) });
 
   return (
     <section id="esportes" className="space-y-4">
