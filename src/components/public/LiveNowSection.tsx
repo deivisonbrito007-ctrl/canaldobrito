@@ -1,7 +1,7 @@
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, SPORT_EMOJI, isNonAdversarial, type SportType } from "@/lib/gameUtils";
 import { Radio, Zap, Clock } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ChannelBadge } from "./ChannelBadge";
@@ -20,9 +20,10 @@ export const LiveNowSection = () => {
   }, []);
 
   const liveGames = useMemo(() => {
-    return (games || []).filter((g) =>
-      isGameCurrentlyLive(g.game_time, g.date, (g.sport_type || 'football') as SportType)
-    );
+    return (games || []).filter((g) => {
+      const st = (g.sport_type || 'football') as SportType;
+      return !isNonAdversarial(st) && isGameCurrentlyLive(g.game_time, g.date, st);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [games, Math.floor(Date.now() / 60000)]);
 
