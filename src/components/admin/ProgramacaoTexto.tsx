@@ -181,7 +181,7 @@ export const ProgramacaoTexto = () => {
     }
     const games = parseScheduleText(text, selectedDate);
     if (games.length === 0) {
-      toast.error("Nenhum jogo detectado. Verifique se o texto contém 'Time A x Time B'.");
+      toast.error("Nenhum jogo detectado. Verifique o formato do texto.");
       return;
     }
     setParsed(games);
