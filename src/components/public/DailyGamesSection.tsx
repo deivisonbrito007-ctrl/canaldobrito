@@ -223,12 +223,12 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
               <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 min-w-0 text-left truncate leading-tight">{game.home_team}</p>
               <div className="flex flex-col items-center shrink-0">
-                <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-2.5 py-1.5 border border-primary/20">
-                  <Clock className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
+                <div className="flex items-center gap-1 bg-primary/10 rounded-lg px-2 py-1 border border-primary/20">
+                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
+                  <span className="text-xs sm:text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
                 </div>
                 <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-widest mt-0.5">vs</span>
               </div>
