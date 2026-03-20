@@ -110,7 +110,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-left truncate">
+              <p className="text-sm sm:text-lg font-bold text-foreground flex-1 text-left truncate min-w-0">
                 {nextGame.home_team}
               </p>
               <div className="flex flex-col items-center shrink-0">
