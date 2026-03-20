@@ -99,6 +99,7 @@ export type Database = {
           is_live: boolean
           is_womens: boolean
           publish_at: string | null
+          sport_type: string
           status_short: string
         }
         Insert: {
@@ -116,6 +117,7 @@ export type Database = {
           is_live?: boolean
           is_womens?: boolean
           publish_at?: string | null
+          sport_type?: string
           status_short?: string
         }
         Update: {
@@ -133,6 +135,7 @@ export type Database = {
           is_live?: boolean
           is_womens?: boolean
           publish_at?: string | null
+          sport_type?: string
           status_short?: string
         }
         Relationships: []

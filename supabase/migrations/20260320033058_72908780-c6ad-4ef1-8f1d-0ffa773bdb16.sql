@@ -1,0 +1,1 @@
+ALTER TABLE daily_games ADD COLUMN sport_type text NOT NULL DEFAULT 'football';

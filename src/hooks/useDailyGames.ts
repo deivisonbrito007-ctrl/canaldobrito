@@ -16,6 +16,7 @@ export interface DailyGame {
   status_short: string;
   elapsed_minutes: number | null;
   publish_at: string | null;
+  sport_type: string;
   created_at: string;
 }
 

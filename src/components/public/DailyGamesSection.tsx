@@ -2,7 +2,7 @@ import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
-import { isGameCurrentlyLive, getLocalDateString } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
@@ -88,7 +88,7 @@ function isHighlight(comp: string) {
 }
 
 function isGameLive(game: DailyGame): boolean {
-  return isGameCurrentlyLive(game.game_time, game.date);
+  return isGameCurrentlyLive(game.game_time, game.date, (game.sport_type || 'football') as SportType);
 }
 
 type TimeGroup = "morning" | "afternoon" | "night" | "dawn";
@@ -112,6 +112,8 @@ const GROUP_ORDER: TimeGroup[] = ["morning", "afternoon", "night", "dawn"];
 
 /* ── Game Card ── */
 const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
+  const sportType = (game.sport_type || 'football') as SportType;
+  const sportEmoji = SPORT_EMOJI[sportType] || '⚽';
   const live = isGameLive(game);
   const highlight = isHighlight(game.competition);
   const compColor = getCompColor(game.competition);
@@ -137,7 +139,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[160px]`}>
-                {game.competition}
+                {sportEmoji} {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
             </div>
@@ -198,6 +200,7 @@ export const DailyGamesSection = () => {
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
+  const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
   // Re-evaluate live status every 60s + reset date at midnight
@@ -209,8 +212,16 @@ export const DailyGamesSection = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const availableSports = useMemo(() => {
+    const types = new Set((games || []).map((g) => (g.sport_type || 'football') as SportType));
+    return Array.from(types);
+  }, [games]);
+
   const filteredGames = useMemo(() => {
     let result = games || [];
+    if (sportFilter) {
+      result = result.filter((g) => (g.sport_type || 'football') === sportFilter);
+    }
     if (channelFilter) {
       result = result.filter((g) =>
         g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
@@ -222,7 +233,7 @@ export const DailyGamesSection = () => {
       );
     }
     return result;
-  }, [games, channelFilter, compFilter]);
+  }, [games, channelFilter, compFilter, sportFilter]);
 
 
   const grouped = useMemo(() => {
@@ -271,6 +282,35 @@ export const DailyGamesSection = () => {
           {filteredGames.length} jogos
         </span>
       </div>
+
+      {/* Sport Filter — only show if more than 1 sport */}
+      {availableSports.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+          <button
+            onClick={() => setSportFilter(null)}
+            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+              !sportFilter
+                ? "bg-primary/15 text-primary border border-primary/30"
+                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            🏆 Todos
+          </button>
+          {availableSports.map((st) => (
+            <button
+              key={st}
+              onClick={() => setSportFilter(sportFilter === st ? null : st)}
+              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+                sportFilter === st
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {SPORT_EMOJI[st]} {SPORT_LABEL[st]}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Competition Filter */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">

@@ -1,7 +1,7 @@
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 import { Radio, Zap, Clock } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ChannelBadge } from "./ChannelBadge";
@@ -20,7 +20,9 @@ export const LiveNowSection = () => {
   }, []);
 
   const liveGames = useMemo(() => {
-    return (games || []).filter((g) => isGameCurrentlyLive(g.game_time, g.date));
+    return (games || []).filter((g) =>
+      isGameCurrentlyLive(g.game_time, g.date, (g.sport_type || 'football') as SportType)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [games, Math.floor(Date.now() / 60000)]);
 
@@ -58,7 +60,10 @@ export const LiveNowSection = () => {
       ) : (
         <div className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory">
           {liveGames.map((game, idx) => {
-            const elapsed = getElapsedMinutes(game.game_time, game.date);
+            const sportType = (game.sport_type || 'football') as SportType;
+            const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);
+            const emoji = SPORT_EMOJI[sportType] || '⚽';
+            const isF1 = sportType === 'f1';
 
             return (
               <motion.div
@@ -78,7 +83,7 @@ export const LiveNowSection = () => {
                     {/* Competition + Live indicator */}
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider truncate max-w-[55%] font-body">
-                        🏆 {game.competition}
+                        {emoji} {game.competition}
                       </p>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="relative flex h-2 w-2">
@@ -86,23 +91,34 @@ export const LiveNowSection = () => {
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
                         </span>
                         <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
-                          {elapsed !== null ? `${elapsed}' ⚽` : "AO VIVO"}
+                          {elapsed !== null ? `${elapsed}' ${emoji}` : "AO VIVO"}
                         </span>
                       </div>
                     </div>
 
                     {/* Teams */}
-                    <div className="flex items-center gap-2">
-                      <p className="text-[14px] font-bold text-foreground flex-1 text-left truncate leading-tight font-body">
-                        {game.home_team}
-                      </p>
-                      <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
-                        <span className="text-[11px] font-extrabold text-destructive font-body">VS</span>
+                    {isF1 ? (
+                      <div className="text-center">
+                        <p className="text-[14px] font-bold text-foreground leading-tight font-body">
+                          {game.home_team}
+                          {game.away_team && game.away_team !== game.home_team && ` — ${game.away_team}`}
+                        </p>
                       </div>
-                      <p className="text-[14px] font-bold text-foreground flex-1 text-right truncate leading-tight font-body">
-                        {game.away_team}
-                      </p>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <p className="text-[14px] font-bold text-foreground flex-1 text-left truncate leading-tight font-body">
+                          {game.home_team}
+                        </p>
+                        <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
+                          <span className="text-[11px] font-extrabold text-destructive font-body">
+                            {sportType === 'tennis' || sportType === 'mma' ? 'VS' : 'X'}
+                          </span>
+                        </div>
+                        <p className="text-[14px] font-bold text-foreground flex-1 text-right truncate leading-tight font-body">
+                          {game.away_team}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Time + Channels */}
                     <div className="flex items-center justify-between gap-2">
