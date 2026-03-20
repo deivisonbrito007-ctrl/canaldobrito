@@ -112,6 +112,8 @@ const GROUP_ORDER: TimeGroup[] = ["morning", "afternoon", "night", "dawn"];
 
 /* ── Game Card ── */
 const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
+  const sportType = (game.sport_type || 'football') as SportType;
+  const sportEmoji = SPORT_EMOJI[sportType] || '⚽';
   const live = isGameLive(game);
   const highlight = isHighlight(game.competition);
   const compColor = getCompColor(game.competition);
