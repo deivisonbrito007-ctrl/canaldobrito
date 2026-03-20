@@ -49,6 +49,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
 
   const sportType = (nextGame.sport_type || 'football') as SportType;
   const emoji = SPORT_EMOJI[sportType] || '⚽';
+  const nonAdversarial = isNonAdversarial(sportType);
   const mins = getMinutesUntilStart(nextGame.game_time, nextGame.date);
   const countdown = mins ? formatCountdown(mins) : "";
   const gradient = getHeroGradient(nextGame.competition);
