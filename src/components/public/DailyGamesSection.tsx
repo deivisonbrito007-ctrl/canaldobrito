@@ -158,11 +158,11 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
         {/* Top accent line */}
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
           {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[160px]`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[130px] sm:max-w-[160px]`}>
                 {sportEmoji} {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
@@ -272,7 +272,7 @@ const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] })
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-3">
+        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-2.5 sm:mt-3">
           {games.map((game, idx) => (
             <GameCard key={game.id} game={game} index={idx} />
           ))}
@@ -381,12 +381,12 @@ export const DailyGamesSection = () => {
   return (
     <section id="esportes" className="space-y-4">
       {/* Header with integrated stats */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-          <Trophy className="h-5 w-5 text-primary" />
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20">
+          <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
         </div>
-        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
-        <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 tabular-nums">
+        <h2 className="font-display text-base sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
+        <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
           {filteredGames.length} jogos
         </span>
         {liveCount > 0 && (
@@ -406,7 +406,7 @@ export const DailyGamesSection = () => {
       {/* Compact accordion filters */}
       <div className="space-y-2">
         {/* Filter category buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5">
           {availableSports.length > 1 && (
             <button
               onClick={() => toggleFilter("sport")}

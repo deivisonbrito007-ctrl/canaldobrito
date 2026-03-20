@@ -65,7 +65,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
         {/* Top accent */}
         <div className="h-[3px] bg-gradient-to-r from-primary via-primary/60 to-transparent" />
 
-        <div className="p-4 sm:p-5 space-y-3">
+        <div className="p-3 sm:p-5 space-y-2 sm:space-y-3">
           {/* Label */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -82,7 +82,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
           {/* Teams / Event */}
           {nonAdversarial ? (
             <div className="flex items-center gap-3">
-              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-center">
+              <p className="text-sm sm:text-lg font-bold text-foreground flex-1 text-center truncate min-w-0">
                 {nextGame.home_team}
                 {nextGame.away_team && nextGame.away_team !== nextGame.home_team && ` — ${nextGame.away_team}`}
               </p>
@@ -110,7 +110,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-left truncate">
+              <p className="text-sm sm:text-lg font-bold text-foreground flex-1 text-left truncate min-w-0">
                 {nextGame.home_team}
               </p>
               <div className="flex flex-col items-center shrink-0">
@@ -134,7 +134,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
                   </span>
                 )}
               </div>
-              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-right truncate">
+              <p className="text-sm sm:text-lg font-bold text-foreground flex-1 text-right truncate min-w-0">
                 {nextGame.away_team}
               </p>
             </div>
