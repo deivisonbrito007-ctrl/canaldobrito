@@ -82,7 +82,7 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
           {/* Teams / Event */}
           {nonAdversarial ? (
             <div className="flex items-center gap-3">
-              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-center">
+              <p className="text-sm sm:text-lg font-bold text-foreground flex-1 text-center truncate min-w-0">
                 {nextGame.home_team}
                 {nextGame.away_team && nextGame.away_team !== nextGame.home_team && ` — ${nextGame.away_team}`}
               </p>
