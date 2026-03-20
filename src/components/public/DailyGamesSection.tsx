@@ -381,12 +381,12 @@ export const DailyGamesSection = () => {
   return (
     <section id="esportes" className="space-y-4">
       {/* Header with integrated stats */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-          <Trophy className="h-5 w-5 text-primary" />
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20">
+          <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
         </div>
-        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
-        <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 tabular-nums">
+        <h2 className="font-display text-base sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
+        <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
           {filteredGames.length} jogos
         </span>
         {liveCount > 0 && (
