@@ -1,28 +1,29 @@
 
 
-# Correções da Aba Programação Mobile
+# Correção dos Cards Cortados na Aba Programação
 
-## Problemas Identificados
+## Problema
 
-1. **Badges de competição muito truncados**: "CAMPEONATO B...", "CONFERENCE LE..." — o `max-w-[130px]` é muito agressivo, perde informação útil
-2. **Nomes de times truncando**: "Águia de Mara..." — o layout flex não distribui espaço suficiente para nomes longos; o horário central ocupa muito espaço relativo
-3. **Padding do ScheduleTab pode ser melhorado**: O `px-3 pt-3` deixa pouco respiro no topo
+Os cards de jogos estão sendo cortados no lado direito — os nomes dos times visitantes ("Cruzeiro...", "Memphis Grizzli...", "Gimnasia La Pla...") aparecem cortados na borda da tela sem elipse, indicando que o container do card ultrapassa a largura do viewport.
+
+## Causa Raiz
+
+A `<section>` em `DailyGamesSection` não tem restrição de largura (`w-full min-w-0`) nem `overflow-hidden`. Em telas estreitas (320-384px), conteúdo como badges longos ou o bloco central de horário pode empurrar o card além do viewport. A cascata `overflow-x-hidden` do `Index.tsx` esconde a scrollbar mas simplesmente corta o conteúdo.
 
 ## Correções
 
-### 1. Aumentar largura máxima dos badges de competição
-- **`DailyGamesSection.tsx` linha 165**: Mudar `max-w-[130px]` para `max-w-[160px]` no mobile e `max-w-[200px]` no sm+, para mostrar mais texto (ex: "CAMPEONATO BRASILEIRO" em vez de "CAMPEONATO B...")
+### 1. Adicionar constraints de largura no container da seção
+- **`DailyGamesSection.tsx`**: Na `<section>` principal (linha 382), adicionar `w-full min-w-0 overflow-hidden` para que o container nunca ultrapasse o viewport e force os filhos a respeitar limites.
 
-### 2. Melhorar distribuição de espaço nos nomes dos times
-- **`DailyGamesSection.tsx` linhas 226-236**: Reduzir o padding do bloco central de horário (`px-3` → `px-2.5`) e garantir que os nomes dos times tenham `min-w-0` com `flex-1` corretos para truncar graciosamente sem cortar o card
+### 2. Garantir overflow-hidden nos cards individuais
+- **`DailyGamesSection.tsx`**: No card wrapper `motion.div` (linha ~147), adicionar `min-w-0` para que o grid item não expanda além do container.
 
-### 3. Ajustar padding do ScheduleTab
-- **`ScheduleTab.tsx`**: Mudar para `px-3 pt-4 pb-3` para melhor respiro visual no topo
+### 3. Reduzir o bloco central de horário no mobile
+- O bloco de horário (`px-2.5 py-1.5`) com ícone Clock + texto ocupa ~100px fixos. Reduzir para `px-2 py-1` e o ícone para `h-3 w-3` no mobile, liberando mais espaço para os nomes dos times.
 
-### 4. Sugestão: Mostrar nome completo da competição no detail line
-- Já existe `competition_detail` que mostra "quarta fase" etc. — manter como está, funciona bem
+### 4. Sugestão: Competition badge mais inteligente
+- Em vez de `max-w-[160px]` fixo, usar `max-w-[45vw]` para se adaptar proporcionalmente à tela, evitando truncamento excessivo em telas maiores e overflow em telas menores.
 
 ## Arquivos
-- `src/components/public/DailyGamesSection.tsx` — badges maiores, layout de times otimizado
-- `src/components/public/ScheduleTab.tsx` — ajuste de padding
+- `src/components/public/DailyGamesSection.tsx` — constraints de largura, overflow, e ajustes de tamanho
 
