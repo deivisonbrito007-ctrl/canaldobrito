@@ -27,7 +27,17 @@ Regras:
 - Se o jogo for feminino, adicione (F) após o time visitante
 - Liste TODOS os canais separados por vírgula
 - NÃO adicione texto extra, apenas o formato acima
-- Se não conseguir ler algum dado, use "?" como placeholder`;
+- Se não conseguir ler algum dado, use "?" como placeholder
+
+Identificação de esportes:
+- Para basquete (NBA, NBB, EuroLeague, WNBA), use 🏀 antes da competição
+- Para tênis (ATP, WTA, Roland Garros, Wimbledon), use 🎾 antes da competição
+- Para Fórmula 1 (F1, GP, Grande Prêmio), use 🏎️ antes da competição
+- Para MMA (UFC, Bellator, PFL), use 🥊 antes da competição
+- Para vôlei (Superliga, Liga das Nações), use 🏐 antes da competição
+- Para futebol, use 🏆 normalmente (padrão)
+Exemplo basquete: 🏀 NBA / ⏰ 22h00
+Exemplo F1: 🏎️ Fórmula 1 (GP do Brasil) / ⏰ 14h00`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

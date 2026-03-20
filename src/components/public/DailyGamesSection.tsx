@@ -283,6 +283,35 @@ export const DailyGamesSection = () => {
         </span>
       </div>
 
+      {/* Sport Filter — only show if more than 1 sport */}
+      {availableSports.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
+          <button
+            onClick={() => setSportFilter(null)}
+            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+              !sportFilter
+                ? "bg-primary/15 text-primary border border-primary/30"
+                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            🏆 Todos
+          </button>
+          {availableSports.map((st) => (
+            <button
+              key={st}
+              onClick={() => setSportFilter(sportFilter === st ? null : st)}
+              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
+                sportFilter === st
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {SPORT_EMOJI[st]} {SPORT_LABEL[st]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Competition Filter */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
         <button
