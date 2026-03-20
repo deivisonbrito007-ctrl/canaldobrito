@@ -158,7 +158,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
         {/* Top accent line */}
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
           {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
