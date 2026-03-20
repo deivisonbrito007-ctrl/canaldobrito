@@ -1,9 +1,13 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
-import { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
-import { CalendarOff, Clock, Flame, Trophy } from "lucide-react";
-import { isGameCurrentlyLive, getLocalDateString, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff } from "lucide-react";
+import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
+import { NextGameHero } from "./NextGameHero";
+import { DayStatsBar } from "./DayStatsBar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
   "brasileirão":          { bg: "bg-emerald-500/20", border: "border-emerald-500/50" },
@@ -47,22 +51,9 @@ const COMP_TOP_COLORS: Record<string, string> = {
   "copa do rei":          "from-yellow-600",
 };
 
-
 const HIGHLIGHT_COMPS = [
   "champions league", "brasileirão", "brasileirao", "campeonato brasileiro",
   "libertadores", "copa do brasil", "premier league", "campeonato inglês",
-];
-
-const FILTER_CHANNELS = ["ESPN", "Sportv", "Globo", "Premiere", "Disney+", "CazéTV", "TNT"];
-
-const FILTER_COMPS: { label: string; short: string }[] = [
-  { label: "Brasileirão", short: "Brasileirão" },
-  { label: "Campeonato Brasileiro", short: "Camp. Brasileiro" },
-  { label: "Champions League", short: "Champions" },
-  { label: "Libertadores", short: "Libertadores" },
-  { label: "Copa do Brasil", short: "Copa BR" },
-  { label: "Europa League", short: "Europa L." },
-  { label: "Conference League", short: "Conference" },
 ];
 
 /* ── helpers ── */
@@ -110,6 +101,29 @@ const GROUP_META: Record<TimeGroup, { label: string; emoji: string }> = {
 
 const GROUP_ORDER: TimeGroup[] = ["morning", "afternoon", "night", "dawn"];
 
+/* ── Reminder helpers ── */
+function getReminders(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem("game_reminders") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function toggleReminder(gameId: string): boolean {
+  const reminders = getReminders();
+  const idx = reminders.indexOf(gameId);
+  if (idx >= 0) {
+    reminders.splice(idx, 1);
+    localStorage.setItem("game_reminders", JSON.stringify(reminders));
+    return false;
+  } else {
+    reminders.push(gameId);
+    localStorage.setItem("game_reminders", JSON.stringify(reminders));
+    return true;
+  }
+}
+
 /* ── Game Card ── */
 const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
   const sportType = (game.sport_type || 'football') as SportType;
@@ -118,6 +132,17 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
   const highlight = isHighlight(game.competition);
   const compColor = getCompColor(game.competition);
   const topGradient = getTopColor(game.competition);
+
+  const minsUntil = getMinutesUntilStart(game.game_time, game.date);
+  const isSoon = minsUntil !== null && minsUntil <= 120 && minsUntil > 0;
+
+  const [reminded, setReminded] = useState(() => getReminders().includes(game.id));
+
+  const handleReminder = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isNowReminded = toggleReminder(game.id);
+    setReminded(isNowReminded);
+  }, [game.id]);
 
   return (
     <motion.div
@@ -135,7 +160,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
 
         <div className="p-4 space-y-3">
-          {/* Competition badge + Live badge */}
+          {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[160px]`}>
@@ -144,6 +169,12 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
             </div>
             <div className="flex items-center gap-1.5">
+              {/* "Starts in X" indicator */}
+              {isSoon && !live && minsUntil && (
+                <span className="text-[9px] font-bold bg-warning/15 text-warning px-2 py-0.5 rounded-lg border border-warning/30 animate-pulse tabular-nums">
+                  em {formatCountdown(minsUntil)}
+                </span>
+              )}
               {live && (
                 <span className="flex items-center gap-1 text-[10px] bg-destructive/20 text-destructive px-2 py-0.5 rounded-full font-bold animate-pulse border border-destructive/30">
                   <span className="relative flex h-1.5 w-1.5">
@@ -155,6 +186,20 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               )}
               {game.is_womens && (
                 <span className="text-[9px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-lg font-bold border border-pink-500/30">♀ FEM</span>
+              )}
+              {/* Reminder button */}
+              {!live && (
+                <button
+                  onClick={handleReminder}
+                  className={`p-1 rounded-lg transition-all ${
+                    reminded
+                      ? "bg-primary/15 text-primary border border-primary/30"
+                      : "bg-card/40 text-muted-foreground/40 border border-transparent hover:text-primary/60 hover:bg-primary/5"
+                  }`}
+                  title={reminded ? "Remover lembrete" : "Adicionar lembrete"}
+                >
+                  {reminded ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                </button>
               )}
             </div>
           </div>
@@ -194,6 +239,35 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
   );
 };
 
+/* ── Period Group (Collapsible) ── */
+const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] }) => {
+  const [open, setOpen] = useState(true);
+  const meta = GROUP_META[group];
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="flex items-center gap-3 w-full py-1 group/period">
+          <span className="text-base">{meta.emoji}</span>
+          <span className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{meta.label}</span>
+          <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
+            {games.length}
+          </span>
+          <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
+          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-3">
+          {games.map((game, idx) => (
+            <GameCard key={game.id} game={game} index={idx} />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 /* ── Section ── */
 export const DailyGamesSection = () => {
   const [today, setToday] = useState(() => getLocalDateString());
@@ -203,7 +277,6 @@ export const DailyGamesSection = () => {
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
-  // Re-evaluate live status every 60s + reset date at midnight
   useEffect(() => {
     const interval = setInterval(() => {
       setTick((t) => t + 1);
@@ -212,29 +285,41 @@ export const DailyGamesSection = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const availableSports = useMemo(() => {
-    const types = new Set((games || []).map((g) => (g.sport_type || 'football') as SportType));
-    return Array.from(types);
+  /* Dynamic filter options from today's games */
+  const { availableSports, availableComps, availableChannels } = useMemo(() => {
+    const allGames = games || [];
+    const sports = new Set(allGames.map((g) => (g.sport_type || 'football') as SportType));
+    
+    const compMap: Record<string, number> = {};
+    allGames.forEach((g) => {
+      const key = g.competition.trim();
+      compMap[key] = (compMap[key] || 0) + 1;
+    });
+    const comps = Object.entries(compMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
+
+    const channelMap: Record<string, number> = {};
+    allGames.forEach((g) => {
+      g.channels?.forEach((ch) => {
+        const key = ch.trim();
+        channelMap[key] = (channelMap[key] || 0) + 1;
+      });
+    });
+    const channels = Object.entries(channelMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
+
+    return { availableSports: Array.from(sports), availableComps: comps, availableChannels: channels };
   }, [games]);
 
   const filteredGames = useMemo(() => {
     let result = games || [];
-    if (sportFilter) {
-      result = result.filter((g) => (g.sport_type || 'football') === sportFilter);
-    }
-    if (channelFilter) {
-      result = result.filter((g) =>
-        g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase()))
-      );
-    }
-    if (compFilter) {
-      result = result.filter((g) =>
-        g.competition.toLowerCase().includes(compFilter.toLowerCase())
-      );
-    }
+    if (sportFilter) result = result.filter((g) => (g.sport_type || 'football') === sportFilter);
+    if (channelFilter) result = result.filter((g) => g.channels?.some((ch) => ch.toLowerCase().includes(channelFilter.toLowerCase())));
+    if (compFilter) result = result.filter((g) => g.competition.toLowerCase().includes(compFilter.toLowerCase()));
     return result;
   }, [games, channelFilter, compFilter, sportFilter]);
-
 
   const grouped = useMemo(() => {
     const groups: Record<TimeGroup, typeof filteredGames> = { morning: [], afternoon: [], night: [], dawn: [] };
@@ -253,9 +338,7 @@ export const DailyGamesSection = () => {
           <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
             <Trophy className="h-5 w-5 text-primary" />
           </div>
-          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">
-            Programação
-          </h2>
+          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
         </div>
         <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
           <div className="p-4 rounded-2xl bg-muted/20 border border-border/20">
@@ -268,20 +351,26 @@ export const DailyGamesSection = () => {
     );
   }
 
+  const hasActiveFilters = !!sportFilter || !!channelFilter || !!compFilter;
+
   return (
-    <section id="esportes" className="space-y-5">
+    <section id="esportes" className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
           <Trophy className="h-5 w-5 text-primary" />
         </div>
-        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">
-          Programação
-        </h2>
+        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
         <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-2.5 py-0.5 tabular-nums">
           {filteredGames.length} jogos
         </span>
       </div>
+
+      {/* Hero — next upcoming game */}
+      <NextGameHero games={games} />
+
+      {/* Stats bar */}
+      <DayStatsBar games={games} />
 
       {/* Sport Filter — only show if more than 1 sport */}
       {availableSports.length > 1 && (
@@ -312,92 +401,99 @@ export const DailyGamesSection = () => {
         </div>
       )}
 
-      {/* Competition Filter */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
-        <button
-          onClick={() => setCompFilter(null)}
-          className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-            !compFilter
-              ? "bg-primary/15 text-primary border border-primary/30"
-              : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Todas
-        </button>
-        {FILTER_COMPS.map((c) => (
+      {/* Dynamic Competition Filter */}
+      {availableComps.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
           <button
-            key={c.label}
-            onClick={() => setCompFilter(compFilter === c.label ? null : c.label)}
+            onClick={() => setCompFilter(null)}
             className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              compFilter === c.label
+              !compFilter
                 ? "bg-primary/15 text-primary border border-primary/30"
                 : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span className="sm:hidden">{c.short}</span>
-            <span className="hidden sm:inline">{c.label}</span>
+            Todas
           </button>
-        ))}
-      </div>
+          {availableComps.map((c) => (
+            <button
+              key={c.label}
+              onClick={() => setCompFilter(compFilter === c.label ? null : c.label)}
+              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] flex items-center gap-1.5 ${
+                compFilter === c.label
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {c.label}
+              <span className="text-[9px] opacity-60 tabular-nums">{c.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Channel Filter */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
-        <button
-          onClick={() => setChannelFilter(null)}
-          className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-            !channelFilter
-              ? "bg-secondary/40 text-foreground border border-border/30"
-              : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          📺 Todos
-        </button>
-        {FILTER_CHANNELS.map((ch) => (
+      {/* Dynamic Channel Filter */}
+      {availableChannels.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
           <button
-            key={ch}
-            onClick={() => setChannelFilter(channelFilter === ch ? null : ch)}
+            onClick={() => setChannelFilter(null)}
             className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              channelFilter === ch
+              !channelFilter
                 ? "bg-secondary/40 text-foreground border border-border/30"
                 : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
             }`}
           >
-            {ch}
+            📺 Todos
           </button>
-        ))}
-      </div>
+          {availableChannels.map((ch) => (
+            <button
+              key={ch.label}
+              onClick={() => setChannelFilter(channelFilter === ch.label ? null : ch.label)}
+              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] flex items-center gap-1.5 ${
+                channelFilter === ch.label
+                  ? "bg-secondary/40 text-foreground border border-border/30"
+                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {ch.label}
+              <span className="text-[9px] opacity-60 tabular-nums">{ch.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Grouped games — order: morning → afternoon → night → dawn */}
-      <div className="space-y-6">
+      {/* Grouped games — collapsible periods */}
+      <div className="space-y-5">
         {GROUP_ORDER.map((group) => {
           const groupGames = grouped[group];
           if (!groupGames || groupGames.length === 0) return null;
-          const meta = GROUP_META[group];
-          return (
-            <div key={group} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="text-base">{meta.emoji}</span>
-                <span className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{meta.label}</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
-                <span className="text-[10px] text-muted-foreground/50 tabular-nums">{groupGames.length}</span>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {groupGames.map((game, idx) => (
-                  <GameCard key={game.id} game={game} index={idx} />
-                ))}
-              </div>
-            </div>
-          );
+          return <PeriodGroup key={group} group={group} games={groupGames} />;
         })}
       </div>
 
-      {filteredGames.length === 0 && (
-        <div className="text-center py-10">
-          <p className="text-sm text-muted-foreground/50">
-            Nenhum jogo{channelFilter ? ` em ${channelFilter}` : ""}{compFilter ? ` de ${compFilter}` : ""}
-          </p>
-        </div>
-      )}
+      {/* Empty filtered state */}
+      <AnimatePresence>
+        {filteredGames.length === 0 && hasActiveFilters && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-center py-12 space-y-3"
+          >
+            <div className="p-4 rounded-2xl bg-muted/20 border border-border/20 inline-block">
+              <CalendarOff className="h-7 w-7 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm text-muted-foreground/60">
+              Nenhum jogo{channelFilter ? ` em ${channelFilter}` : ""}{compFilter ? ` de ${compFilter}` : ""}
+            </p>
+            <button
+              onClick={() => { setSportFilter(null); setChannelFilter(null); setCompFilter(null); }}
+              className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              Ver todos os jogos
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
