@@ -2,7 +2,7 @@ import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff } from "lucide-react";
-import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 import { NextGameHero } from "./NextGameHero";
 import { DayStatsBar } from "./DayStatsBar";
