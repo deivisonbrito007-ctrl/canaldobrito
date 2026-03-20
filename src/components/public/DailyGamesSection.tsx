@@ -209,18 +209,33 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
             <p className="text-[10px] text-muted-foreground/70 font-medium truncate -mt-1">{game.competition_detail}</p>
           )}
 
-          {/* Teams vs layout */}
-          <div className="flex items-center gap-3">
-            <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
-            <div className="flex flex-col items-center shrink-0">
-              <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
-                <Clock className="h-3.5 w-3.5 text-primary" />
-                <span className="text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
+          {/* Teams vs layout / Event layout */}
+          {isNonAdversarial(sportType) ? (
+            <div className="flex items-center gap-3">
+              <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-center leading-tight">
+                {game.home_team}
+                {game.away_team && game.away_team !== game.home_team && ` — ${game.away_team}`}
+              </p>
+              <div className="flex flex-col items-center shrink-0">
+                <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
+                </div>
               </div>
-              <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-widest mt-0.5">vs</span>
             </div>
-            <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-right truncate leading-tight">{game.away_team}</p>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-left truncate leading-tight">{game.home_team}</p>
+              <div className="flex flex-col items-center shrink-0">
+                <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-sm font-bold text-primary tabular-nums tracking-wide">{game.game_time?.slice(0, 5)}</span>
+                </div>
+                <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-widest mt-0.5">vs</span>
+              </div>
+              <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-right truncate leading-tight">{game.away_team}</p>
+            </div>
+          )}
 
           {/* Channels */}
           {game.channels && game.channels.length > 0 && (

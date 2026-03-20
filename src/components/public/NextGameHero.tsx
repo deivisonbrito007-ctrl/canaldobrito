@@ -79,36 +79,66 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
             </span>
           </div>
 
-          {/* Teams */}
-          <div className="flex items-center gap-3">
-            <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-left truncate">
-              {nextGame.home_team}
-            </p>
-            <div className="flex flex-col items-center shrink-0">
-              <div className={`flex items-center gap-1.5 rounded-xl px-4 py-2 border ${
-                isSoon
-                  ? "bg-warning/15 border-warning/30"
-                  : "bg-primary/10 border-primary/20"
-              }`}>
-                <Clock className={`h-4 w-4 ${isSoon ? "text-warning animate-pulse" : "text-primary"}`} />
-                <span className={`text-base font-bold tabular-nums tracking-wide ${
-                  isSoon ? "text-warning" : "text-primary"
+          {/* Teams / Event */}
+          {nonAdversarial ? (
+            <div className="flex items-center gap-3">
+              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-center">
+                {nextGame.home_team}
+                {nextGame.away_team && nextGame.away_team !== nextGame.home_team && ` — ${nextGame.away_team}`}
+              </p>
+              <div className="flex flex-col items-center shrink-0">
+                <div className={`flex items-center gap-1.5 rounded-xl px-4 py-2 border ${
+                  isSoon
+                    ? "bg-warning/15 border-warning/30"
+                    : "bg-primary/10 border-primary/20"
                 }`}>
-                  {nextGame.game_time?.slice(0, 5)}
-                </span>
+                  <Clock className={`h-4 w-4 ${isSoon ? "text-warning animate-pulse" : "text-primary"}`} />
+                  <span className={`text-base font-bold tabular-nums tracking-wide ${
+                    isSoon ? "text-warning" : "text-primary"
+                  }`}>
+                    {nextGame.game_time?.slice(0, 5)}
+                  </span>
+                </div>
+                {countdown && (
+                  <span className={`text-[10px] font-bold mt-1 tabular-nums ${
+                    isSoon ? "text-warning animate-pulse" : "text-muted-foreground/60"
+                  }`}>
+                    em {countdown}
+                  </span>
+                )}
               </div>
-              {countdown && (
-                <span className={`text-[10px] font-bold mt-1 tabular-nums ${
-                  isSoon ? "text-warning animate-pulse" : "text-muted-foreground/60"
-                }`}>
-                  em {countdown}
-                </span>
-              )}
             </div>
-            <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-right truncate">
-              {nextGame.away_team}
-            </p>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-left truncate">
+                {nextGame.home_team}
+              </p>
+              <div className="flex flex-col items-center shrink-0">
+                <div className={`flex items-center gap-1.5 rounded-xl px-4 py-2 border ${
+                  isSoon
+                    ? "bg-warning/15 border-warning/30"
+                    : "bg-primary/10 border-primary/20"
+                }`}>
+                  <Clock className={`h-4 w-4 ${isSoon ? "text-warning animate-pulse" : "text-primary"}`} />
+                  <span className={`text-base font-bold tabular-nums tracking-wide ${
+                    isSoon ? "text-warning" : "text-primary"
+                  }`}>
+                    {nextGame.game_time?.slice(0, 5)}
+                  </span>
+                </div>
+                {countdown && (
+                  <span className={`text-[10px] font-bold mt-1 tabular-nums ${
+                    isSoon ? "text-warning animate-pulse" : "text-muted-foreground/60"
+                  }`}>
+                    em {countdown}
+                  </span>
+                )}
+              </div>
+              <p className="text-base sm:text-lg font-bold text-foreground flex-1 text-right truncate">
+                {nextGame.away_team}
+              </p>
+            </div>
+          )}
 
           {/* Channels */}
           {nextGame.channels && nextGame.channels.length > 0 && (
