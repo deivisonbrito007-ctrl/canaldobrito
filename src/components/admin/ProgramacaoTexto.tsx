@@ -366,9 +366,26 @@ export const ProgramacaoTexto = () => {
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onPaste={(e) => {
+              const items = e.clipboardData?.items;
+              if (!items) return;
+              for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith("image/")) {
+                  e.preventDefault();
+                  const file = items[i].getAsFile();
+                  if (file) {
+                    toast.info("📷 Imagem detectada, processando...");
+                    handleReadImage(file);
+                  }
+                  return;
+                }
+              }
+            }}
             placeholder={PLACEHOLDER}
             className="min-h-[200px] bg-secondary/30 border-border/30 text-sm font-mono"
+            disabled={readingImage}
           />
+          <p className="text-[10px] text-muted-foreground/60">💡 Cole uma imagem (Ctrl+V) para extrair a programação automaticamente</p>
 
           <div className="flex flex-wrap gap-2">
             <Button
