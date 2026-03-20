@@ -1,72 +1,49 @@
 
 
-# Categorização por Esporte com Duração Exata
+# Auditoria e Correções do Fluxo de Programação
 
-## Objetivo
+## Problemas Encontrados
 
-Adicionar `sport_type` aos jogos para exibir o tempo exato de cada esporte na seção "Ao Vivo" — sem margem extra. O jogo sai do "Ao Vivo" exatamente quando o tempo regulamentar termina.
+### 1. Dados existentes com `sport_type` errado
+Todos os 22 jogos no banco estão com `sport_type: "football"`, incluindo jogos de NBA ("NBA League Pass"), Tênis ("Tênis"), Vôlei ("Vôlei") e Automobilismo ("Automobilismo"). O `detectSportType` só é aplicado na inserção — jogos antigos nunca foram atualizados.
 
-## Durações exatas (sem acréscimo)
+### 2. `detectSportType` não cobre "Automobilismo"
+Jogos de Moto2, Moto3, Formula-e e "Automobilismo" caem no fallback `football`. Faltam palavras-chave: `automobilismo`, `moto2`, `moto3`, `motogp`, `formula-e`, `formula e`, `e-prix`, `indycar`, `stock car`.
 
-| Tipo | Emoji | Duração exata | Justificativa |
-|------|-------|---------------|---------------|
-| football | ⚽ | 90 min | 2 tempos de 45min |
-| basketball | 🏀 | 48 min | 4 quartos de 12min (NBA) |
-| tennis | 🎾 | 180 min | Média de 3 sets |
-| f1 | 🏎️ | 120 min | Corrida padrão ~2h |
-| mma | 🥊 | 25 min | 5 rounds de 5min (card principal) |
-| volleyball | 🏐 | 90 min | Média de 5 sets |
+### 3. Bug no regex de F1
+Linha 38 de `gameUtils.ts`: `\b(fórmula 1|...\bgp\b)\b` tem `\b` aninhado dentro do grupo, causando match incorreto.
 
-> **Nota:** Como não há paradas de relógio nem acréscimos no cálculo, o jogo desaparece do "Ao Vivo" no momento exato que o tempo regulamentar se esgota. Se quiser ajustar qualquer duração depois, basta mudar um número no mapa.
+### 4. Regex de vôlei não detecta "Vôlei" sozinho corretamente
+A competição "Vôlei" do banco deveria ser detectada, mas o regex usa `\b` que pode falhar com caracteres acentuados.
 
-## Alterações
+## Plano de Correções
 
-### 1. Migration — coluna `sport_type`
+### 1. Corrigir `detectSportType` em `src/lib/gameUtils.ts`
+- Adicionar detecção de `automobilismo`, `moto2`, `moto3`, `motogp`, `formula-e`, `formula e`, `e-prix`, `indycar`, `stock car` como `f1` (motorsport)
+- Corrigir regex do GP: remover `\b` aninhado
+- Melhorar regex de vôlei para detectar "Vôlei" isolado
+
+### 2. Migration para corrigir dados existentes
 ```sql
-ALTER TABLE daily_games ADD COLUMN sport_type text NOT NULL DEFAULT 'football';
+UPDATE daily_games SET sport_type = 'basketball' WHERE competition ILIKE '%NBA%';
+UPDATE daily_games SET sport_type = 'tennis' WHERE competition ILIKE '%Tênis%' OR competition ILIKE '%ATP%' OR competition ILIKE '%WTA%';
+UPDATE daily_games SET sport_type = 'volleyball' WHERE competition ILIKE '%Vôlei%' OR competition ILIKE '%volei%';
+UPDATE daily_games SET sport_type = 'f1' WHERE competition ILIKE '%Automobilismo%' OR competition ILIKE '%Formula%' OR competition ILIKE '%Moto%';
 ```
 
-### 2. `src/lib/gameUtils.ts`
-- Criar mapa `SPORT_DURATION` com as durações exatas acima
-- `isGameCurrentlyLive(gameTime, gameDate, sportType)` — usa duração do mapa
-- `getElapsedMinutes(gameTime, gameDate, sportType)` — idem
-- Exportar mapa `SPORT_EMOJI` para uso nos componentes
+### 3. Atualizar testes em `gameUtils.test.ts`
+- Adicionar testes para automobilismo, moto2, formula-e, stock car
+- Corrigir/verificar teste existente do GP
 
-### 3. `src/components/admin/ProgramacaoTexto.tsx`
-- Adicionar função `detectSportType(competition)` com palavras-chave:
-  - basketball: NBA, NBB, EuroLeague, WNBA
-  - tennis: ATP, WTA, Roland Garros, Wimbledon, US Open, Australian Open
-  - f1: Fórmula 1, F1, Grande Prêmio, GP
-  - mma: UFC, Bellator, PFL
-  - volleyball: Superliga, Liga das Nações Vôlei
-  - football: default/fallback
-- Incluir `sport_type` no objeto de jogo parseado e enviado ao banco
+### 4. Atualizar prompt da IA (`read-schedule-image`)
+- Incluir `🏎️` para automobilismo/motovelocidade (Moto2, Moto3, Formula-e)
 
-### 4. `src/hooks/useDailyGames.ts`
-- Adicionar `sport_type: string` ao tipo `DailyGame`
-
-### 5. `src/components/public/LiveNowSection.tsx`
-- Passar `game.sport_type` para `isGameCurrentlyLive` e `getElapsedMinutes`
-- Exibir emoji do esporte ao lado da competição
-- Usar separador adequado (F1 não tem "VS")
-
-### 6. `src/components/public/DailyGamesSection.tsx`
-- Exibir emoji do esporte no card
-- Adicionar filtro por esporte (pills) — só mostra esportes com jogos no dia
-
-### 7. `supabase/functions/read-schedule-image/index.ts`
-- Atualizar prompt para identificar tipo de esporte e incluir emoji correspondente
-
-### 8. Atualizar testes em `src/lib/gameUtils.test.ts`
-- Adicionar testes para durações por esporte
+### 5. Parser: suporte a eventos sem "x" (sugestão futura)
+Eventos como F1, tênis individual e MMA muitas vezes não têm formato "Time A x Time B". Atualmente o parser ignora essas linhas se não tiver ` x `. Isso já funciona via workaround (ex: "Moto3 x Grande Prêmio do Brasil") mas poderia ser melhorado futuramente.
 
 ## Arquivos modificados
-- `supabase/migrations/` — nova migration
-- `src/lib/gameUtils.ts`
-- `src/lib/gameUtils.test.ts`
-- `src/components/admin/ProgramacaoTexto.tsx`
-- `src/hooks/useDailyGames.ts`
-- `src/components/public/LiveNowSection.tsx`
-- `src/components/public/DailyGamesSection.tsx`
-- `supabase/functions/read-schedule-image/index.ts`
+- `src/lib/gameUtils.ts` — corrigir regex e adicionar motorsport
+- `src/lib/gameUtils.test.ts` — novos testes
+- `supabase/migrations/` — corrigir sport_type dos dados existentes
+- `supabase/functions/read-schedule-image/index.ts` — prompt para automobilismo
 
