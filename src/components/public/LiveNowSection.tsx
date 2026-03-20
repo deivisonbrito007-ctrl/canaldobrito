@@ -1,7 +1,7 @@
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, SPORT_EMOJI, isNonAdversarial, type SportType } from "@/lib/gameUtils";
 import { Radio, Zap, Clock } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ChannelBadge } from "./ChannelBadge";
