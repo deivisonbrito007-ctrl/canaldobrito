@@ -209,12 +209,18 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
           )}
 
           {/* Teams vs layout / Event layout */}
-          {isNonAdversarial(sportType) ? (
+          {(isNonAdversarial(sportType) || !game.away_team) ? (
             <div className="flex items-center gap-3">
-              <p className="text-[13px] sm:text-sm font-bold text-foreground flex-1 text-center leading-tight">
-                {game.home_team}
-                {game.away_team && game.away_team !== game.home_team && ` — ${game.away_team}`}
-              </p>
+              <div className="flex-1 text-center min-w-0">
+                <p className="text-[13px] sm:text-sm font-bold text-foreground leading-tight truncate">
+                  {game.home_team}
+                </p>
+                {game.competition_detail && (
+                  <p className="text-[11px] text-muted-foreground/80 font-medium mt-0.5 truncate">
+                    {game.competition_detail}
+                  </p>
+                )}
+              </div>
               <div className="flex flex-col items-center shrink-0">
                 <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
                   <Clock className="h-3.5 w-3.5 text-primary" />
