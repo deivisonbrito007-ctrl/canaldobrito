@@ -1,11 +1,10 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff } from "lucide-react";
+import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff, X } from "lucide-react";
 import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 import { NextGameHero } from "./NextGameHero";
-import { DayStatsBar } from "./DayStatsBar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 /* ── colour maps ── */
@@ -291,6 +290,7 @@ export const DailyGamesSection = () => {
   const [compFilter, setCompFilter] = useState<string | null>(null);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  const [openFilter, setOpenFilter] = useState<"sport" | "comp" | "channel" | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -344,6 +344,18 @@ export const DailyGamesSection = () => {
     return groups;
   }, [filteredGames]);
 
+  const liveCount = useMemo(() => (games || []).filter(isGameLive).length, [games]);
+
+  const hasActiveFilters = !!sportFilter || !!channelFilter || !!compFilter;
+  const toggleFilter = (cat: "sport" | "comp" | "channel") => setOpenFilter((prev) => (prev === cat ? null : cat));
+  const clearAll = () => { setSportFilter(null); setChannelFilter(null); setCompFilter(null); setOpenFilter(null); };
+
+  /* Active filter labels for chips */
+  const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
+  if (sportFilter) activeChips.push({ key: "sport", label: `${SPORT_EMOJI[sportFilter as SportType] || '⚽'} ${SPORT_LABEL[sportFilter as SportType] || sportFilter}`, onRemove: () => setSportFilter(null) });
+  if (compFilter) activeChips.push({ key: "comp", label: `🏆 ${compFilter}`, onRemove: () => setCompFilter(null) });
+  if (channelFilter) activeChips.push({ key: "channel", label: `📺 ${channelFilter}`, onRemove: () => setChannelFilter(null) });
+
   if (isLoading) return null;
 
   if (!games || games.length === 0) {
@@ -366,115 +378,205 @@ export const DailyGamesSection = () => {
     );
   }
 
-  const hasActiveFilters = !!sportFilter || !!channelFilter || !!compFilter;
-
   return (
     <section id="esportes" className="space-y-4">
-      {/* Header */}
+      {/* Header with integrated stats */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
           <Trophy className="h-5 w-5 text-primary" />
         </div>
         <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
-        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-2.5 py-0.5 tabular-nums">
+        <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5 tabular-nums">
           {filteredGames.length} jogos
         </span>
+        {liveCount > 0 && (
+          <span className="flex items-center gap-1 text-[10px] bg-destructive/15 text-destructive px-2 py-0.5 rounded-full font-bold animate-pulse border border-destructive/25">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
+            </span>
+            {liveCount} ao vivo
+          </span>
+        )}
       </div>
 
       {/* Hero — next upcoming game */}
       <NextGameHero games={games} />
 
-      {/* Stats bar */}
-      <DayStatsBar games={games} />
-
-      {/* Sport Filter — only show if more than 1 sport */}
-      {availableSports.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
-          <button
-            onClick={() => setSportFilter(null)}
-            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              !sportFilter
-                ? "bg-primary/15 text-primary border border-primary/30"
-                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            🏆 Todos
-          </button>
-          {availableSports.map((st) => (
+      {/* Compact accordion filters */}
+      <div className="space-y-2">
+        {/* Filter category buttons */}
+        <div className="flex items-center gap-2">
+          {availableSports.length > 1 && (
             <button
-              key={st}
-              onClick={() => setSportFilter(sportFilter === st ? null : st)}
-              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-                sportFilter === st
-                  ? "bg-primary/15 text-primary border border-primary/30"
-                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              onClick={() => toggleFilter("sport")}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                openFilter === "sport" || sportFilter
+                  ? "bg-primary/15 text-primary border-primary/30"
+                  : "bg-card/50 backdrop-blur border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"
               }`}
             >
-              {SPORT_EMOJI[st]} {SPORT_LABEL[st]}
+              {sportFilter ? `${SPORT_EMOJI[sportFilter as SportType]} ${SPORT_LABEL[sportFilter as SportType]}` : "Esporte"}
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${openFilter === "sport" ? "rotate-180" : ""}`} />
             </button>
-          ))}
-        </div>
-      )}
-
-      {/* Dynamic Competition Filter */}
-      {availableComps.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
-          <button
-            onClick={() => setCompFilter(null)}
-            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              !compFilter
-                ? "bg-primary/15 text-primary border border-primary/30"
-                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Todas
-          </button>
-          {availableComps.map((c) => (
+          )}
+          {availableComps.length > 1 && (
             <button
-              key={c.label}
-              onClick={() => setCompFilter(compFilter === c.label ? null : c.label)}
-              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] flex items-center gap-1.5 ${
-                compFilter === c.label
-                  ? "bg-primary/15 text-primary border border-primary/30"
-                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              onClick={() => toggleFilter("comp")}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                openFilter === "comp" || compFilter
+                  ? "bg-primary/15 text-primary border-primary/30"
+                  : "bg-card/50 backdrop-blur border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"
               }`}
             >
-              {c.label}
-              <span className="text-[9px] opacity-60 tabular-nums">{c.count}</span>
+              {compFilter || "Competição"}
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${openFilter === "comp" ? "rotate-180" : ""}`} />
             </button>
-          ))}
-        </div>
-      )}
-
-      {/* Dynamic Channel Filter */}
-      {availableChannels.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6">
-          <button
-            onClick={() => setChannelFilter(null)}
-            className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] ${
-              !channelFilter
-                ? "bg-secondary/40 text-foreground border border-border/30"
-                : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            📺 Todos
-          </button>
-          {availableChannels.map((ch) => (
+          )}
+          {availableChannels.length > 1 && (
             <button
-              key={ch.label}
-              onClick={() => setChannelFilter(channelFilter === ch.label ? null : ch.label)}
-              className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all min-h-[36px] flex items-center gap-1.5 ${
-                channelFilter === ch.label
-                  ? "bg-secondary/40 text-foreground border border-border/30"
-                  : "bg-card/40 backdrop-blur border border-border/20 text-muted-foreground hover:text-foreground"
+              onClick={() => toggleFilter("channel")}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                openFilter === "channel" || channelFilter
+                  ? "bg-primary/15 text-primary border-primary/30"
+                  : "bg-card/50 backdrop-blur border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"
               }`}
             >
-              {ch.label}
-              <span className="text-[9px] opacity-60 tabular-nums">{ch.count}</span>
+              {channelFilter ? `📺 ${channelFilter}` : "Canal"}
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${openFilter === "channel" ? "rotate-180" : ""}`} />
             </button>
-          ))}
+          )}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAll}
+              className="shrink-0 p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all border border-destructive/20"
+              title="Limpar filtros"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
-      )}
+
+        {/* Expanded filter pills (accordion — only one open at a time) */}
+        <AnimatePresence mode="wait">
+          {openFilter === "sport" && availableSports.length > 1 && (
+            <motion.div
+              key="sport-pills"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+                <button
+                  onClick={() => { setSportFilter(null); setOpenFilter(null); }}
+                  className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    !sportFilter ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Todos
+                </button>
+                {availableSports.map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => { setSportFilter(sportFilter === st ? null : st); setOpenFilter(null); }}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                      sportFilter === st ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {SPORT_EMOJI[st]} {SPORT_LABEL[st]}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {openFilter === "comp" && availableComps.length > 1 && (
+            <motion.div
+              key="comp-pills"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+                <button
+                  onClick={() => { setCompFilter(null); setOpenFilter(null); }}
+                  className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    !compFilter ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Todas
+                </button>
+                {availableComps.map((c) => (
+                  <button
+                    key={c.label}
+                    onClick={() => { setCompFilter(compFilter === c.label ? null : c.label); setOpenFilter(null); }}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+                      compFilter === c.label ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {c.label}
+                    <span className="text-[8px] opacity-50 tabular-nums">{c.count}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {openFilter === "channel" && availableChannels.length > 1 && (
+            <motion.div
+              key="channel-pills"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+                <button
+                  onClick={() => { setChannelFilter(null); setOpenFilter(null); }}
+                  className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    !channelFilter ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Todos
+                </button>
+                {availableChannels.map((ch) => (
+                  <button
+                    key={ch.label}
+                    onClick={() => { setChannelFilter(channelFilter === ch.label ? null : ch.label); setOpenFilter(null); }}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+                      channelFilter === ch.label ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {ch.label}
+                    <span className="text-[8px] opacity-50 tabular-nums">{ch.count}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Active filter chips */}
+        {activeChips.length > 0 && openFilter === null && (
+          <div className="flex gap-1.5 flex-wrap">
+            {activeChips.map((chip) => (
+              <button
+                key={chip.key}
+                onClick={chip.onRemove}
+                className="flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 rounded-lg px-2 py-1 hover:bg-primary/20 transition-all"
+              >
+                {chip.label}
+                <X className="h-2.5 w-2.5" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Grouped games — collapsible periods */}
       <div className="space-y-5">
@@ -501,7 +603,7 @@ export const DailyGamesSection = () => {
               Nenhum jogo{channelFilter ? ` em ${channelFilter}` : ""}{compFilter ? ` de ${compFilter}` : ""}
             </p>
             <button
-              onClick={() => { setSportFilter(null); setChannelFilter(null); setCompFilter(null); }}
+              onClick={clearAll}
               className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
             >
               Ver todos os jogos
