@@ -101,8 +101,13 @@ describe("isGameCurrentlyLive", () => {
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "tennis")).toBe(false);
   });
 
-  it("returns false after 25min for mma", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 15, 25));
+  it("returns true within 180min for mma", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 59));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "mma")).toBe(true);
+  });
+
+  it("returns false after 195min (180+buffer) for mma", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 18, 15));
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "mma")).toBe(false);
   });
 
