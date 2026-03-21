@@ -176,6 +176,7 @@ export const NovidadesCard = () => {
                       src={item.image_url}
                       alt=""
                       aria-hidden="true"
+                      loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110 sm:hidden"
                     />
                     {/* Main image */}
