@@ -1,14 +1,17 @@
 export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball';
 
-/** Exact regulation duration in minutes per sport (no extra time) */
+/** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
-  football: 90,
-  basketball: 48,
-  tennis: 180,
-  f1: 120,
-  mma: 25,
-  volleyball: 90,
+  football: 115,   // 90 + 15 halftime + 10 stoppage
+  basketball: 150, // 48 game + intervals + timeouts
+  tennis: 210,     // covers long matches
+  f1: 130,         // race + safety car margin
+  mma: 35,         // 5 rounds + intervals
+  volleyball: 120, // sets + tie-break margin
 };
+
+/** Extra buffer after duration ends to cover delays/overtime */
+export const LIVE_BUFFER_MINUTES = 15;
 
 /** Sport emoji map */
 export const SPORT_EMOJI: Record<SportType, string> = {
@@ -63,7 +66,7 @@ export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportTyp
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const duration = SPORT_DURATION[sportType] || 90;
+  const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   return nowMinutes >= gameMinutes && nowMinutes < gameMinutes + duration;
 }
@@ -79,7 +82,7 @@ export function getElapsedMinutes(gameTime: string, gameDate: string, sportType:
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const duration = SPORT_DURATION[sportType] || 90;
+  const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   const elapsed = nowMinutes - gameMinutes;
   if (elapsed < 0 || elapsed >= duration) return null;
