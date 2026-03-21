@@ -72,7 +72,7 @@ export const LiveNowSection = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06, duration: 0.3 }}
-                className="min-w-[260px] w-[75vw] max-w-[300px] shrink-0 snap-start"
+                className="min-w-[280px] w-[75vw] max-w-[340px] shrink-0 snap-start"
               >
                 <div className="rounded-2xl bg-card border border-destructive/20 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.15)]">
                   {/* Accent bar */}
@@ -92,32 +92,44 @@ export const LiveNowSection = () => {
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
                         </span>
                         <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
-                          {elapsed !== null ? `${elapsed}' ${emoji}` : "AO VIVO"}
+                          {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
                         </span>
                       </div>
                     </div>
 
                     {/* Teams */}
                     {(isF1 || isNonAdversarial(sportType) || !game.away_team) ? (
-                      <div className="text-center">
-                        <p className="text-[14px] font-bold text-foreground leading-tight font-body">
+                      <div className="text-center space-y-0.5">
+                        <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                           {game.home_team}
                           {game.away_team && game.away_team !== game.home_team && ` — ${game.away_team}`}
                         </p>
+                        {game.competition_detail && (
+                          <p className="text-[11px] text-muted-foreground/70 font-medium font-body truncate">
+                            {game.competition_detail}
+                          </p>
+                        )}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <p className="text-[14px] font-bold text-foreground flex-1 text-left truncate leading-tight font-body">
-                          {game.home_team}
-                        </p>
-                        <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
-                          <span className="text-[11px] font-extrabold text-destructive font-body">
-                            {sportType === 'tennis' || sportType === 'mma' ? 'VS' : 'X'}
-                          </span>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13px] font-bold text-foreground flex-1 text-left leading-tight font-body line-clamp-2">
+                            {game.home_team}
+                          </p>
+                          <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
+                            <span className="text-[11px] font-extrabold text-destructive font-body">
+                              {sportType === 'tennis' || sportType === 'mma' ? 'VS' : 'X'}
+                            </span>
+                          </div>
+                          <p className="text-[13px] font-bold text-foreground flex-1 text-right leading-tight font-body line-clamp-2">
+                            {game.away_team}
+                          </p>
                         </div>
-                        <p className="text-[14px] font-bold text-foreground flex-1 text-right truncate leading-tight font-body">
-                          {game.away_team}
-                        </p>
+                        {game.competition_detail && (
+                          <p className="text-[11px] text-muted-foreground/70 font-medium font-body truncate text-center">
+                            {game.competition_detail}
+                          </p>
+                        )}
                       </div>
                     )}
 
