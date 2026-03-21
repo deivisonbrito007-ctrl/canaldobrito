@@ -1,4 +1,4 @@
-import { useBannersByCategory, type BannerCategory } from "@/hooks/useBanners";
+import { useActiveBanners, type BannerCategory } from "@/hooks/useBanners";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -51,27 +51,8 @@ const BannerCard = ({ banner, index }: { banner: { id: string; image_url: string
   );
 };
 
-const CategorySection = ({ category, emoji, label }: { category: BannerCategory; emoji: string; label: string }) => {
-  const { data: banners, isLoading } = useBannersByCategory(category);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2.5 px-4 sm:px-6">
-          <span className="text-lg">{emoji}</span>
-          <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">{label}</h2>
-          <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
-        </div>
-        <div className="flex gap-3.5 overflow-hidden px-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[200px] rounded-xl w-[300px] sm:w-[360px] shrink-0" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!banners?.length) return null;
+const CategoryRow = ({ banners, emoji, label }: { banners: { id: string; image_url: string; title: string | null }[]; emoji: string; label: string }) => {
+  if (!banners.length) return null;
 
   return (
     <motion.section
@@ -95,56 +76,34 @@ const CategorySection = ({ category, emoji, label }: { category: BannerCategory;
   );
 };
 
-const CoverSection = () => {
-  const { data: banners, isLoading } = useBannersByCategory("cover");
+export const BannerSections = () => {
+  const { data: grouped, isLoading } = useActiveBanners();
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2.5 px-4 sm:px-6">
-          <span className="text-lg">📺</span>
-          <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">Destaques</h2>
-          <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
-        </div>
-        <div className="flex gap-3.5 overflow-hidden px-4">
-          {[1, 2].map((i) => (
-            <Skeleton key={i} className="h-[200px] rounded-xl w-[300px] sm:w-[360px] shrink-0" />
-          ))}
+      <div className="space-y-10">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5 px-4 sm:px-6">
+            <span className="text-lg">📺</span>
+            <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">Destaques</h2>
+          </div>
+          <div className="flex gap-3.5 overflow-hidden px-4">
+            {[1, 2].map((i) => (
+              <Skeleton key={i} className="h-[200px] rounded-xl w-[300px] sm:w-[360px] shrink-0" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!banners?.length) return null;
+  if (!grouped) return null;
 
-  return (
-    <motion.section
-      className="space-y-4"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-    >
-      <div className="flex items-center gap-2.5 px-4 sm:px-6">
-        <span className="text-lg">📺</span>
-        <h2 className="font-display text-base sm:text-lg font-extrabold text-foreground tracking-tight">Destaques</h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
-      </div>
-
-      <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
-        {banners.map((banner, idx) => (
-          <BannerCard key={banner.id} banner={banner} index={idx} />
-        ))}
-      </div>
-    </motion.section>
-  );
-};
-
-export const BannerSections = () => {
   return (
     <div className="space-y-10">
-      <CoverSection />
+      <CategoryRow banners={grouped.cover} emoji="📺" label="Destaques" />
       {SPORTS_CATEGORIES.map((sport) => (
-        <CategorySection key={sport.key} category={sport.key} emoji={sport.emoji} label={sport.label} />
+        <CategoryRow key={sport.key} banners={grouped[sport.key]} emoji={sport.emoji} label={sport.label} />
       ))}
     </div>
   );
