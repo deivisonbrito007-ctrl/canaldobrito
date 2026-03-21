@@ -85,6 +85,7 @@ export const LiveNowSection = () => {
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider truncate max-w-[55%] font-body">
                         {emoji} {game.competition}
+                        {game.competition_detail && ` · ${game.competition_detail}`}
                       </p>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="relative flex h-2 w-2">
@@ -110,28 +111,39 @@ export const LiveNowSection = () => {
                           </p>
                         )}
                       </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13px] font-bold text-foreground flex-1 text-left leading-tight font-body line-clamp-2">
+                    ) : (() => {
+                      const isLongNames = game.home_team.length > 15 || (game.away_team?.length || 0) > 15;
+                      const separator = sportType === 'tennis' || sportType === 'mma' ? 'VS' : 'X';
+                      return isLongNames ? (
+                        <div className="space-y-1 text-center">
+                          <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                             {game.home_team}
                           </p>
-                          <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
-                            <span className="text-[11px] font-extrabold text-destructive font-body">
-                              {sportType === 'tennis' || sportType === 'mma' ? 'VS' : 'X'}
-                            </span>
+                          <div className="flex justify-center">
+                            <div className="px-2 py-0.5 rounded-lg bg-destructive/15 border border-destructive/25">
+                              <span className="text-[10px] font-extrabold text-destructive font-body">{separator}</span>
+                            </div>
                           </div>
-                          <p className="text-[13px] font-bold text-foreground flex-1 text-right leading-tight font-body line-clamp-2">
+                          <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                             {game.away_team}
                           </p>
                         </div>
-                        {game.competition_detail && (
-                          <p className="text-[11px] text-muted-foreground/70 font-medium font-body truncate text-center">
-                            {game.competition_detail}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <p className="text-[13px] font-bold text-foreground flex-1 text-left leading-tight font-body line-clamp-2">
+                              {game.home_team}
+                            </p>
+                            <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
+                              <span className="text-[11px] font-extrabold text-destructive font-body">{separator}</span>
+                            </div>
+                            <p className="text-[13px] font-bold text-foreground flex-1 text-right leading-tight font-body line-clamp-2">
+                              {game.away_team}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Time + Channels */}
                     <div className="flex items-center justify-between gap-2">
