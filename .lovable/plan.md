@@ -1,35 +1,34 @@
 
 
-# Melhorar Carregamento da Página
+# Aplicar Design do Portal no Admin + Correções
 
-## Problemas Identificados
+## Problemas Encontrados
 
-1. **Google Fonts via CSS @import** — bloqueia renderização até baixar as fontes
-2. **4 componentes buscam `daily_games` separadamente** — Hero, AppNavbar, LiveFeedSection, LiveEventsSection todos chamam `useDailyGames(today)`. React Query deduplica, mas cada um cria listeners e re-renders independentes
-3. **BannerSections faz 7 queries separadas** (cover + 5 categorias + football_guide), todas retornando vazio atualmente — requests desnecessários
-4. **framer-motion importado em 4+ componentes da home** — bundle pesado carregado eager
-5. **Seções abaixo do fold (NovidadesCard, PromoStrip, BannerSections) carregam imediatamente** — sem lazy loading
+1. **AdminWhatsApp** usa `glass-card` em vez de `glass-panel` (inconsistente com todas as outras páginas admin)
+2. **AdminWhatsApp** usa classe `animate-float-in` que nao existe no CSS
+3. **AdminWhatsApp** header usa estilo diferente (`font-display text-lg`) em vez do padrão `glass-panel` com icone usado nas outras páginas
+4. **AdminLayout** nao tem os ambient blobs verdes do portal (efeito premium da marca)
+5. **AdminLayout** nao tem o grain overlay do portal
+6. Admin nao tem o efeito de glow sutil da marca verde
 
-## Plano de Otimização
+## Plano
 
-### 1. Mover Google Fonts para `<link>` no `index.html`
-Substituir o `@import url(...)` no `src/index.css` por tags `<link rel="preconnect">` e `<link rel="stylesheet">` no `index.html`. Isso permite download paralelo sem bloquear o CSS.
+### 1. Adicionar Ambient Blobs + Grain ao AdminLayout
+Inserir os mesmos blobs verdes animados e o grain overlay que o portal usa, mas com opacidade reduzida para nao competir com o conteudo admin:
+- Blob superior-direito (opacity 0.04 em vez de 0.06)
+- Blob inferior-esquerdo (opacity 0.03 em vez de 0.04)
+- Grain overlay
 
-### 2. Lazy load das seções abaixo do fold na Home
-No `Index.tsx`, envolver `NovidadesCard`, `PromoStrip` e `BannerSections` com `lazy()` + `Suspense`, similar ao que já é feito com `HighlightsTab` e `ScheduleTab`.
+### 2. Corrigir AdminWhatsApp
+- Trocar todas as `glass-card` por `glass-panel` para consistencia
+- Remover `animate-float-in` inexistente
+- Reestruturar header para usar o padrao de panel com icone (igual AdminConfiguracoes, AdminFilmes, etc.)
+- Agrupar "Link do Site" e "Mensagem Personalizada" dentro de panels com header padrao
 
-### 3. Prefetch da query `daily_games` no QueryClient
-Configurar `staleTime: 60000` no `useDailyGames` para que React Query reutilize o cache entre os 4 componentes sem refetch. Já tem `refetchInterval: 60000`, mas falta `staleTime` — sem ele, cada mount dispara um refetch.
+### 3. Adicionar glow sutil no header do AdminLayout
+Aplicar `glow-primary-subtle` (shadow verde sutil) no header, alinhando com a estética premium do portal.
 
-### 4. Adicionar `loading="lazy"` nas imagens do NovidadesCard
-As imagens do carrossel de novidades não têm `loading="lazy"`.
-
-### 5. Corrigir warning do `forwardRef` no console
-O `GameCard` e `AnimatePresence` estão gerando warnings de ref. Envolver `GameCard` com `React.forwardRef` para eliminar o erro.
-
-## Resultado Esperado
-- Fonts carregam em paralelo (não bloqueiam)
-- Menos re-renders com `staleTime` no cache
-- Seções abaixo do fold carregam sob demanda
-- Console limpo sem warnings
+## Arquivos Modificados
+- `src/pages/AdminLayout.tsx` — blobs, grain, glow no header
+- `src/pages/admin/AdminWhatsApp.tsx` — glass-card → glass-panel, fix classes, padronizar headers
 
