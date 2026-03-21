@@ -35,9 +35,16 @@ const AdminLayout = () => {
   const currentValue = currentTab?.value || "dashboard";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] to-[#0d1117] admin-scrollbar">
+    <div className="min-h-screen bg-gradient-to-b from-background to-[hsl(var(--surface))] admin-scrollbar relative">
+      {/* Ambient Blobs + Grain */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] rounded-full blur-[120px] bg-primary/[0.04] animate-blob-a atm-blob" />
+        <div className="absolute -bottom-[10%] -left-[10%] w-[35%] h-[35%] rounded-full blur-[100px] bg-primary/[0.03] animate-blob-b atm-blob" />
+        <div className="grain-overlay" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/[0.06]">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border glow-primary-subtle">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
           {/* Left */}
           <div className="flex items-center gap-2 sm:gap-3">
