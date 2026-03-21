@@ -1,4 +1,6 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff, X } from "lucide-react";
@@ -377,7 +379,7 @@ export const DailyGamesSection = () => {
           <div className="p-4 rounded-2xl bg-muted/20 border border-border/20">
             <CalendarOff className="h-8 w-8 text-muted-foreground/40" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground/60">Nenhum jogo programado para hoje</p>
+          <p className="text-sm font-medium text-muted-foreground/60">Nenhum jogo programado para {format(new Date(today + "T12:00:00"), "EEEE, d 'de' MMM", { locale: ptBR })}</p>
           <p className="text-xs text-muted-foreground/40">Volte mais tarde para conferir a agenda</p>
         </div>
       </section>
@@ -394,6 +396,9 @@ export const DailyGamesSection = () => {
         <h2 className="font-display text-base sm:text-xl font-bold text-foreground tracking-tight">Programação</h2>
         <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
           {filteredGames.length} jogos
+        </span>
+        <span className="text-[10px] text-muted-foreground/60 capitalize font-medium">
+          {format(new Date(today + "T12:00:00"), "EEE · d MMM", { locale: ptBR })}
         </span>
         {liveCount > 0 && (
           <span className="flex items-center gap-1 text-[10px] bg-destructive/15 text-destructive px-2 py-0.5 rounded-full font-bold animate-pulse border border-destructive/25">
