@@ -42,9 +42,21 @@ Deno.serve(async (req) => {
       console.error("Error activating daily_games:", gamesError);
     }
 
+    // Cleanup: remove games from past dates
+    const { data: deletedGames, error: cleanupError } = await supabase
+      .from("daily_games")
+      .delete()
+      .lt("date", new Date().toISOString().split("T")[0])
+      .select("id");
+
+    if (cleanupError) {
+      console.error("Error cleaning old games:", cleanupError);
+    }
+
     const result = {
       activated_banners: activatedBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
+      cleaned_old_games: deletedGames?.length || 0,
       checked_at: new Date().toISOString(),
     };
 
