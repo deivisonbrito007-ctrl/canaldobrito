@@ -72,9 +72,11 @@ const Index = () => {
             <CategoryIconsCarousel />
             <LiveFeedSection />
             <LiveEventsSection />
-            <NovidadesCard />
-            <PromoStrip />
-            <BannerSections />
+            <Suspense fallback={null}>
+              <LazyNovidadesCard />
+              <LazyPromoStrip />
+              <LazyBannerSections />
+            </Suspense>
           </div>
         )}
       </main>
