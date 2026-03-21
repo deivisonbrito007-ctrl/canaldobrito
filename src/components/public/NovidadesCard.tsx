@@ -15,6 +15,7 @@ const getBadgeLabel = (badge_type: string) => {
 export const NovidadesCard = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
   const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -30,6 +31,7 @@ export const NovidadesCard = () => {
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
+      setDirection(1);
       setCurrent((c) => (c + 1) % (total || 1));
     }, 5000);
   }, [total]);
@@ -39,13 +41,14 @@ export const NovidadesCard = () => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [total, startTimer]);
 
-  const goTo = (i: number) => {
+  const goTo = (i: number, dir?: number) => {
+    setDirection(dir ?? (i > safeIndex ? 1 : -1));
     setCurrent(i);
     startTimer();
   };
 
-  const prev = () => goTo((safeIndex - 1 + total) % total);
-  const next = () => goTo((safeIndex + 1) % total);
+  const prev = () => goTo((safeIndex - 1 + total) % total, -1);
+  const next = () => goTo((safeIndex + 1) % total, 1);
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchRef.current = e.touches[0].clientX;
@@ -85,42 +88,67 @@ export const NovidadesCard = () => {
   const item = items[safeIndex];
   if (!item) return null;
 
+  const variants = {
+    enter: (dir: number) => ({ opacity: 0, x: dir * 60, scale: 0.97 }),
+    center: { opacity: 1, x: 0, scale: 1 },
+    exit: (dir: number) => ({ opacity: 0, x: dir * -60, scale: 0.97 }),
+  };
+
   return (
     <section className="px-4 animate-fade-up stagger-6 space-y-3">
-      {/* Header */}
+      {/* Header with arrows */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-foreground font-body">
           Novidades <span className="text-primary">Canal do Brito</span>
         </h3>
         {total > 1 && (
-          <span className="text-[10px] text-muted-foreground font-body tabular-nums">
-            {safeIndex + 1}/{total}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground font-body tabular-nums">
+              {safeIndex + 1}/{total}
+            </span>
+            <button
+              onClick={prev}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={next}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+              aria-label="Próximo"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         )}
       </div>
 
+      {/* Card */}
       <div
         className="relative rounded-2xl overflow-hidden bg-surface border border-border cursor-pointer transition-all duration-200 hover:border-primary/20"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onClick={handleCardClick}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={item.id}
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.3 }}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto]">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_280px]">
               {/* Content left */}
-              <div className="p-5 space-y-3 flex flex-col justify-center">
+              <div className="p-6 sm:py-8 sm:pl-8 sm:pr-6 space-y-3.5 flex flex-col justify-center">
                 <span className="inline-flex self-start items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
                   {getBadgeLabel(item.badge_type)}
                 </span>
 
-                <h3 className="font-display text-3xl sm:text-4xl text-foreground leading-none tracking-wide">
+                <h3 className="font-display text-3xl sm:text-5xl text-foreground leading-none tracking-wide">
                   {item.title.toUpperCase()}
                 </h3>
 
@@ -131,29 +159,31 @@ export const NovidadesCard = () => {
                 )}
 
                 <div className="flex gap-2 pt-1">
-                  <button className="bg-primary text-primary-foreground text-[11px] font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity font-body">
+                  <button className="bg-primary text-primary-foreground text-[11px] font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body">
                     Assistir agora
                   </button>
-                  <button className="border border-border text-foreground text-[11px] font-bold px-4 py-2 rounded-lg hover:bg-surface-2 transition-colors font-body">
+                  <button className="border border-border text-foreground text-[11px] font-bold px-5 py-2.5 rounded-full hover:bg-surface-2 transition-colors font-body">
                     + Minha lista
                   </button>
                 </div>
               </div>
 
-              {/* Poster right */}
-              <div className="relative w-full sm:w-[220px] min-h-[180px] sm:min-h-[280px] overflow-hidden">
-                <span className="absolute inset-0 flex items-center justify-center font-display text-[100px] text-foreground/[0.04] leading-none select-none pointer-events-none">
-                  {item.title.split(" ")[0]}
-                </span>
+              {/* Poster right — larger, better positioned */}
+              <div className="relative min-h-[220px] sm:min-h-[320px] overflow-hidden">
+                {/* Gradient blend into left content */}
+                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-surface to-transparent z-[2] hidden sm:block" />
 
                 {item.image_url ? (
-                  <img
+                  <motion.img
                     src={item.image_url}
                     alt={item.title}
-                    className="absolute inset-0 w-full h-full object-contain z-[1]"
+                    className="absolute inset-0 w-full h-full object-cover sm:object-contain z-[1]"
+                    initial={{ scale: 1.08, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center bg-surface-2">
                     <ImageOff className="h-10 w-10 text-muted-foreground/20" />
                   </div>
                 )}
@@ -161,24 +191,6 @@ export const NovidadesCard = () => {
             </div>
           </motion.div>
         </AnimatePresence>
-
-        {/* Arrow buttons (desktop) */}
-        {total > 1 && (
-          <>
-            <button
-              onClick={(e) => { e.stopPropagation(); prev(); }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-background/60 border border-border backdrop-blur-sm text-foreground hover:bg-background/80 transition-colors z-10"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); next(); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-background/60 border border-border backdrop-blur-sm text-foreground hover:bg-background/80 transition-colors z-10"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </>
-        )}
       </div>
 
       {/* Dots */}
