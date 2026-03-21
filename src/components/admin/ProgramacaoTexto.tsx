@@ -35,7 +35,15 @@ ATP e WTA
 
 GP da Arábia Saudita
 🏎️ Fórmula 1 (Classificação) / ⏰ 13h00
-📺 Band, BandSports`;
+📺 Band, BandSports
+
+UFC 315 (Preliminar)
+🥊 MMA (Prelims) / ⏰ 19h00
+📺 UFC Fight Pass
+
+UFC 315 (Card Principal)
+🥊 MMA (Main Card) / ⏰ 23h00
+📺 Combate`;
 
 const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
 

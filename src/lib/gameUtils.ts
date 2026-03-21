@@ -6,7 +6,7 @@ export const SPORT_DURATION: Record<SportType, number> = {
   basketball: 150, // 48 game + intervals + timeouts
   tennis: 210,     // covers long matches
   f1: 130,         // race + safety car margin
-  mma: 35,         // 5 rounds + intervals
+  mma: 180,        // full card (prelims or main) ~3h
   volleyball: 120, // sets + tie-break margin
 };
 
@@ -34,7 +34,7 @@ export const SPORT_LABEL: Record<SportType, string> = {
 };
 
 /** Sports that don't have two adversarial teams (e.g. motorsport) */
-const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis'];
+const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
 
 /** Detect sport type from competition name */

@@ -76,13 +76,13 @@ describe("isGameCurrentlyLive", () => {
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "football")).toBe(true);
   });
 
-  it("returns false after 90min for football", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 16, 30));
+  it("returns false after football duration+buffer (130min)", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 10)); // 130min after 15:00
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "football")).toBe(false);
   });
 
-  it("returns false after 48min for basketball", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 15, 49));
+  it("returns false after basketball duration+buffer (165min)", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 45)); // 165min after 15:00
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "basketball")).toBe(false);
   });
 
@@ -96,13 +96,18 @@ describe("isGameCurrentlyLive", () => {
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "tennis")).toBe(true);
   });
 
-  it("returns false after 180min for tennis", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 18, 0));
+  it("returns false after tennis duration+buffer (225min)", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 18, 45)); // 225min after 15:00
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "tennis")).toBe(false);
   });
 
-  it("returns false after 25min for mma", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 15, 25));
+  it("returns true within 180min for mma", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 59));
+    expect(isGameCurrentlyLive("15:00", "2026-03-19", "mma")).toBe(true);
+  });
+
+  it("returns false after 195min (180+buffer) for mma", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 18, 15));
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "mma")).toBe(false);
   });
 
@@ -136,8 +141,8 @@ describe("getElapsedMinutes", () => {
     expect(getElapsedMinutes("15:00", "2026-03-19", "football")).toBe(45);
   });
 
-  it("returns null after basketball duration", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 15, 49));
+  it("returns null after basketball duration+buffer", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 45)); // 165min after 15:00
     expect(getElapsedMinutes("15:00", "2026-03-19", "basketball")).toBe(null);
   });
 
