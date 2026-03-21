@@ -3,7 +3,7 @@ import { useDailyGames } from "@/hooks/useDailyGames";
 import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Check, MessageCircle, Link2 } from "lucide-react";
+import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -60,7 +60,7 @@ const MessageCard = ({ template, siteUrl }: { template: typeof MESSAGE_TEMPLATES
   };
 
   return (
-    <div className="glass-card rounded-xl p-4 space-y-3 border border-border/20">
+    <div className="glass-panel rounded-xl p-4 space-y-3">
       <span className="text-sm font-bold text-foreground">{template.label}</span>
       <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
         {finalText}
@@ -81,7 +81,6 @@ const AdminWhatsApp = () => {
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
 
-  // Build games-of-the-day text
   const gamesText = (games ?? []).length > 0
     ? `⚽ *Jogos de Hoje — ${formattedDate}*\n\n` +
       (games ?? []).map(g => `⏰ ${g.game_time.slice(0, 5)} — ${g.home_team} x ${g.away_team} (${g.competition})`).join("\n") +
@@ -93,24 +92,30 @@ const AdminWhatsApp = () => {
     : "";
 
   return (
-    <div className="space-y-8 animate-float-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-primary" />
-          WhatsApp — Compartilhamento
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Copie textos prontos ou personalize sua mensagem para compartilhar.
-        </p>
+      <div className="glass-panel rounded-xl p-4 sm:p-5 admin-stagger-1">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+            <MessageCircle className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-foreground">WhatsApp — Compartilhamento</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Copie textos prontos ou personalize sua mensagem para compartilhar.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Quick Link Copy */}
-      <div className="glass-card rounded-xl p-4 space-y-3 border border-border/20">
-        <span className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-primary" />
-          Link do Site
-        </span>
+      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-2">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <Link2 className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-sm font-bold text-foreground">Link do Site</span>
+        </div>
         <div className="flex items-center gap-2">
           <code className="flex-1 text-xs text-muted-foreground bg-background/50 rounded-lg px-3 py-2.5 truncate">{siteUrl}</code>
           <CopyButton text={siteUrl} label="Copiar Link" />
@@ -119,7 +124,7 @@ const AdminWhatsApp = () => {
 
       {/* Games of the Day */}
       {gamesText && (
-        <div className="glass-card rounded-xl p-4 space-y-3 border border-border/20">
+        <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
           <span className="text-sm font-bold text-foreground">⚽ Jogos do Dia ({(games ?? []).length})</span>
           <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[200px] overflow-y-auto">
             {gamesText}
@@ -135,8 +140,13 @@ const AdminWhatsApp = () => {
       )}
 
       {/* Custom Message */}
-      <div className="glass-card rounded-xl p-4 space-y-3 border border-border/20">
-        <span className="text-sm font-bold text-foreground">✏️ Mensagem Personalizada</span>
+      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-4">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <FileText className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-sm font-bold text-foreground">Mensagem Personalizada</span>
+        </div>
         <Textarea
           placeholder="Digite sua mensagem aqui… o link será adicionado automaticamente."
           value={customMsg}
@@ -163,11 +173,13 @@ const AdminWhatsApp = () => {
       </div>
 
       {/* Pre-built Templates */}
-      <div>
-        <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-          <Copy className="h-4 w-4 text-primary" />
-          Textos Prontos
-        </h3>
+      <div className="admin-stagger-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <Copy className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-sm font-bold text-foreground">Textos Prontos</span>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {MESSAGE_TEMPLATES.map((t) => (
             <MessageCard key={t.id} template={t} siteUrl={siteUrl} />
