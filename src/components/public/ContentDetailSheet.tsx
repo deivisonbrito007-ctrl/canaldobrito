@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,7 +26,7 @@ const findYouTubeTrailer = (results: any[]) => {
   );
 };
 
-export const ContentDetailSheet = React.forwardRef<HTMLDivElement, ContentDetailSheetProps>(({ open, onClose, item }, ref) => {
+export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetProps) => {
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [loadingTrailer, setLoadingTrailer] = useState(false);
   const [expandOverview, setExpandOverview] = useState(false);
@@ -212,5 +212,4 @@ export const ContentDetailSheet = React.forwardRef<HTMLDivElement, ContentDetail
       )}
     </AnimatePresence>
   );
-});
-ContentDetailSheet.displayName = "ContentDetailSheet";
+};
