@@ -69,6 +69,7 @@ export const LiveEventsSection = () => {
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider truncate max-w-[55%] font-body">
                       {emoji} {event.competition}
+                      {event.competition_detail && ` · ${event.competition_detail}`}
                     </p>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="relative flex h-2 w-2">
