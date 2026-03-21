@@ -89,9 +89,9 @@ export const NovidadesCard = () => {
   if (!item) return null;
 
   const variants = {
-    enter: (dir: number) => ({ opacity: 0, x: dir * 60, scale: 0.97 }),
+    enter: (dir: number) => ({ opacity: 0, x: dir * 40, scale: 0.98 }),
     center: { opacity: 1, x: 0, scale: 1 },
-    exit: (dir: number) => ({ opacity: 0, x: dir * -60, scale: 0.97 }),
+    exit: (dir: number) => ({ opacity: 0, x: dir * -40, scale: 0.98 }),
   };
 
   return (
@@ -102,31 +102,31 @@ export const NovidadesCard = () => {
           Novidades <span className="text-primary">Canal do Brito</span>
         </h3>
         {total > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground font-body tabular-nums">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground font-body tabular-nums mr-1">
               {safeIndex + 1}/{total}
             </span>
             <button
               onClick={prev}
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors min-h-[44px] min-w-[44px]"
               aria-label="Anterior"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={next}
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors min-h-[44px] min-w-[44px]"
               aria-label="Próximo"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         )}
       </div>
 
-      {/* Card */}
+      {/* Card — stacked on mobile, side-by-side on desktop */}
       <div
-        className="relative rounded-2xl overflow-hidden bg-surface border border-border cursor-pointer transition-all duration-200 hover:border-primary/20"
+        className="relative rounded-2xl overflow-hidden bg-surface border border-border cursor-pointer transition-all duration-200 active:scale-[0.99]"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onClick={handleCardClick}
@@ -139,54 +139,58 @@ export const NovidadesCard = () => {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_280px]">
-              {/* Content left */}
-              <div className="p-6 sm:py-8 sm:pl-8 sm:pr-6 space-y-3.5 flex flex-col justify-center">
-                <span className="inline-flex self-start items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
-                  {getBadgeLabel(item.badge_type)}
-                </span>
-
-                <h3 className="font-display text-3xl sm:text-5xl text-foreground leading-none tracking-wide">
-                  {item.title.toUpperCase()}
-                </h3>
-
-                {item.overview && (
-                  <p className="text-xs text-muted-foreground font-body line-clamp-2 leading-relaxed max-w-md">
-                    {item.overview}
-                  </p>
-                )}
-
-                <div className="flex gap-2 pt-1">
-                  <button className="bg-primary text-primary-foreground text-[11px] font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body">
-                    Assistir agora
-                  </button>
-                  <button className="border border-border text-foreground text-[11px] font-bold px-5 py-2.5 rounded-full hover:bg-surface-2 transition-colors font-body">
-                    + Minha lista
-                  </button>
-                </div>
-              </div>
-
-              {/* Poster right — larger, better positioned */}
-              <div className="relative min-h-[220px] sm:min-h-[320px] overflow-hidden">
-                {/* Gradient blend into left content */}
-                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-surface to-transparent z-[2] hidden sm:block" />
+            {/* Mobile: poster on top, content below */}
+            {/* Desktop: content left, poster right */}
+            <div className="flex flex-col sm:grid sm:grid-cols-[1fr_260px]">
+              {/* Poster — top on mobile, right on desktop */}
+              <div className="relative h-[180px] sm:h-auto sm:min-h-[300px] overflow-hidden sm:order-2">
+                {/* Gradient bottom fade (mobile) */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-surface to-transparent z-[2] sm:hidden" />
+                {/* Gradient left fade (desktop) */}
+                <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-surface to-transparent z-[2] hidden sm:block" />
 
                 {item.image_url ? (
                   <motion.img
                     src={item.image_url}
                     alt={item.title}
                     className="absolute inset-0 w-full h-full object-cover sm:object-contain z-[1]"
-                    initial={{ scale: 1.08, opacity: 0 }}
+                    initial={{ scale: 1.06, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-surface-2">
-                    <ImageOff className="h-10 w-10 text-muted-foreground/20" />
+                    <ImageOff className="h-8 w-8 text-muted-foreground/20" />
                   </div>
                 )}
+              </div>
+
+              {/* Content — below poster on mobile, left on desktop */}
+              <div className="p-4 sm:py-8 sm:pl-7 sm:pr-4 space-y-3 flex flex-col justify-center sm:order-1">
+                <span className="inline-flex self-start items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
+                  {getBadgeLabel(item.badge_type)}
+                </span>
+
+                <h3 className="font-display text-2xl sm:text-4xl text-foreground leading-none tracking-wide">
+                  {item.title.toUpperCase()}
+                </h3>
+
+                {item.overview && (
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-body line-clamp-2 leading-relaxed">
+                    {item.overview}
+                  </p>
+                )}
+
+                <div className="flex gap-2 pt-0.5">
+                  <button className="bg-primary text-primary-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body min-h-[44px]">
+                    Assistir agora
+                  </button>
+                  <button className="border border-border text-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:bg-surface-2 transition-colors font-body min-h-[44px]">
+                    + Minha lista
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -200,7 +204,7 @@ export const NovidadesCard = () => {
             <button
               key={i}
               onClick={() => goTo(i)}
-              className="p-1"
+              className="p-1.5 min-h-[44px] min-w-[28px] flex items-center justify-center"
               aria-label={`Slide ${i + 1}`}
             >
               <span
