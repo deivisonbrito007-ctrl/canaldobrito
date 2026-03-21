@@ -379,7 +379,7 @@ export const DailyGamesSection = () => {
           <div className="p-4 rounded-2xl bg-muted/20 border border-border/20">
             <CalendarOff className="h-8 w-8 text-muted-foreground/40" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground/60">Nenhum jogo programado para hoje</p>
+          <p className="text-sm font-medium text-muted-foreground/60">Nenhum jogo programado para {format(new Date(today + "T12:00:00"), "EEEE, d 'de' MMM", { locale: ptBR })}</p>
           <p className="text-xs text-muted-foreground/40">Volte mais tarde para conferir a agenda</p>
         </div>
       </section>
