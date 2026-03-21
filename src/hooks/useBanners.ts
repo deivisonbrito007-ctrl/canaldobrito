@@ -26,6 +26,28 @@ export const CATEGORY_LABELS: Record<BannerCategory, string> = {
 
 export const CATEGORY_LIST: BannerCategory[] = ["cover", "football", "basketball", "ufc", "other_sports", "football_guide"];
 
+/** Single query fetching all active banners, grouped client-side */
+export const useActiveBanners = () =>
+  useQuery({
+    queryKey: ["banners", "active-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("*")
+        .eq("active", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      const grouped: Record<BannerCategory, Banner[]> = {
+        cover: [], football: [], basketball: [], ufc: [], other_sports: [], football_guide: [],
+      };
+      for (const b of (data as Banner[])) {
+        if (grouped[b.category]) grouped[b.category].push(b);
+      }
+      return grouped;
+    },
+    staleTime: 60_000,
+  });
+
 export const useBannersByCategory = (category: BannerCategory) =>
   useQuery({
     queryKey: ["banners", category],
