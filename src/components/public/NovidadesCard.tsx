@@ -12,6 +12,26 @@ const getBadgeLabel = (badge_type: string) => {
   return "🔥 Novidade";
 };
 
+const getContentTypeLabel = (content_type: string) => {
+  if (content_type === "movie") return "🎬 Filme";
+  if (content_type === "series" || content_type === "tv") return "📺 Série";
+  return null;
+};
+
+const MetadataRow = ({ item }: { item: { content_type: string; year?: number | null; genres?: string | null } }) => {
+  const typeLabel = getContentTypeLabel(item.content_type);
+  const parts: string[] = [];
+  if (typeLabel) parts.push(typeLabel);
+  if (item.year) parts.push(String(item.year));
+  if (item.genres) parts.push(item.genres.split(",").slice(0, 2).join(", "));
+  if (parts.length === 0) return null;
+  return (
+    <p className="text-[11px] text-muted-foreground font-body">
+      {parts.join(" · ")}
+    </p>
+  );
+};
+
 export const NovidadesCard = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
   const [current, setCurrent] = useState(0);
@@ -175,49 +195,39 @@ export const NovidadesCard = () => {
               </div>
 
               {/* Mobile content — below poster */}
-              <div className="flex flex-col px-4 py-3 space-y-2.5 sm:hidden">
-                <span className="inline-flex self-start items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
-                  {getBadgeLabel(item.badge_type)}
-                </span>
+              <div className="flex flex-col px-4 py-3 space-y-2 sm:hidden">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
+                    {getBadgeLabel(item.badge_type)}
+                  </span>
+                </div>
                 <h3 className="font-display text-2xl text-foreground leading-none tracking-wide">
                   {item.title.toUpperCase()}
                 </h3>
+                <MetadataRow item={item} />
                 {item.overview && (
                   <p className="text-[11px] text-muted-foreground font-body line-clamp-2 leading-relaxed">
                     {item.overview}
                   </p>
                 )}
-                <div className="flex gap-2 pt-0.5">
-                  <button className="bg-primary text-primary-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body min-h-[44px]">
-                    Assistir agora
-                  </button>
-                  <button className="border border-border text-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:bg-surface-2 transition-colors font-body min-h-[44px]">
-                    + Minha lista
-                  </button>
-                </div>
               </div>
 
               {/* Desktop content — left side */}
               <div className="hidden sm:flex p-4 sm:py-8 sm:pl-7 sm:pr-4 space-y-3 flex-col justify-center sm:order-1">
-                <span className="inline-flex self-start items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
-                  {getBadgeLabel(item.badge_type)}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
+                    {getBadgeLabel(item.badge_type)}
+                  </span>
+                </div>
                 <h3 className="font-display text-4xl text-foreground leading-none tracking-wide">
                   {item.title.toUpperCase()}
                 </h3>
+                <MetadataRow item={item} />
                 {item.overview && (
                   <p className="text-xs text-muted-foreground font-body line-clamp-2 leading-relaxed">
                     {item.overview}
                   </p>
                 )}
-                <div className="flex gap-2 pt-0.5">
-                  <button className="bg-primary text-primary-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body min-h-[44px]">
-                    Assistir agora
-                  </button>
-                  <button className="border border-border text-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:bg-surface-2 transition-colors font-body min-h-[44px]">
-                    + Minha lista
-                  </button>
-                </div>
               </div>
             </div>
           </motion.div>
