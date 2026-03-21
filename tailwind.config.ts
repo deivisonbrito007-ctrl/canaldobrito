@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Outfit", "sans-serif"],
+        sans: ["Syne", "sans-serif"],
         display: ["Bebas Neue", "sans-serif"],
-        body: ["Outfit", "sans-serif"],
+        body: ["Syne", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -46,6 +46,12 @@ export default {
         },
         accent2: "hsl(var(--accent2))",
         accent3: "hsl(var(--accent3))",
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          2: "hsl(var(--surface2))",
+        },
+        "green-dim": "hsl(var(--green-dim))",
+        "green-border": "hsl(var(--green-border))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
