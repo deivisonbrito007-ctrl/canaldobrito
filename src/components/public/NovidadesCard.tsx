@@ -144,7 +144,7 @@ export const NovidadesCard = () => {
             {/* Mobile: cinematic overlay | Desktop: side-by-side */}
             <div className="relative sm:grid sm:grid-cols-[1fr_260px]">
               {/* Poster */}
-              <div className="relative h-[300px] sm:h-auto sm:min-h-[300px] overflow-hidden sm:order-2">
+              <div className="relative h-[280px] sm:h-auto sm:min-h-[300px] overflow-hidden sm:order-2 bg-surface">
                 {/* Gradient left fade (desktop) */}
                 <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-surface to-transparent z-[2] hidden sm:block" />
 
@@ -152,7 +152,7 @@ export const NovidadesCard = () => {
                   <motion.img
                     src={item.image_url}
                     alt={item.title}
-                    className="absolute inset-0 w-full h-full object-cover object-top sm:object-contain sm:object-center z-[1]"
+                    className="absolute inset-0 w-full h-full object-contain object-top sm:object-contain sm:object-center z-[1]"
                     initial={{ scale: 1.06, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
