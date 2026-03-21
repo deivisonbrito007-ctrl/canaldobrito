@@ -1,6 +1,6 @@
 import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { ContentDetailSheet } from "./ContentDetailSheet";
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ImageOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -18,7 +18,7 @@ const getContentTypeLabel = (content_type: string) => {
   return null;
 };
 
-const MetadataRow = ({ item }: { item: { content_type: string; year?: number | null; genres?: string | null } }) => {
+const MetadataRow = React.forwardRef<HTMLParagraphElement, { item: { content_type: string; year?: number | null; genres?: string | null } }>(({ item }, ref) => {
   const typeLabel = getContentTypeLabel(item.content_type);
   const parts: string[] = [];
   if (typeLabel) parts.push(typeLabel);
@@ -26,11 +26,12 @@ const MetadataRow = ({ item }: { item: { content_type: string; year?: number | n
   if (item.genres) parts.push(item.genres.split(",").slice(0, 2).join(", "));
   if (parts.length === 0) return null;
   return (
-    <p className="text-[11px] text-muted-foreground font-body">
+    <p ref={ref} className="text-[11px] text-muted-foreground font-body">
       {parts.join(" · ")}
     </p>
   );
-};
+});
+MetadataRow.displayName = "MetadataRow";
 
 export const NovidadesCard = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
@@ -100,6 +101,7 @@ export const NovidadesCard = () => {
   const handleSheetClose = () => {
     setSheetOpen(false);
     setSelectedItem(null);
+    didSwipe.current = false;
     if (total > 1) startTimer();
   };
 
