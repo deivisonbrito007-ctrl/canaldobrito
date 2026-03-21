@@ -28,6 +28,26 @@ const mapSportType = (st: string): CardSport => {
   return "other";
 };
 
+const SkeletonCard = () => (
+  <div className="rounded-[12px] overflow-hidden bg-surface-2 border border-border">
+    <div className="h-[2.5px] skeleton-shimmer" />
+    <div className="p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="h-2.5 w-20 rounded skeleton-shimmer" />
+        <div className="h-2.5 w-14 rounded skeleton-shimmer" />
+      </div>
+      <div className="space-y-1.5">
+        <div className="h-3.5 w-3/4 rounded skeleton-shimmer" />
+        <div className="h-3.5 w-2/3 rounded skeleton-shimmer" />
+      </div>
+    </div>
+    <div className="px-3 py-2 flex items-center justify-between border-t border-border">
+      <div className="h-2.5 w-16 rounded skeleton-shimmer" />
+      <div className="h-4 w-12 rounded-full skeleton-shimmer" />
+    </div>
+  </div>
+);
+
 const LiveGameCard = ({ game }: { game: DailyGame }) => {
   const sportType = (game.sport_type || "football") as SportType;
   const cardSport = mapSportType(game.sport_type);
@@ -40,49 +60,49 @@ const LiveGameCard = ({ game }: { game: DailyGame }) => {
   return (
     <div className="rounded-[12px] overflow-hidden transition-all duration-200 hover:border-primary/30 hover:-translate-y-0.5 bg-surface-2 border border-border">
       <div className="h-[2.5px]" style={{ background: accent }} />
-      <div className="p-2.5 sm:p-3 space-y-1.5">
+      <div className="p-3 space-y-1.5">
         {/* Top row */}
         <div className="flex items-center justify-between gap-1">
-          <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
+          <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
             {emoji} {league || cardSport}
           </p>
           <div className="flex items-center gap-1 shrink-0">
-            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+            <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-pulse-live" />
               <span className="relative inline-flex rounded-full h-full w-full bg-destructive" />
             </span>
-            <span className="text-[8px] sm:text-[9px] font-bold text-destructive tabular-nums font-body">
+            <span className="text-[9px] font-bold text-destructive tabular-nums font-body">
               {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
             </span>
           </div>
         </div>
 
-        {/* Teams — vertical layout on mobile for long names */}
+        {/* Teams */}
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] sm:text-[13px] font-bold text-foreground leading-tight font-body truncate">
+              <p className="text-[13px] font-bold text-foreground leading-tight font-body truncate">
                 {game.home_team}
               </p>
             </div>
-            <span className="text-[8px] sm:text-[9px] text-muted-foreground font-body shrink-0 px-1 py-0.5 rounded bg-surface border border-border">
+            <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1 py-0.5 rounded bg-surface border border-border">
               VS
             </span>
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[12px] sm:text-[13px] font-bold text-foreground leading-tight font-body truncate">
+              <p className="text-[13px] font-bold text-foreground leading-tight font-body truncate">
                 {game.away_team}
               </p>
             </div>
           </div>
           {game.is_womens && (
-            <p className="text-[8px] sm:text-[9px] text-muted-foreground font-body text-center">Feminino</p>
+            <p className="text-[9px] text-muted-foreground font-body text-center">Feminino</p>
           )}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-1 border-t border-border">
-        <span className="text-[8px] sm:text-[9px] text-muted-foreground font-body truncate">
+      <div className="px-3 py-2 flex items-center justify-between gap-1 border-t border-border">
+        <span className="text-[9px] text-muted-foreground font-body truncate">
           Começou {game.game_time?.slice(0, 5)}
         </span>
         {channel && <ChannelBadge name={channel} />}
@@ -93,7 +113,7 @@ const LiveGameCard = ({ game }: { game: DailyGame }) => {
 
 export const LiveFeedSection = () => {
   const [today, setToday] = useState(() => getLocalDateString());
-  const { data: games } = useDailyGames(today);
+  const { data: games, isLoading } = useDailyGames(today);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -112,7 +132,7 @@ export const LiveFeedSection = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [games, Math.floor(Date.now() / 60000)]);
 
-  if (matches.length === 0) return null;
+  if (!isLoading && matches.length === 0) return null;
 
   return (
     <section className="space-y-3 animate-fade-up stagger-4">
@@ -129,15 +149,16 @@ export const LiveFeedSection = () => {
             {matches.length} jogos
           </span>
         </div>
-        <span className="text-[10px] text-primary font-semibold font-body cursor-pointer hover:underline shrink-0 ml-2">
+        <span className="text-[10px] text-primary font-semibold font-body cursor-pointer hover:underline shrink-0 ml-2 min-h-[44px] flex items-center">
           Ver todos →
         </span>
       </div>
 
-      <div className="px-4 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-[9px]">
-        {matches.map((g) => (
-          <LiveGameCard key={g.id} game={g} />
-        ))}
+      <div className="px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-[9px]">
+        {isLoading
+          ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
+          : matches.map((g) => <LiveGameCard key={g.id} game={g} />)
+        }
       </div>
     </section>
   );

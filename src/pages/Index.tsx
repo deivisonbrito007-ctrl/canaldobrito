@@ -43,11 +43,11 @@ const Index = () => {
       {/* Ambient green blobs */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div
-          className="absolute -top-32 -right-32 w-[400px] h-[400px] rounded-full animate-blob-a"
+          className="absolute -top-32 -right-32 w-[400px] h-[400px] rounded-full animate-blob-a atm-blob"
           style={{ background: "radial-gradient(circle, hsl(153 100% 50% / 0.06), transparent 70%)" }}
         />
         <div
-          className="absolute -bottom-24 -left-24 w-[240px] h-[240px] rounded-full animate-blob-b"
+          className="absolute -bottom-24 -left-24 w-[240px] h-[240px] rounded-full animate-blob-b atm-blob"
           style={{ background: "radial-gradient(circle, hsl(153 100% 50% / 0.04), transparent 70%)" }}
         />
       </div>
@@ -57,7 +57,7 @@ const Index = () => {
 
       <AppNavbar />
 
-      <main className="relative z-10 flex-1 pb-28">
+      <main className="relative z-10 flex-1 pb-28" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))" }}>
         {activeTab === "highlights" ? (
           <Suspense fallback={<HighlightsFallback />}>
             <HighlightsTab />

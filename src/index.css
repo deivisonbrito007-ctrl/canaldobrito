@@ -258,7 +258,8 @@
     animation: marquee-scroll 24s linear infinite;
   }
 
-  .marquee-container:hover .marquee-track {
+  .marquee-container:hover .marquee-track,
+  .marquee-track.paused {
     animation-play-state: paused;
   }
 
@@ -267,13 +268,21 @@
     mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
   }
 
+  .atm-blob {
+    will-change: transform;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .marquee-track,
     .animate-blob-a,
     .animate-blob-b,
     .animate-pulse-live,
-    .animate-fade-up {
-      animation: none;
+    .animate-fade-up,
+    .animate-slide-up,
+    .animate-border-pulse-live,
+    [class*="admin-stagger"] {
+      animation: none !important;
+      transition: none !important;
     }
   }
 
