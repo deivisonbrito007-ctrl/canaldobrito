@@ -1,133 +1,63 @@
 
 
-# Redesign Completo — Canal do Brito (Home Page)
+# Correções Mobile & UX — Canal do Brito
 
-This is a major visual overhaul of the home page. The admin area, routing, and data hooks remain unchanged. The redesign focuses on the public-facing Index page and its components.
+12 correções para melhorar a experiência mobile, acessibilidade e performance.
 
-## Scope
+## Arquivos afetados
 
-### What changes
-1. **Global styles** — New color palette (#00ff87 green, #07080a bg), font swap (Syne replaces Outfit as body font)
-2. **Index.tsx** — Complete restructure with new sections: Hero, Categories, Live Games grid, Events, Novidades card, Promo strip
-3. **New components**: `Navbar`, `Hero`, `CategoryCarousel`, `LiveGamesGrid`, `LiveEventsSection`, `NovidadesCard`, `PromoStrip`, `BottomNav`, `LoginModal`, `PublicFooter`
-4. **Secret login** — Long-press on copyright text triggers login modal (bottom sheet)
-5. **Login page** — Keep `/login` route working but the primary access is now via the secret long-press
+| Arquivo | Correções |
+|---------|-----------|
+| `index.html` | #03 viewport-fit, #12 PWA manifest link |
+| `src/index.css` | #09 padding var, #10 will-change + reduced-motion, #11 skeleton shimmer (already exists partially) |
+| `src/components/public/LiveFeedSection.tsx` | #01 grid 1→2→4 cols, #05 touch targets, #11 skeleton loading |
+| `src/components/public/Hero.tsx` | #02 clamp() title, hero layout stacking |
+| `src/components/public/BottomNav.tsx` | #03 safe-area padding, #05 touch targets |
+| `src/components/public/NovidadesCard.tsx` | #04 poster-top mobile layout (already done, minor tweaks) |
+| `src/components/public/CategoryIconsCarousel.tsx` | #05 touch targets 44px, #06 pause on touch + resume after 2s |
+| `src/components/public/AppNavbar.tsx` | #07 hide date on mobile (already done), ensure CTA touch target |
+| `src/components/public/LoginModal.tsx` | #08 iOS keyboard visual viewport adjustment |
+| `src/components/public/PromoStrip.tsx` | #05 CTA touch target |
+| `src/pages/Index.tsx` | #03 safe-area bottom padding on main |
+| `public/manifest.json` | #12 PWA manifest (new file) |
 
-### What stays the same
-- Admin area (AdminLayout, all admin pages)
-- All data hooks (useDailyGames, useNewsReleases, useBanners)
-- Auth context and Supabase integration
-- All database tables and RLS policies
+## Implementation details
 
-## Implementation Plan
+### #01 — Grid responsivo cards ao vivo
+Change `LiveFeedSection` grid from `grid-cols-2 lg:grid-cols-4` to `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`. Ensure card text uses `truncate` and min-widths are removed so text flows naturally on narrow screens.
 
-### 1. Update global styles (`src/index.css`)
-- Import Google Fonts: `Bebas Neue` + `Syne` (replace Outfit)
-- Update CSS variables to new palette:
-  - `--background`: #07080a → `210 22% 3%`
-  - `--primary`: #00ff87 → `153 100% 50%`
-  - Surface colors: #0d0f12, #111418
-  - Border: `rgba(255,255,255,0.06)`
-- Add new CSS custom properties: `--green-dim`, `--green-border`, `--surface`, `--surface2`
-- Add `fadeUp` keyframe animation with stagger support
-- Update `.font-body` to use Syne
-- Add `livePulse` keyframe (opacity 1→0.2, 1.5s)
-- Add floating blob keyframes (10s and 13s cycles)
-- Add modal slide-up animation
+### #02 — Título hero fluido
+Replace fixed `text-[26px] sm:text-[34px]` with `clamp(1.4rem, 5vw, 2.125rem)` via inline style. Stack hero layout vertically on mobile (stats full-width below title) — already done, verify sizing.
 
-### 2. Update `tailwind.config.ts`
-- Change `fontFamily.body` and `fontFamily.sans` from Outfit to Syne
-- Add new color tokens: `surface`, `surface2`, `green-dim`, `green-border`
+### #03 — Safe area bottom nav iOS
+- Add `viewport-fit=cover` to index.html viewport meta
+- Update BottomNav padding-bottom to `calc(6px + env(safe-area-inset-bottom))`
+- Update Index.tsx main `pb-28` to include safe area awareness
 
-### 3. Create new `AppNavbar` (`src/components/public/AppNavbar.tsx`) — rewrite
-- 54px height, sticky top
-- Left: TV icon (SVG, green, 30x30, rounded-lg, bg green-dim) + "Canal do **Brito**"
-- Center: formatted date "Sex · 20 mar" in muted
-- Right: "X ao vivo" badge (green pulsing dot) + "Assine já" button (bg green, text black, rounded-full)
-- No navigation links
+### #04 — Banner novidades mobile
+Already implemented poster-on-top layout. Minor tweak: ensure poster height on mobile is at least 200px and gradient fade is stronger.
 
-### 4. Create `Hero` section (inline in Index or new component)
-- Left column: animated pill "BEM-VINDO DE VOLTA" + title with mixed colors ("assistir" in green, "hoje?" in transparent/stroke) + subtitle
-- Right column: 3-stat card (AO VIVO count, ESTA NOITE count, CANAIS count) with vertical dividers
-- "AO VIVO" stat = live games + live events count from `useDailyGames`
+### #05 — Touch targets 44px
+Audit all interactive elements: category pills, "Ver todos" links, nav items, CTA buttons. Add `min-h-[44px] min-w-[44px]` where missing. Some already have it.
 
-### 5. Rewrite `CategoryIconsCarousel`
-- Keep auto-scroll marquee behavior
-- Update categories to match spec: 🔥 Em Alta (with "8" badge), ⚽ Futebol, 🏀 Basquete, 🥊 UFC/MMA, 🎬 Filmes, 📺 Séries, 🏅 Esportes, 🎾 Tênis, 🏆 Destaques
-- Style: active item uses green-dim bg + green-border + green text; inactive uses surface bg + border + muted text
-- Remove "Brito Solutions" header and WhatsApp button from this component
+### #06 — Carrossel pause on touch
+Add `onTouchStart` (pause) and `onTouchEnd` (resume after 2s delay) to `CategoryIconsCarousel`. Already pauses on hover via CSS; add JS touch handlers that toggle a class.
 
-### 6. Rewrite `LiveFeedSection` → `LiveGamesGrid`
-- Header: green pulsing dot + "Ao Vivo Canal do Brito" + badge "X jogos" + "Ver todos →" link
-- **Grid layout**: 4 columns on desktop, 2 on mobile (not horizontal scroll)
-- Card design per spec: 2.5px accent bar, sport-specific colors, league name + "AO VIVO" badge, teams with VS tag, footer with time + channel pill
-- Hover: green border + translateY(-2px)
-- Uses real data from `useDailyGames` (adversarial games only)
+### #07 — Navbar mobile
+Date is already `hidden sm:block`. Verify CTA button has 44px touch target.
 
-### 7. Create `LiveEventsSection`
-- Same header style but orange (#f39c12) badge
-- Cards with dark-green accent bar, centered event name, elapsed minutes badge in orange
-- Uses real data from `useDailyGames` (non-adversarial events)
+### #08 — Modal login keyboard iOS
+Add `useEffect` with `window.visualViewport` resize listener to shift modal up when keyboard opens.
 
-### 8. Rewrite `NewsReleasesSection` → `NovidadesCard`
-- Wide card with 2-column grid: content left + poster right
-- Left: tag pill "Nova Temporada" (green) + large Bebas Neue title + description + 2 buttons ("Assistir agora" solid green, "+ Minha lista" ghost)
-- Right: dark area with decorative large text at 4% opacity + poster image
-- Uses real data from `useActiveNewsReleases`
+### #09 — Padding lateral consistente
+Add CSS custom property `--px: 1rem` (1.5rem at md+). Update sections to use consistent `px-[var(--px)]` or keep existing `px-4` which is already 1rem.
 
-### 9. Create `PromoStrip`
-- Full-width card with green-dim bg, green-border
-- Eyebrow: "Brito Solutions · Premium"
-- Title: Bebas Neue "ACESSE TUDO SEM LIMITES"
-- Sub: "Esportes, filmes e séries · Cancele quando quiser"
-- Button: "Assinar agora →" (links to WhatsApp)
+### #10 — Performance reduced-motion
+Add `will-change: transform` to `.atm-blob` (rename ambient blobs). Extend existing `prefers-reduced-motion` rule to cover all animated classes.
 
-### 10. Rewrite `BottomNav`
-- Keep 3 items: Início (Home), Destaques (Star), Programação (CalendarDays)
-- Active: green icon + green label + 2px green bar on top
-- Inactive: #555e6a icon + label
-- Background: #0a0c0e with 0.5px border-top
-- **Remove any login button**
+### #11 — Skeleton loading for live cards
+Add a `SkeletonCard` component inside `LiveFeedSection` shown while `isLoading` is true.
 
-### 11. Rewrite `PublicFooter`
-- Minimal: just "© 2026 Canal do Brito" in near-invisible color `rgba(255,255,255,0.06)`
-- **Long-press handler** (1.5s hold): shows toast "Segure para acessar..." then opens login modal
-- Implement with mousedown/touchstart + setTimeout, cancel on mouseup/mouseleave/touchend
-
-### 12. Create `LoginModal` (bottom sheet)
-- Slides up from bottom with cubic-bezier animation
-- Dark overlay (click outside closes)
-- Handle bar at top
-- Logo + "Canal do Brito" + "Área administrativa" subtitle
-- Email + Password fields
-- "Entrar" button (green, full width)
-- Divider "acesso restrito"
-- "Problemas? Fale com o suporte" link
-- X close button top-right
-- Uses existing `useAuth().signIn()`
-
-### 13. Update `Index.tsx`
-- New section order: Navbar → Hero → CategoryCarousel → LiveGamesGrid → LiveEventsSection → NovidadesCard → PromoStrip → BannerSections → Footer → BottomNav
-- Background: two green ambient blobs (radial-gradient, subtle opacity, floating animation)
-- Grain overlay (keep existing)
-- All sections enter with `fadeUp` animation in cascade
-
-### 14. Update `index.html`
-- Add Syne font via Google Fonts link (or handle in CSS @import)
-
-## Files affected
-- `src/index.css` — palette + fonts + animations
-- `tailwind.config.ts` — font family + new colors
-- `index.html` — font link
-- `src/pages/Index.tsx` — full rewrite
-- `src/components/public/AppNavbar.tsx` — rewrite
-- `src/components/public/CategoryIconsCarousel.tsx` — rewrite
-- `src/components/public/LiveFeedSection.tsx` — rewrite as grid
-- `src/components/public/LiveEventsSection.tsx` — new (events only)
-- `src/components/public/NewsReleasesSection.tsx` — rewrite as wide card
-- `src/components/public/PromoStrip.tsx` — new
-- `src/components/public/BottomNav.tsx` — rewrite
-- `src/components/public/PublicFooter.tsx` — rewrite with secret login
-- `src/components/public/LoginModal.tsx` — new component
-- `src/components/public/Hero.tsx` — new component
+### #12 — PWA Manifest
+Create `public/manifest.json` and add `<link rel="manifest">` to index.html. Note: icon files won't exist yet but the manifest will be ready.
 
