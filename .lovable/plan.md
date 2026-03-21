@@ -1,24 +1,22 @@
 
 
-# Melhorar Poster do Card Novidades no Mobile
+# Corrigir Imagem Cortada no Card Novidades
 
 ## Problema
-O poster está com `h-[180px]` fixo no mobile e `object-cover`, cortando rostos e partes importantes da imagem.
+Mesmo com `h-[300px]` e `object-cover object-top`, a imagem continua sendo cortada porque `object-cover` **sempre** recorta para preencher o container.
 
-## Melhorias propostas
+## Solução: Trocar para `object-contain` no mobile
 
-### 1. Poster mais alto no mobile
-Aumentar de `h-[180px]` para `h-[260px]` — mostra mais da imagem sem cortar.
+Em vez de forçar a imagem a preencher e cortar, usar `object-contain` que mostra a imagem **inteira** sem cortar nada. O fundo escuro do card preenche o espaço restante naturalmente.
 
-### 2. Usar `object-top` no mobile
-Muitos posters têm o conteúdo importante no topo (rostos, títulos). Trocar `object-cover` por `object-cover object-top` garante que a parte superior da imagem sempre aparece.
+### Mudanças em `NovidadesCard.tsx`
 
-### 3. Gradient mais longo e suave
-Aumentar o gradient de fade de `h-16` para `h-24` para uma transição mais cinematográfica entre poster e conteúdo.
+1. **Imagem mobile**: trocar `object-cover object-top` por `object-contain object-top` — mostra o poster inteiro
+2. **Fundo da área do poster**: adicionar `bg-surface` para que o espaço ao redor da imagem fique com a cor do card (sem buracos)
+3. **Ajustar altura**: usar `h-[280px]` — suficiente para mostrar o poster sem desperdiçar espaço vertical
+4. **Manter desktop**: `sm:object-contain sm:object-center` continua igual
 
-### 4. Sobreposição do conteúdo sobre o poster
-Em vez de empilhar poster + conteúdo separadamente, posicionar o conteúdo (badge, título, descrição, botões) sobre a parte inferior do poster com gradient overlay. Isso cria um visual estilo Netflix/streaming premium e aproveita melhor o espaço vertical.
-
-## Arquivo alterado
-- `src/components/public/NovidadesCard.tsx` — layout mobile: poster `h-[300px]` com conteúdo sobreposto via `absolute bottom-0` + gradient forte, resultando em um card mais cinematográfico sem cortar a imagem.
+### Resultado esperado
+- Mobile: poster aparece **inteiro** (sem corte), centralizado no topo, com fundo escuro nas laterais
+- Desktop: sem mudança
 
