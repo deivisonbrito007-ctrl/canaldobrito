@@ -141,13 +141,10 @@ export const NovidadesCard = () => {
             exit="exit"
             transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Mobile: poster on top, content below */}
-            {/* Desktop: content left, poster right */}
-            <div className="flex flex-col sm:grid sm:grid-cols-[1fr_260px]">
-              {/* Poster — top on mobile, right on desktop */}
-              <div className="relative h-[180px] sm:h-auto sm:min-h-[300px] overflow-hidden sm:order-2">
-                {/* Gradient bottom fade (mobile) */}
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-surface to-transparent z-[2] sm:hidden" />
+            {/* Mobile: cinematic overlay | Desktop: side-by-side */}
+            <div className="relative sm:grid sm:grid-cols-[1fr_260px]">
+              {/* Poster */}
+              <div className="relative h-[300px] sm:h-auto sm:min-h-[300px] overflow-hidden sm:order-2">
                 {/* Gradient left fade (desktop) */}
                 <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-surface to-transparent z-[2] hidden sm:block" />
 
@@ -155,7 +152,7 @@ export const NovidadesCard = () => {
                   <motion.img
                     src={item.image_url}
                     alt={item.title}
-                    className="absolute inset-0 w-full h-full object-cover sm:object-contain z-[1]"
+                    className="absolute inset-0 w-full h-full object-cover object-top sm:object-contain sm:object-center z-[1]"
                     initial={{ scale: 1.06, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
@@ -165,24 +162,47 @@ export const NovidadesCard = () => {
                     <ImageOff className="h-8 w-8 text-muted-foreground/20" />
                   </div>
                 )}
+
+                {/* Mobile: gradient overlay + content on top of poster */}
+                <div className="absolute inset-x-0 bottom-0 z-[3] sm:hidden">
+                  <div className="h-40 bg-gradient-to-t from-surface via-surface/80 to-transparent" />
+                  <div className="bg-surface px-4 pb-4 -mt-px space-y-2.5">
+                    <span className="inline-flex items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
+                      {getBadgeLabel(item.badge_type)}
+                    </span>
+                    <h3 className="font-display text-2xl text-foreground leading-none tracking-wide">
+                      {item.title.toUpperCase()}
+                    </h3>
+                    {item.overview && (
+                      <p className="text-[11px] text-muted-foreground font-body line-clamp-2 leading-relaxed">
+                        {item.overview}
+                      </p>
+                    )}
+                    <div className="flex gap-2 pt-0.5">
+                      <button className="bg-primary text-primary-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body min-h-[44px]">
+                        Assistir agora
+                      </button>
+                      <button className="border border-border text-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:bg-surface-2 transition-colors font-body min-h-[44px]">
+                        + Minha lista
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Content — below poster on mobile, left on desktop */}
-              <div className="p-4 sm:py-8 sm:pl-7 sm:pr-4 space-y-3 flex flex-col justify-center sm:order-1">
+              {/* Desktop content — left side */}
+              <div className="hidden sm:flex p-4 sm:py-8 sm:pl-7 sm:pr-4 space-y-3 flex-col justify-center sm:order-1">
                 <span className="inline-flex self-start items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
                   {getBadgeLabel(item.badge_type)}
                 </span>
-
-                <h3 className="font-display text-2xl sm:text-4xl text-foreground leading-none tracking-wide">
+                <h3 className="font-display text-4xl text-foreground leading-none tracking-wide">
                   {item.title.toUpperCase()}
                 </h3>
-
                 {item.overview && (
-                  <p className="text-[11px] sm:text-xs text-muted-foreground font-body line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground font-body line-clamp-2 leading-relaxed">
                     {item.overview}
                   </p>
                 )}
-
                 <div className="flex gap-2 pt-0.5">
                   <button className="bg-primary text-primary-foreground text-[11px] font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity font-body min-h-[44px]">
                     Assistir agora
