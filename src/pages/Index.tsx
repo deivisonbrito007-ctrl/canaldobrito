@@ -5,12 +5,14 @@ import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel
 import { LiveFeedSection } from "@/components/public/LiveFeedSection";
 import { LiveEventsSection } from "@/components/public/LiveEventsSection";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton } from "@/components/public/ContentSkeletons";
 
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
+const LazyNovidadesCard = lazy(() => import("@/components/public/NovidadesCard").then(m => ({ default: m.NovidadesCard })));
+const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
+const LazyBannerSections = lazy(() => import("@/components/public/BannerSections").then(m => ({ default: m.BannerSections })));
 
 const HighlightsFallback = () => (
   <div className="pt-5 pb-3 space-y-6">
