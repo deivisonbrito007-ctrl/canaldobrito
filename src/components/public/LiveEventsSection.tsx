@@ -56,7 +56,7 @@ export const LiveEventsSection = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06, duration: 0.3 }}
-              className="min-w-[260px] w-[75vw] max-w-[300px] shrink-0 snap-start"
+              className="min-w-[280px] w-[75vw] max-w-[340px] shrink-0 snap-start"
             >
               <div className="rounded-2xl bg-card border border-amber-500/20 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(38,92%,50%,0.15)]">
                 {/* Accent bar */}
@@ -82,11 +82,16 @@ export const LiveEventsSection = () => {
                   </div>
 
                   {/* Event name — centered */}
-                  <div className="text-center">
-                    <p className="text-[14px] font-bold text-foreground leading-tight font-body">
+                  <div className="text-center space-y-0.5">
+                    <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                       {event.home_team}
                       {event.away_team && event.away_team !== event.home_team && ` — ${event.away_team}`}
                     </p>
+                    {event.competition_detail && (
+                      <p className="text-[11px] text-muted-foreground/70 font-medium font-body truncate">
+                        {event.competition_detail}
+                      </p>
+                    )}
                   </div>
 
                   {/* Time + Channels */}
