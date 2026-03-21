@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { detectSportType } from "@/lib/gameUtils";
+import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ export interface ParsedGame {
   is_womens: boolean;
   date: string;
   selected: boolean;
+  sport_type?: SportType;
 }
 
 const PLACEHOLDER = `📅**Dia 18/03**
@@ -28,12 +29,26 @@ Flamengo x Palmeiras
 🏆 Brasileirão (oitavas de final) / ⏰ 19h00
 📺 Sportv, Premiere
 
-Barcelona x Real Madrid
-🏆 La Liga / ⏰ 16h30
-📺 ESPN, Star+`;
+ATP e WTA
+🎾 Tênis (Indian Wells) / ⏰ 20h00
+📺 ESPN 2
 
-const SPORT_EMOJI_RE = /[🏆🎾🏎️🥊🏀🏐]/;
-const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🥊|🏀|🏐|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+GP da Arábia Saudita
+🏎️ Fórmula 1 (Classificação) / ⏰ 13h00
+📺 Band, BandSports`;
+
+const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+
+/** Map emoji at start of competition line to sport_type */
+function detectSportFromEmoji(compLine: string): SportType | null {
+  if (/^🎾/.test(compLine)) return 'tennis';
+  if (/^(?:🏎️|🏎)/.test(compLine)) return 'f1';
+  if (/^🥊/.test(compLine)) return 'mma';
+  if (/^🏀/.test(compLine)) return 'basketball';
+  if (/^🏐/.test(compLine)) return 'volleyball';
+  if (/^🏆/.test(compLine)) return 'football';
+  return null;
+}
 
 function isCompetitionLine(line: string): boolean {
   return COMP_LINE_RE.test(line);
@@ -44,10 +59,8 @@ function parseCompAndTime(compLine: string) {
   let competition_detail = "";
   let game_time = "00:00";
 
-  // Remove sport emojis to get competition name
   const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐]/g, "");
-  const afterEmoji = cleaned;
-  const beforeSlash = afterEmoji.split("/")[0].trim();
+  const beforeSlash = cleaned.split("/")[0].trim();
 
   const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
   if (detailMatch) {
@@ -71,15 +84,31 @@ function parseCompAndTime(compLine: string) {
   return { competition, competition_detail, game_time };
 }
 
+/** Strip markdown bold, residual emojis, double spaces, placeholder chars */
+function cleanText(s: string): string {
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold** → bold
+    .replace(/\*/g, "")                  // stray asterisks
+    .replace(/[🏆🎾🏎️🏎🥊🏀🏐📺⏰]/g, "") // residual sport/channel emojis
+    .replace(/\s{2,}/g, " ")             // double spaces
+    .trim();
+}
+
 function cleanupGame(game: ParsedGame): ParsedGame {
-  // Clean "x ?" or "x?" patterns from away_team
   let away = game.away_team.trim();
-  if (away === "?" || away === "") away = "";
+  // Remove placeholder-only away teams
+  if (/^[\?\-–—\s]*$/.test(away) || away.toLowerCase() === "tbd" || away.toLowerCase() === "a definir") {
+    away = "";
+  }
 
-  // Clean "Something x ?" from home_team
-  let home = game.home_team.replace(/\s*x\s*\?\s*$/, "").trim();
+  let home = game.home_team.replace(/\s*x\s*\?\s*$/i, "").trim();
 
-  return { ...game, home_team: home, away_team: away };
+  home = cleanText(home);
+  away = cleanText(away);
+  const competition = cleanText(game.competition);
+  const competition_detail = cleanText(game.competition_detail);
+
+  return { ...game, home_team: home, away_team: away, competition, competition_detail };
 }
 
 function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
@@ -116,6 +145,8 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
         ? parseCompAndTime(nextLine)
         : { competition: "", competition_detail: "", game_time: "00:00" };
 
+      const sport_type = isCompetitionLine(nextLine) ? detectSportFromEmoji(nextLine) : null;
+
       let channels: string[] = [];
       if (channelLine.includes("📺")) {
         const afterTv = channelLine.split("📺").pop() || "";
@@ -125,6 +156,7 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       games.push(cleanupGame({
         home_team, away_team, competition, competition_detail, game_time,
         channels, is_womens, date: currentDate, selected: true,
+        sport_type: sport_type || undefined,
       }));
       i += 3;
       continue;
@@ -134,6 +166,7 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
     if (isCompetitionLine(nextLine)) {
       const home_team = line;
       const { competition, competition_detail, game_time } = parseCompAndTime(nextLine);
+      const sport_type = detectSportFromEmoji(nextLine);
 
       let channels: string[] = [];
       if (channelLine.includes("📺")) {
@@ -144,12 +177,12 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
       games.push(cleanupGame({
         home_team, away_team: "", competition, competition_detail, game_time,
         channels, is_womens: false, date: currentDate, selected: true,
+        sport_type: sport_type || undefined,
       }));
       i += 3;
       continue;
     }
 
-    // Skip unrecognized lines
     i++;
   }
 
@@ -159,6 +192,15 @@ function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
 function formatDatePt(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
+}
+
+/** Get validation warnings for a parsed game */
+function getGameWarnings(game: ParsedGame): string[] {
+  const warnings: string[] = [];
+  if (game.game_time === "00:00") warnings.push("Horário não detectado");
+  if (!game.channels.length) warnings.push("Sem canal");
+  if (!game.competition) warnings.push("Sem competição");
+  return warnings;
 }
 
 export const ProgramacaoTexto = () => {
@@ -255,7 +297,7 @@ export const ProgramacaoTexto = () => {
   };
 
   const buildInsertPayload = (selected: ParsedGame[]) => {
-    return selected.map(({ selected: _, ...g }) => {
+    return selected.map(({ selected: _, sport_type: parsedSport, ...g }) => {
       let publishAt: string | null = null;
       let active = true;
 
@@ -268,6 +310,9 @@ export const ProgramacaoTexto = () => {
         }
       }
 
+      // Use emoji-detected sport_type if available, otherwise fall back to detectSportType
+      const finalSportType = parsedSport || detectSportType(g.competition);
+
       return {
         ...g,
         active,
@@ -275,7 +320,7 @@ export const ProgramacaoTexto = () => {
         status_short: "NS",
         elapsed_minutes: null,
         publish_at: publishAt,
-        sport_type: detectSportType(g.competition),
+        sport_type: finalSportType,
       };
     });
   };
@@ -342,6 +387,9 @@ export const ProgramacaoTexto = () => {
 
   const sortedDates = Object.keys(gamesByDate).sort();
 
+  // Count total warnings
+  const totalWarnings = parsed.reduce((acc, g) => acc + getGameWarnings(g).length, 0);
+
   return (
     <div className="space-y-5">
       {/* STEP 1 — Configuration */}
@@ -353,7 +401,6 @@ export const ProgramacaoTexto = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Default date */}
             <div className="space-y-1.5">
               <label className="text-[11px] text-muted-foreground font-medium">Data dos jogos</label>
               <Input
@@ -365,7 +412,6 @@ export const ProgramacaoTexto = () => {
               <p className="text-[9px] text-muted-foreground">Usado quando o texto não contém 📅 com data</p>
             </div>
 
-            {/* Schedule midnight */}
             <div className={`flex items-center gap-3 p-3 rounded-xl glass-panel border ${
               scheduleMidnight && getScheduleLabel().isPast
                 ? "border-destructive/30 bg-destructive/[0.05]"
@@ -420,7 +466,7 @@ export const ProgramacaoTexto = () => {
             className="min-h-[200px] bg-secondary/30 border-border/30 text-sm font-mono"
             disabled={readingImage}
           />
-          <p className="text-[10px] text-muted-foreground/60">💡 Cole uma imagem (Ctrl+V) para extrair a programação automaticamente</p>
+          <p className="text-[10px] text-muted-foreground/60">💡 Cole uma imagem (Ctrl+V) ou texto do WhatsApp para extrair a programação</p>
 
           <div className="flex flex-wrap gap-2">
             <Button
@@ -494,6 +540,12 @@ export const ProgramacaoTexto = () => {
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 font-semibold">
                 {selectedCount} selecionados
               </Badge>
+              {totalWarnings > 0 && (
+                <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20">
+                  <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+                  {totalWarnings} alerta{totalWarnings !== 1 ? "s" : ""}
+                </Badge>
+              )}
               {scheduleMidnight && (
                 <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20">
                   <Clock className="h-2.5 w-2.5 mr-1" />
@@ -547,12 +599,15 @@ export const ProgramacaoTexto = () => {
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {group.games.map((game, localIdx) => {
                       const globalIdx = group.indices[localIdx];
+                      const warnings = getGameWarnings(game);
+                      const resolvedSport = game.sport_type || detectSportType(game.competition);
+                      const sportEmoji = SPORT_EMOJI[resolvedSport] || '⚽';
                       return (
                         <div
                           key={globalIdx}
                           className={`rounded-xl glass-panel p-3 space-y-2 transition-all duration-200 ${
                             !game.selected ? "opacity-40" : ""
-                          }`}
+                          } ${warnings.length > 0 ? "ring-1 ring-amber-500/30" : ""}`}
                         >
                           {editingIdx === globalIdx ? (
                             <EditGameForm
@@ -564,7 +619,9 @@ export const ProgramacaoTexto = () => {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold text-foreground truncate">
-                                  {game.home_team} x {game.away_team}
+                                  {game.away_team
+                                    ? `${game.home_team} x ${game.away_team}`
+                                    : game.home_team}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground">
                                   ⏰ {game.game_time} • {game.competition}
@@ -573,11 +630,22 @@ export const ProgramacaoTexto = () => {
                                 <p className="text-[11px] text-muted-foreground/60">
                                   📺 {game.channels.join(", ") || "—"}
                                 </p>
-                                {game.is_womens && (
-                                  <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
-                                    Feminino
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                  <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-white/[0.1] text-muted-foreground">
+                                    {sportEmoji} {resolvedSport}
+                                  </Badge>
+                                  {game.is_womens && (
+                                    <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
+                                      Feminino
+                                    </span>
+                                  )}
+                                  {warnings.map((w, wi) => (
+                                    <span key={wi} className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                      <AlertTriangle className="h-2.5 w-2.5" />
+                                      {w}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <button
@@ -652,8 +720,8 @@ const EditGameForm = ({
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa" className="h-8 text-xs" />
-        <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Time visitante" className="h-8 text-xs" />
+        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa / Evento" className="h-8 text-xs" />
+        <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Time visitante (vazio = evento)" className="h-8 text-xs" />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Input value={comp} onChange={(e) => setComp(e.target.value)} placeholder="Competição" className="h-8 text-xs" />
