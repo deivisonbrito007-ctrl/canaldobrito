@@ -38,54 +38,51 @@ const LiveGameCard = ({ game }: { game: DailyGame }) => {
   const channel = game.channels?.[0];
 
   return (
-    <div
-      className="rounded-[14px] overflow-hidden transition-all duration-200 hover:border-primary/30 hover:-translate-y-0.5 bg-surface-2 border border-border"
-    >
+    <div className="rounded-[12px] overflow-hidden transition-all duration-200 hover:border-primary/30 hover:-translate-y-0.5 bg-surface-2 border border-border">
       <div className="h-[2.5px]" style={{ background: accent }} />
-      <div className="p-3 space-y-2">
+      <div className="p-2.5 sm:p-3 space-y-1.5">
         {/* Top row */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
             {emoji} {league || cardSport}
           </p>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="relative flex h-2 w-2">
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-pulse-live" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+              <span className="relative inline-flex rounded-full h-full w-full bg-destructive" />
             </span>
-            <span className="text-[9px] font-bold text-destructive tabular-nums font-body">
+            <span className="text-[8px] sm:text-[9px] font-bold text-destructive tabular-nums font-body">
               {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
             </span>
           </div>
         </div>
 
-        {/* Teams */}
-        <div className="flex items-start gap-1.5">
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
-              {game.home_team}
-            </p>
-            {game.is_womens && (
-              <p className="text-[9px] text-muted-foreground font-body mt-0.5">Feminino</p>
-            )}
+        {/* Teams — vertical layout on mobile for long names */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] sm:text-[13px] font-bold text-foreground leading-tight font-body truncate">
+                {game.home_team}
+              </p>
+            </div>
+            <span className="text-[8px] sm:text-[9px] text-muted-foreground font-body shrink-0 px-1 py-0.5 rounded bg-surface border border-border">
+              VS
+            </span>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="text-[12px] sm:text-[13px] font-bold text-foreground leading-tight font-body truncate">
+                {game.away_team}
+              </p>
+            </div>
           </div>
-          <span className="text-[9px] text-muted-foreground font-body shrink-0 pt-1 px-1 rounded bg-surface border border-border">
-            VS
-          </span>
-          <div className="flex-1 min-w-0 text-right">
-            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
-              {game.away_team}
-            </p>
-            {game.is_womens && (
-              <p className="text-[9px] text-muted-foreground font-body mt-0.5">Feminino</p>
-            )}
-          </div>
+          {game.is_womens && (
+            <p className="text-[8px] sm:text-[9px] text-muted-foreground font-body text-center">Feminino</p>
+          )}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border">
-        <span className="text-[9px] text-muted-foreground font-body">
+      <div className="px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-1 border-t border-border">
+        <span className="text-[8px] sm:text-[9px] text-muted-foreground font-body truncate">
           Começou {game.game_time?.slice(0, 5)}
         </span>
         {channel && <ChannelBadge name={channel} />}
@@ -120,24 +117,24 @@ export const LiveFeedSection = () => {
   return (
     <section className="space-y-3 animate-fade-up stagger-4">
       <div className="px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full rounded-full bg-primary animate-pulse-live" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
           </span>
-          <h3 className="text-sm font-bold text-foreground font-body">
+          <h3 className="text-[13px] sm:text-sm font-bold text-foreground font-body truncate">
             Ao Vivo <span className="text-primary">Canal do Brito</span>
           </h3>
-          <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums">
+          <span className="text-[9px] sm:text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
             {matches.length} jogos
           </span>
         </div>
-        <span className="text-[10px] text-primary font-semibold font-body cursor-pointer hover:underline">
+        <span className="text-[10px] text-primary font-semibold font-body cursor-pointer hover:underline shrink-0 ml-2">
           Ver todos →
         </span>
       </div>
 
-      <div className="px-4 grid grid-cols-2 lg:grid-cols-4 gap-[9px]">
+      <div className="px-4 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-[9px]">
         {matches.map((g) => (
           <LiveGameCard key={g.id} game={g} />
         ))}
