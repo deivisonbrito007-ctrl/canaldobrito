@@ -33,7 +33,8 @@ export const useDailyGames = (date: string) =>
       if (error) throw error;
       return data as DailyGame[];
     },
-    refetchInterval: 60000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 
 export const useAllDailyGames = (date: string) =>
