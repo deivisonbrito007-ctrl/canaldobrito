@@ -1,29 +1,35 @@
 
 
-# Melhorias nos Cards "Ao Vivo" e "Eventos Ao Vivo"
+# Análise dos Cards Ao Vivo — Melhorias Identificadas
+
+## O que está funcionando bem
+- Nomes dos times NBA aparecem completos (Golden State Warriors, Brooklyn Nets, etc.)
+- Tennis em "Eventos Ao Vivo" com layout centralizado e "Indian Wells" como detalhe
+- Indicador pulsante de live e tempo decorrido funcionando
 
 ## Problemas Identificados na Imagem
 
-1. **Nomes de times truncados demais** — "Golden State W...", "Memphis Grizzli...", "Osasco/São Cri...", "Dentil Praia Clu..." ficam ilegíveis nos cards de 260-300px
-2. **Card de Tênis sem detalhes** — Mostra apenas "ATP e WTA" sem o `competition_detail` (ex: torneio, fase)
-3. **Emoji duplicado no tempo decorrido** — A linha de competição já mostra o emoji do esporte, e o indicador de tempo repete (ex: `32' 🏀`)
-4. **Cards muito estreitos** para nomes longos de times brasileiros/americanos
+1. **Card de Vôlei cortado** — "Osasco/São Cristóvão (F)" aparece sem adversário visível; parece que o away_team existe mas o card está muito apertado para mostrar os dois times + separador "X"
+2. **Competição genérica** — O card de vôlei mostra apenas "VÔLEI" como competição, sem o nome da liga (ex: "Superliga Feminina"). Isso é um problema de dados, mas podemos melhorar a exibição.
+3. **Horário com fundo verde inconsistente** — Alguns cards mostram o horário "21:00" com fundo verde e outros sem, criando inconsistência visual
+4. **Emoji de tênis incorreto** — Na imagem aparece 🏓 (pingue-pongue) em vez de 🎾 (tênis) no card de "TÊNIS"
 
-## Correções
+## Correções Planejadas
 
-### 1. Aumentar largura mínima dos cards ao vivo
-**`LiveNowSection.tsx` e `LiveEventsSection.tsx`**: Mudar `min-w-[260px]` para `min-w-[280px]` e `max-w-[300px]` para `max-w-[340px]` para dar mais espaço aos nomes.
+### 1. Melhorar o card de vôlei/esportes com nomes longos
+**`LiveNowSection.tsx`**: Quando ambos os times têm nomes longos (>15 chars), usar layout empilhado vertical (home em cima, "X" no meio, away embaixo) em vez de horizontal, para evitar truncamento.
 
-### 2. Remover emoji duplicado do indicador de tempo
-**`LiveNowSection.tsx` linha 95**: Trocar `{elapsed}' ${emoji}` por apenas `{elapsed}'` — o emoji já aparece na linha de competição acima.
+### 2. Mostrar nome da competição real em vez do tipo de esporte
+**`LiveNowSection.tsx` e `LiveEventsSection.tsx`**: A label de competição já usa `game.competition` — se o dado vier apenas como "Vôlei", mostrar `competition_detail` ao lado quando disponível (ex: "🏐 VÔLEI · Superliga Feminina").
 
-### 3. Mostrar `competition_detail` nos cards ao vivo
-**`LiveNowSection.tsx` e `LiveEventsSection.tsx`**: Adicionar subtítulo com `competition_detail` (fase, rodada, torneio) abaixo do nome do evento/times quando disponível.
+### 3. Uniformizar estilo do horário
+**`LiveNowSection.tsx`**: Remover fundo verde do horário e manter estilo consistente (texto muted sem background) em todos os cards.
 
-### 4. Melhorar truncamento dos nomes
-**`LiveNowSection.tsx`**: Nos nomes dos times, usar `text-[13px]` em vez de `text-[14px]` para caber melhor, e permitir 2 linhas com `line-clamp-2` em vez de `truncate` (1 linha).
+### 4. Verificar emoji de tênis
+**`gameUtils.ts`**: Confirmar que `SPORT_EMOJI.tennis = '🎾'` está correto (já está no código). O problema pode ser de renderização de fonte ou dado vindo do banco com emoji errado.
 
 ## Arquivos
-- `src/components/public/LiveNowSection.tsx`
-- `src/components/public/LiveEventsSection.tsx`
+- `src/components/public/LiveNowSection.tsx` — layout vertical para nomes longos, estilo do horário
+- `src/components/public/LiveEventsSection.tsx` — competição + detalhe combinados
+- `src/lib/gameUtils.ts` — verificação de emojis
 
