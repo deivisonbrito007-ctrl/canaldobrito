@@ -1,20 +1,20 @@
 
 
-# Simplificar Exemplo UFC/MMA no Placeholder
+# Adicionar Data na Programação
 
 ## Mudança
 
-### `src/components/admin/ProgramacaoTexto.tsx`
-Remover o bloco "UFC 315 (Preliminar)" do placeholder, mantendo apenas o Card Principal como exemplo:
+### `src/components/public/DailyGamesSection.tsx`
+Adicionar a data formatada (ex: "Sex · 21 Mar") ao lado do título "Programação" no header da seção.
 
+- Importar `format` do `date-fns` e `ptBR` do `date-fns/locale`
+- Após o badge de "X jogos", adicionar um chip com a data do dia:
+```tsx
+<span className="text-[10px] text-muted-foreground/60 capitalize font-medium">
+  {format(new Date(today + "T12:00:00"), "EEE · d MMM", { locale: ptBR })}
+</span>
 ```
-UFC 315 (Card Principal)
-🥊 MMA / ⏰ 23h00
-📺 Combate
-```
 
-Isso simplifica o exemplo sem perder a funcionalidade — o admin ainda pode postar múltiplos cards se quiser, mas o exemplo mostra apenas o formato principal.
-
-### Duração MMA permanece 180min
-A duração de 3h + 15min buffer continua cobrindo um card completo. Sem outras mudanças necessárias.
-
+O resultado visual fica:
+```text
+🏆 Programação  [12 jogos]  [sex · 21 mar]  [2
