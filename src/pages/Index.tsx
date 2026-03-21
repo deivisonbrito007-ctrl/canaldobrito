@@ -1,14 +1,16 @@
 import { useState, useCallback, lazy, Suspense } from "react";
 import { AppNavbar } from "@/components/public/AppNavbar";
+import { Hero } from "@/components/public/Hero";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
 import { LiveFeedSection } from "@/components/public/LiveFeedSection";
-import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
+import { LiveEventsSection } from "@/components/public/LiveEventsSection";
+import { NovidadesCard } from "@/components/public/NovidadesCard";
+import { PromoStrip } from "@/components/public/PromoStrip";
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton } from "@/components/public/ContentSkeletons";
 
-// Lazy-loaded tab content — only fetched when the user opens the tab
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
 
@@ -38,13 +40,19 @@ const Index = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background overflow-x-hidden">
-      {/* Ambient blobs */}
+      {/* Ambient green blobs */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-secondary/8 blur-[120px] animate-drift" />
-        <div className="absolute -bottom-40 -right-40 w-[400px] h-[400px] rounded-full bg-primary/6 blur-[100px] animate-drift-delayed" />
+        <div
+          className="absolute -top-32 -right-32 w-[400px] h-[400px] rounded-full animate-blob-a"
+          style={{ background: "radial-gradient(circle, hsl(153 100% 50% / 0.06), transparent 70%)" }}
+        />
+        <div
+          className="absolute -bottom-24 -left-24 w-[240px] h-[240px] rounded-full animate-blob-b"
+          style={{ background: "radial-gradient(circle, hsl(153 100% 50% / 0.04), transparent 70%)" }}
+        />
       </div>
 
-      {/* Grain overlay */}
+      {/* Grain */}
       <div className="grain-overlay" />
 
       <AppNavbar />
@@ -59,26 +67,15 @@ const Index = () => {
             <ScheduleTab />
           </Suspense>
         ) : (
-          <>
-            <div className="px-4 pt-4 pb-2 space-y-1">
-              <p className="text-xs text-muted-foreground font-body">Bem-vindo de volta 👋</p>
-              <h2 className="text-lg font-bold text-foreground font-body">
-                O que vai assistir <span className="text-primary">hoje</span>?
-              </h2>
-            </div>
-
-            <div className="space-y-6">
-              <CategoryIconsCarousel />
-
-              <div id="esportes" className="space-y-6">
-                <LiveFeedSection />
-              </div>
-
-              <NewsReleasesSection />
-
-              <BannerSections />
-            </div>
-          </>
+          <div className="space-y-5">
+            <Hero />
+            <CategoryIconsCarousel />
+            <LiveFeedSection />
+            <LiveEventsSection />
+            <NovidadesCard />
+            <PromoStrip />
+            <BannerSections />
+          </div>
         )}
       </main>
 

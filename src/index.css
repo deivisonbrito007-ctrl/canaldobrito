@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    --background: 233 53% 3%;
-    --foreground: 240 20% 95%;
+    --background: 210 22% 3%;
+    --foreground: 0 0% 95%;
 
-    --card: 237 35% 11%;
-    --card-foreground: 240 20% 95%;
+    --card: 210 16% 6%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 237 35% 11%;
-    --popover-foreground: 240 20% 95%;
+    --popover: 210 16% 6%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 158 82% 43%;
-    --primary-foreground: 233 53% 3%;
+    --primary: 153 100% 50%;
+    --primary-foreground: 210 22% 3%;
 
     --secondary: 260 84% 58%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 15% 25%;
-    --muted-foreground: 240 12% 48%;
+    --muted: 180 8% 18%;
+    --muted-foreground: 210 8% 40%;
 
-    --accent: 158 82% 43%;
-    --accent-foreground: 233 53% 3%;
+    --accent: 153 100% 50%;
+    --accent-foreground: 210 22% 3%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 237 25% 18%;
-    --input: 237 25% 18%;
-    --ring: 158 82% 43%;
+    --border: 0 0% 100% / 0.06;
+    --input: 210 12% 12%;
+    --ring: 153 100% 50%;
 
     --radius: 0.75rem;
 
@@ -43,36 +43,41 @@
     --accent2: 260 84% 58%;
     --accent3: 38 92% 50%;
 
-    --sidebar-background: 233 53% 3%;
-    --sidebar-foreground: 240 20% 95%;
-    --sidebar-primary: 158 82% 43%;
-    --sidebar-primary-foreground: 233 53% 3%;
-    --sidebar-accent: 237 35% 11%;
-    --sidebar-accent-foreground: 240 20% 95%;
-    --sidebar-border: 237 25% 18%;
-    --sidebar-ring: 158 82% 43%;
+    --surface: 210 14% 5%;
+    --surface2: 210 11% 8%;
+    --green-dim: 153 100% 50% / 0.08;
+    --green-border: 153 100% 50% / 0.20;
+
+    --sidebar-background: 210 22% 3%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 153 100% 50%;
+    --sidebar-primary-foreground: 210 22% 3%;
+    --sidebar-accent: 210 16% 6%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 100% / 0.06;
+    --sidebar-ring: 153 100% 50%;
   }
 
   .dark {
-    --background: 233 53% 3%;
-    --foreground: 240 20% 95%;
-    --card: 237 35% 11%;
-    --card-foreground: 240 20% 95%;
-    --popover: 237 35% 11%;
-    --popover-foreground: 240 20% 95%;
-    --primary: 158 82% 43%;
-    --primary-foreground: 233 53% 3%;
+    --background: 210 22% 3%;
+    --foreground: 0 0% 95%;
+    --card: 210 16% 6%;
+    --card-foreground: 0 0% 95%;
+    --popover: 210 16% 6%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 153 100% 50%;
+    --primary-foreground: 210 22% 3%;
     --secondary: 260 84% 58%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 15% 25%;
-    --muted-foreground: 240 12% 48%;
-    --accent: 158 82% 43%;
-    --accent-foreground: 233 53% 3%;
+    --muted: 180 8% 18%;
+    --muted-foreground: 210 8% 40%;
+    --accent: 153 100% 50%;
+    --accent-foreground: 210 22% 3%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 237 25% 18%;
-    --input: 237 25% 18%;
-    --ring: 158 82% 43%;
+    --border: 0 0% 100% / 0.06;
+    --input: 210 12% 12%;
+    --ring: 153 100% 50%;
   }
 }
 
@@ -83,7 +88,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Syne', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -101,18 +106,18 @@
   }
 
   .font-body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Syne', sans-serif;
   }
 
   .text-gradient-primary {
-    background: linear-gradient(135deg, hsl(0 0% 95%), hsl(158 82% 43%));
+    background: linear-gradient(135deg, hsl(0 0% 95%), hsl(153 100% 50%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px hsl(158 82% 43% / 0.2), 0 0 40px hsl(158 82% 43% / 0.1);
+    box-shadow: 0 0 20px hsl(153 100% 50% / 0.2), 0 0 40px hsl(153 100% 50% / 0.1);
   }
 
   .glow-live {
@@ -120,7 +125,7 @@
   }
 
   .glow-primary-subtle {
-    box-shadow: 0 0 20px hsl(158 82% 43% / 0.08), 0 0 40px hsl(158 82% 43% / 0.04);
+    box-shadow: 0 0 20px hsl(153 100% 50% / 0.08), 0 0 40px hsl(153 100% 50% / 0.04);
   }
 
   .glow-accent2 {
@@ -128,7 +133,7 @@
   }
 
   .glass-nav {
-    background: hsl(var(--background) / 0.6);
+    background: hsl(var(--background) / 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
@@ -137,7 +142,7 @@
     background: hsl(var(--card) / 0.7);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid hsl(var(--border) / 0.4);
+    border: 1px solid hsl(var(--border));
   }
 
   .scrollbar-hide {
@@ -161,7 +166,7 @@
     inset: 0;
     pointer-events: none;
     z-index: 9999;
-    opacity: 0.03;
+    opacity: 0.025;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   }
 
@@ -183,55 +188,74 @@
     min-width: 44px;
   }
 
-  .animate-pulse-live {
-    animation: pulse-live 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-live {
+  /* Live pulse */
+  @keyframes livePulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50% { opacity: 0.2; }
   }
 
-  @keyframes drift {
+  .animate-pulse-live {
+    animation: livePulse 1.5s ease-in-out infinite;
+  }
+
+  /* Fade up entrance */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  .stagger-1 { animation-delay: 0ms; }
+  .stagger-2 { animation-delay: 50ms; }
+  .stagger-3 { animation-delay: 100ms; }
+  .stagger-4 { animation-delay: 150ms; }
+  .stagger-5 { animation-delay: 200ms; }
+  .stagger-6 { animation-delay: 250ms; }
+  .stagger-7 { animation-delay: 300ms; }
+  .stagger-8 { animation-delay: 350ms; }
+
+  /* Ambient blob float */
+  @keyframes blobFloat {
     0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(30px, -20px) scale(1.05); }
-    50% { transform: translate(-20px, 15px) scale(0.95); }
-    75% { transform: translate(15px, 25px) scale(1.02); }
+    33% { transform: translate(20px, -15px) scale(1.04); }
+    66% { transform: translate(-15px, 10px) scale(0.96); }
   }
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+  .animate-blob-a {
+    animation: blobFloat 10s ease-in-out infinite;
   }
 
-  @keyframes hero-zoom {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.04); }
+  .animate-blob-b {
+    animation: blobFloat 13s ease-in-out infinite reverse;
   }
 
-  .animate-drift {
-    animation: drift 20s ease-in-out infinite;
+  /* Modal slide up */
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
   }
 
-  .animate-drift-delayed {
-    animation: drift 25s ease-in-out infinite reverse;
+  .animate-slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
   }
 
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-hero-zoom {
-    animation: hero-zoom 6s ease-in-out infinite;
-  }
-
+  /* Marquee */
   @keyframes marquee-scroll {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
 
   .marquee-track {
-    animation: marquee-scroll 25s linear infinite;
+    animation: marquee-scroll 24s linear infinite;
   }
 
   .marquee-container:hover .marquee-track {
@@ -244,19 +268,21 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .marquee-track {
-      animation: none;
-    }
-    .animate-drift,
-    .animate-drift-delayed,
-    .animate-float,
-    .animate-hero-zoom,
+    .marquee-track,
+    .animate-blob-a,
+    .animate-blob-b,
     .animate-pulse-live,
-    .animate-border-pulse-live {
+    .animate-fade-up {
       animation: none;
     }
   }
 
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+  }
+
+  /* Admin styles */
   .glass-panel {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
@@ -319,11 +345,6 @@
     );
     background-size: 200% 100%;
     animation: shimmer 1.8s ease-in-out infinite;
-  }
-
-  .section-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(var(--border) / 0.5), transparent);
   }
 
   @media (max-width: 640px) {
