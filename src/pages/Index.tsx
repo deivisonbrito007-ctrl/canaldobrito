@@ -71,8 +71,7 @@ const Index = () => {
               <CategoryIconsCarousel />
 
               <div id="esportes" className="space-y-6">
-                <LiveNowSection />
-                <LiveEventsSection />
+                <LiveFeedSection />
               </div>
 
               <NewsReleasesSection />
