@@ -35,27 +35,27 @@ export const AppNavbar = () => {
           </span>
         </div>
 
-        {/* Center: Date */}
+        {/* Center: Date — hidden on mobile */}
         <p className="hidden sm:block text-xs text-muted-foreground capitalize font-body">
           {format(today, "EEE · d MMM", { locale: ptBR })}
         </p>
 
         {/* Right: Live badge + CTA */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {liveCount > 0 && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary font-body">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary font-body min-h-[44px]">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-primary animate-pulse-live" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
-              {liveCount} ao vivo
+              <span className="hidden xs:inline">{liveCount}</span> ao vivo
             </div>
           )}
           <a
             href={`https://wa.me/5511940759046?text=${encodeURIComponent("Olá! Tenho interesse em assinar o plano Brito Solutions 📺")}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-primary text-primary-foreground text-[11px] font-bold px-3.5 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+            className="bg-primary text-primary-foreground text-[11px] font-bold px-3.5 rounded-full hover:opacity-90 transition-opacity min-h-[44px] flex items-center"
           >
             Assine já
           </a>

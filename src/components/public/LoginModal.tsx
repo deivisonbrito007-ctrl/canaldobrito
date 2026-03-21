@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { X, Eye, EyeOff, AlertCircle } from "lucide-react";
@@ -17,6 +17,23 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // #08 — iOS keyboard visual viewport adjustment
+  useEffect(() => {
+    if (!open) return;
+    const handleResize = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const modal = document.getElementById("login-modal-sheet");
+      if (!modal) return;
+      const offset = window.innerHeight - vv.height;
+      modal.style.transform = offset > 50
+        ? `translateY(-${offset * 0.5}px)`
+        : "translateY(0)";
+    };
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () => window.visualViewport?.removeEventListener("resize", handleResize);
+  }, [open]);
 
   if (!open) return null;
 
@@ -45,7 +62,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       />
 
       {/* Sheet */}
-      <div className="absolute bottom-0 left-0 right-0 animate-slide-up">
+      <div id="login-modal-sheet" className="absolute bottom-0 left-0 right-0 animate-slide-up transition-transform">
         <div className="bg-surface rounded-t-2xl border-t border-border max-w-md mx-auto w-full">
           {/* Handle bar */}
           <div className="flex justify-center pt-3 pb-1">
@@ -55,7 +72,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           {/* Close */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="h-5 w-5" />
           </button>
@@ -92,7 +109,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 placeholder="admin@canalbrito.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground font-body focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full bg-input border border-border rounded-lg px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground font-body focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                 required
               />
 
@@ -102,13 +119,13 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   placeholder="Senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-input border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground font-body pr-10 focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full bg-input border border-border rounded-lg px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground font-body pr-10 focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -117,7 +134,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary text-primary-foreground font-bold text-sm py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-body"
+                className="w-full bg-primary text-primary-foreground font-bold text-sm py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-body min-h-[44px]"
               >
                 {loading ? "Entrando..." : "Entrar"}
               </button>

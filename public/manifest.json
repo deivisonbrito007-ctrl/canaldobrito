@@ -1,0 +1,13 @@
+{
+  "name": "Canal do Brito",
+  "short_name": "CanalBrito",
+  "description": "Esportes ao vivo, filmes e séries",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07080a",
+  "theme_color": "#00ff87",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}

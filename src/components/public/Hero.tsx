@@ -28,7 +28,7 @@ export const Hero = () => {
       <div className="space-y-4">
         {/* Welcome + Title */}
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-green-dim border border-green-border px-3 py-1">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-green-dim border border-green-border px-3 py-1 min-h-[44px]">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-primary animate-pulse-live" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
@@ -38,7 +38,10 @@ export const Hero = () => {
             </span>
           </div>
 
-          <h2 className="text-[26px] sm:text-[34px] font-bold leading-[1.1] tracking-tight font-body" style={{ letterSpacing: "-0.8px" }}>
+          <h2
+            className="font-bold leading-[1.1] tracking-tight font-body"
+            style={{ fontSize: "clamp(1.4rem, 5vw, 2.125rem)", letterSpacing: "-0.8px" }}
+          >
             O que vai{" "}
             <span className="text-primary">assistir</span>{" "}
             <span className="text-foreground/30">hoje?</span>
@@ -49,7 +52,7 @@ export const Hero = () => {
           </p>
         </div>
 
-        {/* Stats bar — horizontal, always full width on mobile */}
+        {/* Stats bar */}
         <div className="rounded-xl bg-surface border border-border overflow-hidden">
           <div className="grid grid-cols-3 divide-x divide-border">
             <div className="px-3 py-2.5 text-center">

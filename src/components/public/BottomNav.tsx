@@ -18,9 +18,10 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
       style={{
         background: "hsl(210 22% 4%)",
         borderTop: "0.5px solid rgba(255,255,255,0.06)",
+        paddingBottom: "env(safe-area-inset-bottom, 6px)",
       }}
     >
-      <div className="flex items-end justify-around px-2 pt-1.5 pb-[env(safe-area-inset-bottom,6px)]">
+      <div className="flex items-end justify-around px-2 pt-1.5 pb-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
