@@ -66,7 +66,7 @@ export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportTyp
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const duration = SPORT_DURATION[sportType] || 90;
+  const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   return nowMinutes >= gameMinutes && nowMinutes < gameMinutes + duration;
 }
@@ -82,7 +82,7 @@ export function getElapsedMinutes(gameTime: string, gameDate: string, sportType:
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const duration = SPORT_DURATION[sportType] || 90;
+  const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   const elapsed = nowMinutes - gameMinutes;
   if (elapsed < 0 || elapsed >= duration) return null;
