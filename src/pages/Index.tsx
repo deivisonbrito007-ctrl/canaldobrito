@@ -1,8 +1,7 @@
 import { useState, useCallback, lazy, Suspense } from "react";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
-import { LiveNowSection } from "@/components/public/LiveNowSection";
-import { LiveEventsSection } from "@/components/public/LiveEventsSection";
+import { LiveFeedSection } from "@/components/public/LiveFeedSection";
 import { NewsReleasesSection } from "@/components/public/NewsReleasesSection";
 import { BannerSections } from "@/components/public/BannerSections";
 import { PublicFooter } from "@/components/public/PublicFooter";
