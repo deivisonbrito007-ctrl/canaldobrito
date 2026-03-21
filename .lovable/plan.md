@@ -1,45 +1,35 @@
 
 
-# Auditoria: Jogos Anteriores e Status Ao Vivo
+# Melhorar Carregamento da Página
 
-## Situação Atual
+## Problemas Identificados
 
-### Dados no banco
-| Data | Total | Ativos |
-|------|-------|--------|
-| 2026-03-18 | 27 | 27 |
-| 2026-03-19 | 11 | 11 |
-| 2026-03-20 | 22 | 22 |
-| **2026-03-21 (hoje)** | **71** | **71** |
+1. **Google Fonts via CSS @import** — bloqueia renderização até baixar as fontes
+2. **4 componentes buscam `daily_games` separadamente** — Hero, AppNavbar, LiveFeedSection, LiveEventsSection todos chamam `useDailyGames(today)`. React Query deduplica, mas cada um cria listeners e re-renders independentes
+3. **BannerSections faz 7 queries separadas** (cover + 5 categorias + football_guide), todas retornando vazio atualmente — requests desnecessários
+4. **framer-motion importado em 4+ componentes da home** — bundle pesado carregado eager
+5. **Seções abaixo do fold (NovidadesCard, PromoStrip, BannerSections) carregam imediatamente** — sem lazy loading
 
-**Problema**: Jogos de dias anteriores (18, 19, 20) ainda estão no banco. Não existe nenhum mecanismo automático de limpeza — eles ficam acumulando.
+## Plano de Otimização
 
-### O que funciona
-- Jogos de hoje estão todos `active: true` (71 jogos)
-- A UI filtra por data, então jogos antigos **não aparecem** na tela pública
-- O cálculo de "ao vivo" usa `SPORT_DURATION` + buffer de 15min corretamente
+### 1. Mover Google Fonts para `<link>` no `index.html`
+Substituir o `@import url(...)` no `src/index.css` por tags `<link rel="preconnect">` e `<link rel="stylesheet">` no `index.html`. Isso permite download paralelo sem bloquear o CSS.
 
-### O que falta
-- **Limpeza automática** de jogos de datas passadas para não acumular lixo no banco
+### 2. Lazy load das seções abaixo do fold na Home
+No `Index.tsx`, envolver `NovidadesCard`, `PromoStrip` e `BannerSections` com `lazy()` + `Suspense`, similar ao que já é feito com `HighlightsTab` e `ScheduleTab`.
 
-## Plano
+### 3. Prefetch da query `daily_games` no QueryClient
+Configurar `staleTime: 60000` no `useDailyGames` para que React Query reutilize o cache entre os 4 componentes sem refetch. Já tem `refetchInterval: 60000`, mas falta `staleTime` — sem ele, cada mount dispara um refetch.
 
-### 1. Limpeza automática na Edge Function `activate-scheduled`
-Adicionar ao final da função existente um `DELETE` que remove jogos com `date < hoje`:
+### 4. Adicionar `loading="lazy"` nas imagens do NovidadesCard
+As imagens do carrossel de novidades não têm `loading="lazy"`.
 
-```sql
-DELETE FROM daily_games WHERE date < CURRENT_DATE
-```
+### 5. Corrigir warning do `forwardRef` no console
+O `GameCard` e `AnimatePresence` estão gerando warnings de ref. Envolver `GameCard` com `React.forwardRef` para eliminar o erro.
 
-Isso roda a cada minuto (já tem cron), então jogos antigos são limpos automaticamente após meia-noite.
-
-### 2. Alternativa: também limpar ao inserir novos jogos
-No `ProgramacaoTexto.tsx`, quando o admin posta jogos para uma nova data, o sistema já usa `useDeleteDailyGamesByDate` para limpar a data alvo. Mas não limpa datas antigas. Podemos adicionar uma limpeza de datas passadas no mesmo fluxo.
-
-**Recomendação**: Implementar a limpeza na Edge Function (opção 1) — é automático e não depende do admin.
-
-### Resultado
-- Jogos anteriores removidos automaticamente toda meia-noite
-- Jogos ao vivo permanecem visíveis enquanto dentro da duração do esporte + 15min buffer
-- Banco limpo sem acúmulo de dados antigos
+## Resultado Esperado
+- Fonts carregam em paralelo (não bloqueiam)
+- Menos re-renders com `staleTime` no cache
+- Seções abaixo do fold carregam sob demanda
+- Console limpo sem warnings
 
