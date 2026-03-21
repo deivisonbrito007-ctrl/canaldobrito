@@ -1,69 +1,23 @@
 
-# Ajuste para o poster não parecer cortado no mobile
+# Ajustes no Card Novidades
 
-## Diagnóstico
-Pelo código atual, o poster já usa `object-contain`, então o problema agora não é só “corte” da imagem. O que está prejudicando a visualização no mobile é a combinação de:
-- altura fixa relativamente baixa (`h-[280px]`)
-- conteúdo sobreposto em cima do poster
-- gradiente escuro cobrindo boa parte da arte
-- poster vertical dentro de uma área horizontal, o que reduz muito a imagem visível
+## Mudanças
 
-## Melhor solução
-Vou mudar o card mobile para um layout mais legível:
+### 1. Remover botões "Assistir agora" e "+ Minha lista"
+Remover os dois botões tanto no layout mobile (linhas 190-197) quanto no desktop (linhas 213-220). O card já abre o `ContentDetailSheet` ao clicar, então os botões são redundantes.
 
-```text
-[ poster visível inteiro ]
-[ badge ]
-[ título ]
-[ descrição ]
-[ botões ]
-```
+### 2. Adicionar indicador de tipo de conteúdo (Filme / Série)
+Usar o campo `content_type` que já existe nos dados para mostrar uma tag visual ao lado do badge. Exemplos:
+- `🎬 Filme` para `content_type === "movie"`
+- `📺 Série` para `content_type === "series"`
 
-Em vez de manter texto e botões por cima da imagem, no mobile o poster fica sozinho no topo e o conteúdo desce para uma área separada abaixo. Isso elimina a sensação de corte.
+Será uma pill/tag pequena ao lado do badge existente, com estilo discreto (fundo transparente, borda sutil).
 
-## O que implementar em `src/components/public/NovidadesCard.tsx`
+### 3. Adicionar metadata extra (ano, gênero)
+Aproveitar os campos `year` e `genres` já disponíveis nos dados para mostrar uma linha de metadata abaixo do título. Exemplo: `2025 · Drama, Ação`. Isso dá mais contexto ao usuário sem precisar abrir o detalhe.
 
-### 1. Remover a sobreposição no mobile
-- tirar o bloco mobile com `absolute bottom-0`
-- parar de colocar badge, título e botões sobre a arte no mobile
+## Arquivo alterado
+- `src/components/public/NovidadesCard.tsx`
 
-### 2. Criar um poster mobile dedicado
-- usar uma área maior para o poster, por exemplo `h-[320px]` ou `aspect-[3/4]`
-- manter `object-contain`
-- centralizar a imagem com `object-center`
-
-### 3. Melhorar o fundo do poster
-- manter fundo escuro do card
-- opcionalmente adicionar um fundo desfocado atrás da imagem para preencher laterais sem cortar:
-  - camada de fundo com `object-cover blur`
-  - camada principal por cima com `object-contain`
-
-Isso dá aparência premium sem esconder a arte.
-
-### 4. Separar desktop e mobile com clareza
-- mobile: poster em cima + conteúdo abaixo
-- desktop: manter layout lateral atual
-
-## Resultado esperado
-- a imagem aparece inteira no mobile
-- o poster fica maior e mais fácil de enxergar
-- o conteúdo não cobre mais a arte
-- o card continua bonito, mas mais funcional
-
-## Detalhe técnico
-A estrutura mobile ideal fica assim:
-
-```text
-card
- ├─ poster wrapper
- │   ├─ fundo blur opcional
- │   └─ img principal com object-contain
- └─ content wrapper
-     ├─ badge
-     ├─ title
-     ├─ overview
-     └─ buttons
-```
-
-## Observação
-Se você quiser priorizar “ver a arte inteira”, essa é a melhor abordagem. Se quiser priorizar “visual mais cheio”, aí daria para voltar ao `object-cover`, mas sempre haverá corte em alguns posters verticais.
+## Resultado
+Card mais limpo sem botões desnecessários, com informação clara se é filme ou série + ano e gênero visíveis.
