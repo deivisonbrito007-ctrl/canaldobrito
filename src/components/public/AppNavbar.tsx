@@ -2,19 +2,25 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { getLocalDateString, isGameCurrentlyLive, type SportType } from "@/lib/gameUtils";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export const AppNavbar = () => {
   const today = new Date();
   const dateStr = getLocalDateString();
   const { data: games } = useDailyGames(dateStr);
+  const [tick, setTick] = useState(Math.floor(Date.now() / 60000));
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick(Math.floor(Date.now() / 60000)), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const liveCount = useMemo(() => {
     return (games || []).filter((g) => {
       const st = (g.sport_type || "football") as SportType;
       return isGameCurrentlyLive(g.game_time, g.date, st);
     }).length;
-  }, [games]);
+  }, [games, tick]);
 
   return (
     <header className="sticky top-0 z-50 glass-nav" style={{ height: 54 }}>

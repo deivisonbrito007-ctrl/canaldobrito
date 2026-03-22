@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { type DailyGame } from "@/hooks/useDailyGames";
 import { isGameCurrentlyLive, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 
@@ -7,6 +7,13 @@ interface DayStatsBarProps {
 }
 
 export const DayStatsBar = ({ games }: DayStatsBarProps) => {
+  const [tick, setTick] = useState(Math.floor(Date.now() / 60000));
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick(Math.floor(Date.now() / 60000)), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const stats = useMemo(() => {
     const liveCount = games.filter((g) =>
       isGameCurrentlyLive(g.game_time, g.date, (g.sport_type || 'football') as SportType)
@@ -19,7 +26,7 @@ export const DayStatsBar = ({ games }: DayStatsBarProps) => {
     });
 
     return { total: games.length, liveCount, sportCounts };
-  }, [games]);
+  }, [games, tick]);
 
   if (stats.total === 0) return null;
 
