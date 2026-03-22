@@ -1,11 +1,16 @@
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { getLocalDateString, isGameCurrentlyLive, type SportType } from "@/lib/gameUtils";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export const Hero = () => {
   const dateStr = getLocalDateString();
   const { data: games } = useDailyGames(dateStr);
+  const [tick, setTick] = useState(Math.floor(Date.now() / 60000));
 
+  useEffect(() => {
+    const timer = setInterval(() => setTick(Math.floor(Date.now() / 60000)), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const stats = useMemo(() => {
     const allGames = games || [];
     const liveCount = allGames.filter((g) => {
@@ -21,7 +26,7 @@ export const Hero = () => {
       tonight: allGames.length,
       channels: channels.size,
     };
-  }, [games]);
+  }, [games, tick]);
 
   return (
     <section className="px-4 py-5 animate-fade-up stagger-1">

@@ -76,8 +76,8 @@ describe("isGameCurrentlyLive", () => {
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "football")).toBe(true);
   });
 
-  it("returns false after football duration+buffer (130min)", () => {
-    vi.setSystemTime(new Date(2026, 2, 19, 17, 10)); // 130min after 15:00
+  it("returns false after football duration+buffer (120min)", () => {
+    vi.setSystemTime(new Date(2026, 2, 19, 17, 0)); // 120min after 15:00
     expect(isGameCurrentlyLive("15:00", "2026-03-19", "football")).toBe(false);
   });
 

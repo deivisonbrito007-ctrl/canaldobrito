@@ -2,7 +2,7 @@ export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'v
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
-  football: 115,   // 90 + 15 halftime + 10 stoppage
+  football: 105,   // 90 + 15 halftime (sem acréscimos)
   basketball: 150, // 48 game + intervals + timeouts
   tennis: 210,     // covers long matches
   f1: 130,         // race + safety car margin
