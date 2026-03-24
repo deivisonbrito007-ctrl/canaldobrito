@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCountdown } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Image, Trophy, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface ScheduledItem {
   id: string;
@@ -68,6 +69,12 @@ const useScheduledItems = () =>
 
 export const UpcomingActivations = () => {
   const { data: items, isLoading } = useScheduledItems();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (isLoading) {
     return (
