@@ -47,15 +47,27 @@ const quickActions = [
   { label: "Programação", path: "/admin/banners?tab=programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
 ];
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: banners, isLoading: loadingBanners } = useAllBanners();
-  const { data: movies, isLoading: loadingMovies } = useAllMovies();
-  const { data: series, isLoading: loadingSeries } = useAllSeries();
-  const { data: news, isLoading: loadingNews } = useAllNewsReleases();
-  const { data: todayGames, isLoading: loadingGames } = useAllDailyGames(getLocalDateString());
+  const { data: banners, isLoading: loadingBanners, isError: errorBanners, refetch: refetchBanners } = useAllBanners();
+  const { data: movies, isLoading: loadingMovies, isError: errorMovies, refetch: refetchMovies } = useAllMovies();
+  const { data: series, isLoading: loadingSeries, isError: errorSeries, refetch: refetchSeries } = useAllSeries();
+  const { data: news, isLoading: loadingNews, isError: errorNews, refetch: refetchNews } = useAllNewsReleases();
+  const { data: todayGames, isLoading: loadingGames, isError: errorGames, refetch: refetchGames } = useAllDailyGames(getLocalDateString());
 
   const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
+  const hasError = errorBanners || errorMovies || errorSeries || errorNews || errorGames;
+
+  const handleRetry = () => {
+    refetchBanners(); refetchMovies(); refetchSeries(); refetchNews(); refetchGames();
+  };
 
   const totalBanners = banners?.length || 0;
   const activeBanners = banners?.filter((b) => b.active).length || 0;
@@ -88,7 +100,7 @@ const AdminDashboard = () => {
           </div>
           <div>
             <p className="text-sm font-bold text-foreground capitalize">{todayFormatted}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Painel Administrativo</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
           </div>
         </div>
       </div>
