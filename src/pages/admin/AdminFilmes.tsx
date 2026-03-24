@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie } from "@/hooks/useMovies";
+import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie } from "@/hooks/useMovies";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2, Film } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Search, Plus, Trash2, Star, ImageOff, Loader2, Film, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
@@ -18,9 +19,12 @@ const AdminFilmes = () => {
   const addMovie = useAddMovie();
   const toggleMovie = useToggleMovie();
   const deleteMovie = useDeleteMovie();
+  const updateMovie = useUpdateMovie();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"search" | "trending">("search");
   const [addingId, setAddingId] = useState<number | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleSearch = () => { if (query.trim()) search("search_movie", query); };
   const loadNowPlaying = () => { setTab("trending"); setResults([]); search("now_playing"); };
@@ -31,10 +35,8 @@ const AdminFilmes = () => {
     if (existing) { toast.info("Filme já adicionado"); return; }
     setAddingId(r.id);
     try {
-      // Fetch full details to get genre names
       const details = await fetchDetails("movie_details", r.id);
       const genreText = details?.genres?.map((g) => g.name).join(", ") || null;
-
       await addMovie.mutateAsync({
         tmdb_id: r.id, title: r.title || r.name || "",
         poster_url: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
@@ -48,8 +50,54 @@ const AdminFilmes = () => {
     finally { setAddingId(null); }
   };
 
+  const handleRefreshOne = async (movie: typeof movies extends (infer T)[] | undefined ? T : never) => {
+    if (!movie) return;
+    setRefreshingId(movie.id);
+    try {
+      const details = await fetchDetails("movie_details", movie.tmdb_id);
+      if (!details) { toast.error("Não foi possível buscar detalhes"); return; }
+      const genreText = details.genres?.map((g) => g.name).join(", ") || null;
+      await updateMovie.mutateAsync({
+        id: movie.id,
+        genre: genreText,
+        rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : movie.rating,
+        overview: (details as any).overview || movie.overview,
+      });
+      toast.success(`"${movie.title}" atualizado!`);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setRefreshingId(null); }
+  };
+
+  const handleBatchUpdate = async () => {
+    if (!movies || movies.length === 0) return;
+    const needsUpdate = movies.filter((m) => !m.genre);
+    if (needsUpdate.length === 0) { toast.info("Todos os filmes já têm gênero"); return; }
+    setBatchProgress({ current: 0, total: needsUpdate.length });
+    let updated = 0;
+    for (let i = 0; i < needsUpdate.length; i++) {
+      const m = needsUpdate[i];
+      setBatchProgress({ current: i + 1, total: needsUpdate.length });
+      try {
+        const details = await fetchDetails("movie_details", m.tmdb_id);
+        if (details) {
+          const genreText = details.genres?.map((g) => g.name).join(", ") || null;
+          await updateMovie.mutateAsync({
+            id: m.id,
+            genre: genreText,
+            rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : m.rating,
+            overview: (details as any).overview || m.overview,
+          });
+          updated++;
+        }
+      } catch { /* continue */ }
+    }
+    setBatchProgress(null);
+    toast.success(`${updated} de ${needsUpdate.length} filmes atualizados!`);
+  };
+
   const activeCount = movies?.filter((m) => m.active).length || 0;
   const totalCount = movies?.length || 0;
+  const missingGenreCount = movies?.filter((m) => !m.genre).length || 0;
 
   return (
     <div className="space-y-5">
@@ -112,10 +160,26 @@ const AdminFilmes = () => {
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionados</h3>
-          <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-0.5">
-            {activeCount} ativos / {totalCount}
-          </span>
+          <div className="flex items-center gap-2">
+            {missingGenreCount > 0 && (
+              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
+                {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Atualizar {missingGenreCount} sem gênero
+              </Button>
+            )}
+            <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-0.5">
+              {activeCount} ativos / {totalCount}
+            </span>
+          </div>
         </div>
+
+        {batchProgress && (
+          <div className="px-4 pt-3 space-y-1">
+            <p className="text-[10px] text-muted-foreground">Atualizando {batchProgress.current}/{batchProgress.total}...</p>
+            <Progress value={(batchProgress.current / batchProgress.total) * 100} className="h-1.5" />
+          </div>
+        )}
+
         <div className="p-4">
           {!movies || movies.length === 0 ? (
             <div className="py-10 text-center space-y-3">
@@ -136,9 +200,12 @@ const AdminFilmes = () => {
                     <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
                       {m.year && <span>{m.year}</span>}
                       {m.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(m.rating)}`} /><span className={ratingColor(m.rating)}>{m.rating}</span></>}
-                      {m.genre && <span className="text-blue-400/70">• {m.genre}</span>}
+                      {m.genre ? <span className="text-blue-400/70">• {m.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
                     </p>
                   </div>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-blue-400 shrink-0" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)}>
+                    <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === m.id ? "animate-spin" : ""}`} />
+                  </Button>
                   <Switch checked={m.active} onCheckedChange={(v) => toggleMovie.mutate({ id: m.id, active: v })} />
                   <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0" onClick={() => { if (confirm("Remover filme?")) deleteMovie.mutate(m.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </div>
