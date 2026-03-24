@@ -9,7 +9,9 @@ import { getLocalDateString } from "@/lib/gameUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Image, Film, Clapperboard, Sparkles, Trophy, FileText } from "lucide-react";
+import { Calendar, Image, Film, Clapperboard, Sparkles, Trophy, FileText, AlertCircle, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
 
 const useCountUp = (target: number, duration = 800) => {
@@ -34,7 +36,7 @@ const statCards = [
   { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", route: "/admin/filmes" },
   { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", route: "/admin/series" },
   { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", route: "/admin/novidades" },
-  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", route: "/admin/banners" },
+  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", route: "/admin/banners?tab=programacao" },
 ];
 
 const quickActions = [
@@ -45,15 +47,27 @@ const quickActions = [
   { label: "Programação", path: "/admin/banners?tab=programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
 ];
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: banners, isLoading: loadingBanners } = useAllBanners();
-  const { data: movies, isLoading: loadingMovies } = useAllMovies();
-  const { data: series, isLoading: loadingSeries } = useAllSeries();
-  const { data: news, isLoading: loadingNews } = useAllNewsReleases();
-  const { data: todayGames, isLoading: loadingGames } = useAllDailyGames(getLocalDateString());
+  const { data: banners, isLoading: loadingBanners, isError: errorBanners, refetch: refetchBanners } = useAllBanners();
+  const { data: movies, isLoading: loadingMovies, isError: errorMovies, refetch: refetchMovies } = useAllMovies();
+  const { data: series, isLoading: loadingSeries, isError: errorSeries, refetch: refetchSeries } = useAllSeries();
+  const { data: news, isLoading: loadingNews, isError: errorNews, refetch: refetchNews } = useAllNewsReleases();
+  const { data: todayGames, isLoading: loadingGames, isError: errorGames, refetch: refetchGames } = useAllDailyGames(getLocalDateString());
 
   const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
+  const hasError = errorBanners || errorMovies || errorSeries || errorNews || errorGames;
+
+  const handleRetry = () => {
+    refetchBanners(); refetchMovies(); refetchSeries(); refetchNews(); refetchGames();
+  };
 
   const totalBanners = banners?.length || 0;
   const activeBanners = banners?.filter((b) => b.active).length || 0;
@@ -86,10 +100,23 @@ const AdminDashboard = () => {
           </div>
           <div>
             <p className="text-sm font-bold text-foreground capitalize">{todayFormatted}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Painel Administrativo</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
           </div>
         </div>
       </div>
+
+      {/* Error alert */}
+      {hasError && (
+        <Alert variant="destructive" className="border-destructive/30 bg-destructive/10">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-xs">Erro ao carregar alguns dados.</span>
+            <Button variant="ghost" size="sm" onClick={handleRetry} className="h-7 px-2 text-xs gap-1">
+              <RefreshCw className="h-3 w-3" /> Tentar novamente
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -126,11 +153,11 @@ const AdminDashboard = () => {
       <div>
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ações Rápidas</h2>
         <div className="grid grid-cols-2 gap-2">
-          {quickActions.map((action) => (
+          {quickActions.map((action, i) => (
             <button
               key={action.label}
               onClick={() => navigate(action.path)}
-              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color}`}
+              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color} ${i === quickActions.length - 1 && quickActions.length % 2 !== 0 ? "col-span-2" : ""}`}
             >
               <action.icon className="h-4 w-4" />
               + {action.label}
