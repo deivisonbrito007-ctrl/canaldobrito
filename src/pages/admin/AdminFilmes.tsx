@@ -13,36 +13,46 @@ const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-
 
 const AdminFilmes = () => {
   const { user } = useAuth();
-  const { results, loading: searching, search } = useTMDBSearch();
+  const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
   const { data: movies } = useAllMovies();
   const addMovie = useAddMovie();
   const toggleMovie = useToggleMovie();
   const deleteMovie = useDeleteMovie();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"search" | "trending">("search");
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   const handleSearch = () => { if (query.trim()) search("search_movie", query); };
-  const loadNowPlaying = () => { setTab("trending"); search("now_playing"); };
+  const loadNowPlaying = () => { setTab("trending"); setResults([]); search("now_playing"); };
+  const switchToSearch = () => { setTab("search"); setResults([]); };
 
   const handleAdd = async (r: TMDBResult) => {
     const existing = movies?.find((m) => m.tmdb_id === r.id);
     if (existing) { toast.info("Filme já adicionado"); return; }
+    setAddingId(r.id);
     try {
+      // Fetch full details to get genre names
+      const details = await fetchDetails("movie_details", r.id);
+      const genreText = details?.genres?.map((g) => g.name).join(", ") || null;
+
       await addMovie.mutateAsync({
         tmdb_id: r.id, title: r.title || r.name || "",
         poster_url: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
         overview: r.overview || null,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
         year: r.release_date ? parseInt(r.release_date) : null,
-        genre: null, added_by: user?.id || null,
+        genre: genreText, added_by: user?.id || null,
       });
       toast.success("Filme adicionado!");
     } catch (err: any) { toast.error(err.message); }
+    finally { setAddingId(null); }
   };
+
+  const activeCount = movies?.filter((m) => m.active).length || 0;
+  const totalCount = movies?.length || 0;
 
   return (
     <div className="space-y-5">
-      {/* Search */}
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -53,7 +63,7 @@ const AdminFilmes = () => {
         <div className="p-4 space-y-3">
           <div className="flex gap-1.5">
             {[
-              { key: "search" as const, label: "Buscar", onClick: () => setTab("search") },
+              { key: "search" as const, label: "Buscar", onClick: switchToSearch },
               { key: "trending" as const, label: "Em cartaz", onClick: loadNowPlaying },
             ].map((t) => (
               <button key={t.key} onClick={t.onClick} className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${tab === t.key ? "bg-blue-500/15 text-blue-400 border border-blue-500/30" : "glass-panel text-muted-foreground/70"}`}>
@@ -76,7 +86,7 @@ const AdminFilmes = () => {
           {results.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {results.map((r) => (
-                <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden">
+                <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden group">
                   {r.poster_path ? (
                     <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.title || r.name} className="w-full aspect-[2/3] object-cover" loading="lazy" />
                   ) : (
@@ -89,8 +99,8 @@ const AdminFilmes = () => {
                       <span>{r.vote_average?.toFixed(1)}</span>
                     </div>
                   </div>
-                  <Button size="sm" className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-0 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
-                    <Plus className="h-3 w-3 mr-1" /> Add
+                  <Button size="sm" disabled={addingId === r.id} className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
+                    {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />} Add
                   </Button>
                 </div>
               ))}
@@ -99,11 +109,12 @@ const AdminFilmes = () => {
         </div>
       </div>
 
-      {/* Added Movies as cards */}
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionados</h3>
-          <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-0.5">{movies?.length || 0}</span>
+          <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-0.5">
+            {activeCount} ativos / {totalCount}
+          </span>
         </div>
         <div className="p-4">
           {!movies || movies.length === 0 ? (
@@ -122,9 +133,10 @@ const AdminFilmes = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{m.title}</p>
-                    <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
-                      {m.year}
-                      {m.rating && <><Star className={`h-2 w-2 fill-current ${ratingColor(m.rating)}`} /><span className={ratingColor(m.rating)}>{m.rating}</span></>}
+                    <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
+                      {m.year && <span>{m.year}</span>}
+                      {m.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(m.rating)}`} /><span className={ratingColor(m.rating)}>{m.rating}</span></>}
+                      {m.genre && <span className="text-blue-400/70">• {m.genre}</span>}
                     </p>
                   </div>
                   <Switch checked={m.active} onCheckedChange={(v) => toggleMovie.mutate({ id: m.id, active: v })} />
