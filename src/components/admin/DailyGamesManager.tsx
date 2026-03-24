@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
+import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -18,6 +19,30 @@ export const DailyGamesManager = () => {
   const insertGames = useInsertDailyGames();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [sportFilter, setSportFilter] = useState<string | null>(null);
+
+  // Live countdown tick
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Sport counts
+  const sportCounts = useMemo(() => {
+    if (!games) return {};
+    return games.reduce<Record<string, number>>((acc, g) => {
+      const st = g.sport_type || "football";
+      acc[st] = (acc[st] || 0) + 1;
+      return acc;
+    }, {});
+  }, [games]);
+
+  const filteredGames = useMemo(() => {
+    if (!games) return [];
+    if (!sportFilter) return games;
+    return games.filter((g) => (g.sport_type || "football") === sportFilter);
+  }, [games, sportFilter]);
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
@@ -44,12 +69,25 @@ export const DailyGamesManager = () => {
             <Calendar className="h-4 w-4 text-emerald-400" />
             Jogos Publicados
           </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs text-emerald-400 font-semibold">{activeCount} ativos</span>
             {scheduledCount > 0 && (
               <span className="text-xs text-amber-400 font-semibold">{scheduledCount} agendados</span>
             )}
             <span className="text-xs text-muted-foreground/50">{games?.length || 0} total</span>
+            {Object.entries(sportCounts).map(([sport, count]) => (
+              <button
+                key={sport}
+                onClick={() => setSportFilter(sportFilter === sport ? null : sport)}
+                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
+                  sportFilter === sport
+                    ? "bg-primary/20 text-primary font-bold"
+                    : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1]"
+                }`}
+              >
+                {SPORT_EMOJI[sport as SportType] || "⚽"} {count}
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-2 mt-3 sm:mt-0">
@@ -87,7 +125,7 @@ export const DailyGamesManager = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {games.map((game) => {
+            {filteredGames.map((game) => {
               const isScheduled = game.publish_at && !game.active && new Date(game.publish_at) > new Date();
               return (
                 <div
@@ -237,6 +275,8 @@ const AddGameForm = ({
           is_live: false,
           is_womens: home.includes("(F)") || away.includes("(F)"),
           active: true,
+          sport_type: detectSportType(comp),
+          status_short: "NS",
         },
       ]);
       toast.success("Jogo adicionado!");

@@ -115,7 +115,7 @@ function cleanupGame(game: ParsedGame): ParsedGame {
   return { ...game, home_team: home, away_team: away, competition, competition_detail };
 }
 
-function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
+export function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;

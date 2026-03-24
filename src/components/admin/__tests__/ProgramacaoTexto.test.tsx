@@ -1,110 +1,5 @@
 import { describe, it, expect } from "vitest";
-
-// We need to test the parser. Since it's not exported, we extract and test it directly.
-// Re-implement parseScheduleText here for unit testing (mirrors the component's logic).
-
-interface ParsedGame {
-  home_team: string;
-  away_team: string;
-  competition: string;
-  competition_detail: string;
-  game_time: string;
-  channels: string[];
-  is_womens: boolean;
-  date: string;
-  selected: boolean;
-}
-
-function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  const games: ParsedGame[] = [];
-  let currentDate = fallbackDate;
-
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-
-    const dateMatch = line.match(/(?:📅|📺|🗓|🗓️|\*\*Dia|Dia)\s*\**\s*(?:Dia\s*)?\**\s*(\d{1,2})\/(\d{1,2})/i);
-    if (dateMatch) {
-      const day = dateMatch[1].padStart(2, "0");
-      const month = dateMatch[2].padStart(2, "0");
-      const year = new Date().getFullYear();
-      currentDate = `${year}-${month}-${day}`;
-      i++;
-      continue;
-    }
-
-    if (!/\sx\s/i.test(line)) {
-      i++;
-      continue;
-    }
-
-    const teamLine = line;
-    const compLine = i + 1 < lines.length ? lines[i + 1] : "";
-    const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
-
-    const teamParts = teamLine.split(/\sx\s/i).map((t) => t.trim());
-    const home_team = teamParts[0] || "";
-    const away_team = teamParts[1] || "";
-    const is_womens = /\(F\)/i.test(teamLine);
-
-    let competition = "";
-    let competition_detail = "";
-    let game_time = "00:00";
-
-    if (compLine.includes("🏆") || /[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]/.test(compLine) || compLine.includes("/")) {
-      const afterTrophy = compLine.includes("🏆") ? (compLine.split("🏆").pop() || "") : compLine;
-      const beforeSlash = afterTrophy.split("/")[0].trim();
-
-      const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
-      if (detailMatch) {
-        competition_detail = detailMatch[1];
-        competition = beforeSlash.replace(/\([^)]+\)/, "").trim();
-      } else {
-        competition = beforeSlash;
-      }
-      competition = competition.replace(/[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛📺🏆]/g, "").trim();
-
-      const timeMatch = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH:](\d{2})/);
-      if (timeMatch) {
-        const hours = timeMatch[1].padStart(2, "0");
-        const minutes = timeMatch[2] || "00";
-        game_time = `${hours}:${minutes}`;
-      } else {
-        const timeMatchShort = compLine.match(/(?:[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]\s*)?(\d{1,2})[hH]\b/);
-        if (timeMatchShort) {
-          game_time = `${timeMatchShort[1].padStart(2, "0")}:00`;
-        }
-      }
-    }
-
-    let channels: string[] = [];
-    if (channelLine.includes("📺")) {
-      const afterTv = channelLine.split("📺").pop() || "";
-      channels = afterTv
-        .split(",")
-        .flatMap((part) => part.split(/ e (?=[A-Z])/))
-        .map((c) => c.trim())
-        .filter(Boolean);
-    }
-
-    games.push({
-      home_team,
-      away_team,
-      competition,
-      competition_detail,
-      game_time,
-      channels,
-      is_womens,
-      date: currentDate,
-      selected: true,
-    });
-
-    i += 3;
-  }
-
-  return games;
-}
+import { parseScheduleText } from "../ProgramacaoTexto";
 
 describe("parseScheduleText", () => {
   const fallback = "2026-03-19";
@@ -186,5 +81,42 @@ Barcelona x Real Madrid
 
     const games = parseScheduleText(text, fallback);
     expect(games[0].channels).toEqual(["ESPN", "Sportv", "Star+"]);
+  });
+
+  it("parses Format B — individual sport without 'x'", () => {
+    const text = `ATP e WTA
+🎾 Tênis (Indian Wells) / ⏰ 20h00
+📺 ESPN 2`;
+
+    const games = parseScheduleText(text, fallback);
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("ATP e WTA");
+    expect(games[0].away_team).toBe("");
+    expect(games[0].competition).toBe("Tênis");
+    expect(games[0].competition_detail).toBe("Indian Wells");
+    expect(games[0].sport_type).toBe("tennis");
+  });
+
+  it("parses Format B — F1 event", () => {
+    const text = `GP da Arábia Saudita
+🏎️ Fórmula 1 (Classificação) / ⏰ 13h00
+📺 Band, BandSports`;
+
+    const games = parseScheduleText(text, fallback);
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("GP da Arábia Saudita");
+    expect(games[0].away_team).toBe("");
+    expect(games[0].sport_type).toBe("f1");
+  });
+
+  it("parses Format B — UFC event", () => {
+    const text = `UFC 315 (Card Principal)
+🥊 MMA / ⏰ 23h00
+📺 Combate`;
+
+    const games = parseScheduleText(text, fallback);
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("UFC 315 (Card Principal)");
+    expect(games[0].sport_type).toBe("mma");
   });
 });
