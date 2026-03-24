@@ -201,6 +201,8 @@ const Assinar = () => {
             className="overflow-hidden marquee-container marquee-mask"
             onTouchStart={pauseMarquee}
             onTouchEnd={resumeMarquee}
+            onMouseEnter={pauseMarquee}
+            onMouseLeave={resumeMarquee}
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
               {MARQUEE_ITEMS.map((item, i) => (
@@ -239,10 +241,14 @@ const Assinar = () => {
           </div>
         </section>
 
-        {/* Pricing */}
-        <section className="glass-panel p-6 text-center space-y-3 border-primary/30 relative overflow-hidden">
+        <section ref={pricingRef} className="glass-panel p-6 text-center space-y-3 border-primary/30 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-          <div className="relative space-y-3">
+          <div className="absolute -top-px left-1/2 -translate-x-1/2">
+            <span className="text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-b-lg px-4 py-1">
+              ⭐ MAIS POPULAR
+            </span>
+          </div>
+          <div className="relative space-y-3 pt-4">
             <p className="text-[10px] uppercase tracking-wider font-bold text-primary/70 font-body">
               Brito Solutions · TV Completa
             </p>
@@ -260,11 +266,23 @@ const Assinar = () => {
               href={ctaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-6 py-3.5 rounded-full hover:brightness-110 transition-all shadow-lg shadow-primary/25 min-h-[48px]"
+              className="block mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-6 py-3.5 rounded-full hover:brightness-110 transition-all shadow-lg shadow-primary/25 min-h-[48px]"
             >
               <MessageCircle className="w-4 h-4" />
               Assinar agora
             </a>
+            <div className="flex items-center justify-center gap-4 pt-2">
+              {[
+                { icon: "🔓", label: "Sem fidelidade" },
+                { icon: "💬", label: "Suporte WhatsApp" },
+                { icon: "👥", label: "+5000 clientes" },
+              ].map(({ icon, label }) => (
+                <div key={label} className="flex items-center gap-1">
+                  <span className="text-sm">{icon}</span>
+                  <span className="text-[9px] text-muted-foreground font-body">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -335,20 +353,6 @@ const Assinar = () => {
           </div>
         </section>
 
-        {/* Trust badges */}
-        <section className="grid grid-cols-3 gap-2">
-          {[
-            { icon: "🔓", label: "Sem fidelidade" },
-            { icon: "💬", label: "Suporte WhatsApp" },
-            { icon: "👥", label: "+5000 clientes" },
-          ].map(({ icon, label }) => (
-            <div key={label} className="glass-panel p-3 text-center space-y-1">
-              <span className="text-lg">{icon}</span>
-              <p className="text-[10px] text-muted-foreground font-body">{label}</p>
-            </div>
-          ))}
-        </section>
-
         {/* Referral */}
         <section className="glass-panel p-5 space-y-3">
           <div className="flex items-center gap-2">
@@ -407,12 +411,28 @@ const Assinar = () => {
         </section>
 
         {/* Footer */}
-        <footer className="pt-4 pb-8 text-center">
+        <footer className="pt-4 pb-8 text-center" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
           <p className="text-[10px] text-muted-foreground/30 font-body">
             © {new Date().getFullYear()} Brito Solutions TV
           </p>
         </footer>
       </main>
+
+      {/* Sticky CTA */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-t border-border/10 px-4 py-3 transition-all duration-300 ${showSticky ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"}`}
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
+      >
+        <a
+          href={ctaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="max-w-lg mx-auto w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-6 py-3 rounded-full hover:brightness-110 transition-all shadow-lg shadow-primary/25 min-h-[48px]"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Assinar agora · R$ 35/mês
+        </a>
+      </div>
     </div>
   );
 };
