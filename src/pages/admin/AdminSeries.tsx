@@ -13,32 +13,42 @@ const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-
 
 const AdminSeries = () => {
   const { user } = useAuth();
-  const { results, loading: searching, search } = useTMDBSearch();
+  const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
   const { data: series } = useAllSeries();
   const addSeries = useAddSeries();
   const toggleSeries = useToggleSeries();
   const deleteSeries = useDeleteSeries();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"search" | "popular">("search");
+  const [addingId, setAddingId] = useState<number | null>(null);
 
   const handleSearch = () => { if (query.trim()) search("search_tv", query); };
-  const loadPopular = () => { setTab("popular"); search("popular_tv"); };
+  const loadPopular = () => { setTab("popular"); setResults([]); search("popular_tv"); };
+  const switchToSearch = () => { setTab("search"); setResults([]); };
 
   const handleAdd = async (r: TMDBResult) => {
     const existing = series?.find((s) => s.tmdb_id === r.id);
     if (existing) { toast.info("Série já adicionada"); return; }
+    setAddingId(r.id);
     try {
+      const details = await fetchDetails("tv_details", r.id);
+      const genreText = details?.genres?.map((g) => g.name).join(", ") || null;
+
       await addSeries.mutateAsync({
         tmdb_id: r.id, title: r.name || r.title || "",
         poster_url: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
         overview: r.overview || null,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
         year: r.first_air_date ? parseInt(r.first_air_date) : null,
-        genre: null, added_by: user?.id || null,
+        genre: genreText, added_by: user?.id || null,
       });
       toast.success("Série adicionada!");
     } catch (err: any) { toast.error(err.message); }
+    finally { setAddingId(null); }
   };
+
+  const activeCount = series?.filter((s) => s.active).length || 0;
+  const totalCount = series?.length || 0;
 
   return (
     <div className="space-y-5">
@@ -52,7 +62,7 @@ const AdminSeries = () => {
         <div className="p-4 space-y-3">
           <div className="flex gap-1.5">
             {[
-              { key: "search" as const, label: "Buscar", onClick: () => setTab("search") },
+              { key: "search" as const, label: "Buscar", onClick: switchToSearch },
               { key: "popular" as const, label: "Populares", onClick: loadPopular },
             ].map((t) => (
               <button key={t.key} onClick={t.onClick} className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${tab === t.key ? "bg-purple-500/15 text-purple-400 border border-purple-500/30" : "glass-panel text-muted-foreground/70"}`}>
@@ -75,7 +85,7 @@ const AdminSeries = () => {
           {results.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {results.map((r) => (
-                <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden">
+                <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden group">
                   {r.poster_path ? (
                     <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.name || r.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
                   ) : (
@@ -88,8 +98,8 @@ const AdminSeries = () => {
                       <span>{r.vote_average?.toFixed(1)}</span>
                     </div>
                   </div>
-                  <Button size="sm" className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-0 hover:opacity-100 focus:opacity-100 active:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
-                    <Plus className="h-3 w-3 mr-1" /> Add
+                  <Button size="sm" disabled={addingId === r.id} className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
+                    {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />} Add
                   </Button>
                 </div>
               ))}
@@ -101,7 +111,9 @@ const AdminSeries = () => {
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionadas</h3>
-          <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">{series?.length || 0}</span>
+          <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">
+            {activeCount} ativas / {totalCount}
+          </span>
         </div>
         <div className="p-4">
           {!series || series.length === 0 ? (
@@ -120,9 +132,10 @@ const AdminSeries = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{s.title}</p>
-                    <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
-                      {s.year}
-                      {s.rating && <><Star className={`h-2 w-2 fill-current ${ratingColor(s.rating)}`} /><span className={ratingColor(s.rating)}>{s.rating}</span></>}
+                    <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
+                      {s.year && <span>{s.year}</span>}
+                      {s.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(s.rating)}`} /><span className={ratingColor(s.rating)}>{s.rating}</span></>}
+                      {s.genre && <span className="text-purple-400/70">• {s.genre}</span>}
                     </p>
                   </div>
                   <Switch checked={s.active} onCheckedChange={(v) => toggleSeries.mutate({ id: s.id, active: v })} />
