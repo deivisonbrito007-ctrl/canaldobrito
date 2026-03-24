@@ -1,21 +1,26 @@
 
 
-# Reduzir Repetitividade no Final da Página /assinar
+# Correcao de Bugs e Melhorias na Pagina /assinar
 
-## Problema
-A seção "COMECE AGORA" com o botão "Falar com consultor no WhatsApp" aparece logo acima do botão sticky "Assinar agora · R$ 35/mês", criando dois CTAs praticamente idênticos em sequência.
+## Bugs Encontrados
 
-## Solução
-Simplificar a seção final "COMECE AGORA" para ser apenas um fechamento motivacional curto (sem botão duplicado), já que o botão sticky permanece visível. Algo como:
+### 1. Conflito CSS no botao CTA do pricing (linha 269)
+O botao tem `className="block mt-4 w-full flex ..."` — `block` e `flex` sao conflitantes. O `block` sobrescreve o `flex`, quebrando o alinhamento do icone + texto. Corrigir para apenas `flex`.
 
-- Manter o título "COMECE AGORA"
-- Manter o subtítulo "Acesso imediato a milhares de canais, filmes e séries"
-- **Remover** o botão "Falar com consultor no WhatsApp" desta seção
-- **Remover** o texto "Atendimento humanizado · Resposta em minutos"
-- Adicionar uma frase de fechamento tipo "Qualidade, variedade e economia em um só lugar" ou ícones de garantia (sem fidelidade, suporte rápido, cancelamento fácil)
+### 2. Import nao utilizado
+`Users` esta importado do Lucide (linha 3) mas nao e usado em nenhum lugar do componente. Remover para limpar o codigo.
 
-O sticky CTA já cumpre a função de conversão — a seção final vira apenas um reforço visual de confiança.
+### 3. Secao "COMECE AGORA" continua redundante com sticky CTA
+A secao final repete badges de confianca que ja estao no card de pricing ("Sem fidelidade"). Simplificar ou diferenciar os textos.
 
-## Arquivo
-- `src/pages/Assinar.tsx` — simplificar seção "Final CTA"
+## Melhorias Propostas
+
+### 4. Carrossel: items de canal sem logo real
+Os canais de TV usam emojis genericos (📺, ⚽, 💥) em vez de logos reais como os apps de streaming. Isso cria uma inconsistencia visual entre apps (com PNG) e canais (com emoji). **Sugestao**: manter os emojis por ora, mas aumentar levemente o tamanho para melhor visibilidade.
+
+### 5. Hover no container do marquee ja duplicado no CSS
+O CSS ja tem `.marquee-container:hover .marquee-track { animation-play-state: paused }` (linha 261), e o componente TAMBEM adiciona `onMouseEnter={pauseMarquee}` via JS. Isso e redundante — o hover CSS ja pausa. O JS so e necessario para o touch. Remover `onMouseEnter/Leave` para evitar conflito com o resume timer de 2s no desktop.
+
+## Arquivo modificado
+- `src/pages/Assinar.tsx` — corrigir bug do `block flex`, remover import nao usado, limpar handlers redundantes
 
