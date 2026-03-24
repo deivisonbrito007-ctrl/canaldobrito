@@ -1,29 +1,30 @@
 
 
-# Atualizar Filmes Existentes com Metadados do TMDB
+# Auditoria da Aba Series no Admin
 
-## Problema
-Filmes adicionados antes da correcao de generos tem o campo `genre` vazio no banco. Precisam ser atualizados com dados reais do TMDB.
+## Bugs e Gaps Encontrados
 
-## Solucao
+### 1. Sem `useUpdateSeries` — impossivel atualizar metadados (GAP CRITICO)
+O hook `useSeries.ts` nao tem mutation de update. Series adicionadas antes da correcao de generos ficam com `genre: null` para sempre. AdminFilmes ja tem `useUpdateMovie` + batch update + refresh individual, mas AdminSeries nao.
 
-### 1. Botao "Atualizar metadados" no AdminFilmes
-Adicionar um botao no header da secao "Adicionados" que percorre todos os filmes com `genre` nulo, busca `movie_details` no TMDB para cada um, e faz update com genero, rating e overview atualizados.
+**Correcao**: Criar `useUpdateSeries` no `useSeries.ts` (mesmo padrao do `useUpdateMovie`).
 
-### 2. Hook `useUpdateMovie` no useMovies.ts
-Criar mutation que faz `supabase.update({ genre, rating, overview, poster_url }).eq("id", id)` para atualizar campos de um filme existente.
+### 2. Sem botao de batch update nem refresh individual
+AdminFilmes tem botao "Atualizar X sem genero" com Progress bar e icone RefreshCw por item. AdminSeries nao tem nenhum dos dois.
 
-### 3. Botao individual de refresh por filme
-Adicionar um icone de refresh ao lado do switch de cada filme na lista, permitindo atualizar metadados individualmente.
+**Correcao**: Adicionar batch update + refresh individual ao AdminSeries, usando `tv_details` em vez de `movie_details`.
 
-### 4. Logica de batch update
-- Filtrar filmes onde `genre` e null ou vazio
-- Para cada um, chamar `fetchDetails("movie_details", tmdb_id)`
-- Atualizar com genero em texto, rating e overview
-- Mostrar progresso ("Atualizando 3/5...")
-- Toast final com contagem de atualizados
+### 3. Sem label "sem genero" para series sem metadados
+AdminFilmes mostra `sem genero` em amarelo para filmes sem genre. AdminSeries nao mostra nada — o campo simplesmente nao aparece.
+
+**Correcao**: Adicionar o mesmo label amarelo italico.
+
+### 4. `useAllSeries` sem `refetchInterval`
+Diferente de `useAllBanners` e `useAllDailyGames` (que ja tem `refetchInterval: 60_000`), o hook de series nao tem refetch automatico.
+
+**Correcao**: Adicionar `refetchInterval: 60_000`.
 
 ## Arquivos modificados
-- `src/hooks/useMovies.ts` — adicionar `useUpdateMovie` mutation
-- `src/pages/admin/AdminFilmes.tsx` — botao batch update + botao individual refresh, logica de progresso
+- `src/hooks/useSeries.ts` — adicionar `useUpdateSeries` mutation + `refetchInterval`
+- `src/pages/admin/AdminSeries.tsx` — batch update, refresh individual, label "sem genero", Progress bar
 
