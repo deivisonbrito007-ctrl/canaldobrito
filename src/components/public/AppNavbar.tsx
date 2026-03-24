@@ -58,14 +58,12 @@ export const AppNavbar = () => {
               <span className="hidden xs:inline">{liveCount}</span> ao vivo
             </div>
           )}
-          <a
-            href={`https://wa.me/5511940759046?text=${encodeURIComponent("Olá! Tenho interesse em assinar o plano Brito Solutions 📺")}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/assinar"
             className="bg-primary text-primary-foreground text-[11px] font-bold px-3.5 rounded-full hover:opacity-90 transition-opacity min-h-[44px] flex items-center"
           >
             Assine já
-          </a>
+          </Link>
         </div>
       </div>
       <div className="section-divider" />
