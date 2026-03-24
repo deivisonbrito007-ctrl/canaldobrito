@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, Phone, Key, Info, Globe } from "lucide-react";
+import { Save, Loader2, Phone, Key, Info, Globe, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminConfiguracoes = () => {
@@ -12,6 +12,8 @@ const AdminConfiguracoes = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [tmdbKey, setTmdbKey] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -21,14 +23,41 @@ const AdminConfiguracoes = () => {
     }
   }, [settings]);
 
+  const isDirty = useMemo(() => {
+    if (!settings) return false;
+    return (
+      whatsapp !== (settings.whatsapp || "") ||
+      tmdbKey !== (settings.tmdb_api_key || "") ||
+      siteUrl !== (settings.site_url || "")
+    );
+  }, [whatsapp, tmdbKey, siteUrl, settings]);
+
   const handleSave = async () => {
+    if (whatsapp && !/^\d{10,15}$/.test(whatsapp)) {
+      toast.error("WhatsApp inválido — use apenas números (10-15 dígitos)");
+      return;
+    }
+
     try {
-      await updateSetting.mutateAsync({ key: "whatsapp", value: whatsapp });
-      await updateSetting.mutateAsync({ key: "tmdb_api_key", value: tmdbKey });
-      await updateSetting.mutateAsync({ key: "site_url", value: siteUrl });
+      await Promise.all([
+        updateSetting.mutateAsync({ key: "whatsapp", value: whatsapp }),
+        updateSetting.mutateAsync({ key: "tmdb_api_key", value: tmdbKey }),
+        updateSetting.mutateAsync({ key: "site_url", value: siteUrl }),
+      ]);
+      setSaved(true);
       toast.success("Configurações salvas!");
+      setTimeout(() => setSaved(false), 2500);
     } catch (err: any) {
       toast.error(err.message);
+    }
+  };
+
+  const handleCopyUrl = () => {
+    if (siteUrl) {
+      navigator.clipboard.writeText(siteUrl);
+      setCopied(true);
+      toast.success("URL copiada!");
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -49,7 +78,7 @@ const AdminConfiguracoes = () => {
         <div className="p-4 space-y-2">
           <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
           <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
-          <p className="text-[10px] text-muted-foreground/50">Número completo com código do país</p>
+          <p className="text-[10px] text-muted-foreground/50">Número completo com código do país (apenas números, 10-15 dígitos)</p>
         </div>
       </div>
 
@@ -63,7 +92,20 @@ const AdminConfiguracoes = () => {
         </div>
         <div className="p-4 space-y-2">
           <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">URL Pública</Label>
-          <Input placeholder="https://meusite.lovable.app" value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
+          <div className="flex gap-2">
+            <Input placeholder="https://meusite.lovable.app" value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="glass-panel border-white/[0.1] h-10 flex-1" />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={handleCopyUrl}
+              disabled={!siteUrl}
+              className="h-10 w-10 shrink-0"
+              title="Copiar URL"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
           <p className="text-[10px] text-muted-foreground/50">URL pública do site usada nos links de compartilhamento (WhatsApp, etc). Publique o app e cole a URL aqui.</p>
         </div>
       </div>
@@ -95,9 +137,19 @@ const AdminConfiguracoes = () => {
       </div>
 
       {/* Save */}
-      <Button onClick={handleSave} disabled={updateSetting.isPending} className="w-full min-h-[48px] text-sm font-semibold shadow-lg shadow-primary/20">
-        {updateSetting.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-        Salvar
+      <Button
+        onClick={handleSave}
+        disabled={updateSetting.isPending || !isDirty}
+        className="w-full min-h-[48px] text-sm font-semibold shadow-lg shadow-primary/20"
+      >
+        {updateSetting.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        ) : saved ? (
+          <Check className="h-4 w-4 mr-2 text-emerald-400" />
+        ) : (
+          <Save className="h-4 w-4 mr-2" />
+        )}
+        {saved ? "Salvo!" : "Salvar"}
       </Button>
     </div>
   );
