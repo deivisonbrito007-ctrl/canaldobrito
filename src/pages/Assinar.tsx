@@ -86,12 +86,12 @@ const REFERRAL_TIERS = [
 ];
 
 const FAQ_ITEMS = [
-  { q: "Como funciona o serviço?", a: "Após a assinatura, você recebe acesso ao app com login e senha exclusivos. Basta instalar no seu dispositivo e aproveitar todo o conteúdo." },
-  { q: "Posso usar em quantas telas?", a: "O plano permite uso em até 2 telas simultâneas. Para mais telas, consulte nossos planos família." },
-  { q: "Tem fidelidade ou multa?", a: "Não! Sem fidelidade, sem multa. Cancele quando quiser, sem burocracia." },
-  { q: "Funciona em Smart TV?", a: "Sim! Compatível com Smart TVs Samsung, LG, Android TV, Fire Stick, Roku, Chromecast e TV Box." },
-  { q: "Como é feito o pagamento?", a: "Pagamento mensal via Pix ou cartão. Você recebe o acesso em até 15 minutos após a confirmação." },
-  { q: "E se eu tiver problemas técnicos?", a: "Nosso suporte via WhatsApp funciona 7 dias por semana. Resolvemos qualquer problema rapidamente." },
+  { q: "Como funciona o serviço?", a: "Você recebe acesso a um app com canais ao vivo, filmes, séries e esportes via internet. É necessário ter internet de no mínimo 10 Mbps para uma boa experiência." },
+  { q: "Em quais dispositivos posso assistir?", a: "Smart TV, celular/tablet (Android e iPhone), TV Box, Fire Stick e computador. Cada assinatura funciona em 1 dispositivo por vez." },
+  { q: "Posso cancelar quando quiser?", a: "Sim! Sem fidelidade e sem multa. Basta solicitar o cancelamento pelo WhatsApp. Seu acesso continua até o fim do período já pago." },
+  { q: "Como é feito o pagamento?", a: "Via PIX: enviamos um link para você acessar e gerar o PIX para pagamento. Após a confirmação, seu acesso é liberado rapidamente." },
+  { q: "Quanto tempo leva para ativar?", a: "A ativação é realizada rapidamente dentro do horário de atendimento. Se a solicitação for feita fora do horário, será realizada no próximo dia de atendimento." },
+  { q: "O que acontece se eu indicar amigos?", a: "Você ganha descontos progressivos! 25% OFF na 1ª indicação, 50% OFF na 2ª e 1 mês grátis na 3ª. Após a 3ª, o ciclo recomeça." },
 ];
 
 const Assinar = () => {
