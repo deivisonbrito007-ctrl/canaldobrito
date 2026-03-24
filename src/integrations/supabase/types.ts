@@ -329,18 +329,21 @@ export type Database = {
       settings: {
         Row: {
           id: string
+          is_secret: boolean
           key: string
           updated_at: string
           value: string
         }
         Insert: {
           id?: string
+          is_secret?: boolean
           key: string
           updated_at?: string
           value?: string
         }
         Update: {
           id?: string
+          is_secret?: boolean
           key?: string
           updated_at?: string
           value?: string
