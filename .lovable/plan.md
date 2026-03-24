@@ -1,49 +1,46 @@
 
 
-# Auditoria da Aba Banners + Programacao no Admin
-
-## Estado Atual
-
-Codigo auditado: `AdminBanners.tsx`, `ProgramacaoTexto.tsx`, `DailyGamesManager.tsx`, hooks e testes. Console sem erros. Fluxo funcional no geral.
+# Auditoria da Aba Filmes no Admin
 
 ## Bugs Encontrados
 
-### 1. `useAllDailyGames` sem `refetchInterval` (BUG)
-O hook `useAllDailyGames` (usado pelo `DailyGamesManager`) nao tem `refetchInterval`, ao contrario do `useAllBanners` e `useDailyGames`. Jogos ativados pelo cron nao aparecem atualizados ate refresh manual.
+### 1. Genero nunca e salvo (BUG)
+Na `handleAdd` (linha 37), `genre` e sempre `null`. O TMDB retorna `genre_ids` (array de numeros), nao texto. A aba Series tem o mesmo bug. O campo `genre` no banco fica vazio, e os cards publicos nunca mostram a pill de genero.
 
-**Correcao**: Adicionar `refetchInterval: 60_000` ao `useAllDailyGames`.
+**Correcao**: Fazer uma chamada `movie_details` ao TMDB apos selecionar o filme para buscar os generos em texto. Alternativa mais simples: criar um mapa local dos IDs de genero mais comuns do TMDB e converter `genre_ids` para texto na hora do `handleAdd`.
 
-### 2. `DailyGamesManager` sem countdown ao vivo
-O componente usa `formatCountdown` para jogos agendados mas nao tem `setInterval` para forcar re-render. O texto de countdown fica congelado.
+### 2. Botao "Add" invisivel em mobile (BUG de UX)
+O botao `<Plus> Add` nos resultados de busca usa `opacity-0 hover:opacity-100` (linha 92). Em mobile nao existe hover -- o botao so aparece com `active:opacity-100`, que e um flash imperceptivel. O usuario nao consegue adicionar filmes no celular facilmente.
 
-**Correcao**: Adicionar o mesmo padrao de tick usado em `AdminBanners` e `UpcomingActivations`.
+**Correcao**: Tornar o botao sempre visivel em mobile (`opacity-100 sm:opacity-0 sm:hover:opacity-100`) ou adicionar um overlay tap-friendly.
 
-### 3. Teste do parser duplicado e desatualizado
-`ProgramacaoTexto.test.tsx` reimplementa o parser inteiro em vez de importar do componente. A copia nao suporta Format B (esportes individuais sem " x "). Qualquer mudanca no parser real nao reflete nos testes.
+### 3. Resultados de busca persistem ao trocar de aba
+Se o admin busca "Matrix", os resultados aparecem. Se clica em "Em cartaz", os resultados de "Em cartaz" substituem. Mas se volta para "Buscar", os resultados de "Em cartaz" continuam exibidos (o hook `useTMDBSearch` compartilha o estado `results`). Confuso.
 
-**Correcao**: Exportar `parseScheduleText` do `ProgramacaoTexto.tsx` e importar no teste, removendo a copia. Adicionar teste para Format B (ex: "ATP e WTA" sem " x ").
+**Correcao**: Limpar resultados ao trocar de aba com `setResults([])`.
 
-### 4. `AddGameForm` nao define `sport_type` nem `status_short`
-Ao adicionar jogo avulso, o payload nao inclui `sport_type` nem `status_short`, dependendo dos defaults do banco. Funciona por causa dos defaults SQL, mas e fragil.
+### 4. Sem tratamento de erro na busca TMDB
+Se a Edge Function falhar (ex: chave TMDB nao configurada), o `useTMDBSearch` faz `console.error` e seta `results` como `[]`. O admin nao recebe feedback visual -- parece que nao encontrou nada.
 
-**Correcao**: Adicionar `sport_type: detectSportType(comp)` e `status_short: "NS"` ao payload do `AddGameForm`.
+**Correcao**: Adicionar um toast de erro no `catch` do `useTMDBSearch`, ou retornar um estado `error` do hook e exibi-lo na UI.
+
+### 5. Sem testes unitarios para AdminFilmes
+Nenhum teste existe para a pagina de filmes no admin. A aba Series tambem nao tem.
 
 ## Melhorias Propostas
 
-### 5. Contagem de jogos por esporte no `DailyGamesManager`
-Mostrar mini-badges com contagem por esporte (ex: "⚽ 5 🏀 3 🎾 2") no header, dando visao rapida da composicao do dia.
+### 6. Buscar genero real via TMDB details
+Ao adicionar o filme, fazer uma chamada extra `movie_details` para buscar `genres[].name` e salvar como texto separado por virgula. Isso popula a pill de genero nos cards publicos.
 
-### 6. Filtro por esporte no `DailyGamesManager`
-Adicionar pills de filtro por `sport_type` para facilitar a gestao quando ha muitos jogos (como os 18 jogos do dia atual).
+### 7. Contagem ativo/inativo no header
+Mostrar "3 ativos / 5 total" no badge de contagem, dando visibilidade rapida.
 
-## Testes
-- Rodar suite completa
-- Adicionar teste para Format B no parser
-- Adicionar teste para `DailyGamesManager` renderizacao basica
+### 8. Busca com debounce
+Adicionar debounce de 500ms no input de busca para evitar chamadas excessivas a API ao digitar.
 
 ## Arquivos modificados
-- `src/hooks/useDailyGames.ts` — adicionar `refetchInterval` ao `useAllDailyGames`
-- `src/components/admin/DailyGamesManager.tsx` — countdown ao vivo, sport badges no header, filtro por esporte
-- `src/components/admin/ProgramacaoTexto.tsx` — exportar `parseScheduleText`
-- `src/components/admin/__tests__/ProgramacaoTexto.test.tsx` — importar parser real, adicionar teste Format B
+- `src/pages/admin/AdminFilmes.tsx` -- botao Add visivel em mobile, limpar resultados ao trocar aba, contagem ativo/inativo, buscar genero via details
+- `src/pages/admin/AdminSeries.tsx` -- mesmas correcoes (botao mobile, limpar resultados, genero)
+- `src/hooks/useTMDB.ts` -- adicionar estado `error` e toast, expor `setResults`
+- `src/components/public/__tests__/AdminFilmes.test.tsx` -- testes basicos (render, estado vazio, lista de filmes)
 
