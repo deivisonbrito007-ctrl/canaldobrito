@@ -80,9 +80,9 @@ const DEVICES = [
 ];
 
 const REFERRAL_TIERS = [
-  { nth: "1ª", reward: "1 mês grátis", color: "text-primary" },
-  { nth: "2ª", reward: "2 meses grátis", color: "text-primary" },
-  { nth: "3ª+", reward: "Desconto vitalício", color: "text-primary" },
+  { nth: "1ª", label: "indicação", reward: "25% OFF", emoji: "💰", color: "text-amber-400" },
+  { nth: "2ª", label: "indicação", reward: "50% OFF", emoji: "💰", color: "text-amber-500" },
+  { nth: "3ª", label: "indicação", reward: "1 MÊS GRÁTIS", emoji: "🎁", color: "text-primary" },
 ];
 
 const FAQ_ITEMS = [
@@ -341,14 +341,15 @@ const Assinar = () => {
         <section className="glass-panel p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-primary" />
-            <h2 className="font-display text-xl text-foreground tracking-wide">INDIQUE E GANHE</h2>
+            <h2 className="font-display text-xl text-foreground tracking-wide">VOCÊ TAMBÉM PODE GANHAR!</h2>
           </div>
-          <p className="text-[11px] text-muted-foreground font-body">Indique amigos e ganhe benefícios exclusivos!</p>
+          <p className="text-[11px] text-muted-foreground font-body">Após assinar, você recebe seu link exclusivo e ganha:</p>
           <div className="grid grid-cols-3 gap-2">
-            {REFERRAL_TIERS.map(({ nth, reward }) => (
-              <div key={nth} className="text-center p-3 rounded-xl bg-green-dim border border-green-border">
-                <p className="font-display text-lg text-primary">{nth}</p>
-                <p className="text-[10px] text-foreground font-body font-semibold mt-1">{reward}</p>
+            {REFERRAL_TIERS.map(({ nth, label, reward, emoji, color }) => (
+              <div key={nth} className="text-center p-3 rounded-xl bg-surface-2 border border-border">
+                <p className="text-2xl mb-1">{emoji}</p>
+                <p className="text-xs font-bold text-foreground font-body">{nth} {label}</p>
+                <p className={`text-xs font-bold mt-1 font-body ${color}`}>{reward}</p>
               </div>
             ))}
           </div>
