@@ -1,44 +1,33 @@
 
 
-# Auditoria do Dashboard Admin
+# Auditoria da Pagina Publica — Cards de Novidades, Filmes e Series
 
-## Estado Atual
-O Dashboard esta funcional e bem estruturado. A auditoria revelou issues menores, sem bugs criticos.
+## Resultado da Auditoria
 
-## Issues Encontrados
+A pagina publica esta funcionando corretamente no geral. Os metadados fluem do banco para a UI sem bugs criticos.
 
-### 1. Stat cards com 5 colunas em desktop -- "Jogos Hoje" fica apertado (UX)
-O grid usa `grid-cols-2 sm:grid-cols-5`, mas em telas ~640px os 5 cards ficam muito estreitos. O numero grande (`text-2xl`) e cortado.
+### Fluxo verificado (OK)
+- **NovidadesCard** (home tab): Exibe generos via `MetadataRow` (ate 2 generos), ano, tipo de conteudo. Passa `genres` para o detail sheet corretamente.
+- **WeeklyMoviesSection** (aba Destaques): Exibe pill de genero (primeiro genero), rating com estrela, ano. Passa dados para detail sheet.
+- **WeeklySeriesSection** (aba Destaques): Idem ao de filmes.
+- **ContentDetailSheet**: Recebe e exibe rating, ano e primeiro genero corretamente.
 
-**Correcao**: Mudar para `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` para melhor distribuicao em telas medias.
+### Issues Encontrados
 
-### 2. Quick Actions sem acao de Config e WhatsApp
-O dashboard tem atalhos para Banner, Filme, Serie, Novidade e Programacao, mas faltam Config e WhatsApp -- que sao abas do admin.
+#### 1. `NewsReleasesSection.tsx` e codigo morto (CLEANUP)
+O componente nao e importado em nenhum lugar do projeto. O `NovidadesCard` faz a mesma funcao e e o que realmente aparece na Index. O arquivo `NewsReleasesSection.tsx` so ocupa espaco.
 
-**Correcao**: Adicionar WhatsApp e Config como quick actions.
+**Correcao**: Remover o arquivo.
 
-### 3. Sem "ultima atualizacao" no dashboard
-O admin nao sabe quando os dados foram carregados pela ultima vez. Util para debugging.
+#### 2. ContentDetailSheet so mostra 1 genero — NovidadesCard mostra 2 (INCONSISTENCIA)
+O `MetadataRow` no card exibe `genres.split(",").slice(0, 2)`, mas o `ContentDetailSheet` so mostra `genre.split(",")[0]`. Ao abrir os detalhes, o usuario ve menos informacao que no card.
 
-**Correcao**: Adicionar timestamp "Atualizado as HH:MM" discreto no topo, com botao de refresh manual.
+**Correcao**: Mostrar ate 2-3 generos no detail sheet, cada um como pill separada.
 
-### 4. UpcomingActivations nao mostra items de filmes/series/novidades agendados
-O componente so busca `banners` e `daily_games` com `publish_at`. Se no futuro outras tabelas tiverem agendamento, ficam de fora. Nao e um bug, mas uma limitacao a documentar.
-
-### 5. Sem testes para AdminDashboard
-Nenhum teste unitario existe.
-
-**Correcao**: Criar testes basicos verificando render dos stat cards, greeting, e estado de loading.
-
-## Melhorias de UI Propostas
-
-### 6. Saude do conteudo -- itens sem genero
-Adicionar um alerta discreto no dashboard mostrando quantos filmes/series/novidades estao sem genero, com link direto para a aba correspondente. Isso da visibilidade ao admin sobre conteudo incompleto.
-
-### 7. Stat cards com hover effect
-Adicionar `hover:scale-[1.02] hover:border-opacity-40` para feedback visual ao passar o mouse.
+#### 3. NewsReleasesSection nao exibe generos no card overlay (MENOR — codigo morto)
+Irrelevante pois o componente nao e usado, mas se fosse reativado, so mostra tipo e ano, sem generos.
 
 ## Arquivos modificados
-- `src/pages/admin/AdminDashboard.tsx` -- grid responsivo, quick actions extras, timestamp refresh, alerta de conteudo incompleto, hover nos cards
-- `src/pages/admin/__tests__/AdminDashboard.test.tsx` -- testes basicos de render
+- `src/components/public/NewsReleasesSection.tsx` — remover arquivo
+- `src/components/public/ContentDetailSheet.tsx` — exibir ate 3 generos como pills separadas em vez de apenas 1
 
