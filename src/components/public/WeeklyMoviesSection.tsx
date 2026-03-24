@@ -1,14 +1,26 @@
 import { useActiveMovies } from "@/hooks/useMovies";
-import { Film, Star, ImageOff } from "lucide-react";
+import { Film, Star, ImageOff, Play } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ContentDetailSheet } from "./ContentDetailSheet";
+import { TrailerModal } from "./TrailerModal";
 import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
+import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
 type MovieItem = NonNullable<ReturnType<typeof useActiveMovies>["data"]>[number];
 
-const MovieCard = ({ item, index, onSelect }: { item: MovieItem; index: number; onSelect: () => void }) => {
+const MovieCard = ({
+  item,
+  index,
+  onSelect,
+  onPlayTrailer,
+}: {
+  item: MovieItem;
+  index: number;
+  onSelect: () => void;
+  onPlayTrailer: (e: React.MouseEvent) => void;
+}) => {
   const [imgErr, setImgErr] = useState(false);
 
   return (
@@ -54,6 +66,17 @@ const MovieCard = ({ item, index, onSelect }: { item: MovieItem; index: number; 
           </div>
         )}
 
+        {/* Play button overlay */}
+        {item.tmdb_id && (
+          <button
+            onClick={onPlayTrailer}
+            className="absolute inset-0 m-auto w-11 h-11 flex items-center justify-center rounded-full bg-primary/80 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-primary hover:scale-110 active:scale-95 shadow-lg"
+            aria-label={`Assistir trailer de ${item.title}`}
+          >
+            <Play className="h-5 w-5 fill-current ml-0.5" />
+          </button>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
           <p className="text-[13px] sm:text-sm font-bold text-foreground leading-tight line-clamp-2 drop-shadow-lg font-body">
             {item.title}
@@ -77,13 +100,18 @@ const MovieCard = ({ item, index, onSelect }: { item: MovieItem; index: number; 
 export const WeeklyMoviesSection = () => {
   const { data: movies, isLoading } = useActiveMovies();
   const [selected, setSelected] = useState<MovieItem | null>(null);
+  const [trailerItem, setTrailerItem] = useState<MovieItem | null>(null);
+
+  const { trailerKey, loading: trailerLoading } = useTrailerKey(
+    trailerItem?.tmdb_id,
+    "movie",
+    !!trailerItem
+  );
 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="px-4">
-          <SectionHeaderSkeleton />
-        </div>
+        <div className="px-4"><SectionHeaderSkeleton /></div>
         <PosterRowSkeleton />
       </div>
     );
@@ -98,7 +126,16 @@ export const WeeklyMoviesSection = () => {
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {movies.map((item, idx) => (
-          <MovieCard key={item.id} item={item} index={idx} onSelect={() => setSelected(item)} />
+          <MovieCard
+            key={item.id}
+            item={item}
+            index={idx}
+            onSelect={() => setSelected(item)}
+            onPlayTrailer={(e) => {
+              e.stopPropagation();
+              setTrailerItem(item);
+            }}
+          />
         ))}
       </div>
 
@@ -106,6 +143,14 @@ export const WeeklyMoviesSection = () => {
         open={!!selected}
         onClose={() => setSelected(null)}
         item={selected ? { ...selected, content_type: "movie" } : null}
+      />
+
+      <TrailerModal
+        open={!!trailerItem}
+        onClose={() => setTrailerItem(null)}
+        trailerKey={trailerKey}
+        loading={trailerLoading}
+        title={trailerItem?.title}
       />
     </div>
   );

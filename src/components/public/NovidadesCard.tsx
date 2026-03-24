@@ -1,7 +1,9 @@
 import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { ContentDetailSheet } from "./ContentDetailSheet";
+import { TrailerModal } from "./TrailerModal";
+import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ImageOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { ImageOff, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const getBadgeLabel = (badge_type: string) => {
@@ -38,9 +40,16 @@ export const NovidadesCard = () => {
   const [direction, setDirection] = useState(1);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [trailerItem, setTrailerItem] = useState<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchRef = useRef<number | null>(null);
   const didSwipe = useRef(false);
+
+  const { trailerKey, loading: trailerLoading } = useTrailerKey(
+    trailerItem?.tmdb_id,
+    trailerItem?.content_type,
+    !!trailerItem
+  );
 
   const total = items?.length ?? 0;
 
@@ -104,6 +113,14 @@ export const NovidadesCard = () => {
     if (total > 1) startTimer();
   };
 
+  const handleTrailerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const clickedItem = items?.[safeIndex];
+    if (!clickedItem?.tmdb_id) return;
+    setTrailerItem(clickedItem);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
   if (isLoading || !items || items.length === 0) return null;
 
   const item = items[safeIndex];
@@ -145,7 +162,7 @@ export const NovidadesCard = () => {
         )}
       </div>
 
-      {/* Card — stacked on mobile, side-by-side on desktop */}
+      {/* Card */}
       <div
         className="relative rounded-2xl overflow-hidden bg-surface border border-border cursor-pointer transition-all duration-200 active:scale-[0.99]"
         onTouchStart={onTouchStart}
@@ -162,16 +179,13 @@ export const NovidadesCard = () => {
             exit="exit"
             transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Mobile: stacked | Desktop: side-by-side */}
             <div className="flex flex-col sm:grid sm:grid-cols-[1fr_260px]">
               {/* Poster */}
               <div className="relative h-[340px] sm:h-auto sm:min-h-[300px] overflow-hidden sm:order-2 bg-surface">
-                {/* Gradient left fade (desktop) */}
                 <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-surface to-transparent z-[2] hidden sm:block" />
 
                 {item.image_url ? (
                   <>
-                    {/* Blurred background fill (mobile) */}
                     <img
                       src={item.image_url}
                       alt=""
@@ -179,7 +193,6 @@ export const NovidadesCard = () => {
                       loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110 sm:hidden"
                     />
-                    {/* Main image */}
                     <motion.img
                       src={item.image_url}
                       alt={item.title}
@@ -196,7 +209,7 @@ export const NovidadesCard = () => {
                 )}
               </div>
 
-              {/* Mobile content — below poster */}
+              {/* Mobile content */}
               <div className="flex flex-col px-4 py-3 space-y-2 sm:hidden">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
@@ -207,14 +220,26 @@ export const NovidadesCard = () => {
                   {item.title.toUpperCase()}
                 </h3>
                 <MetadataRow item={item} />
-                {item.overview && (
-                  <p className="text-[11px] text-muted-foreground font-body line-clamp-2 leading-relaxed">
-                    {item.overview}
-                  </p>
-                )}
+                <div className="flex items-center gap-2">
+                  {item.overview && (
+                    <p className="text-[11px] text-muted-foreground font-body line-clamp-2 leading-relaxed flex-1">
+                      {item.overview}
+                    </p>
+                  )}
+                  {item.tmdb_id && (
+                    <button
+                      onClick={handleTrailerClick}
+                      className="shrink-0 flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/20 px-3 py-1.5 text-[11px] font-bold text-primary font-body hover:bg-primary/25 transition-colors"
+                      aria-label={`Assistir trailer de ${item.title}`}
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      Trailer
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Desktop content — left side */}
+              {/* Desktop content */}
               <div className="hidden sm:flex p-4 sm:py-8 sm:pl-7 sm:pr-4 space-y-3 flex-col justify-center sm:order-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center rounded-full bg-green-dim border border-green-border px-2.5 py-1 text-[10px] font-bold text-primary font-body">
@@ -229,6 +254,16 @@ export const NovidadesCard = () => {
                   <p className="text-xs text-muted-foreground font-body line-clamp-2 leading-relaxed">
                     {item.overview}
                   </p>
+                )}
+                {item.tmdb_id && (
+                  <button
+                    onClick={handleTrailerClick}
+                    className="self-start flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/20 px-4 py-2 text-xs font-bold text-primary font-body hover:bg-primary/25 transition-colors"
+                    aria-label={`Assistir trailer de ${item.title}`}
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    Assistir Trailer
+                  </button>
                 )}
               </div>
             </div>
@@ -271,6 +306,17 @@ export const NovidadesCard = () => {
           tmdb_id: selectedItem.tmdb_id,
           content_type: selectedItem.content_type,
         } : null}
+      />
+
+      <TrailerModal
+        open={!!trailerItem}
+        onClose={() => {
+          setTrailerItem(null);
+          if (total > 1) startTimer();
+        }}
+        trailerKey={trailerKey}
+        loading={trailerLoading}
+        title={trailerItem?.title}
       />
     </section>
   );

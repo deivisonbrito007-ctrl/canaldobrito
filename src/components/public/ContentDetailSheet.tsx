@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,71 +19,13 @@ interface ContentDetailSheetProps {
   } | null;
 }
 
-const findYouTubeTrailer = (results: any[]) => {
-  return (
-    results.find((v: any) => v.type === "Trailer" && v.site === "YouTube") ||
-    results.find((v: any) => v.site === "YouTube")
-  );
-};
-
 export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetProps) => {
-  const [trailerKey, setTrailerKey] = useState<string | null>(null);
-  const [loadingTrailer, setLoadingTrailer] = useState(false);
+  const { trailerKey, loading: loadingTrailer } = useTrailerKey(
+    item?.tmdb_id,
+    item?.content_type,
+    open
+  );
   const [expandOverview, setExpandOverview] = useState(false);
-
-  useEffect(() => {
-    if (!open || !item?.tmdb_id) {
-      setTrailerKey(null);
-      setLoadingTrailer(false);
-      setExpandOverview(false);
-      return;
-    }
-
-    let cancelled = false;
-    const fetchTrailer = async () => {
-      setTrailerKey(null);
-      setLoadingTrailer(true);
-      setExpandOverview(false);
-
-      const isTv = item.content_type === "series" || item.content_type === "tv";
-
-      try {
-        // 1. Try pt-BR first
-        const actionPt = isTv ? "tv_videos" : "movie_videos";
-        const { data, error } = await supabase.functions.invoke("tmdb-proxy", {
-          body: { action: actionPt, query: String(item.tmdb_id) },
-        });
-        if (cancelled) return;
-
-        if (!error && data?.results) {
-          const trailer = findYouTubeTrailer(data.results);
-          if (trailer) {
-            setTrailerKey(trailer.key);
-            return;
-          }
-        }
-
-        // 2. Fallback: fetch without language filter (EN)
-        const actionEn = isTv ? "tv_videos_en" : "movie_videos_en";
-        const { data: dataEn, error: errorEn } = await supabase.functions.invoke("tmdb-proxy", {
-          body: { action: actionEn, query: String(item.tmdb_id) },
-        });
-        if (cancelled) return;
-
-        if (!errorEn && dataEn?.results) {
-          const trailer = findYouTubeTrailer(dataEn.results);
-          if (trailer) setTrailerKey(trailer.key);
-        }
-      } catch (e) {
-        console.error("Trailer fetch error:", e);
-      } finally {
-        if (!cancelled) setLoadingTrailer(false);
-      }
-    };
-
-    fetchTrailer();
-    return () => { cancelled = true; };
-  }, [open, item?.tmdb_id, item?.content_type]);
 
   if (!item) return null;
 
@@ -93,7 +35,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
@@ -102,7 +43,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
             onClick={onClose}
           />
 
-          {/* Sheet */}
           <motion.div
             className="fixed bottom-0 left-0 right-0 z-[60] max-h-[85vh] overflow-y-auto rounded-t-3xl bg-card border-t border-border/30"
             initial={{ y: "100%" }}
@@ -110,12 +50,10 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
           >
-            {/* Handle */}
             <div className="sticky top-0 z-10 flex justify-center pt-3 pb-2 bg-card rounded-t-3xl">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
             </div>
 
-            {/* Close button */}
             <button
               onClick={onClose}
               className="absolute top-3 right-4 p-2 rounded-full hover:bg-secondary/50 text-muted-foreground z-20"
@@ -124,7 +62,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
             </button>
 
             <div className="px-4 pb-24 space-y-4">
-              {/* Header with poster */}
               <div className="flex gap-3">
                 {poster && (
                   <img
@@ -153,7 +90,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                 </div>
               </div>
 
-              {/* Overview with expand */}
               {item.overview && (
                 <div>
                   <p className={`text-sm text-muted-foreground leading-relaxed ${!expandOverview ? "line-clamp-4" : ""}`}>
@@ -170,7 +106,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                 </div>
               )}
 
-              {/* Trailer */}
               {loadingTrailer && (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
