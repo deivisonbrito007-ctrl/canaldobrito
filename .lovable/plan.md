@@ -1,40 +1,49 @@
 
 
-# Auditoria e Melhorias da Aba Banners no Admin
+# Auditoria da Aba Banners + Programacao no Admin
+
+## Estado Atual
+
+Codigo auditado: `AdminBanners.tsx`, `ProgramacaoTexto.tsx`, `DailyGamesManager.tsx`, hooks e testes. Console sem erros. Fluxo funcional no geral.
 
 ## Bugs Encontrados
 
-### 1. Link `?tab=programacao` nao funciona (BUG CRITICO)
-O Dashboard e Quick Actions apontam para `/admin/banners?tab=programacao`, mas `AdminBanners` nao le o parametro `tab` da URL. O componente usa `useState("categories")` sem sincronizar com `useSearchParams`. O usuario clica em "Jogos Hoje" ou "Programacao" no dashboard e cai na aba Categorias.
+### 1. `useAllDailyGames` sem `refetchInterval` (BUG)
+O hook `useAllDailyGames` (usado pelo `DailyGamesManager`) nao tem `refetchInterval`, ao contrario do `useAllBanners` e `useDailyGames`. Jogos ativados pelo cron nao aparecem atualizados ate refresh manual.
 
-**Correcao**: Adicionar `useSearchParams` em `AdminBanners` para ler o parametro `tab` e inicializar `activeSection` com base nele.
+**Correcao**: Adicionar `refetchInterval: 60_000` ao `useAllDailyGames`.
 
-### 2. Botoes de reordenacao (setas) operam em escopo errado
-O `moveBanner` busca o indice no array completo (`banners.findIndex`), mas os botoes up/down sao desabilitados com base no `idx` do loop dentro do grupo por data (`grouped[dateKey]!.map((banner, idx)`). Isso causa:
-- Seta "up" desabilitada para o primeiro item do grupo, mas `moveBanner` opera no array global
-- Se banners de datas diferentes tem sort_order intercalados, o swap pode trocar banners de grupos diferentes
+### 2. `DailyGamesManager` sem countdown ao vivo
+O componente usa `formatCountdown` para jogos agendados mas nao tem `setInterval` para forcar re-render. O texto de countdown fica congelado.
 
-**Correcao**: Passar o indice global ao inves do indice do grupo, ou ajustar `moveBanner` para operar com IDs adjacentes no array global.
+**Correcao**: Adicionar o mesmo padrao de tick usado em `AdminBanners` e `UpcomingActivations`.
 
-### 3. Countdown de banners agendados nao atualiza em tempo real
-Mesmo problema corrigido no `UpcomingActivations` — o `formatCountdown` dos banners agendados so atualiza quando os dados sao refetched, nao a cada minuto.
+### 3. Teste do parser duplicado e desatualizado
+`ProgramacaoTexto.test.tsx` reimplementa o parser inteiro em vez de importar do componente. A copia nao suporta Format B (esportes individuais sem " x "). Qualquer mudanca no parser real nao reflete nos testes.
 
-**Correcao**: Adicionar `setInterval` de 60s para forcar re-render (mesmo padrao do UpcomingActivations).
+**Correcao**: Exportar `parseScheduleText` do `ProgramacaoTexto.tsx` e importar no teste, removendo a copia. Adicionar teste para Format B (ex: "ATP e WTA" sem " x ").
 
-### 4. `useAllBanners` nao tem `refetchInterval`
-Diferente de `useDailyGames` (que tem `refetchInterval: 60_000`), o hook `useAllBanners` nao tem refetch automatico. Banners agendados que sao ativados pelo cron nao aparecem atualizados ate refresh manual.
+### 4. `AddGameForm` nao define `sport_type` nem `status_short`
+Ao adicionar jogo avulso, o payload nao inclui `sport_type` nem `status_short`, dependendo dos defaults do banco. Funciona por causa dos defaults SQL, mas e fragil.
 
-**Correcao**: Adicionar `refetchInterval: 60_000` ao `useAllBanners`.
+**Correcao**: Adicionar `sport_type: detectSportType(comp)` e `status_short: "NS"` ao payload do `AddGameForm`.
 
 ## Melhorias Propostas
 
-### 5. Adicionar confirmacao visual apos upload
-Atualmente o toast aparece mas o usuario nao tem feedback visual claro de que o banner foi adicionado ao final da lista. Adicionar auto-scroll para o banner recem-adicionado.
+### 5. Contagem de jogos por esporte no `DailyGamesManager`
+Mostrar mini-badges com contagem por esporte (ex: "⚽ 5 🏀 3 🎾 2") no header, dando visao rapida da composicao do dia.
 
-### 6. Botao "Desativar todos" por categoria
-Facilitar a limpeza de banners antigos — um botao que desativa todos os banners ativos da categoria selecionada de uma vez.
+### 6. Filtro por esporte no `DailyGamesManager`
+Adicionar pills de filtro por `sport_type` para facilitar a gestao quando ha muitos jogos (como os 18 jogos do dia atual).
+
+## Testes
+- Rodar suite completa
+- Adicionar teste para Format B no parser
+- Adicionar teste para `DailyGamesManager` renderizacao basica
 
 ## Arquivos modificados
-- `src/pages/admin/AdminBanners.tsx` — ler `?tab` da URL, corrigir indices de reordenacao, countdown ao vivo, auto-scroll apos upload, botao desativar todos
-- `src/hooks/useBanners.ts` — adicionar `refetchInterval` ao `useAllBanners`
+- `src/hooks/useDailyGames.ts` — adicionar `refetchInterval` ao `useAllDailyGames`
+- `src/components/admin/DailyGamesManager.tsx` — countdown ao vivo, sport badges no header, filtro por esporte
+- `src/components/admin/ProgramacaoTexto.tsx` — exportar `parseScheduleText`
+- `src/components/admin/__tests__/ProgramacaoTexto.test.tsx` — importar parser real, adicionar teste Format B
 
