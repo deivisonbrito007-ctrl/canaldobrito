@@ -1,45 +1,44 @@
 
 
-# Auditoria da Aba Novidades no Admin
+# Auditoria da Aba Configuracoes no Admin
 
 ## Bugs Encontrados
 
-### 1. Botao "Add" invisivel em mobile (BUG de UX)
-Mesmo problema corrigido em AdminFilmes e AdminSeries: o botao usa `opacity-0 hover:opacity-100` (linha 146). Em mobile nao existe hover.
+### 1. TMDB API Key exposta publicamente (VULNERABILIDADE DE SEGURANCA)
+A tabela `settings` tem RLS policy "Anyone can read settings" para SELECT. Isso significa que qualquer pessoa pode fazer `supabase.from("settings").select("*")` e ler a chave TMDB armazenada em texto plano. A chave da API fica visivel no network tab do browser de qualquer visitante.
 
-**Correcao**: Mudar para `opacity-100 sm:opacity-0 sm:hover:opacity-100`.
+**Correcao**: Mover a TMDB API key para a tabela de secrets do backend (ja existe `TMDB_API_KEY` como secret? Nao, mas deveria). Alternativa mais simples e sem breaking change: criar uma RLS policy que restringe leitura de settings com `key = 'tmdb_api_key'` apenas para admins. Implementar via uma coluna `is_secret` na tabela settings, com policy que filtra rows secretas para usuarios nao-admin.
 
-### 2. `useAllNewsReleases` sem `refetchInterval`
-Todos os outros hooks admin ja tem `refetchInterval: 60_000` (banners, daily_games, movies, series). O hook de novidades nao tem, causando inconsistencia.
+**Abordagem escolhida**: Adicionar coluna `is_secret boolean default false` a tabela settings. Alterar a RLS policy de SELECT para excluir rows secretas para usuarios anonimos. Marcar `tmdb_api_key` como `is_secret = true`. O edge function `tmdb-proxy` ja usa service_role_key, entao continua lendo normalmente.
 
-**Correcao**: Adicionar `refetchInterval: 60_000`.
+### 2. Save faz 3 mutations sequenciais — falha parcial possivel (BUG)
+Se a segunda chamada falhar, a primeira ja foi salva. O usuario ve erro mas WhatsApp ja mudou. Nenhum rollback.
 
-### 3. Sem batch update / refresh individual para itens existentes
-AdminFilmes e AdminSeries ja tem botao "Atualizar X sem genero" com Progress bar e icone RefreshCw por item. AdminNovidades nao tem -- itens antigos sem genero ficam desatualizados para sempre.
+**Correcao**: Usar `Promise.all` para enviar as 3 em paralelo — ou usar um unico upsert batch. Mais simples: trocar para `Promise.all` com as 3 mutations.
 
-**Correcao**: Adicionar batch update + refresh individual, usando a funcao `fetchTMDBDetails` ja existente no componente.
+### 3. Sem validacao do numero de WhatsApp (UX)
+Aceita qualquer texto. Deveria validar que contem apenas numeros e tem pelo menos 10 digitos.
 
-### 4. Sem label "sem genero" para itens sem metadados
-AdminFilmes e AdminSeries mostram `sem genero` em amarelo. AdminNovidades nao mostra nada.
+**Correcao**: Adicionar validacao basica antes do save com regex `/^\d{10,15}$/`.
 
-**Correcao**: Adicionar label amarelo italico quando `genres` e null/vazio.
+### 4. Sem indicador de estado sujo (dirty state) (UX)
+O botao Salvar esta sempre habilitado mesmo sem mudancas. Nao ha indicacao visual de que algo mudou.
 
-### 5. Contagem so mostra total, nao ativo/inativo
-AdminFilmes e AdminSeries mostram "X ativos / Y". AdminNovidades mostra so o total.
+**Correcao**: Comparar valores atuais com `settings` original e desabilitar botao quando nao ha mudancas.
 
-**Correcao**: Mostrar "X ativos / Y" no badge.
+### 5. Sem testes unitarios
+Nenhum teste existe para AdminConfiguracoes nem useSettings.
 
-### 6. `fetchTMDBDetails` duplicado
-AdminNovidades define sua propria `fetchTMDBDetails` local (linhas 16-32) que faz a mesma coisa que `useTMDBSearch().fetchDetails`. Codigo duplicado.
+## Melhorias Propostas
 
-**Correcao**: Usar `fetchDetails` do hook `useTMDB` em vez da funcao local.
+### 6. Feedback visual de valor salvo com sucesso
+Apos salvar, mostrar um check verde temporario ao lado de cada campo confirmando que foi persistido.
 
-### 7. `useUpdateNewsRelease` nao inclui `rating` nem `image_url`
-O Partial Pick no mutation so aceita `active | badge_type | display_order | title | overview | genres | runtime | seasons | tagline`. Falta `rating` e `image_url`, impedindo refresh completo de metadados.
-
-**Correcao**: Adicionar `rating` e `image_url` ao tipo do mutation.
+### 7. Botao de copiar URL do site
+Adicionar icone de clipboard ao lado do campo URL do Site para facilitar copiar a URL configurada.
 
 ## Arquivos modificados
-- `src/hooks/useNewsReleases.ts` -- adicionar `refetchInterval`, expandir tipo do `useUpdateNewsRelease`
-- `src/pages/admin/AdminNovidades.tsx` -- botao Add mobile, remover `fetchTMDBDetails` duplicado, batch update + refresh individual, label "sem genero", contagem ativo/inativo
+- Migration SQL: adicionar coluna `is_secret` a tabela settings, atualizar RLS policy, marcar `tmdb_api_key` como secreta
+- `src/pages/admin/AdminConfiguracoes.tsx` — `Promise.all` no save, validacao WhatsApp, dirty state, botao copiar URL
+- `src/hooks/useSettings.ts` — sem mudancas necessarias (admin le via authenticated, edge function via service_role)
 
