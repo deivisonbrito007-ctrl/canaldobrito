@@ -73,6 +73,7 @@ export const useAllBanners = (category?: BannerCategory) =>
       if (error) throw error;
       return data as Banner[];
     },
+    refetchInterval: 60_000,
   });
 
 export const useCreateBanner = () => {
