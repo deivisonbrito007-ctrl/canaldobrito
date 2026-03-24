@@ -24,6 +24,25 @@ const STREAMING_APPS = [
   { name: "Starz", icon: starzIcon },
 ];
 
+const TV_CHANNELS = [
+  { emoji: "📺", name: "ESPN", bg: "bg-red-600/20", text: "text-red-400", border: "border-red-500/30" },
+  { emoji: "⚽", name: "SporTV", bg: "bg-emerald-600/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+  { emoji: "🌐", name: "Globo", bg: "bg-slate-200/15", text: "text-foreground/80", border: "border-foreground/20" },
+  { emoji: "⭐", name: "Premiere", bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
+  { emoji: "💥", name: "TNT", bg: "bg-blue-600/20", text: "text-blue-400", border: "border-blue-500/30" },
+  { emoji: "📡", name: "Band", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+  { emoji: "🎮", name: "CazéTV", bg: "bg-lime-500/20", text: "text-lime-400", border: "border-lime-500/30" },
+  { emoji: "📺", name: "Record", bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/30" },
+  { emoji: "🐐", name: "Canal GOAT", bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/30" },
+  { emoji: "🚀", name: "Space", bg: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+];
+
+const CAROUSEL_ITEMS = [
+  ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
+  ...TV_CHANNELS.map(c => ({ type: "channel" as const, ...c })),
+];
+const MARQUEE_ITEMS = [...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS];
+
 const WA_NUMBER = "5511940759046";
 const WA_LINK = (msg: string) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
