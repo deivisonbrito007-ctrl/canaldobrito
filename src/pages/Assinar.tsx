@@ -98,7 +98,9 @@ const Assinar = () => {
   const { h, m, s } = useCountdown();
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showSticky, setShowSticky] = useState(false);
 
   const pauseMarquee = useCallback(() => {
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
@@ -109,6 +111,16 @@ const Assinar = () => {
     resumeTimer.current = setTimeout(() => {
       trackRef.current?.classList.remove("paused");
     }, 2000);
+  }, []);
+
+  useEffect(() => {
+    if (!pricingRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(pricingRef.current);
+    return () => observer.disconnect();
   }, []);
 
   const ctaUrl = useMemo(
