@@ -185,16 +185,31 @@ const Assinar = () => {
               +10.000 títulos
             </span>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1 snap-x snap-mandatory">
-            {STREAMING_APPS.map(({ name, icon }) => (
-              <div key={name} className="flex flex-col items-center gap-2 shrink-0 snap-start">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2.5 relative">
-                  <img src={icon} alt={name} loading="lazy" width={64} height={64} className="w-full h-full object-contain" />
-                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-body text-center w-16 sm:w-20 leading-tight">{name}</span>
-              </div>
-            ))}
+          <div
+            className="overflow-hidden marquee-container marquee-mask"
+            onTouchStart={pauseMarquee}
+            onTouchEnd={resumeMarquee}
+          >
+            <div ref={trackRef} className="marquee-track flex gap-3 w-max">
+              {MARQUEE_ITEMS.map((item, i) => (
+                item.type === "app" ? (
+                  <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2 relative">
+                      <img src={(item as any).icon} alt={item.name} loading="lazy" width={48} height={48} className="w-full h-full object-contain" />
+                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-body text-center w-14 sm:w-16 leading-tight">{item.name}</span>
+                  </div>
+                ) : (
+                  <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center ${(item as any).bg} ${(item as any).border}`}>
+                      <span className="text-2xl">{(item as any).emoji}</span>
+                    </div>
+                    <span className={`text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight ${(item as any).text}`}>{item.name}</span>
+                  </div>
+                )
+              ))}
+            </div>
           </div>
           <div className="flex items-center justify-center gap-4 sm:gap-6 pt-1">
             <div className="flex items-center gap-1.5">
