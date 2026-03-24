@@ -80,9 +80,9 @@ const DEVICES = [
 ];
 
 const REFERRAL_TIERS = [
-  { nth: "1ª", reward: "1 mês grátis", color: "text-primary" },
-  { nth: "2ª", reward: "2 meses grátis", color: "text-primary" },
-  { nth: "3ª+", reward: "Desconto vitalício", color: "text-primary" },
+  { nth: "1ª", label: "indicação", reward: "25% OFF", emoji: "💰", color: "text-amber-400" },
+  { nth: "2ª", label: "indicação", reward: "50% OFF", emoji: "💰", color: "text-amber-500" },
+  { nth: "3ª", label: "indicação", reward: "1 MÊS GRÁTIS", emoji: "🎁", color: "text-primary" },
 ];
 
 const FAQ_ITEMS = [
