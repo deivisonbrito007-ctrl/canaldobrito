@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllBanners } from "@/hooks/useBanners";
 import { useAllMovies } from "@/hooks/useMovies";
@@ -9,7 +9,10 @@ import { getLocalDateString } from "@/lib/gameUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Image, Film, Clapperboard, Sparkles, Trophy, FileText, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Calendar, Image, Film, Clapperboard, Sparkles, Trophy,
+  FileText, AlertCircle, RefreshCw, MessageCircle, Settings, AlertTriangle,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
@@ -45,6 +48,8 @@ const quickActions = [
   { label: "Série", path: "/admin/series", color: "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20", icon: Clapperboard },
   { label: "Novidade", path: "/admin/novidades", color: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20", icon: Sparkles },
   { label: "Programação", path: "/admin/banners?tab=programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
+  { label: "WhatsApp", path: "/admin/whatsapp", color: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20", icon: MessageCircle },
+  { label: "Configurações", path: "/admin/configuracoes", color: "bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20", icon: Settings },
 ];
 
 const getGreeting = () => {
@@ -56,11 +61,11 @@ const getGreeting = () => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: banners, isLoading: loadingBanners, isError: errorBanners, refetch: refetchBanners } = useAllBanners();
-  const { data: movies, isLoading: loadingMovies, isError: errorMovies, refetch: refetchMovies } = useAllMovies();
-  const { data: series, isLoading: loadingSeries, isError: errorSeries, refetch: refetchSeries } = useAllSeries();
-  const { data: news, isLoading: loadingNews, isError: errorNews, refetch: refetchNews } = useAllNewsReleases();
-  const { data: todayGames, isLoading: loadingGames, isError: errorGames, refetch: refetchGames } = useAllDailyGames(getLocalDateString());
+  const { data: banners, isLoading: loadingBanners, isError: errorBanners, refetch: refetchBanners, dataUpdatedAt: updatedBanners } = useAllBanners();
+  const { data: movies, isLoading: loadingMovies, isError: errorMovies, refetch: refetchMovies, dataUpdatedAt: updatedMovies } = useAllMovies();
+  const { data: series, isLoading: loadingSeries, isError: errorSeries, refetch: refetchSeries, dataUpdatedAt: updatedSeries } = useAllSeries();
+  const { data: news, isLoading: loadingNews, isError: errorNews, refetch: refetchNews, dataUpdatedAt: updatedNews } = useAllNewsReleases();
+  const { data: todayGames, isLoading: loadingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(getLocalDateString());
 
   const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
   const hasError = errorBanners || errorMovies || errorSeries || errorNews || errorGames;
@@ -90,17 +95,46 @@ const AdminDashboard = () => {
   const actives: Record<string, number> = { banners: activeBanners, filmes: activeMovies, series: activeSeries, novidades: activeNews, jogos: activeGames };
   const todayFormatted = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
+  // Last updated timestamp
+  const lastUpdated = useMemo(() => {
+    const timestamps = [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames].filter(Boolean);
+    if (timestamps.length === 0) return null;
+    return Math.max(...timestamps);
+  }, [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames]);
+
+  // Content health: items missing genre
+  const missingGenre = useMemo(() => {
+    const moviesMissing = movies?.filter((m) => !m.genre || m.genre.trim() === "").length || 0;
+    const seriesMissing = series?.filter((s) => !s.genre || s.genre.trim() === "").length || 0;
+    const newsMissing = news?.filter((n) => !n.genres || n.genres.trim() === "").length || 0;
+    return { movies: moviesMissing, series: seriesMissing, news: newsMissing, total: moviesMissing + seriesMissing + newsMissing };
+  }, [movies, series, news]);
+
   return (
     <div className="space-y-6">
-      {/* Date card */}
+      {/* Date card + last updated */}
       <div className="glass-panel rounded-xl p-4 bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.08]">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-white/[0.05]">
             <Calendar className="h-5 w-5 text-foreground/80" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-sm font-bold text-foreground capitalize">{todayFormatted}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {lastUpdated && (
+              <span className="text-[9px] text-muted-foreground/60">
+                {format(new Date(lastUpdated), "HH:mm")}
+              </span>
+            )}
+            <button
+              onClick={handleRetry}
+              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
+              title="Atualizar dados"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground/60" />
+            </button>
           </div>
         </div>
       </div>
@@ -118,12 +152,37 @@ const AdminDashboard = () => {
         </Alert>
       )}
 
+      {/* Content health alert */}
+      {!isLoading && missingGenre.total > 0 && (
+        <Alert className="border-amber-500/30 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4 text-amber-400" />
+          <AlertDescription className="text-xs text-amber-300/90">
+            <span className="font-semibold">{missingGenre.total} ite{missingGenre.total === 1 ? "m" : "ns"} sem gênero:</span>
+            {missingGenre.movies > 0 && (
+              <button onClick={() => navigate("/admin/filmes")} className="ml-1.5 underline underline-offset-2 hover:text-amber-200">
+                {missingGenre.movies} filme{missingGenre.movies !== 1 ? "s" : ""}
+              </button>
+            )}
+            {missingGenre.series > 0 && (
+              <button onClick={() => navigate("/admin/series")} className="ml-1.5 underline underline-offset-2 hover:text-amber-200">
+                {missingGenre.series} série{missingGenre.series !== 1 ? "s" : ""}
+              </button>
+            )}
+            {missingGenre.news > 0 && (
+              <button onClick={() => navigate("/admin/novidades")} className="ml-1.5 underline underline-offset-2 hover:text-amber-200">
+                {missingGenre.news} novidade{missingGenre.news !== 1 ? "s" : ""}
+              </button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((card, i) => (
           <div
             key={card.key}
-            className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] cursor-pointer`}
+            className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] cursor-pointer`}
             onClick={() => navigate(card.route)}
           >
             {isLoading ? (
