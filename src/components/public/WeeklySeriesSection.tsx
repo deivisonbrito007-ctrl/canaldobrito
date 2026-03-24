@@ -1,14 +1,26 @@
 import { useActiveSeries } from "@/hooks/useSeries";
-import { Clapperboard, Star, ImageOff } from "lucide-react";
+import { Clapperboard, Star, ImageOff, Play } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import { ContentDetailSheet } from "./ContentDetailSheet";
+import { TrailerModal } from "./TrailerModal";
 import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
+import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
 type SeriesItem = NonNullable<ReturnType<typeof useActiveSeries>["data"]>[number];
 
-const SeriesCard = ({ item, index, onSelect }: { item: SeriesItem; index: number; onSelect: () => void }) => {
+const SeriesCard = ({
+  item,
+  index,
+  onSelect,
+  onPlayTrailer,
+}: {
+  item: SeriesItem;
+  index: number;
+  onSelect: () => void;
+  onPlayTrailer: (e: React.MouseEvent) => void;
+}) => {
   const [imgErr, setImgErr] = useState(false);
 
   return (
@@ -54,6 +66,17 @@ const SeriesCard = ({ item, index, onSelect }: { item: SeriesItem; index: number
           </div>
         )}
 
+        {/* Play button overlay */}
+        {item.tmdb_id && (
+          <button
+            onClick={onPlayTrailer}
+            className="absolute inset-0 m-auto w-11 h-11 flex items-center justify-center rounded-full bg-secondary/80 text-secondary-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-secondary hover:scale-110 active:scale-95 shadow-lg"
+            aria-label={`Assistir trailer de ${item.title}`}
+          >
+            <Play className="h-5 w-5 fill-current ml-0.5" />
+          </button>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
           <p className="text-[13px] sm:text-sm font-bold text-foreground leading-tight line-clamp-2 drop-shadow-lg font-body">
             {item.title}
@@ -77,6 +100,13 @@ const SeriesCard = ({ item, index, onSelect }: { item: SeriesItem; index: number
 export const WeeklySeriesSection = () => {
   const { data: series, isLoading } = useActiveSeries();
   const [selected, setSelected] = useState<SeriesItem | null>(null);
+  const [trailerItem, setTrailerItem] = useState<SeriesItem | null>(null);
+
+  const { trailerKey, loading: trailerLoading } = useTrailerKey(
+    trailerItem?.tmdb_id,
+    "series",
+    !!trailerItem
+  );
 
   if (isLoading) {
     return (
@@ -98,7 +128,16 @@ export const WeeklySeriesSection = () => {
       </div>
       <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {series.map((item, idx) => (
-          <SeriesCard key={item.id} item={item} index={idx} onSelect={() => setSelected(item)} />
+          <SeriesCard
+            key={item.id}
+            item={item}
+            index={idx}
+            onSelect={() => setSelected(item)}
+            onPlayTrailer={(e) => {
+              e.stopPropagation();
+              setTrailerItem(item);
+            }}
+          />
         ))}
       </div>
 
@@ -106,6 +145,14 @@ export const WeeklySeriesSection = () => {
         open={!!selected}
         onClose={() => setSelected(null)}
         item={selected ? { ...selected, content_type: "series" } : null}
+      />
+
+      <TrailerModal
+        open={!!trailerItem}
+        onClose={() => setTrailerItem(null)}
+        trailerKey={trailerKey}
+        loading={trailerLoading}
+        title={trailerItem?.title}
       />
     </div>
   );
