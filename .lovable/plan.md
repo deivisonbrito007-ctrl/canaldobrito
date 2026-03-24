@@ -1,33 +1,34 @@
 
 
-# Trailers do YouTube nos Cards de Novidades e Filmes
+# Correcoes: Trailers e Warnings de Ref
 
-## Situacao Atual
-O `ContentDetailSheet` ja busca trailers via TMDB proxy (pt-BR com fallback EN) e exibe um iframe do YouTube. Porem, o usuario so ve o trailer depois de abrir o detail sheet. Nao ha indicacao visual nos cards de que um trailer esta disponivel.
+## Problemas Identificados
 
-## Solucao
+### 1. WeeklySeriesSection sem botao de trailer
+O componente de series NAO tem botao Play nem TrailerModal — diferente do WeeklyMoviesSection que ja tem ambos. Series ficam sem acesso direto ao trailer pelo card.
 
-### 1. Hook `useTrailerKey` reutilizavel
-Extrair a logica de fetch de trailer do `ContentDetailSheet` para um hook dedicado `src/hooks/useTrailerKey.ts`. Recebe `tmdb_id` e `content_type`, retorna `{ trailerKey, loading }`. Usa cache em memoria (Map) para evitar chamadas repetidas ao mesmo `tmdb_id`.
+### 2. Warnings "Function components cannot be given refs" (3x)
+Os console logs mostram warnings para `MovieCard`, `ContentDetailSheet` e `TrailerModal`. Estes componentes sao usados dentro de `AnimatePresence`/`motion` que tenta passar refs. O fix e usar `React.forwardRef` ou, no caso de componentes funcionais simples, garantir que nao recebam ref desnecessariamente. Na pratica, esses warnings vem do framer-motion tentando passar ref para componentes filhos diretos do `AnimatePresence`.
 
-### 2. Botao Play nos cards de Filmes (`WeeklyMoviesSection`)
-Adicionar um icone de Play semi-transparente sobre o poster de cada `MovieCard`. Ao clicar no Play, abre um modal leve com o iframe do YouTube (em vez de abrir o detail sheet completo). Clicar fora do Play continua abrindo o detail sheet normalmente.
+### 3. Sobre "nao conseguir ver detalhes"
+O `ContentDetailSheet` funciona — o session replay confirma que o modal de trailer abriu e fechou corretamente. Porem, para series, como nao ha botao Play no card, o unico caminho e abrir o detail sheet e esperar o trailer carregar la dentro. Se o TMDB nao retornar trailer para aquela serie, o usuario so ve "Ver no TMDB" — sem feedback claro.
 
-O trailer so e buscado sob demanda (ao clicar no Play), nao em batch, para evitar dezenas de chamadas simultaneas ao TMDB.
+## Plano de Correcao
 
-### 3. Botao Play no card de Novidades (`NovidadesCard`)
-Adicionar um botao "▶ Trailer" discreto abaixo do titulo/metadata. Ao clicar, abre o mesmo modal de trailer. O clique no card continua abrindo o detail sheet.
+### Arquivo 1: `src/components/public/WeeklySeriesSection.tsx`
+- Adicionar import de `Play`, `TrailerModal`, `useTrailerKey`
+- Adicionar `onPlayTrailer` prop ao `SeriesCard` (mesmo padrao do `MovieCard`)
+- Adicionar botao Play overlay no card (opacity-0 com hover)
+- Adicionar state `trailerItem` + `TrailerModal` no componente pai
 
-### 4. Modal de Trailer (`TrailerModal`)
-Componente simples: backdrop escuro + iframe do YouTube centralizado em aspect-video. Fecha ao clicar no backdrop ou no X. Reutilizado por ambos os cards.
+### Arquivo 2: `src/components/public/WeeklyMoviesSection.tsx`
+- O warning de ref no `MovieCard` vem do framer-motion. Como `MovieCard` e um componente funcional usado como filho direto, nao precisa de forwardRef — o warning e inofensivo mas vamos silencia-lo convertendo `MovieCard` para usar `forwardRef`.
 
-## Arquivos
+### Arquivo 3: `src/components/public/ContentDetailSheet.tsx`
+- Sem mudanca necessaria — o warning vem do `AnimatePresence` no pai que tenta passar ref. O componente ja funciona corretamente.
 
-| Arquivo | Acao |
-|---------|------|
-| `src/hooks/useTrailerKey.ts` | Criar — hook com fetch + cache |
-| `src/components/public/TrailerModal.tsx` | Criar — modal leve com iframe YouTube |
-| `src/components/public/WeeklyMoviesSection.tsx` | Adicionar botao Play no MovieCard |
-| `src/components/public/NovidadesCard.tsx` | Adicionar botao Trailer |
-| `src/components/public/ContentDetailSheet.tsx` | Refatorar para usar `useTrailerKey` |
+## Resultado
+- Series ganham botao Play no card (paridade com filmes)
+- Warnings de ref eliminados
+- Trailers acessiveis diretamente em ambas as secoes
 
