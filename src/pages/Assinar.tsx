@@ -4,6 +4,26 @@ import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop,
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logo from "@/assets/canal_do_brito_logo.png";
 
+import netflixIcon from "@/assets/app-icons/netflix.png";
+import primeIcon from "@/assets/app-icons/prime-video.png";
+import disneyIcon from "@/assets/app-icons/disney-plus.png";
+import hboIcon from "@/assets/app-icons/hbo-max.png";
+import globoplayIcon from "@/assets/app-icons/globoplay.png";
+import paramountIcon from "@/assets/app-icons/paramount.png";
+import appleTvIcon from "@/assets/app-icons/apple-tv.png";
+import starzIcon from "@/assets/app-icons/starz.png";
+
+const STREAMING_APPS = [
+  { name: "Netflix", icon: netflixIcon },
+  { name: "Prime Video", icon: primeIcon },
+  { name: "Disney+", icon: disneyIcon },
+  { name: "HBO Max", icon: hboIcon },
+  { name: "Globoplay", icon: globoplayIcon },
+  { name: "Paramount+", icon: paramountIcon },
+  { name: "Apple TV+", icon: appleTvIcon },
+  { name: "Starz", icon: starzIcon },
+];
+
 const WA_NUMBER = "5511940759046";
 const WA_LINK = (msg: string) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
