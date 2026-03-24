@@ -288,25 +288,53 @@ const Assinar = () => {
         </section>
 
         {/* Important Info */}
-        <section className="glass-panel p-4 border-amber-400/20 space-y-2">
+        <section className="glass-panel p-4 border-amber-400/20 space-y-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <h3 className="text-sm font-bold text-foreground font-body">Informações importantes</h3>
+            <h3 className="text-sm font-bold text-foreground font-body">Informações importantes:</h3>
           </div>
-          <ul className="space-y-1.5 text-[11px] text-muted-foreground font-body pl-6">
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-              <span>Ativação em até 15 minutos após confirmação do pagamento</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-              <span>Taxa única de ativação de R$ 20 por dispositivo (apenas no primeiro acesso)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-              <span>Suporte via WhatsApp 7 dias por semana</span>
-            </li>
-          </ul>
+
+          {/* 1 dispositivo */}
+          <div className="flex items-start gap-3 text-sm text-foreground font-body">
+            <span className="shrink-0 w-5 h-5 rounded bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">1</span>
+            <span>Cada assinatura funciona em <strong>somente 1 dispositivo</strong>.</span>
+          </div>
+
+          {/* Taxa */}
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 text-sm text-foreground font-body">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold flex items-center justify-center">i</span>
+              <span>Sobre a taxa de R$ 25/ano:</span>
+            </div>
+
+            {/* Smart TV / Apple / Computador */}
+            <div className="ml-8 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 space-y-1">
+              <p className="text-xs font-body text-foreground">
+                <span className="font-bold">🖥️ Smart TV, Apple ou Computador:</span> A loja de apps cobra <strong className="text-foreground">R$ 25/ano</strong> para ativar o player. Valor pago <strong className="text-primary">direto à loja</strong>, apenas 1x ao ano.
+              </p>
+            </div>
+
+            {/* Android */}
+            <div className="ml-8 rounded-xl bg-primary/10 border border-primary/20 p-3 space-y-1">
+              <p className="text-xs font-body text-foreground">
+                <span className="font-bold">✅ Android (celular, tablet ou TV Box):</span> Não precisa pagar! Temos <strong className="text-primary">aplicativo próprio</strong> sem custos adicionais.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust badges */}
+        <section className="grid grid-cols-3 gap-2">
+          {[
+            { icon: "🔓", label: "Sem fidelidade" },
+            { icon: "💬", label: "Suporte WhatsApp" },
+            { icon: "👥", label: "+5000 clientes" },
+          ].map(({ icon, label }) => (
+            <div key={label} className="glass-panel p-3 text-center space-y-1">
+              <span className="text-lg">{icon}</span>
+              <p className="text-[10px] text-muted-foreground font-body">{label}</p>
+            </div>
+          ))}
         </section>
 
         {/* Referral */}
