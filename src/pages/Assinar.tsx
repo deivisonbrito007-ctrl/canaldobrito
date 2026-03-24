@@ -4,6 +4,26 @@ import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop,
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logo from "@/assets/canal_do_brito_logo.png";
 
+import netflixIcon from "@/assets/app-icons/netflix.png";
+import primeIcon from "@/assets/app-icons/prime-video.png";
+import disneyIcon from "@/assets/app-icons/disney-plus.png";
+import hboIcon from "@/assets/app-icons/hbo-max.png";
+import globoplayIcon from "@/assets/app-icons/globoplay.png";
+import paramountIcon from "@/assets/app-icons/paramount.png";
+import appleTvIcon from "@/assets/app-icons/apple-tv.png";
+import starzIcon from "@/assets/app-icons/starz.png";
+
+const STREAMING_APPS = [
+  { name: "Netflix", icon: netflixIcon },
+  { name: "Prime Video", icon: primeIcon },
+  { name: "Disney+", icon: disneyIcon },
+  { name: "HBO Max", icon: hboIcon },
+  { name: "Globoplay", icon: globoplayIcon },
+  { name: "Paramount+", icon: paramountIcon },
+  { name: "Apple TV+", icon: appleTvIcon },
+  { name: "Starz", icon: starzIcon },
+];
+
 const WA_NUMBER = "5511940759046";
 const WA_LINK = (msg: string) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
@@ -121,19 +141,41 @@ const Assinar = () => {
           ))}
         </section>
 
-        {/* Streaming Apps */}
-        <section className="glass-panel p-5 space-y-3">
-          <h2 className="font-display text-xl text-foreground tracking-wide">STREAMING & TV AO VIVO</h2>
-          <div className="flex flex-wrap gap-2">
-            {["HBO Max", "Paramount+", "Apple TV+", "Starz", "Globoplay", "Star+", "Disney+", "Netflix"].map((app) => (
-              <span key={app} className="text-[10px] font-body font-semibold bg-green-dim text-primary border border-green-border rounded-full px-2.5 py-1">
-                {app}
-              </span>
+        {/* Streaming Apps - Carousel */}
+        <section className="glass-panel p-5 space-y-4 overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-destructive animate-pulse-live" />
+              <h2 className="font-display text-xl text-foreground tracking-wide">Streaming & TV ao Vivo</h2>
+            </div>
+            <span className="text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-2.5 py-1">
+              +10.000 títulos
+            </span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1 snap-x snap-mandatory">
+            {STREAMING_APPS.map(({ name, icon }) => (
+              <div key={name} className="flex flex-col items-center gap-2 shrink-0 snap-start">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2.5 relative">
+                  <img src={icon} alt={name} loading="lazy" width={64} height={64} className="w-full h-full object-contain" />
+                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                </div>
+                <span className="text-[10px] text-muted-foreground font-body text-center w-16 sm:w-20 leading-tight">{name}</span>
+              </div>
             ))}
           </div>
-          <div className="flex gap-2 mt-2">
-            <span className="text-[10px] font-body font-bold bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1">Full HD & 4K</span>
-            <span className="text-[10px] font-body font-bold bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1">Multi-telas</span>
+          <div className="flex items-center justify-center gap-4 sm:gap-6 pt-1">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-foreground font-body">Atualizado diariamente</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-foreground font-body">Full HD & 4K</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground font-body">Multi-telas</span>
+            </div>
           </div>
         </section>
 
