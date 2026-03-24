@@ -1,44 +1,44 @@
 
 
-# Auditoria da Aba Configuracoes no Admin
+# Auditoria do Dashboard Admin
 
-## Bugs Encontrados
+## Estado Atual
+O Dashboard esta funcional e bem estruturado. A auditoria revelou issues menores, sem bugs criticos.
 
-### 1. TMDB API Key exposta publicamente (VULNERABILIDADE DE SEGURANCA)
-A tabela `settings` tem RLS policy "Anyone can read settings" para SELECT. Isso significa que qualquer pessoa pode fazer `supabase.from("settings").select("*")` e ler a chave TMDB armazenada em texto plano. A chave da API fica visivel no network tab do browser de qualquer visitante.
+## Issues Encontrados
 
-**Correcao**: Mover a TMDB API key para a tabela de secrets do backend (ja existe `TMDB_API_KEY` como secret? Nao, mas deveria). Alternativa mais simples e sem breaking change: criar uma RLS policy que restringe leitura de settings com `key = 'tmdb_api_key'` apenas para admins. Implementar via uma coluna `is_secret` na tabela settings, com policy que filtra rows secretas para usuarios nao-admin.
+### 1. Stat cards com 5 colunas em desktop -- "Jogos Hoje" fica apertado (UX)
+O grid usa `grid-cols-2 sm:grid-cols-5`, mas em telas ~640px os 5 cards ficam muito estreitos. O numero grande (`text-2xl`) e cortado.
 
-**Abordagem escolhida**: Adicionar coluna `is_secret boolean default false` a tabela settings. Alterar a RLS policy de SELECT para excluir rows secretas para usuarios anonimos. Marcar `tmdb_api_key` como `is_secret = true`. O edge function `tmdb-proxy` ja usa service_role_key, entao continua lendo normalmente.
+**Correcao**: Mudar para `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` para melhor distribuicao em telas medias.
 
-### 2. Save faz 3 mutations sequenciais — falha parcial possivel (BUG)
-Se a segunda chamada falhar, a primeira ja foi salva. O usuario ve erro mas WhatsApp ja mudou. Nenhum rollback.
+### 2. Quick Actions sem acao de Config e WhatsApp
+O dashboard tem atalhos para Banner, Filme, Serie, Novidade e Programacao, mas faltam Config e WhatsApp -- que sao abas do admin.
 
-**Correcao**: Usar `Promise.all` para enviar as 3 em paralelo — ou usar um unico upsert batch. Mais simples: trocar para `Promise.all` com as 3 mutations.
+**Correcao**: Adicionar WhatsApp e Config como quick actions.
 
-### 3. Sem validacao do numero de WhatsApp (UX)
-Aceita qualquer texto. Deveria validar que contem apenas numeros e tem pelo menos 10 digitos.
+### 3. Sem "ultima atualizacao" no dashboard
+O admin nao sabe quando os dados foram carregados pela ultima vez. Util para debugging.
 
-**Correcao**: Adicionar validacao basica antes do save com regex `/^\d{10,15}$/`.
+**Correcao**: Adicionar timestamp "Atualizado as HH:MM" discreto no topo, com botao de refresh manual.
 
-### 4. Sem indicador de estado sujo (dirty state) (UX)
-O botao Salvar esta sempre habilitado mesmo sem mudancas. Nao ha indicacao visual de que algo mudou.
+### 4. UpcomingActivations nao mostra items de filmes/series/novidades agendados
+O componente so busca `banners` e `daily_games` com `publish_at`. Se no futuro outras tabelas tiverem agendamento, ficam de fora. Nao e um bug, mas uma limitacao a documentar.
 
-**Correcao**: Comparar valores atuais com `settings` original e desabilitar botao quando nao ha mudancas.
+### 5. Sem testes para AdminDashboard
+Nenhum teste unitario existe.
 
-### 5. Sem testes unitarios
-Nenhum teste existe para AdminConfiguracoes nem useSettings.
+**Correcao**: Criar testes basicos verificando render dos stat cards, greeting, e estado de loading.
 
-## Melhorias Propostas
+## Melhorias de UI Propostas
 
-### 6. Feedback visual de valor salvo com sucesso
-Apos salvar, mostrar um check verde temporario ao lado de cada campo confirmando que foi persistido.
+### 6. Saude do conteudo -- itens sem genero
+Adicionar um alerta discreto no dashboard mostrando quantos filmes/series/novidades estao sem genero, com link direto para a aba correspondente. Isso da visibilidade ao admin sobre conteudo incompleto.
 
-### 7. Botao de copiar URL do site
-Adicionar icone de clipboard ao lado do campo URL do Site para facilitar copiar a URL configurada.
+### 7. Stat cards com hover effect
+Adicionar `hover:scale-[1.02] hover:border-opacity-40` para feedback visual ao passar o mouse.
 
 ## Arquivos modificados
-- Migration SQL: adicionar coluna `is_secret` a tabela settings, atualizar RLS policy, marcar `tmdb_api_key` como secreta
-- `src/pages/admin/AdminConfiguracoes.tsx` — `Promise.all` no save, validacao WhatsApp, dirty state, botao copiar URL
-- `src/hooks/useSettings.ts` — sem mudancas necessarias (admin le via authenticated, edge function via service_role)
+- `src/pages/admin/AdminDashboard.tsx` -- grid responsivo, quick actions extras, timestamp refresh, alerta de conteudo incompleto, hover nos cards
+- `src/pages/admin/__tests__/AdminDashboard.test.tsx` -- testes basicos de render
 
