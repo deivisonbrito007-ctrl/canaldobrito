@@ -15,6 +15,7 @@ import AdminNovidades from "./pages/admin/AdminNovidades";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
 import NotFound from "./pages/NotFound";
+import Assinar from "./pages/Assinar";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/assinar" element={<Assinar />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />

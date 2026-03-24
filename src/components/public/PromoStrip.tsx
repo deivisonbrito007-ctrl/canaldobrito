@@ -13,9 +13,7 @@ export const PromoStrip = () => (
         </p>
       </div>
       <a
-        href={`https://wa.me/5511940759046?text=${encodeURIComponent("Olá! Quero assinar o plano Brito Solutions 📺")}`}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/assinar"
         className="shrink-0 bg-primary text-primary-foreground text-xs font-bold px-5 py-3 rounded-full hover:opacity-90 transition-opacity text-center min-h-[44px] flex items-center justify-center"
       >
         Assinar agora →
