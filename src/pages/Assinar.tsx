@@ -394,20 +394,21 @@ const Assinar = () => {
         <section className="glass-panel p-6 text-center space-y-4 border-primary/20">
           <h2 className="font-display text-2xl text-foreground tracking-wide">COMECE AGORA</h2>
           <p className="text-xs text-muted-foreground font-body">
-            Acesso imediato a milhares de canais, filmes e séries
+            Qualidade, variedade e economia em um só lugar.<br />
+            Acesso imediato após a confirmação do pagamento.
           </p>
-          <a
-            href={ctaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-6 py-3.5 rounded-full hover:brightness-110 transition-all shadow-lg shadow-primary/25 min-h-[48px]"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Falar com consultor no WhatsApp
-          </a>
-          <p className="text-[10px] text-muted-foreground/50 font-body">
-            Atendimento humanizado · Resposta em minutos
-          </p>
+          <div className="flex items-center justify-center gap-4 pt-1">
+            {[
+              { icon: "🔓", label: "Sem fidelidade" },
+              { icon: "⚡", label: "Ativação rápida" },
+              { icon: "❌", label: "Cancele quando quiser" },
+            ].map(({ icon, label }) => (
+              <div key={label} className="flex items-center gap-1">
+                <span className="text-sm">{icon}</span>
+                <span className="text-[9px] text-muted-foreground font-body">{label}</span>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Footer */}
