@@ -144,11 +144,11 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                     {item.rating && (
                       <span className="text-xs text-amber-400 font-bold">⭐ {Number(item.rating).toFixed(1)}</span>
                     )}
-                    {item.genre && (
-                      <span className="text-[10px] text-primary font-semibold bg-primary/15 rounded-full px-2 py-0.5">
-                        {item.genre.split(",")[0]}
+                    {item.genre && item.genre.split(",").slice(0, 3).map((g, i) => (
+                      <span key={i} className="text-[10px] text-primary font-semibold bg-primary/15 rounded-full px-2 py-0.5">
+                        {g.trim()}
                       </span>
-                    )}
+                    ))}
                   </div>
                 </div>
               </div>
