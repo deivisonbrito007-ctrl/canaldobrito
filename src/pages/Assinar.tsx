@@ -97,6 +97,20 @@ const FAQ_ITEMS = [
 const Assinar = () => {
   const { h, m, s } = useCountdown();
 
+  const trackRef = useRef<HTMLDivElement>(null);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pauseMarquee = useCallback(() => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    trackRef.current?.classList.add("paused");
+  }, []);
+
+  const resumeMarquee = useCallback(() => {
+    resumeTimer.current = setTimeout(() => {
+      trackRef.current?.classList.remove("paused");
+    }, 2000);
+  }, []);
+
   const ctaUrl = useMemo(
     () => WA_LINK("Olá! Quero assinar o plano Brito Solutions TV 📺"),
     [],
