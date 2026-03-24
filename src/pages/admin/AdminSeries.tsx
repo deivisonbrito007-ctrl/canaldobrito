@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllSeries, useAddSeries, useToggleSeries, useDeleteSeries } from "@/hooks/useSeries";
+import { useAllSeries, useAddSeries, useToggleSeries, useDeleteSeries, useUpdateSeries } from "@/hooks/useSeries";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2, Clapperboard } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Search, Plus, Trash2, Star, ImageOff, Loader2, Clapperboard, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
@@ -18,9 +19,12 @@ const AdminSeries = () => {
   const addSeries = useAddSeries();
   const toggleSeries = useToggleSeries();
   const deleteSeries = useDeleteSeries();
+  const updateSeries = useUpdateSeries();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"search" | "popular">("search");
   const [addingId, setAddingId] = useState<number | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleSearch = () => { if (query.trim()) search("search_tv", query); };
   const loadPopular = () => { setTab("popular"); setResults([]); search("popular_tv"); };
@@ -47,8 +51,53 @@ const AdminSeries = () => {
     finally { setAddingId(null); }
   };
 
+  const handleRefreshOne = async (s: NonNullable<typeof series>[number]) => {
+    setRefreshingId(s.id);
+    try {
+      const details = await fetchDetails("tv_details", s.tmdb_id);
+      if (!details) { toast.error("Não foi possível buscar detalhes"); return; }
+      const genreText = details.genres?.map((g) => g.name).join(", ") || null;
+      await updateSeries.mutateAsync({
+        id: s.id,
+        genre: genreText,
+        rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : s.rating,
+        overview: (details as any).overview || s.overview,
+      });
+      toast.success(`"${s.title}" atualizado!`);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setRefreshingId(null); }
+  };
+
+  const handleBatchUpdate = async () => {
+    if (!series || series.length === 0) return;
+    const needsUpdate = series.filter((s) => !s.genre);
+    if (needsUpdate.length === 0) { toast.info("Todas as séries já têm gênero"); return; }
+    setBatchProgress({ current: 0, total: needsUpdate.length });
+    let updated = 0;
+    for (let i = 0; i < needsUpdate.length; i++) {
+      const s = needsUpdate[i];
+      setBatchProgress({ current: i + 1, total: needsUpdate.length });
+      try {
+        const details = await fetchDetails("tv_details", s.tmdb_id);
+        if (details) {
+          const genreText = details.genres?.map((g) => g.name).join(", ") || null;
+          await updateSeries.mutateAsync({
+            id: s.id,
+            genre: genreText,
+            rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : s.rating,
+            overview: (details as any).overview || s.overview,
+          });
+          updated++;
+        }
+      } catch { /* continue */ }
+    }
+    setBatchProgress(null);
+    toast.success(`${updated} de ${needsUpdate.length} séries atualizadas!`);
+  };
+
   const activeCount = series?.filter((s) => s.active).length || 0;
   const totalCount = series?.length || 0;
+  const missingGenreCount = series?.filter((s) => !s.genre).length || 0;
 
   return (
     <div className="space-y-5">
@@ -111,10 +160,26 @@ const AdminSeries = () => {
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionadas</h3>
-          <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">
-            {activeCount} ativas / {totalCount}
-          </span>
+          <div className="flex items-center gap-2">
+            {missingGenreCount > 0 && (
+              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
+                {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Atualizar {missingGenreCount} sem gênero
+              </Button>
+            )}
+            <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">
+              {activeCount} ativas / {totalCount}
+            </span>
+          </div>
         </div>
+
+        {batchProgress && (
+          <div className="px-4 pt-3 space-y-1">
+            <p className="text-[10px] text-muted-foreground">Atualizando {batchProgress.current}/{batchProgress.total}...</p>
+            <Progress value={(batchProgress.current / batchProgress.total) * 100} className="h-1.5" />
+          </div>
+        )}
+
         <div className="p-4">
           {!series || series.length === 0 ? (
             <div className="py-10 text-center space-y-3">
@@ -135,9 +200,12 @@ const AdminSeries = () => {
                     <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
                       {s.year && <span>{s.year}</span>}
                       {s.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(s.rating)}`} /><span className={ratingColor(s.rating)}>{s.rating}</span></>}
-                      {s.genre && <span className="text-purple-400/70">• {s.genre}</span>}
+                      {s.genre ? <span className="text-purple-400/70">• {s.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
                     </p>
                   </div>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-purple-400 shrink-0" disabled={refreshingId === s.id} onClick={() => handleRefreshOne(s)}>
+                    <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === s.id ? "animate-spin" : ""}`} />
+                  </Button>
                   <Switch checked={s.active} onCheckedChange={(v) => toggleSeries.mutate({ id: s.id, active: v })} />
                   <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0" onClick={() => { if (confirm("Remover série?")) deleteSeries.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </div>

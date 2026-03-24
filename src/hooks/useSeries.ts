@@ -39,6 +39,7 @@ export const useAllSeries = () =>
       if (error) throw error;
       return data as FeaturedSeries[];
     },
+    refetchInterval: 60_000,
   });
 
 export const useAddSeries = () => {
@@ -57,6 +58,17 @@ export const useToggleSeries = () => {
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
       const { error } = await supabase.from("featured_series").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
+  });
+};
+
+export const useUpdateSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; genre?: string | null; rating?: number | null; overview?: string | null; poster_url?: string | null }) => {
+      const { error } = await supabase.from("featured_series").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
