@@ -105,6 +105,19 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Error alert */}
+      {hasError && (
+        <Alert variant="destructive" className="border-destructive/30 bg-destructive/10">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-xs">Erro ao carregar alguns dados.</span>
+            <Button variant="ghost" size="sm" onClick={handleRetry} className="h-7 px-2 text-xs gap-1">
+              <RefreshCw className="h-3 w-3" /> Tentar novamente
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {statCards.map((card, i) => (
@@ -140,11 +153,11 @@ const AdminDashboard = () => {
       <div>
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ações Rápidas</h2>
         <div className="grid grid-cols-2 gap-2">
-          {quickActions.map((action) => (
+          {quickActions.map((action, i) => (
             <button
               key={action.label}
               onClick={() => navigate(action.path)}
-              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color}`}
+              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color} ${i === quickActions.length - 1 && quickActions.length % 2 !== 0 ? "col-span-2" : ""}`}
             >
               <action.icon className="h-4 w-4" />
               + {action.label}
