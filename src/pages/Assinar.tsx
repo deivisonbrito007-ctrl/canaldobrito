@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop, Zap, Users, CheckCircle2, Gift, AlertTriangle, MessageCircle } from "lucide-react";
+import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop, Zap, CheckCircle2, Gift, AlertTriangle, MessageCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logo from "@/assets/canal_do_brito_logo.png";
 
@@ -201,8 +201,6 @@ const Assinar = () => {
             className="overflow-hidden marquee-container marquee-mask"
             onTouchStart={pauseMarquee}
             onTouchEnd={resumeMarquee}
-            onMouseEnter={pauseMarquee}
-            onMouseLeave={resumeMarquee}
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
               {MARQUEE_ITEMS.map((item, i) => (
@@ -266,7 +264,7 @@ const Assinar = () => {
               href={ctaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="block mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-6 py-3.5 rounded-full hover:brightness-110 transition-all shadow-lg shadow-primary/25 min-h-[48px]"
+              className="mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-6 py-3.5 rounded-full hover:brightness-110 transition-all shadow-lg shadow-primary/25 min-h-[48px]"
             >
               <MessageCircle className="w-4 h-4" />
               Assinar agora
