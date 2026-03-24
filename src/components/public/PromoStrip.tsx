@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export const PromoStrip = () => (
   <section className="px-4 animate-fade-up stagger-7">
     <div className="rounded-[13px] bg-green-dim border border-green-border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -12,12 +14,12 @@ export const PromoStrip = () => (
           Esportes, filmes e séries · Cancele quando quiser
         </p>
       </div>
-      <a
-        href="/assinar"
+      <Link
+        to="/assinar"
         className="shrink-0 bg-primary text-primary-foreground text-xs font-bold px-5 py-3 rounded-full hover:opacity-90 transition-opacity text-center min-h-[44px] flex items-center justify-center"
       >
         Assinar agora →
-      </a>
+      </Link>
     </div>
   </section>
 );
