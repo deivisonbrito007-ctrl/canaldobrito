@@ -1,33 +1,33 @@
 
 
-# Auditoria da Pagina Publica — Cards de Novidades, Filmes e Series
+# Trailers do YouTube nos Cards de Novidades e Filmes
 
-## Resultado da Auditoria
+## Situacao Atual
+O `ContentDetailSheet` ja busca trailers via TMDB proxy (pt-BR com fallback EN) e exibe um iframe do YouTube. Porem, o usuario so ve o trailer depois de abrir o detail sheet. Nao ha indicacao visual nos cards de que um trailer esta disponivel.
 
-A pagina publica esta funcionando corretamente no geral. Os metadados fluem do banco para a UI sem bugs criticos.
+## Solucao
 
-### Fluxo verificado (OK)
-- **NovidadesCard** (home tab): Exibe generos via `MetadataRow` (ate 2 generos), ano, tipo de conteudo. Passa `genres` para o detail sheet corretamente.
-- **WeeklyMoviesSection** (aba Destaques): Exibe pill de genero (primeiro genero), rating com estrela, ano. Passa dados para detail sheet.
-- **WeeklySeriesSection** (aba Destaques): Idem ao de filmes.
-- **ContentDetailSheet**: Recebe e exibe rating, ano e primeiro genero corretamente.
+### 1. Hook `useTrailerKey` reutilizavel
+Extrair a logica de fetch de trailer do `ContentDetailSheet` para um hook dedicado `src/hooks/useTrailerKey.ts`. Recebe `tmdb_id` e `content_type`, retorna `{ trailerKey, loading }`. Usa cache em memoria (Map) para evitar chamadas repetidas ao mesmo `tmdb_id`.
 
-### Issues Encontrados
+### 2. Botao Play nos cards de Filmes (`WeeklyMoviesSection`)
+Adicionar um icone de Play semi-transparente sobre o poster de cada `MovieCard`. Ao clicar no Play, abre um modal leve com o iframe do YouTube (em vez de abrir o detail sheet completo). Clicar fora do Play continua abrindo o detail sheet normalmente.
 
-#### 1. `NewsReleasesSection.tsx` e codigo morto (CLEANUP)
-O componente nao e importado em nenhum lugar do projeto. O `NovidadesCard` faz a mesma funcao e e o que realmente aparece na Index. O arquivo `NewsReleasesSection.tsx` so ocupa espaco.
+O trailer so e buscado sob demanda (ao clicar no Play), nao em batch, para evitar dezenas de chamadas simultaneas ao TMDB.
 
-**Correcao**: Remover o arquivo.
+### 3. Botao Play no card de Novidades (`NovidadesCard`)
+Adicionar um botao "▶ Trailer" discreto abaixo do titulo/metadata. Ao clicar, abre o mesmo modal de trailer. O clique no card continua abrindo o detail sheet.
 
-#### 2. ContentDetailSheet so mostra 1 genero — NovidadesCard mostra 2 (INCONSISTENCIA)
-O `MetadataRow` no card exibe `genres.split(",").slice(0, 2)`, mas o `ContentDetailSheet` so mostra `genre.split(",")[0]`. Ao abrir os detalhes, o usuario ve menos informacao que no card.
+### 4. Modal de Trailer (`TrailerModal`)
+Componente simples: backdrop escuro + iframe do YouTube centralizado em aspect-video. Fecha ao clicar no backdrop ou no X. Reutilizado por ambos os cards.
 
-**Correcao**: Mostrar ate 2-3 generos no detail sheet, cada um como pill separada.
+## Arquivos
 
-#### 3. NewsReleasesSection nao exibe generos no card overlay (MENOR — codigo morto)
-Irrelevante pois o componente nao e usado, mas se fosse reativado, so mostra tipo e ano, sem generos.
-
-## Arquivos modificados
-- `src/components/public/NewsReleasesSection.tsx` — remover arquivo
-- `src/components/public/ContentDetailSheet.tsx` — exibir ate 3 generos como pills separadas em vez de apenas 1
+| Arquivo | Acao |
+|---------|------|
+| `src/hooks/useTrailerKey.ts` | Criar — hook com fetch + cache |
+| `src/components/public/TrailerModal.tsx` | Criar — modal leve com iframe YouTube |
+| `src/components/public/WeeklyMoviesSection.tsx` | Adicionar botao Play no MovieCard |
+| `src/components/public/NovidadesCard.tsx` | Adicionar botao Trailer |
+| `src/components/public/ContentDetailSheet.tsx` | Refatorar para usar `useTrailerKey` |
 
