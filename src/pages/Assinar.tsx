@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop, Zap, Users, CheckCircle2, Gift, AlertTriangle, MessageCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -23,6 +23,25 @@ const STREAMING_APPS = [
   { name: "Apple TV+", icon: appleTvIcon },
   { name: "Starz", icon: starzIcon },
 ];
+
+const TV_CHANNELS = [
+  { emoji: "📺", name: "ESPN", bg: "bg-red-600/20", text: "text-red-400", border: "border-red-500/30" },
+  { emoji: "⚽", name: "SporTV", bg: "bg-emerald-600/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+  { emoji: "🌐", name: "Globo", bg: "bg-slate-200/15", text: "text-foreground/80", border: "border-foreground/20" },
+  { emoji: "⭐", name: "Premiere", bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
+  { emoji: "💥", name: "TNT", bg: "bg-blue-600/20", text: "text-blue-400", border: "border-blue-500/30" },
+  { emoji: "📡", name: "Band", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
+  { emoji: "🎮", name: "CazéTV", bg: "bg-lime-500/20", text: "text-lime-400", border: "border-lime-500/30" },
+  { emoji: "📺", name: "Record", bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/30" },
+  { emoji: "🐐", name: "Canal GOAT", bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/30" },
+  { emoji: "🚀", name: "Space", bg: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+];
+
+const CAROUSEL_ITEMS = [
+  ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
+  ...TV_CHANNELS.map(c => ({ type: "channel" as const, ...c })),
+];
+const MARQUEE_ITEMS = [...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS];
 
 const WA_NUMBER = "5511940759046";
 const WA_LINK = (msg: string) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
@@ -77,6 +96,20 @@ const FAQ_ITEMS = [
 
 const Assinar = () => {
   const { h, m, s } = useCountdown();
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pauseMarquee = useCallback(() => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    trackRef.current?.classList.add("paused");
+  }, []);
+
+  const resumeMarquee = useCallback(() => {
+    resumeTimer.current = setTimeout(() => {
+      trackRef.current?.classList.remove("paused");
+    }, 2000);
+  }, []);
 
   const ctaUrl = useMemo(
     () => WA_LINK("Olá! Quero assinar o plano Brito Solutions TV 📺"),
@@ -152,16 +185,31 @@ const Assinar = () => {
               +10.000 títulos
             </span>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1 snap-x snap-mandatory">
-            {STREAMING_APPS.map(({ name, icon }) => (
-              <div key={name} className="flex flex-col items-center gap-2 shrink-0 snap-start">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2.5 relative">
-                  <img src={icon} alt={name} loading="lazy" width={64} height={64} className="w-full h-full object-contain" />
-                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-body text-center w-16 sm:w-20 leading-tight">{name}</span>
-              </div>
-            ))}
+          <div
+            className="overflow-hidden marquee-container marquee-mask"
+            onTouchStart={pauseMarquee}
+            onTouchEnd={resumeMarquee}
+          >
+            <div ref={trackRef} className="marquee-track flex gap-3 w-max">
+              {MARQUEE_ITEMS.map((item, i) => (
+                item.type === "app" ? (
+                  <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2 relative">
+                      <img src={(item as any).icon} alt={item.name} loading="lazy" width={48} height={48} className="w-full h-full object-contain" />
+                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-body text-center w-14 sm:w-16 leading-tight">{item.name}</span>
+                  </div>
+                ) : (
+                  <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center ${(item as any).bg} ${(item as any).border}`}>
+                      <span className="text-2xl">{(item as any).emoji}</span>
+                    </div>
+                    <span className={`text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight ${(item as any).text}`}>{item.name}</span>
+                  </div>
+                )
+              ))}
+            </div>
           </div>
           <div className="flex items-center justify-center gap-4 sm:gap-6 pt-1">
             <div className="flex items-center gap-1.5">
