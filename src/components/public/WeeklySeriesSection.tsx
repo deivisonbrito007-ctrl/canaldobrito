@@ -135,7 +135,7 @@ export const WeeklySeriesSection = () => {
       <div className="px-4">
         <SectionHeader icon={Clapperboard} title={`Séries (${series.length})`} subtitle="Destaques da semana" hideBrand />
       </div>
-      <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
+      <div data-horizontal-scroll className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2" style={{ touchAction: "pan-x" }}>
         {series.map((item, idx) => (
           <SeriesCard
             key={item.id}

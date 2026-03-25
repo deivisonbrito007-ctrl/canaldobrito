@@ -272,7 +272,7 @@ export const LiveNowHero = () => {
           {/* Match carousel */}
           {matches.length > 0 && (
             <motion.div
-              className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
+              data-horizontal-scroll className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1" style={{ touchAction: "pan-x" }}
               variants={containerVariants}
               initial="hidden"
               animate="visible"
