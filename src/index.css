@@ -367,29 +367,4 @@
     }
   }
 
-  /* content-visibility: auto — skip rendering off-screen sections */
-  .cv-auto-feed {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 420px;
-  }
-  .cv-auto-events {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 200px;
-  }
-  .cv-auto-news {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 440px;
-  }
-  .cv-auto-promo {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 88px;
-  }
-  .cv-auto-banners {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 320px;
-  }
-  .cv-auto-posters {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 340px;
-  }
 }
