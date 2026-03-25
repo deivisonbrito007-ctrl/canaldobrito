@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
@@ -8,33 +8,17 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
-const today = new Date();
-const todayStr = today.toISOString().split("T")[0];
-const formattedDate = format(today, "dd/MM/yyyy");
-const dayName = format(today, "EEEE", { locale: ptBR });
+const SPORT_EMOJI: Record<string, string> = {
+  football: "⚽",
+  basketball: "🏀",
+  tennis: "🎾",
+  f1: "🏎️",
+  mma: "🥊",
+  volleyball: "🏐",
+  default: "🏆",
+};
 
-const MESSAGE_TEMPLATES = [
-  {
-    id: "geral",
-    label: "📺 Geral do Dia",
-    text: `📺 *Programação do Dia*\n\n📅 ${dayName}, ${formattedDate}\n\nConfira os jogos, novidades e indicações de hoje no portal da Brito Solutions.\n\n👉 LINK_PLACEHOLDER`,
-  },
-  {
-    id: "jogos",
-    label: "⚽ Jogos",
-    text: `⚽ *Jogos de Hoje Atualizados*\n\n📅 ${formattedDate}\n\nVeja horários, canais e destaques do dia.\n\n👉 LINK_PLACEHOLDER`,
-  },
-  {
-    id: "entretenimento",
-    label: "🍿 Entretenimento",
-    text: `🍿 *Assista Hoje*\n\nFilmes, séries, novidades e lançamentos do dia em um só lugar.\n\n👉 LINK_PLACEHOLDER`,
-  },
-  {
-    id: "aovivo",
-    label: "🔴 Ao Vivo",
-    text: `🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 LINK_PLACEHOLDER`,
-  },
-];
+const sportLabel = (type: string) => SPORT_EMOJI[type] ?? SPORT_EMOJI.default;
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -52,7 +36,7 @@ const CopyButton = ({ text, label }: { text: string; label: string }) => {
   );
 };
 
-const MessageCard = ({ template, siteUrl }: { template: typeof MESSAGE_TEMPLATES[0]; siteUrl: string }) => {
+const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string }; siteUrl: string }) => {
   const finalText = template.text.replace("LINK_PLACEHOLDER", siteUrl);
 
   const handleSendWhatsApp = () => {
@@ -77,19 +61,80 @@ const MessageCard = ({ template, siteUrl }: { template: typeof MESSAGE_TEMPLATES
 };
 
 const AdminWhatsApp = () => {
+  const { todayStr, formattedDate, dayName, templates } = useMemo(() => {
+    const now = new Date();
+    const tStr = now.toISOString().split("T")[0];
+    const fDate = format(now, "dd/MM/yyyy");
+    const dName = format(now, "EEEE", { locale: ptBR });
+
+    return {
+      todayStr: tStr,
+      formattedDate: fDate,
+      dayName: dName,
+      templates: [
+        {
+          id: "geral",
+          label: "📺 Geral do Dia",
+          text: `📺 *Programação do Dia*\n\n📅 ${dName}, ${fDate}\n\nConfira os jogos, novidades e indicações de hoje no portal da Brito Solutions.\n\n👉 LINK_PLACEHOLDER`,
+        },
+        {
+          id: "jogos",
+          label: "⚽ Jogos",
+          text: `⚽ *Jogos de Hoje Atualizados*\n\n📅 ${fDate}\n\nVeja horários, canais e destaques do dia.\n\n👉 LINK_PLACEHOLDER`,
+        },
+        {
+          id: "entretenimento",
+          label: "🍿 Entretenimento",
+          text: `🍿 *Assista Hoje*\n\nFilmes, séries, novidades e lançamentos do dia em um só lugar.\n\n👉 LINK_PLACEHOLDER`,
+        },
+        {
+          id: "aovivo",
+          label: "🔴 Ao Vivo",
+          text: `🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 LINK_PLACEHOLDER`,
+        },
+      ],
+    };
+  }, []);
+
   const { data: games } = useDailyGames(todayStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
 
-  const gamesText = (games ?? []).length > 0
-    ? `⚽ *Jogos de Hoje — ${formattedDate}*\n\n` +
-      (games ?? []).map(g => `⏰ ${g.game_time.slice(0, 5)} — ${g.home_team} x ${g.away_team} (${g.competition})`).join("\n") +
-      `\n\n👉 ${siteUrl}`
-    : null;
+  const gamesText = useMemo(() => {
+    const list = games ?? [];
+    if (list.length === 0) return null;
+
+    // Group by sport_type
+    const grouped: Record<string, typeof list> = {};
+    list.forEach((g) => {
+      const key = g.sport_type || "default";
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(g);
+    });
+
+    const sections = Object.entries(grouped)
+      .map(([sport, items]) => {
+        const emoji = sportLabel(sport);
+        const header = items.length > 0 ? `${emoji} *${sport === "football" ? "Futebol" : sport === "basketball" ? "Basquete" : sport === "tennis" ? "Tênis" : sport === "f1" ? "Fórmula 1" : sport === "mma" ? "MMA/UFC" : sport === "volleyball" ? "Vôlei" : "Outros"}*` : "";
+        const lines = items.map((g) => {
+          const time = g.game_time.slice(0, 5);
+          const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
+          const comp = g.competition ? ` (${g.competition})` : "";
+          const channels = g.channels && g.channels.length > 0 ? ` — ${g.channels.join(", ")}` : "";
+          return `⏰ ${time} — ${teams}${comp}${channels}`;
+        });
+        return `${header}\n${lines.join("\n")}`;
+      })
+      .join("\n\n");
+
+    return `🏆 *Jogos de Hoje — ${formattedDate}*\n\n${sections}\n\n👉 ${siteUrl}`;
+  }, [games, formattedDate, siteUrl]);
 
   const customFinal = customMsg.trim()
     ? `${customMsg.trim()}\n\n👉 ${siteUrl}`
     : "";
+
+  const charCount = customFinal.length;
 
   return (
     <div className="space-y-6">
@@ -153,6 +198,14 @@ const AdminWhatsApp = () => {
           onChange={(e) => setCustomMsg(e.target.value)}
           className="text-xs min-h-[80px] bg-background/50 border-border/30"
         />
+        <div className="flex items-center justify-between">
+          <span className={`text-[10px] ${charCount > 1024 ? "text-destructive" : "text-muted-foreground/50"}`}>
+            {charCount > 0 ? `${charCount} caracteres` : ""}
+          </span>
+          {charCount > 1024 && (
+            <span className="text-[10px] text-destructive">Preview do WhatsApp pode ser cortado</span>
+          )}
+        </div>
         {customFinal && (
           <pre className="text-[10px] text-muted-foreground/70 whitespace-pre-wrap bg-background/30 rounded-lg p-2">
             Preview: {customFinal}
@@ -181,7 +234,7 @@ const AdminWhatsApp = () => {
           <span className="text-sm font-bold text-foreground">Textos Prontos</span>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {MESSAGE_TEMPLATES.map((t) => (
+          {templates.map((t) => (
             <MessageCard key={t.id} template={t} siteUrl={siteUrl} />
           ))}
         </div>
