@@ -5,8 +5,7 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
 import { Hero } from "@/components/public/Hero";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
-import { LiveFeedSection } from "@/components/public/LiveFeedSection";
-import { LiveEventsSection } from "@/components/public/LiveEventsSection";
+import { LiveNowHero } from "@/components/public/LiveNowHero";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
@@ -119,8 +118,7 @@ const Index = () => {
       <div className="space-y-5 min-h-[80vh]">
         <Hero />
         <CategoryIconsCarousel />
-        <LiveFeedSection />
-        <LiveEventsSection />
+        <LiveNowHero />
         <Suspense fallback={<BelowFoldSkeleton />}>
           <LazyNovidadesCard />
           <LazyPromoStrip />
