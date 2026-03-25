@@ -423,6 +423,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      remove_multiple_game_ids: {
+        Args: { _endpoint: string; _ids: string[] }
+        Returns: undefined
+      }
       remove_push_game_id: {
         Args: { _endpoint: string; _game_id: string }
         Returns: undefined
