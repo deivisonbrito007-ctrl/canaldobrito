@@ -27,6 +27,7 @@ export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>)
       if (window.scrollY > 0 || isRefreshing) return;
       startY.current = e.touches[0].clientY;
       pulling.current = true;
+      didVibrate.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -36,6 +37,14 @@ export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>)
       const dampened = Math.min(dy * 0.4, 140);
       pullDistanceRef.current = dampened;
       setPullDistance(dampened);
+
+      // Haptic feedback when crossing threshold
+      if (dampened >= THRESHOLD && !didVibrate.current) {
+        didVibrate.current = true;
+        navigator.vibrate?.(15);
+      } else if (dampened < THRESHOLD) {
+        didVibrate.current = false;
+      }
     };
 
     const onTouchEnd = () => {
