@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   isGameCurrentlyLive,
@@ -9,6 +10,38 @@ import {
   type SportType,
 } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
+
+/* ── Framer-motion variants ── */
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+} as const;
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.92, y: 12 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 400, damping: 28, mass: 0.8 },
+  },
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 300, damping: 30, mass: 0.9 },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    transition: { duration: 0.2, ease: "easeOut" as const },
+  },
+};
 
 /* ── Sport accent colors (left bar) ── */
 const SPORT_ACCENT: Record<string, string> = {
@@ -21,115 +54,118 @@ const SPORT_ACCENT: Record<string, string> = {
 };
 
 /* ── Match card (adversarial) ── */
-const MatchCard = ({ game, index }: { game: DailyGame; index: number }) => {
-  const sportType = (game.sport_type || "football") as SportType;
-  const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);
-  const emoji = SPORT_EMOJI[sportType] || "⚽";
-  const channel = game.channels?.[0];
-  const accent = SPORT_ACCENT[game.sport_type] || "bg-destructive";
-  const league = [game.competition, game.competition_detail].filter(Boolean).join(" · ");
+const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
+  ({ game }, ref) => {
+    const sportType = (game.sport_type || "football") as SportType;
+    const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);
+    const emoji = SPORT_EMOJI[sportType] || "⚽";
+    const channel = game.channels?.[0];
+    const accent = SPORT_ACCENT[game.sport_type] || "bg-destructive";
+    const league = [game.competition, game.competition_detail].filter(Boolean).join(" · ");
 
-  return (
-    <div
-      className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-destructive/30 animate-fade-in"
-      style={{ animationDelay: `${index * 80}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex">
-        {/* Sport accent bar */}
-        <div className={`w-[3px] ${accent}`} />
-
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between gap-2">
-            <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
-              {emoji} {league}
-            </p>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-              </span>
-              <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
-                {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
-              </span>
-            </div>
-          </div>
-
-          {/* Teams */}
-          <div className="px-3 pb-2 space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate">
-                {game.home_team}
+    return (
+      <div
+        ref={ref}
+        className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
+      >
+        <div className="flex">
+          <div className={`w-[3px] ${accent}`} />
+          <div className="flex-1 min-w-0">
+            <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between gap-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
+                {emoji} {league}
               </p>
-              <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1.5 py-0.5 rounded bg-surface border border-border">
-                VS
-              </span>
-              <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate text-right">
-                {game.away_team}
-              </p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                </span>
+                <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
+                  {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+                </span>
+              </div>
             </div>
-            {game.is_womens && (
-              <p className="text-[9px] text-muted-foreground font-body text-center">Feminino</p>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border/40">
-            <span className="text-[9px] text-muted-foreground font-body tabular-nums">
-              Começou {game.game_time?.slice(0, 5)}
-            </span>
-            {channel && <ChannelBadge name={channel} />}
+            <div className="px-3 pb-2 space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate">
+                  {game.home_team}
+                </p>
+                <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1.5 py-0.5 rounded bg-surface border border-border">
+                  VS
+                </span>
+                <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate text-right">
+                  {game.away_team}
+                </p>
+              </div>
+              {game.is_womens && (
+                <p className="text-[9px] text-muted-foreground font-body text-center">Feminino</p>
+              )}
+            </div>
+            <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border/40">
+              <span className="text-[9px] text-muted-foreground font-body tabular-nums">
+                Começou {game.game_time?.slice(0, 5)}
+              </span>
+              {channel && <ChannelBadge name={channel} />}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+MatchCard.displayName = "MatchCard";
+
+const MotionMatchCard = motion.create(MatchCard);
 
 /* ── Event card (non-adversarial) ── */
-const EventCard = ({ event, index }: { event: DailyGame; index: number }) => {
-  const sportType = (event.sport_type || "f1") as SportType;
-  const elapsed = getElapsedMinutes(event.game_time, event.date, sportType);
-  const emoji = SPORT_EMOJI[sportType] || "🏁";
-  const channel = event.channels?.[0];
-  const accent = SPORT_ACCENT[event.sport_type] || "bg-amber-500";
+const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
+  ({ event }, ref) => {
+    const sportType = (event.sport_type || "f1") as SportType;
+    const elapsed = getElapsedMinutes(event.game_time, event.date, sportType);
+    const emoji = SPORT_EMOJI[sportType] || "🏁";
+    const channel = event.channels?.[0];
+    const accent = SPORT_ACCENT[event.sport_type] || "bg-amber-500";
 
-  return (
-    <div
-      className="rounded-xl overflow-hidden bg-surface-2 border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 animate-fade-in"
-      style={{ animationDelay: `${index * 80 + 200}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex">
-        <div className={`w-[3px] ${accent}`} />
-        <div className="flex-1 min-w-0 p-2.5 space-y-1">
-          <div className="flex items-center justify-between gap-1">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
-              {emoji} {event.competition}
-            </p>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 animate-ping" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
-              </span>
-              <span className="text-[9px] font-bold text-amber-500 tabular-nums font-body">
-                {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
-              </span>
+    return (
+      <div
+        ref={ref}
+        className="rounded-xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-200 hover:border-amber-500/30"
+      >
+        <div className="flex">
+          <div className={`w-[3px] ${accent}`} />
+          <div className="flex-1 min-w-0 p-2.5 space-y-1">
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
+                {emoji} {event.competition}
+              </p>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                </span>
+                <span className="text-[9px] font-bold text-amber-500 tabular-nums font-body">
+                  {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+                </span>
+              </div>
             </div>
-          </div>
-          <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-1">
-            {event.home_team}
-          </p>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[9px] text-muted-foreground font-body tabular-nums">
-              {event.game_time?.slice(0, 5)}
-            </span>
-            {channel && <ChannelBadge name={channel} />}
+            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-1">
+              {event.home_team}
+            </p>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9px] text-muted-foreground font-body tabular-nums">
+                {event.game_time?.slice(0, 5)}
+              </span>
+              {channel && <ChannelBadge name={channel} />}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+EventCard.displayName = "EventCard";
+
+const MotionEventCard = motion.create(EventCard);
 
 /* ── Clock display ── */
 const LiveClock = () => {
@@ -200,57 +236,75 @@ export const LiveNowHero = () => {
   }
 
   return (
-    <section className="mx-4 rounded-2xl overflow-hidden relative animate-fade-in">
-      {/* Pulsing red border glow */}
-      <div className="absolute inset-0 rounded-2xl border border-destructive/30 animate-pulse pointer-events-none z-10" />
-      
-      {/* Background */}
-      <div className="bg-gradient-to-br from-destructive/[0.06] via-surface-2 to-surface-2 rounded-2xl p-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="relative flex h-3 w-3 shrink-0">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
-            </span>
-            <h3 className="text-sm font-black text-foreground font-body tracking-tight uppercase">
-              Ao Vivo Agora
-            </h3>
-            <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
-              {totalLive} {totalLive === 1 ? "jogo" : "jogos"}
-            </span>
+    <AnimatePresence>
+      <motion.section
+        className="mx-4 rounded-2xl overflow-hidden relative"
+        variants={sectionVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      >
+        {/* Pulsing red border glow */}
+        <div className="absolute inset-0 rounded-2xl border border-destructive/30 animate-pulse pointer-events-none z-10" />
+        
+        {/* Background */}
+        <div className="bg-gradient-to-br from-destructive/[0.06] via-surface-2 to-surface-2 rounded-2xl p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
+              </span>
+              <h3 className="text-sm font-black text-foreground font-body tracking-tight uppercase">
+                Ao Vivo Agora
+              </h3>
+              <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
+                {totalLive} {totalLive === 1 ? "jogo" : "jogos"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <LiveClock />
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "schedule" }));
+                }}
+                className="text-[10px] text-primary font-semibold font-body hover:underline min-h-[44px] flex items-center"
+              >
+                Ver todos →
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <LiveClock />
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "schedule" }));
-              }}
-              className="text-[10px] text-primary font-semibold font-body hover:underline min-h-[44px] flex items-center"
+
+          {/* Match carousel */}
+          {matches.length > 0 && (
+            <motion.div
+              className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
             >
-              Ver todos →
-            </button>
-          </div>
+              {matches.map((g) => (
+                <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
+              ))}
+            </motion.div>
+          )}
+
+          {/* Events grid */}
+          {events.length > 0 && (
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {events.map((e) => (
+                <MotionEventCard key={e.id} event={e} variants={cardVariants} />
+              ))}
+            </motion.div>
+          )}
         </div>
-
-        {/* Match carousel */}
-        {matches.length > 0 && (
-          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1">
-            {matches.map((g, i) => (
-              <MatchCard key={g.id} game={g} index={i} />
-            ))}
-          </div>
-        )}
-
-        {/* Events grid */}
-        {events.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {events.map((e, i) => (
-              <EventCard key={e.id} event={e} index={i} />
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
+      </motion.section>
+    </AnimatePresence>
   );
 };
