@@ -1,67 +1,59 @@
 
 
-# Auditoria Completa: Aba Novidades + Testes + Sugestoes
+# Auditoria e Melhorias do Painel Admin
 
 ## Resultado da Auditoria
 
-Analisei todo o fluxo da aba Novidades (public e admin): `NovidadesCard.tsx`, `useNewsReleases.ts`, `useTrailerAvailability.ts`, `useTrailerKey.ts`, `ContentDetailSheet.tsx`, `TrailerModal.tsx`, `AdminNovidades.tsx`, `HighlightsTab.tsx`, e `Index.tsx`.
+Analisei todos os 7 modulos admin: Dashboard, Banners, Filmes, Series, Novidades, WhatsApp e Configuracoes.
 
 ### Problemas Encontrados
 
-**1. Memory leak no timer do NovidadesCard**
-Quando `total` muda de >1 para 1 (admin desativa itens), o `startTimer` continua rodando porque o cleanup do `useEffect` (linha 77) só limpa no unmount, mas `startTimer` recria o interval sem checar `total > 1`. Se `total === 1`, o interval roda desnecessariamente com modulo `(c + 1) % 1 = 0`.
+**1. Dashboard sem indicador de conteudo total do site**
+O dashboard mostra contagens individuais mas nao tem um resumo visual do total de conteudo ativo vs inativo (ratio de saude geral). Falta uma barra de progresso ou indicador percentual.
 
-**2. ContentDetailSheet nao recebe `backdrop_url` do NovidadesCard**
-O `NovidadesCard` passa `poster_url: selectedItem.image_url` mas nunca envia `backdrop_url`. O `news_releases` nao tem coluna `backdrop_url`, entao o sheet nunca mostra o hero backdrop para novidades. Isso empobrece a experiencia visual.
+**2. Dashboard sem indicador de banners expirados**
+Banners com `expires_at` no passado continuam contados como "ativos" nos stats. Nao ha alerta para banners expirados que precisam ser removidos.
 
-**3. Sem testes unitarios para NovidadesCard**
-Nenhum teste existe para o componente principal de Novidades. Outros componentes similares (`WeeklyMoviesSection`, `WeeklySeriesSection`, `BannerSections`) ja tem testes.
+**3. Quick Actions sem feedback visual de destino**
+Os botoes de acoes rapidas todos dizem "+ Label" mas nao indicam se a secao correspondente tem itens pendentes ou alertas.
 
-**4. `trailerCache` nao trata erros como cache miss**
-Em `useTrailerAvailability` (linha 106), quando o `catch` dispara, o item nao e adicionado ao cache. Na proxima renderizacao, ele sera re-fetched infinitamente. Deveria cachear como `null` no catch.
+**4. Falta "Atividade Recente" no dashboard**
+Nao ha visibilidade sobre o que foi adicionado/modificado recentemente. O admin precisa entrar em cada secao para saber o que mudou.
 
-### O que esta correto
-- Swipe touch com threshold de 50px funciona bem
-- `didSwipe` previne click apos swipe
-- Auto-rotacao 5s com pause no touch/click
-- Fallback PT→EN nos trailers
-- Shared `trailerCache` entre availability e key hooks
-- Loading/error states corretos
-- Reorder funcional no admin
-- Badge type editavel inline
+**5. Falta busca global no admin**
+Nao existe forma de buscar conteudo (filmes, series, novidades) sem entrar em cada secao individualmente.
+
+**6. Stats cards sem indicador de tendencia**
+Os cards mostram total e ativos mas nao indicam se houve mudanca recente (ex: "+2 esta semana").
 
 ---
 
-## Plano de Correcao
+## Plano de Melhorias (4 areas)
 
-### 1. `src/components/public/NovidadesCard.tsx` — Fix timer leak
-- No `startTimer`, adicionar guard: se `total <= 1`, nao criar interval
-- Corrigir para evitar interval desnecessario com item unico
+### 1. Barra de Saude do Conteudo no Dashboard
+- Adicionar uma barra de progresso mostrando `% de conteudo ativo` (total ativos / total geral)
+- Cores: verde (>80%), amarelo (50-80%), vermelho (<50%)
+- Posicionar entre o card de data e o grid de stats
 
-### 2. `src/hooks/useTrailerAvailability.ts` — Cache errors
-- No bloco `catch` (linha 106), adicionar `cache.set(tmdb_id, null)` para evitar re-fetch infinito
+### 2. Alerta de Banners Expirados
+- No `missingGenre` useMemo, adicionar verificacao de banners com `expires_at` no passado que ainda estao `active`
+- Mostrar alerta ambar linkando para `/admin/banners`
 
-### 3. Criar `src/components/public/__tests__/NovidadesCard.test.tsx`
-- Testar renderizacao com items mockados
-- Testar estado vazio (retorna null)
-- Testar estado loading (retorna null)
-- Testar navegacao entre slides (next/prev)
-- Testar badge labels para cada tipo
+### 3. Atividade Recente no Dashboard
+- Criar secao "Atividade Recente" que mostra os ultimos 5 itens adicionados (qualquer tipo: banner, filme, serie, novidade)
+- Ordenar por `created_at` descendente, mostrar tipo + titulo + data relativa ("ha 2h")
+- Usar dados ja carregados (banners, movies, series, news) — sem query extra
 
-### 4. Rodar suite de testes completa
-- Executar todos os 39+ testes existentes + novos
-
----
-
-## Sugestoes de Melhorias
-
-### UI/Dashboard
-1. **Skeleton para NovidadesCard**: Quando `isLoading` e `true`, mostrar um skeleton em vez de `null`, evitando layout shift
-2. **Contador de itens ativos no header**: Mostrar "3 de 6 ativos" no titulo da secao publica
-3. **Prefetch de backdrop_url**: Adicionar coluna `backdrop_url` ao `news_releases` e buscar do TMDB no admin, para o detail sheet mostrar o hero visual
+### 4. Resumo Visual nos Stats Cards
+- Adicionar mini indicador nos stats cards mostrando ratio ativo/total como micro barra de progresso abaixo do numero
+- Ajuda a visualizar rapidamente quais secoes precisam de atencao
 
 ### Arquivos modificados
-- `src/components/public/NovidadesCard.tsx` (timer fix + skeleton)
-- `src/hooks/useTrailerAvailability.ts` (cache error)
-- `src/components/public/__tests__/NovidadesCard.test.tsx` (novo)
+- `src/pages/admin/AdminDashboard.tsx` (saude do conteudo, banners expirados, atividade recente, micro barras)
+
+### Detalhes tecnicos
+- Tudo derivado dos dados ja carregados via React Query (sem queries adicionais)
+- Atividade recente: merge de arrays com `created_at`, sort descrescente, slice(0, 5)
+- Banners expirados: `banners.filter(b => b.active && b.expires_at && new Date(b.expires_at) < new Date())`
+- Micro barra: div com `width: ${(actives/total)*100}%` e cores condicionais
 
