@@ -1,62 +1,50 @@
 
 
-# Auditoria de Compatibilidade Mobile
+# Auditoria da Página Pública
 
-## Resultado da Auditoria
+## Problemas Encontrados
 
-Analisei todos os componentes públicos da aplicação com foco em mobile (320px-430px). O projeto já está bem otimizado para mobile, mas identifiquei alguns problemas e melhorias:
+### 1. NotFound (404) sem branding
+A página 404 usa estilo genérico (`bg-muted`, texto em inglês "Oops! Page not found"). Deveria seguir o design system do app com fundo escuro, branding e texto em português.
 
-### Problemas Encontrados
+### 2. Hero — label "Esta noite" incorreta
+O stat bar mostra "Esta noite" para o total de jogos, mas inclui jogos de todos os períodos (manhã, tarde, noite). Deveria ser "Hoje" para refletir corretamente.
 
-**1. Botão de fechar do TrailerModal sem touch target adequado**
-O botão de fechar o trailer (linha 31-37 de `TrailerModal.tsx`) tem `p-2` mas sem `min-h-[44px]` / `min-w-[44px]`, dificultando o toque em telas pequenas.
+### 3. CategoryIconsCarousel — badge "8" hardcoded
+O item "Em Alta" tem `badge: "8"` fixo. Deveria refletir dados reais ou ser removido para evitar informação falsa.
 
-**2. Botão de lembrete nos GameCards muito pequeno**
-Em `DailyGamesSection.tsx` (linha 193-204), o botão de reminder tem apenas `p-1` (24x24px efetivo), abaixo do mínimo de 44px recomendado para touch targets.
+### 4. "Ver todos →" no LiveFeedSection sem ação
+O link "Ver todos →" (linha 152-154) é um `<span>` com `cursor-pointer` mas sem `onClick` ou link real. Deveria navegar para a aba Programação ou ser removido.
 
-**3. Filter pills sem touch target mínimo**
-Os botões de filtro expandidos (linhas 483-501, 515-535, 549-569 de `DailyGamesSection.tsx`) usam `px-2.5 py-1.5` sem `min-h-[44px]`, tornando difícil tocar com precisão no mobile.
+### 5. ContentDetailSheet sem backdrop_url
+O `ContentDetailSheet` aceita `backdrop_url` mas o `NovidadesCard` nunca passa esse campo (usa apenas `poster_url: selectedItem.image_url`). O backdrop poderia vir do TMDB para enriquecer a experiência.
 
-**4. Grain overlay com z-index 9999 pode bloquear interações**
-O `.grain-overlay` em `index.css` (linha 168) tem `z-index: 9999` e `pointer-events: none`. Embora `pointer-events: none` resolva, em alguns browsers mais antigos pode causar problemas. O z-index excessivo pode interferir com modais (TrailerModal usa z-[70], LoginModal usa z-[100]).
-
-**5. ContentDetailSheet sem safe-area no padding inferior**
-Em `ContentDetailSheet.tsx` (linha 84), o `pb-24` fixo não usa `env(safe-area-inset-bottom)`, o que pode ocultar conteúdo em iPhones com home indicator.
-
-**6. Página Assinar: sticky CTA pode sobrepor conteúdo**
-Na página `Assinar.tsx`, o sticky CTA no bottom não tem proteção de safe-area para iPhones com notch.
-
-### O que Já Está Correto
-- BottomNav respeita `env(safe-area-inset-bottom)`
-- Touch targets de 44px na maioria dos botões (navbar, bottom nav, login form, carousel arrows)
-- `overflow-x-hidden` no container principal previne scroll horizontal
-- Tipografia fluida com `clamp()` no Hero
-- `viewport-fit=cover` no HTML
-- `prefers-reduced-motion` respeita acessibilidade
-- Scrollbar hide nos carrosséis
-- Truncate em textos longos de times/competições
-- iOS keyboard viewport adjustment no LoginModal
+### 6. Grain overlay z-index 9999
+O `.grain-overlay` usa `z-index: 9999`, que é excessivo. Modais usam z-[60] a z-[100]. Reduzir para `z-[55]` (abaixo dos modais) é mais seguro para compatibilidade.
 
 ---
 
-## Plano de Correção (3 arquivos)
+## Plano de Correção
 
-### 1. `src/components/public/TrailerModal.tsx`
-- Adicionar `min-h-[44px] min-w-[44px]` ao botão de fechar
+### 1. `src/pages/NotFound.tsx`
+- Redesenhar com branding Canal do Brito (fundo escuro, logo SVG, texto em português, botão de volta estilizado)
 
-### 2. `src/components/public/DailyGamesSection.tsx`
-- Aumentar touch target do botão de reminder para `min-h-[44px] min-w-[44px]`
-- Adicionar `min-h-[44px]` nos filter pills expandidos
+### 2. `src/components/public/Hero.tsx`
+- Trocar label "Esta noite" por "Hoje" na stat bar
 
-### 3. `src/components/public/ContentDetailSheet.tsx`
-- Substituir `pb-24` por `paddingBottom: calc(6rem + env(safe-area-inset-bottom, 0px))` para proteger conteúdo em iPhones
+### 3. `src/components/public/CategoryIconsCarousel.tsx`
+- Remover badge hardcoded "8" do item "Em Alta"
 
-### 4. `src/pages/Assinar.tsx`
-- Adicionar `env(safe-area-inset-bottom)` no sticky CTA inferior
+### 4. `src/components/public/LiveFeedSection.tsx`
+- Converter "Ver todos →" em botão funcional que navega para a aba Programação, ou remover
+
+### 5. `src/index.css`
+- Reduzir z-index do `.grain-overlay` de 9999 para 55
 
 ### Arquivos modificados
-- `src/components/public/TrailerModal.tsx`
-- `src/components/public/DailyGamesSection.tsx`
-- `src/components/public/ContentDetailSheet.tsx`
-- `src/pages/Assinar.tsx`
+- `src/pages/NotFound.tsx`
+- `src/components/public/Hero.tsx`
+- `src/components/public/CategoryIconsCarousel.tsx`
+- `src/components/public/LiveFeedSection.tsx`
+- `src/index.css`
 
