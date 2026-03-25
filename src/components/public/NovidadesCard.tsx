@@ -1,3 +1,4 @@
+import React from "react";
 import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
@@ -34,7 +35,9 @@ const MetadataRow = React.forwardRef<HTMLParagraphElement, { item: { content_typ
         {parts.join(" · ")}
       </p>
     );
-};
+  }
+);
+MetadataRow.displayName = "MetadataRow";
 
 export const NovidadesCard = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
