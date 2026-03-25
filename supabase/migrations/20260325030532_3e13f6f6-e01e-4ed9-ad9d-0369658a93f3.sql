@@ -1,0 +1,1 @@
+ALTER TABLE public.news_releases ADD COLUMN backdrop_url text DEFAULT NULL;

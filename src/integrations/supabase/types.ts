@@ -279,6 +279,7 @@ export type Database = {
         Row: {
           active: boolean
           added_by: string | null
+          backdrop_url: string | null
           badge_type: string
           content_type: string
           created_at: string
@@ -298,6 +299,7 @@ export type Database = {
         Insert: {
           active?: boolean
           added_by?: string | null
+          backdrop_url?: string | null
           badge_type?: string
           content_type?: string
           created_at?: string
@@ -317,6 +319,7 @@ export type Database = {
         Update: {
           active?: boolean
           added_by?: string | null
+          backdrop_url?: string | null
           badge_type?: string
           content_type?: string
           created_at?: string
