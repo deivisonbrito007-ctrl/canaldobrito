@@ -32,7 +32,7 @@ export const RecentActivity = ({ banners, movies, series, news, isLoading }: Rec
 
   const items = useMemo(() => {
     const all: ActivityItem[] = [];
-    banners?.forEach(b => all.push({ type: "banner", title: b.title || b.image_url.slice(-20), created_at: b.created_at, route: "/admin/banners" }));
+    banners?.forEach(b => all.push({ type: "banner", title: b.title || (b.image_url ? b.image_url.slice(-20) : "Banner"), created_at: b.created_at, route: "/admin/banners" }));
     movies?.forEach(m => all.push({ type: "filme", title: m.title, created_at: m.created_at, route: "/admin/filmes" }));
     series?.forEach(s => all.push({ type: "série", title: s.title, created_at: s.created_at, route: "/admin/series" }));
     news?.forEach(n => all.push({ type: "novidade", title: n.title, created_at: n.created_at, route: "/admin/novidades" }));
