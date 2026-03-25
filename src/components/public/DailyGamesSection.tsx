@@ -659,7 +659,7 @@ export const DailyGamesSection = () => {
         {GROUP_ORDER.map((group) => {
           const groupGames = grouped[group];
           if (!groupGames || groupGames.length === 0) return null;
-          return <PeriodGroup key={group} group={group} games={groupGames} />;
+          return <PeriodGroup key={group} group={group} games={groupGames} onPushReminder={handlePushReminder} />;
         })}
       </div>
 
