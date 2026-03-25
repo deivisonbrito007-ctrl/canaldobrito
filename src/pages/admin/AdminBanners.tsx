@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
+import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -183,6 +184,7 @@ const AdminBanners = () => {
         <div className="space-y-4">
           <ProgramacaoTexto />
           <DailyGamesManager />
+          <ArchivedGamesManager />
         </div>
       )}
 
