@@ -146,17 +146,25 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
     setReminded(isNowReminded);
   }, [game.id]);
 
+  const gameLabel = game.away_team
+    ? `${game.home_team} vs ${game.away_team}, ${game.competition}, ${game.game_time?.slice(0, 5)}`
+    : `${game.home_team}, ${game.competition}, ${game.game_time?.slice(0, 5)}`;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: "easeOut" }}
       className="group min-w-0"
+      role="article"
+      aria-label={`${gameLabel}${live ? ', ao vivo' : ''}${game.is_womens ? ', feminino' : ''}`}
+      tabIndex={0}
     >
       <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
         bg-card/60 backdrop-blur-xl
         ${highlight ? "border-primary/30 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.15)]" : "border-border/20"}
-        hover:border-primary/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-0.5`}
+        hover:border-primary/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-0.5
+        focus-within:ring-2 focus-within:ring-primary/50 focus-within:ring-offset-2 focus-within:ring-offset-background`}
       >
         {/* Top accent line */}
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
@@ -193,14 +201,15 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               {!live && (
                  <button
                    onClick={handleReminder}
+                   aria-label={reminded ? `Remover lembrete de ${game.home_team}` : `Adicionar lembrete para ${game.home_team}`}
+                   aria-pressed={reminded}
                    className={`p-1.5 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center ${
                      reminded
                        ? "bg-primary/15 text-primary border border-primary/30"
                        : "bg-card/40 text-muted-foreground/40 border border-transparent hover:text-primary/60 hover:bg-primary/5"
                    }`}
-                   title={reminded ? "Remover lembrete" : "Adicionar lembrete"}
                  >
-                   {reminded ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+                   {reminded ? <Bell className="h-3.5 w-3.5" aria-hidden="true" /> : <BellOff className="h-3.5 w-3.5" aria-hidden="true" />}
                  </button>
               )}
             </div>
@@ -270,7 +279,7 @@ const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] })
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <button className="flex items-center gap-3 w-full py-1 group/period">
+        <button className="flex items-center gap-3 w-full py-1 group/period min-h-[44px]" aria-label={`${meta.label}, ${games.length} jogos. ${open ? 'Clique para recolher' : 'Clique para expandir'}`}>
           <span className="text-base">{meta.emoji}</span>
           <span className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{meta.label}</span>
           <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
@@ -281,7 +290,7 @@ const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] })
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-2.5 sm:mt-3">
+        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-2.5 sm:mt-3" role="list" aria-label={`Jogos do período ${meta.label}`}>
           {games.map((game, idx) => (
             <GameCard key={game.id} game={game} index={idx} />
           ))}
@@ -420,7 +429,7 @@ export const DailyGamesSection = () => {
   }
 
   return (
-    <section id="esportes" className="space-y-4 w-full min-w-0 overflow-hidden">
+    <section id="esportes" className="space-y-4 w-full min-w-0 overflow-hidden" aria-label="Programação de jogos do dia">
       {/* Header with integrated stats */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20">
@@ -453,10 +462,12 @@ export const DailyGamesSection = () => {
       {/* Compact accordion filters */}
       <div className="space-y-2">
         {/* Filter category buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5" role="toolbar" aria-label="Filtros de jogos">
           {availableSports.length > 1 && (
             <button
               onClick={() => toggleFilter("sport")}
+              aria-expanded={openFilter === "sport"}
+              aria-label={sportFilter ? `Filtro de esporte: ${SPORT_LABEL[sportFilter as SportType]}` : "Filtrar por esporte"}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "sport" || sportFilter
                   ? "bg-primary/15 text-primary border-primary/30"
@@ -470,6 +481,8 @@ export const DailyGamesSection = () => {
           {availableComps.length > 1 && (
             <button
               onClick={() => toggleFilter("comp")}
+              aria-expanded={openFilter === "comp"}
+              aria-label={compFilter ? `Filtro de competição: ${compFilter}` : "Filtrar por competição"}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "comp" || compFilter
                   ? "bg-primary/15 text-primary border-primary/30"
@@ -483,6 +496,8 @@ export const DailyGamesSection = () => {
           {availableChannels.length > 1 && (
             <button
               onClick={() => toggleFilter("channel")}
+              aria-expanded={openFilter === "channel"}
+              aria-label={channelFilter ? `Filtro de canal: ${channelFilter}` : "Filtrar por canal"}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "channel" || channelFilter
                   ? "bg-primary/15 text-primary border-primary/30"
@@ -496,8 +511,8 @@ export const DailyGamesSection = () => {
           {hasActiveFilters && (
             <button
               onClick={clearAll}
-              className="shrink-0 p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all border border-destructive/20"
-              title="Limpar filtros"
+              className="shrink-0 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all border border-destructive/20"
+              aria-label="Limpar todos os filtros"
             >
               <X className="h-3.5 w-3.5" />
             </button>
