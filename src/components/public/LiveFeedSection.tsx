@@ -151,8 +151,8 @@ export const LiveFeedSection = () => {
         </div>
         <button
           onClick={() => {
-            const tab = document.querySelector('[data-value="schedule"]') as HTMLElement;
-            tab?.click();
+            const event = new CustomEvent("nav-tab-change", { detail: "schedule" });
+            window.dispatchEvent(event);
           }}
           className="text-[10px] text-primary font-semibold font-body hover:underline shrink-0 ml-2 min-h-[44px] flex items-center"
         >

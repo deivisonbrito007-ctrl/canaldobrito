@@ -16,8 +16,8 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50"
       style={{
-        background: "hsl(210 22% 4%)",
-        borderTop: "0.5px solid rgba(255,255,255,0.06)",
+        background: "hsl(var(--background))",
+        borderTop: "0.5px solid hsl(var(--border) / 0.15)",
         paddingBottom: "env(safe-area-inset-bottom, 6px)",
       }}
     >

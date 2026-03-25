@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff, X } from "lucide-react";
 import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
+import { DayStatsBar } from "./DayStatsBar";
 import { NextGameHero } from "./NextGameHero";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -364,7 +365,39 @@ export const DailyGamesSection = () => {
   if (compFilter) activeChips.push({ key: "comp", label: `🏆 ${compFilter}`, onRemove: () => setCompFilter(null) });
   if (channelFilter) activeChips.push({ key: "channel", label: `📺 ${channelFilter}`, onRemove: () => setChannelFilter(null) });
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl skeleton-shimmer" />
+          <div className="h-5 w-32 rounded skeleton-shimmer" />
+          <div className="h-5 w-16 rounded-full skeleton-shimmer" />
+        </div>
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl overflow-hidden border border-border/20 bg-card/60">
+              <div className="h-[3px] skeleton-shimmer" />
+              <div className="p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-24 rounded skeleton-shimmer" />
+                  <div className="h-3 w-12 rounded skeleton-shimmer" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-1/3 rounded skeleton-shimmer" />
+                  <div className="h-7 w-16 rounded-lg skeleton-shimmer" />
+                  <div className="h-4 w-1/3 rounded skeleton-shimmer ml-auto" />
+                </div>
+                <div className="flex gap-1">
+                  <div className="h-5 w-14 rounded-lg skeleton-shimmer" />
+                  <div className="h-5 w-14 rounded-lg skeleton-shimmer" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (!games || games.length === 0) {
     return (
@@ -411,6 +444,9 @@ export const DailyGamesSection = () => {
         )}
       </div>
 
+      {/* Stats bar */}
+      <DayStatsBar games={games} />
+
       {/* Hero — next upcoming game */}
       <NextGameHero games={games} />
 
@@ -421,7 +457,7 @@ export const DailyGamesSection = () => {
           {availableSports.length > 1 && (
             <button
               onClick={() => toggleFilter("sport")}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "sport" || sportFilter
                   ? "bg-primary/15 text-primary border-primary/30"
                   : "bg-card/50 backdrop-blur border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"
@@ -434,7 +470,7 @@ export const DailyGamesSection = () => {
           {availableComps.length > 1 && (
             <button
               onClick={() => toggleFilter("comp")}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "comp" || compFilter
                   ? "bg-primary/15 text-primary border-primary/30"
                   : "bg-card/50 backdrop-blur border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"
@@ -447,7 +483,7 @@ export const DailyGamesSection = () => {
           {availableChannels.length > 1 && (
             <button
               onClick={() => toggleFilter("channel")}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "channel" || channelFilter
                   ? "bg-primary/15 text-primary border-primary/30"
                   : "bg-card/50 backdrop-blur border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"
