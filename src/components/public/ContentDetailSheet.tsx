@@ -31,7 +31,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
   if (!item) return null;
 
   const poster = item.poster_url || item.image_url;
-  const backdrop = (item as any).backdrop_url;
+  const backdrop = item.backdrop_url;
 
   return (
     <AnimatePresence>
