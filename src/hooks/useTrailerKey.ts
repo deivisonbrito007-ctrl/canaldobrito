@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-const cache = new Map<number, string | null>();
+import { trailerCache as cache } from "./useTrailerAvailability";
 
 const findYouTubeTrailer = (results: any[]) =>
   results.find((v: any) => v.type === "Trailer" && v.site === "YouTube") ||
