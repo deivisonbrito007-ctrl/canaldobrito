@@ -19,6 +19,7 @@ export interface NewsRelease {
   runtime: number | null;
   seasons: number | null;
   tagline: string | null;
+  backdrop_url: string | null;
 }
 
 export const useActiveNewsReleases = () =>
@@ -64,7 +65,7 @@ export const useAddNewsRelease = () => {
 export const useUpdateNewsRelease = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...fields }: { id: string } & Partial<Pick<NewsRelease, "active" | "badge_type" | "display_order" | "title" | "overview" | "genres" | "runtime" | "seasons" | "tagline" | "rating" | "image_url">>) => {
+    mutationFn: async ({ id, ...fields }: { id: string } & Partial<Pick<NewsRelease, "active" | "badge_type" | "display_order" | "title" | "overview" | "genres" | "runtime" | "seasons" | "tagline" | "rating" | "image_url" | "backdrop_url">>) => {
       const { error } = await supabase.from("news_releases").update(fields).eq("id", id);
       if (error) throw error;
     },

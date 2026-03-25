@@ -40,10 +40,12 @@ const AdminNovidades = () => {
       const action = searchType === "movie" ? "movie_details" : "tv_details";
       const details = await fetchDetails(action, r.id);
       const genreText = details?.genres?.map((g) => g.name).join(", ") || null;
+      const backdropUrl = (details as any)?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${(details as any).backdrop_path}` : null;
       await addItem.mutateAsync({
         tmdb_id: r.id, title: r.title || r.name || "",
         content_type: searchType, badge_type: badgeType,
         image_url: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
+        backdrop_url: backdropUrl,
         overview: r.overview || null,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
         year: (r.release_date || r.first_air_date) ? parseInt(r.release_date || r.first_air_date || "") : null,
@@ -67,6 +69,7 @@ const AdminNovidades = () => {
       const details = await fetchDetails(action as "movie_details" | "tv_details", item.tmdb_id);
       if (!details) { toast.error("Não foi possível buscar detalhes"); return; }
       const genreText = details.genres?.map((g) => g.name).join(", ") || null;
+      const backdropUrl = (details as any)?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${(details as any).backdrop_path}` : null;
       await updateItem.mutateAsync({
         id: item.id,
         genres: genreText,
@@ -75,6 +78,7 @@ const AdminNovidades = () => {
         runtime: item.content_type === "movie" ? ((details as any).runtime || item.runtime) : item.runtime,
         seasons: item.content_type === "series" ? ((details as any).number_of_seasons || item.seasons) : item.seasons,
         tagline: (details as any).tagline || item.tagline,
+        backdrop_url: backdropUrl || (item as any).backdrop_url,
       });
       toast.success(`"${item.title}" atualizado!`);
     } catch (err: any) { toast.error(err.message); }
