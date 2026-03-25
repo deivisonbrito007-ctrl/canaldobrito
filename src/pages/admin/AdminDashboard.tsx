@@ -136,7 +136,7 @@ const AdminDashboard = () => {
             <button
               onClick={handleRetry}
               className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
-              title="Atualizar dados"
+              aria-label="Atualizar dados do dashboard"
             >
               <RefreshCw className="h-3.5 w-3.5 text-muted-foreground/60" />
             </button>
@@ -195,10 +195,11 @@ const AdminDashboard = () => {
           const active = actives[card.key] || 0;
           const ratio = total > 0 ? (active / total) * 100 : 0;
           return (
-            <div
+            <button
               key={card.key}
-              className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] cursor-pointer`}
+              className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] cursor-pointer text-left`}
               onClick={() => navigate(card.route)}
+              aria-label={`${card.label}: ${totals[card.key] || 0} total, ${actives[card.key] || 0} ativos`}
             >
               {isLoading ? (
                 <div className="flex flex-col items-center text-center gap-2">
@@ -223,7 +224,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
