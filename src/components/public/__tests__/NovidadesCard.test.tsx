@@ -132,8 +132,8 @@ describe("NovidadesCard", () => {
     } as any);
 
     render(<NovidadesCard />, { wrapper });
+    expect(screen.getByText("1/2")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Próximo"));
-    expect(screen.getAllByText("SÉRIE TESTE").length).toBeGreaterThan(0);
     expect(screen.getByText("2/2")).toBeInTheDocument();
   });
 
