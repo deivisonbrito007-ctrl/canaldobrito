@@ -461,7 +461,7 @@ export const DailyGamesSection = () => {
       {/* Compact accordion filters */}
       <div className="space-y-2">
         {/* Filter category buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5" role="toolbar" aria-label="Filtros de jogos">
           {availableSports.length > 1 && (
             <button
               onClick={() => toggleFilter("sport")}
