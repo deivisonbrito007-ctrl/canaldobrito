@@ -6,7 +6,7 @@ import { LiveFeedSection } from "@/components/public/LiveFeedSection";
 import { LiveEventsSection } from "@/components/public/LiveEventsSection";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
-import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton } from "@/components/public/ContentSkeletons";
+import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
 
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
@@ -27,6 +27,15 @@ const ScheduleFallback = () => (
   <div className="px-4 pt-5 pb-3 space-y-5">
     <SectionHeaderSkeleton />
     {[0, 1, 2].map((i) => <GameCardSkeleton key={i} index={i} />)}
+  </div>
+);
+
+/** Skeleton for lazy below-fold sections (Novidades + Promo + Banners) */
+const BelowFoldSkeleton = () => (
+  <div className="space-y-5 px-4">
+    <NewsBannerSkeleton />
+    {/* Promo strip placeholder */}
+    <div className="rounded-xl skeleton-shimmer h-[88px]" />
   </div>
 );
 
@@ -67,12 +76,12 @@ const Index = () => {
             <ScheduleTab />
           </Suspense>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-5 min-h-[80vh]">
             <Hero />
             <CategoryIconsCarousel />
             <LiveFeedSection />
             <LiveEventsSection />
-            <Suspense fallback={null}>
+            <Suspense fallback={<BelowFoldSkeleton />}>
               <LazyNovidadesCard />
               <LazyPromoStrip />
               <LazyBannerSections />
