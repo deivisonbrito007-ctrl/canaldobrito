@@ -66,9 +66,10 @@ export const NovidadesCard = () => {
 
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (total <= 1) return;
     timerRef.current = setInterval(() => {
       setDirection(1);
-      setCurrent((c) => (c + 1) % (total || 1));
+      setCurrent((c) => (c + 1) % total);
     }, 5000);
   }, [total]);
 

@@ -104,6 +104,7 @@ export const useTrailerAvailability = (
             cache.set(tmdb_id, null);
             return { tmdb_id, hasTrailer: false };
           } catch {
+            cache.set(tmdb_id, null);
             return { tmdb_id, hasTrailer: false };
           }
         });
