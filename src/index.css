@@ -280,7 +280,9 @@
     .animate-fade-up,
     .animate-slide-up,
     .animate-border-pulse-live,
-    [class*="admin-stagger"] {
+    [class*="admin-stagger"],
+    [class*="animate-pulse"],
+    [class*="animate-ping"] {
       animation: none !important;
       transition: none !important;
     }
