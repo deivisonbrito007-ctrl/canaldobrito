@@ -320,6 +320,7 @@ export const ProgramacaoTexto = () => {
       return {
         ...g,
         active,
+        archived: false,
         is_live: false,
         status_short: "NS",
         elapsed_minutes: null,

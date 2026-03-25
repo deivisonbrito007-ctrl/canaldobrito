@@ -13,6 +13,7 @@ export interface DailyGame {
   is_live: boolean;
   is_womens: boolean;
   active: boolean;
+  archived: boolean;
   status_short: string;
   elapsed_minutes: number | null;
   publish_at: string | null;
@@ -29,6 +30,7 @@ export const useDailyGames = (date: string) =>
         .select("*")
         .eq("date", date)
         .eq("active", true)
+        .eq("archived", false)
         .order("game_time", { ascending: true });
       if (error) throw error;
       return data as DailyGame[];

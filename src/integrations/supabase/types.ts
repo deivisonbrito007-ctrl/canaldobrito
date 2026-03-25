@@ -86,6 +86,7 @@ export type Database = {
       daily_games: {
         Row: {
           active: boolean
+          archived: boolean
           away_team: string
           channels: string[] | null
           competition: string
@@ -104,6 +105,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          archived?: boolean
           away_team: string
           channels?: string[] | null
           competition?: string
@@ -122,6 +124,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          archived?: boolean
           away_team?: string
           channels?: string[] | null
           competition?: string

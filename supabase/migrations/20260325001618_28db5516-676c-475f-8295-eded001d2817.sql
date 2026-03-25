@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_games ADD COLUMN archived boolean NOT NULL DEFAULT false;
