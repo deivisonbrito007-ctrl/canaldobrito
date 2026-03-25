@@ -10,6 +10,7 @@ interface ContentDetailSheetProps {
     title: string;
     overview?: string | null;
     poster_url?: string | null;
+    backdrop_url?: string | null;
     image_url?: string | null;
     rating?: number | null;
     year?: number | null;
