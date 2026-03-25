@@ -1,75 +1,69 @@
 
 
-## Notificações Push para Jogos
+## Auditoria: Notificações Push — Problemas Encontrados e Correções
 
-### Visão Geral
-Conectar o sistema de lembretes (🔔) existente ao Web Push API do navegador, para que usuários recebam uma notificação real ~15 minutos antes do início do jogo, mesmo com o app em segundo plano.
+### Problemas Identificados
 
-### Arquitetura
+**1. Conflito de Service Workers (CRÍTICO)**
+O `sw-custom.js` é registrado com `scope: "/"`, mas o `vite-plugin-pwa` também gera um SW com o mesmo scope. Apenas UM service worker pode controlar um scope — o segundo registro pode sobrescrever o primeiro, fazendo com que o push listener **ou** o cache offline pare de funcionar.
 
-```text
-┌─────────────┐     subscribe      ┌──────────────────┐
-│  Browser     │ ──────────────►   │  push_subscribers │  (nova tabela)
-│  (SW + Push) │                   │  user_id, endpoint│
-└──────┬───────┘                   │  keys, game_ids[] │
-       │                           └────────┬─────────┘
-       │  push event                        │
-       │◄───────────────────────────────────┤
-       │                           ┌────────┴─────────┐
-       │                           │  Edge Function    │
-       │                           │  send-push-notif  │
-       │                           │  (cron cada 1min) │
-       │                           └──────────────────┘
-```
+**2. Race condition no `game_ids` (MÉDIO)**
+Quando o cron dispara e encontra múltiplos jogos para a mesma subscription, ele faz `array_remove` sequencialmente, mas cada iteração lê o array antigo e sobrescreve. Isso pode re-adicionar IDs já removidos.
 
-### Etapas
+**3. Limite de 1000 rows na query de subscriptions (MÉDIO)**
+A query `push_subscriptions.overlaps(game_ids, gameIds)` usa o limite padrão de 1000 rows. Se houver mais de 1000 inscritos num jogo popular, alguns não receberão notificação.
 
-**1. Gerar VAPID Keys e configurar secrets**
-- Gerar par de chaves VAPID (público/privado) via edge function utilitária
-- Armazenar `VAPID_PUBLIC_KEY` na tabela `settings` (público) e `VAPID_PRIVATE_KEY` como secret da edge function
+**4. Timeout da Edge Function (MÉDIO)**
+O envio é sequencial — para cada subscription, faz crypto + HTTP request. Com centenas de subs, pode exceder o timeout de 60s da edge function.
 
-**2. Criar tabela `push_subscriptions`**
-- Colunas: `id`, `endpoint`, `p256dh`, `auth`, `game_ids` (text[]), `created_at`
-- RLS: insert/update/delete para qualquer pessoa (anônimo — não requer login), select público
+**5. Subscription keys desatualizadas (BAIXO)**
+Se o browser regenerar as chaves (reinstalação do PWA, limpeza de dados), o upsert por endpoint atualiza `p256dh`/`auth`, mas se o usuário não clicar no 🔔 novamente, os dados antigos ficam no DB e o push falha silenciosamente.
 
-**3. Atualizar o Service Worker**
-- Adicionar listener `push` no SW gerado pelo vite-plugin-pwa (via `injectManifest` ou custom SW)
-- Exibir notificação nativa com título do jogo, ícone CB e ação "Abrir"
+### Plano de Correções
 
-**4. Hook `usePushSubscription`**
-- Solicitar permissão de notificação
-- Registrar subscription via `PushManager.subscribe()` com VAPID public key
-- Salvar/atualizar endpoint + keys na tabela `push_subscriptions`
-- Função `addGameReminder(gameId)` que adiciona o ID ao array `game_ids`
+**Etapa 1: Unificar Service Workers**
+- Migrar o `vite-plugin-pwa` para `injectManifest` strategy no `vite.config.ts`
+- Criar `src/sw.ts` que importa o precache do workbox E adiciona os listeners de push/notificationclick
+- Remover `public/sw-custom.js`
+- Atualizar `usePushSubscription` para usar `navigator.serviceWorker.ready` em vez de registrar manualmente
 
-**5. Integrar no botão 🔔 existente**
-- Ao clicar no 🔔, além do localStorage atual, chamar `addGameReminder` do hook
-- Se for a primeira vez, solicitar permissão de notificação com UI explicativa
-- Mostrar toast confirmando "Você será notificado 15min antes"
+**Etapa 2: Corrigir race condition nos game_ids**
+- Alterar a edge function para remover TODOS os game_ids notificados de uma vez com uma única query SQL usando `array_remove` encadeado, em vez de um update por jogo
+- Usar uma function SQL `remove_multiple_game_ids(_endpoint, _ids text[])` para atomicidade
 
-**6. Edge Function `send-push-notifications`**
-- Cron job a cada 1 minuto
-- Consulta jogos que começam em exatamente 15 minutos (±1min de tolerância)
-- Busca subscriptions que têm esses game_ids
-- Envia web-push para cada endpoint
-- Remove game_ids já notificados para evitar duplicatas
+**Etapa 3: Paginar subscriptions**
+- Na edge function, buscar subscriptions em lotes de 500 usando `.range(offset, offset+499)` em loop até não haver mais resultados
 
-**7. Registrar cron job**
-- SQL via pg_cron chamando a edge function a cada minuto
+**Etapa 4: Paralelizar envio**
+- Usar `Promise.allSettled()` para enviar em lotes de 10 notificações simultaneamente em vez de sequencialmente
+- Isso reduz o tempo de execução ~10x
+
+**Etapa 5: Atualizar keys no subscribe**
+- No hook, ao detectar subscription existente no browser, sempre fazer upsert das keys no DB (já faz isso no `subscribe()`, mas não no `useEffect` de mount)
+- No mount, se encontrar subscription existente, re-sincronizar keys no DB
+
+### Arquivos Afetados
+
+| Arquivo | Mudança |
+|---------|---------|
+| `vite.config.ts` | Mudar PWA para `injectManifest` |
+| `src/sw.ts` | Novo — SW unificado com precache + push |
+| `public/sw-custom.js` | Remover |
+| `src/hooks/usePushSubscription.ts` | Remover registro manual, re-sync keys no mount |
+| `supabase/functions/send-push-notifications/index.ts` | Paginação, envio paralelo, batch remove |
+| Migration SQL | Nova function `remove_multiple_game_ids` |
 
 ### Detalhes Técnicos
 
-- **VAPID**: Usaremos a lib `web-push` (npm) na edge function para envio
-- **Sem login necessário**: Subscriptions são anônimas, vinculadas ao dispositivo
-- **iOS Safari**: Web Push é suportado desde iOS 16.4 em PWAs instaladas — funciona com nosso setup standalone
-- **Fallback**: O localStorage reminder existente continua funcionando como fallback visual (badge pulsante "Começa em X min")
-- **Limpeza**: game_ids de datas passadas são removidos automaticamente pela edge function
+```text
+Antes (2 SWs conflitantes):
+  vite-plugin-pwa → sw.js (scope /)  ← controla cache
+  sw-custom.js (scope /)              ← controla push
+  ⚠️ Apenas 1 vence — push pode não funcionar
 
-### Arquivos Afetados
-- `src/hooks/usePushSubscription.ts` — novo hook
-- `src/components/public/DailyGamesSection.tsx` — integrar push no botão 🔔
-- `supabase/functions/send-push-notifications/index.ts` — nova edge function
-- `vite.config.ts` — configurar custom SW ou injectManifest para push listener
-- Migration SQL — nova tabela `push_subscriptions`
-- SQL insert — cron job pg_cron
+Depois (1 SW unificado):
+  vite-plugin-pwa (injectManifest) → sw.ts (scope /)
+    ├── precache (workbox)
+    └── push + notificationclick listeners
+```
 
