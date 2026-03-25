@@ -49,11 +49,23 @@ export function detectSportType(competition: string): SportType {
 }
 
 /**
- * Returns today's date as YYYY-MM-DD in the browser's local timezone.
+ * Returns today's date as YYYY-MM-DD in America/Sao_Paulo timezone.
+ * Falls back to browser local timezone if Intl is unavailable.
  */
 export function getLocalDateString(date?: Date): string {
   const d = date ?? new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  try {
+    // Format in São Paulo timezone
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d); // returns YYYY-MM-DD in en-CA locale
+    return parts;
+  } catch {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
 }
 
 /**
