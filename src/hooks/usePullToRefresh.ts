@@ -8,6 +8,7 @@ export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>)
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startY = useRef(0);
   const pulling = useRef(false);
+  const pullDistanceRef = useRef(0);
   const queryClient = useQueryClient();
 
   const onRefresh = useCallback(async () => {
@@ -32,15 +33,17 @@ export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>)
       const dy = Math.max(0, e.touches[0].clientY - startY.current);
       // Dampen the pull
       const dampened = Math.min(dy * 0.4, 140);
+      pullDistanceRef.current = dampened;
       setPullDistance(dampened);
     };
 
     const onTouchEnd = () => {
       if (!pulling.current) return;
       pulling.current = false;
-      if (pullDistance >= THRESHOLD) {
+      if (pullDistanceRef.current >= THRESHOLD) {
         onRefresh();
       }
+      pullDistanceRef.current = 0;
       setPullDistance(0);
     };
 
@@ -53,7 +56,7 @@ export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>)
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
-  }, [targetRef, isRefreshing, pullDistance, onRefresh]);
+  }, [targetRef, isRefreshing, onRefresh]);
 
   return { pullDistance, isRefreshing };
 }
