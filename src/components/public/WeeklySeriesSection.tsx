@@ -69,11 +69,11 @@ const SeriesCard = ({
           </div>
         )}
 
-        {/* Play button overlay */}
+        {/* Play button overlay — always visible on mobile */}
         {hasTrailer && (
           <button
             onClick={onPlayTrailer}
-            className="absolute inset-0 m-auto w-11 h-11 flex items-center justify-center rounded-full bg-secondary/80 text-secondary-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-secondary hover:scale-110 active:scale-95 shadow-lg"
+            className="absolute inset-0 m-auto w-11 h-11 flex items-center justify-center rounded-full bg-secondary/80 text-secondary-foreground opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-secondary hover:scale-110 active:scale-95 shadow-lg"
             aria-label={`Assistir trailer de ${item.title}`}
           >
             <Play className="h-5 w-5 fill-current ml-0.5" />
