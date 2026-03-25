@@ -79,12 +79,12 @@ const Index = () => {
           <div className="space-y-5 min-h-[80vh]">
             <Hero />
             <CategoryIconsCarousel />
-            <LiveFeedSection />
-            <LiveEventsSection />
+            <div className="cv-auto-feed"><LiveFeedSection /></div>
+            <div className="cv-auto-events"><LiveEventsSection /></div>
             <Suspense fallback={<BelowFoldSkeleton />}>
-              <LazyNovidadesCard />
-              <LazyPromoStrip />
-              <LazyBannerSections />
+              <div className="cv-auto-news"><LazyNovidadesCard /></div>
+              <div className="cv-auto-promo"><LazyPromoStrip /></div>
+              <div className="cv-auto-banners"><LazyBannerSections /></div>
             </Suspense>
           </div>
         )}
