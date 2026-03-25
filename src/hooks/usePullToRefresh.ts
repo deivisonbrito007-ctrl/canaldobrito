@@ -9,6 +9,7 @@ export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>)
   const startY = useRef(0);
   const pulling = useRef(false);
   const pullDistanceRef = useRef(0);
+  const didVibrate = useRef(false);
   const queryClient = useQueryClient();
 
   const onRefresh = useCallback(async () => {
