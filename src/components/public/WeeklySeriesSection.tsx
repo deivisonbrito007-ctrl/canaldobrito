@@ -5,8 +5,9 @@ import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
 import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
+import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 type SeriesItem = NonNullable<ReturnType<typeof useActiveSeries>["data"]>[number];
 
@@ -15,11 +16,13 @@ const SeriesCard = ({
   index,
   onSelect,
   onPlayTrailer,
+  hasTrailer,
 }: {
   item: SeriesItem;
   index: number;
   onSelect: () => void;
   onPlayTrailer: (e: React.MouseEvent) => void;
+  hasTrailer: boolean;
 }) => {
   const [imgErr, setImgErr] = useState(false);
 
@@ -67,7 +70,7 @@ const SeriesCard = ({
         )}
 
         {/* Play button overlay */}
-        {item.tmdb_id && (
+        {hasTrailer && (
           <button
             onClick={onPlayTrailer}
             className="absolute inset-0 m-auto w-11 h-11 flex items-center justify-center rounded-full bg-secondary/80 text-secondary-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-secondary hover:scale-110 active:scale-95 shadow-lg"
@@ -101,6 +104,12 @@ export const WeeklySeriesSection = () => {
   const { data: series, isLoading } = useActiveSeries();
   const [selected, setSelected] = useState<SeriesItem | null>(null);
   const [trailerItem, setTrailerItem] = useState<SeriesItem | null>(null);
+
+  const availabilityItems = useMemo(
+    () => series?.map((s) => ({ tmdb_id: s.tmdb_id, content_type: "series" as const })),
+    [series]
+  );
+  const { available: trailerMap } = useTrailerAvailability(availabilityItems);
 
   const { trailerKey, loading: trailerLoading } = useTrailerKey(
     trailerItem?.tmdb_id,
