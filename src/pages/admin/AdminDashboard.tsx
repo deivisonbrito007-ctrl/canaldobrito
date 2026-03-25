@@ -230,6 +230,9 @@ const AdminDashboard = () => {
         })}
       </div>
 
+      {/* Content Charts */}
+      <ContentCharts totals={totals} actives={actives} isLoading={isLoading} />
+
       {/* Upcoming Activations */}
       <UpcomingActivations />
 
