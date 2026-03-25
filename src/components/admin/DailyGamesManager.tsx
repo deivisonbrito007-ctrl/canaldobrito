@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
 import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
@@ -6,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const queryClient = useQueryClient();
   const { data: games, isLoading } = useAllDailyGames(selectedDate);
   const updateGame = useUpdateDailyGame();
   const deleteGame = useDeleteDailyGame();
@@ -46,6 +49,27 @@ export const DailyGamesManager = () => {
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
+  };
+
+  const handleArchiveDay = async () => {
+    const nonArchived = games?.filter((g) => !g.archived) || [];
+    if (nonArchived.length === 0) {
+      toast.info("Nenhum jogo para arquivar nesta data");
+      return;
+    }
+    if (!confirm(`Arquivar todos os ${nonArchived.length} jogos de ${selectedDate}?`)) return;
+    try {
+      const { error } = await supabase
+        .from("daily_games")
+        .update({ archived: true, active: false } as any)
+        .eq("date", selectedDate)
+        .eq("archived", false);
+      if (error) throw error;
+      toast.success(`${nonArchived.length} jogos arquivados!`);
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const handleClearDay = async () => {
@@ -99,6 +123,9 @@ export const DailyGamesManager = () => {
           />
           <Button size="sm" variant="ghost" onClick={() => setShowAddForm(!showAddForm)} className="text-xs">
             <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleArchiveDay} className="text-xs text-amber-400 hover:text-amber-300">
+            <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar Dia
           </Button>
           <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
