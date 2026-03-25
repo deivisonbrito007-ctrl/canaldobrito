@@ -1,34 +1,42 @@
 
 
-# Correcoes: Trailers e Warnings de Ref
+# Auditoria da Aba WhatsApp no Admin
 
-## Problemas Identificados
+## Bugs Encontrados
 
-### 1. WeeklySeriesSection sem botao de trailer
-O componente de series NAO tem botao Play nem TrailerModal — diferente do WeeklyMoviesSection que ja tem ambos. Series ficam sem acesso direto ao trailer pelo card.
+### 1. Data calculada no escopo do modulo — fica stale (BUG)
+As variaveis `today`, `todayStr`, `formattedDate` e `dayName` (linhas 11-14) sao calculadas **uma unica vez** quando o modulo e importado. Se o admin deixar a aba aberta e o dia mudar (meia-noite), os templates mostram a data do dia anterior. Os jogos tambem buscam a data errada.
 
-### 2. Warnings "Function components cannot be given refs" (3x)
-Os console logs mostram warnings para `MovieCard`, `ContentDetailSheet` e `TrailerModal`. Estes componentes sao usados dentro de `AnimatePresence`/`motion` que tenta passar refs. O fix e usar `React.forwardRef` ou, no caso de componentes funcionais simples, garantir que nao recebam ref desnecessariamente. Na pratica, esses warnings vem do framer-motion tentando passar ref para componentes filhos diretos do `AnimatePresence`.
+**Correcao**: Mover o calculo de data para dentro do componente `AdminWhatsApp`, usando `useMemo`.
 
-### 3. Sobre "nao conseguir ver detalhes"
-O `ContentDetailSheet` funciona — o session replay confirma que o modal de trailer abriu e fechou corretamente. Porem, para series, como nao ha botao Play no card, o unico caminho e abrir o detail sheet e esperar o trailer carregar la dentro. Se o TMDB nao retornar trailer para aquela serie, o usuario so ve "Ver no TMDB" — sem feedback claro.
+### 2. `WhatsAppFab.tsx` e `WhatsAppShareButton.tsx` sao codigo morto (CLEANUP)
+Nenhum dos dois e importado em nenhum lugar do projeto. Ocupam espaco sem funcao.
 
-## Plano de Correcao
+**Correcao**: Remover ambos os arquivos.
 
-### Arquivo 1: `src/components/public/WeeklySeriesSection.tsx`
-- Adicionar import de `Play`, `TrailerModal`, `useTrailerKey`
-- Adicionar `onPlayTrailer` prop ao `SeriesCard` (mesmo padrao do `MovieCard`)
-- Adicionar botao Play overlay no card (opacity-0 com hover)
-- Adicionar state `trailerItem` + `TrailerModal` no componente pai
+### 3. Jogos do Dia nao mostra canais (UX)
+O texto gerado para jogos mostra `horario — time x time (competicao)` mas ignora `g.channels`. O admin perde informacao util ao compartilhar.
 
-### Arquivo 2: `src/components/public/WeeklyMoviesSection.tsx`
-- O warning de ref no `MovieCard` vem do framer-motion. Como `MovieCard` e um componente funcional usado como filho direto, nao precisa de forwardRef — o warning e inofensivo mas vamos silencia-lo convertendo `MovieCard` para usar `forwardRef`.
+**Correcao**: Incluir canais no texto, ex: `⏰ 16:00 — Flamengo x Palmeiras (Brasileirão) — ESPN, Premiere`.
 
-### Arquivo 3: `src/components/public/ContentDetailSheet.tsx`
-- Sem mudanca necessaria — o warning vem do `AnimatePresence` no pai que tenta passar ref. O componente ja funciona corretamente.
+### 4. Jogos do Dia nao mostra esporte (UX)
+O campo `sport_type` existe mas nao e usado. Se houver jogos de basquete e futebol misturados, fica confuso.
 
-## Resultado
-- Series ganham botao Play no card (paridade com filmes)
-- Warnings de ref eliminados
-- Trailers acessiveis diretamente em ambas as secoes
+**Correcao**: Agrupar jogos por `sport_type` no texto gerado, ou adicionar emoji por esporte.
+
+### 5. Sem contagem de caracteres na mensagem personalizada (UX)
+WhatsApp tem limite informal de preview (~1024 chars). O admin nao sabe se a mensagem ficou longa demais.
+
+**Correcao**: Adicionar contador de caracteres discreto abaixo do textarea.
+
+### 6. Sem testes unitarios
+Nenhum teste existe para AdminWhatsApp.
+
+**Correcao**: Criar testes basicos verificando render dos templates, contagem de jogos, e estado vazio.
+
+## Arquivos modificados
+- `src/pages/admin/AdminWhatsApp.tsx` — data dinamica com useMemo, canais nos jogos, agrupamento por esporte, contador de caracteres
+- `src/components/public/WhatsAppFab.tsx` — remover (codigo morto)
+- `src/components/public/WhatsAppShareButton.tsx` — remover (codigo morto)
+- `src/pages/admin/__tests__/AdminWhatsApp.test.tsx` — criar testes basicos
 
