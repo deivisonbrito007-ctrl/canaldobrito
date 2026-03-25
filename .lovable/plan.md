@@ -1,42 +1,53 @@
 
 
-# Auditoria da Aba WhatsApp no Admin
+# Causa Raiz: Jogos Apagados pela Edge Function
 
-## Bugs Encontrados
+## O que aconteceu
 
-### 1. Data calculada no escopo do modulo — fica stale (BUG)
-As variaveis `today`, `todayStr`, `formattedDate` e `dayName` (linhas 11-14) sao calculadas **uma unica vez** quando o modulo e importado. Se o admin deixar a aba aberta e o dia mudar (meia-noite), os templates mostram a data do dia anterior. Os jogos tambem buscam a data errada.
+A Edge Function `activate-scheduled` executa a cada minuto via pg_cron e contem esta logica na linha 46-49:
 
-**Correcao**: Mover o calculo de data para dentro do componente `AdminWhatsApp`, usando `useMemo`.
+```typescript
+// Cleanup: remove games from past dates
+const { data: deletedGames, error: cleanupError } = await supabase
+  .from("daily_games")
+  .delete()
+  .lt("date", new Date().toISOString().split("T")[0])
+  .select("id");
+```
 
-### 2. `WhatsAppFab.tsx` e `WhatsAppShareButton.tsx` sao codigo morto (CLEANUP)
-Nenhum dos dois e importado em nenhum lugar do projeto. Ocupam espaco sem funcao.
+O problema e duplo:
 
-**Correcao**: Remover ambos os arquivos.
+1. **Fuso horario**: O servidor roda em UTC. O Brasil esta em UTC-3. As 21h no Brasil, o servidor ja considera que e o dia seguinte (00:00 UTC). Nesse momento, a funcao deleta todos os jogos do dia que ainda esta em andamento no Brasil.
 
-### 3. Jogos do Dia nao mostra canais (UX)
-O texto gerado para jogos mostra `horario — time x time (competicao)` mas ignora `g.channels`. O admin perde informacao util ao compartilhar.
+2. **Delecao automatica agressiva**: A funcao apaga PERMANENTEMENTE todos os jogos de datas passadas. Nao ha soft-delete nem periodo de retencao. Se o admin inseriu jogos para hoje e o cron roda apos meia-noite UTC, os jogos somem.
 
-**Correcao**: Incluir canais no texto, ex: `⏰ 16:00 — Flamengo x Palmeiras (Brasileirão) — ESPN, Premiere`.
+## Correcoes
 
-### 4. Jogos do Dia nao mostra esporte (UX)
-O campo `sport_type` existe mas nao e usado. Se houver jogos de basquete e futebol misturados, fica confuso.
+### 1. Usar fuso horario brasileiro na comparacao
+Trocar `new Date().toISOString().split("T")[0]` por uma data calculada em UTC-3 (America/Sao_Paulo), garantindo que a limpeza so acontece quando o dia realmente acabou no Brasil.
 
-**Correcao**: Agrupar jogos por `sport_type` no texto gerado, ou adicionar emoji por esporte.
+### 2. Adicionar margem de seguranca de 2 dias
+Em vez de deletar `date < hoje`, deletar `date < hoje - 2 dias`. Isso garante que jogos de ontem (que podem ter terminado de madrugada) sobrevivem. Jogos de 3+ dias atras sao limpos automaticamente.
 
-### 5. Sem contagem de caracteres na mensagem personalizada (UX)
-WhatsApp tem limite informal de preview (~1024 chars). O admin nao sabe se a mensagem ficou longa demais.
-
-**Correcao**: Adicionar contador de caracteres discreto abaixo do textarea.
-
-### 6. Sem testes unitarios
-Nenhum teste existe para AdminWhatsApp.
-
-**Correcao**: Criar testes basicos verificando render dos templates, contagem de jogos, e estado vazio.
+### 3. Log detalhado antes de deletar
+Adicionar log com a lista de IDs e datas que serao deletados, facilitando debug futuro.
 
 ## Arquivos modificados
-- `src/pages/admin/AdminWhatsApp.tsx` — data dinamica com useMemo, canais nos jogos, agrupamento por esporte, contador de caracteres
-- `src/components/public/WhatsAppFab.tsx` — remover (codigo morto)
-- `src/components/public/WhatsAppShareButton.tsx` — remover (codigo morto)
-- `src/pages/admin/__tests__/AdminWhatsApp.test.tsx` — criar testes basicos
+
+| Arquivo | Acao |
+|---------|------|
+| `supabase/functions/activate-scheduled/index.ts` | Corrigir timezone para America/Sao_Paulo, adicionar margem de 2 dias, melhorar logs |
+
+## Detalhe tecnico
+
+```text
+Antes (UTC):
+  21:00 BRT = 00:00 UTC (dia seguinte)
+  → deleta jogos de "hoje" no Brasil
+
+Depois (BRT com margem):
+  Calcula data em America/Sao_Paulo
+  Subtrai 2 dias da data atual
+  → so deleta jogos de 3+ dias atras
+```
 
