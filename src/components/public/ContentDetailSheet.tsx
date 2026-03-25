@@ -65,7 +65,12 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
 
             {/* Backdrop hero */}
             {backdrop && (
-              <div className="relative w-full aspect-[16/9] -mt-2 overflow-hidden">
+              <motion.div
+                className="relative w-full aspect-[16/9] -mt-2 overflow-hidden"
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
+              >
                 <img
                   src={backdrop}
                   alt=""
@@ -73,7 +78,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
                   loading="eager"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-              </div>
+              </motion.div>
             )}
 
             <div className={`px-4 pb-24 space-y-4 ${backdrop ? '-mt-16 relative z-10' : ''}`}>
