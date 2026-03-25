@@ -24,8 +24,7 @@ export const PublicFooter = () => {
     <>
       <footer className="pb-20 pt-6">
         <p
-          className="text-center text-[10px] font-body select-none cursor-default"
-          style={{ color: "rgba(255,255,255,0.06)" }}
+          className="text-center text-[10px] font-body select-none cursor-default text-foreground/[0.06]"
           onMouseDown={startHold}
           onMouseUp={cancelHold}
           onMouseLeave={cancelHold}

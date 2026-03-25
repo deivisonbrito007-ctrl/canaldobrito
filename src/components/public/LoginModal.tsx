@@ -97,12 +97,14 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-3">
-              {error && (
-                <div className="flex items-center gap-2 text-destructive text-xs bg-destructive/10 rounded-lg px-3 py-2">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  {error}
-                </div>
-              )}
+              <div aria-live="assertive" aria-atomic="true">
+                {error && (
+                  <div className="flex items-center gap-2 text-destructive text-xs bg-destructive/10 rounded-lg px-3 py-2" role="alert">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    {error}
+                  </div>
+                )}
+              </div>
 
               <input
                 type="email"
@@ -126,6 +128,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   type="button"
                   onClick={() => setShowPw(!showPw)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>

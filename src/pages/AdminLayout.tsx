@@ -21,7 +21,7 @@ const AdminLayout = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0f]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
@@ -68,6 +68,7 @@ const AdminLayout = () => {
               size="sm"
               onClick={() => navigate("/")}
               className="gap-1 text-[11px] border-primary/30 text-primary hover:bg-primary/10 hover:text-primary h-8 px-2 sm:px-3 min-h-[36px]"
+              aria-label="Ver site público"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Ver Site</span>
@@ -77,6 +78,7 @@ const AdminLayout = () => {
               size="icon"
               onClick={() => signOut()}
               className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 min-h-[36px] min-w-[36px]"
+              aria-label="Sair da conta"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -85,13 +87,15 @@ const AdminLayout = () => {
 
         {/* Tab Navigation */}
         <div className="max-w-7xl mx-auto px-2 sm:px-6">
-          <nav className="flex gap-0.5 overflow-x-auto scrollbar-none -mb-px">
+          <nav className="flex gap-0.5 overflow-x-auto scrollbar-none -mb-px" aria-label="Navegação do painel admin">
             {adminTabs.map((tab) => {
               const isActive = currentValue === tab.value;
               return (
                 <button
                   key={tab.value}
                   onClick={() => navigate(tab.path)}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-label={tab.label}
                   className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-[11px] font-semibold whitespace-nowrap border-b-2 transition-all rounded-t-lg min-h-[44px] min-w-[44px] ${
                     isActive
                       ? `${tab.activeBg} ${tab.activeBorder} ${tab.color}`
