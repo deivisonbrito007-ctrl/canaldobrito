@@ -147,6 +147,7 @@ export type Database = {
         Row: {
           active: boolean
           added_by: string | null
+          backdrop_url: string | null
           created_at: string
           genre: string | null
           id: string
@@ -160,6 +161,7 @@ export type Database = {
         Insert: {
           active?: boolean
           added_by?: string | null
+          backdrop_url?: string | null
           created_at?: string
           genre?: string | null
           id?: string
@@ -173,6 +175,7 @@ export type Database = {
         Update: {
           active?: boolean
           added_by?: string | null
+          backdrop_url?: string | null
           created_at?: string
           genre?: string | null
           id?: string
@@ -189,6 +192,7 @@ export type Database = {
         Row: {
           active: boolean
           added_by: string | null
+          backdrop_url: string | null
           created_at: string
           genre: string | null
           id: string
@@ -202,6 +206,7 @@ export type Database = {
         Insert: {
           active?: boolean
           added_by?: string | null
+          backdrop_url?: string | null
           created_at?: string
           genre?: string | null
           id?: string
@@ -215,6 +220,7 @@ export type Database = {
         Update: {
           active?: boolean
           added_by?: string | null
+          backdrop_url?: string | null
           created_at?: string
           genre?: string | null
           id?: string
