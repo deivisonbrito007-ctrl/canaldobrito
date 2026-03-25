@@ -465,6 +465,8 @@ export const DailyGamesSection = () => {
           {availableSports.length > 1 && (
             <button
               onClick={() => toggleFilter("sport")}
+              aria-expanded={openFilter === "sport"}
+              aria-label={sportFilter ? `Filtro de esporte: ${SPORT_LABEL[sportFilter as SportType]}` : "Filtrar por esporte"}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "sport" || sportFilter
                   ? "bg-primary/15 text-primary border-primary/30"
