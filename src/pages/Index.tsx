@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -55,6 +55,18 @@ const Index = () => {
   const [swipeDir, setSwipeDir] = useState(0);
   const swipingRef = useRef(false);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
+
+  // Listen for nav-tab-change events from other components
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tabId = (e as CustomEvent).detail;
+      if (TAB_ORDER.includes(tabId)) {
+        handleTabChange(tabId);
+      }
+    };
+    window.addEventListener("nav-tab-change", handler);
+    return () => window.removeEventListener("nav-tab-change", handler);
+  }, [handleTabChange]);
 
   const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
 
