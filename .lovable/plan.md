@@ -1,59 +1,35 @@
 
 
-# Auditoria e Melhorias do Painel Admin
+## Pull-to-Refresh no Mobile
 
-## Resultado da Auditoria
+### Objetivo
+Adicionar um gesto de "puxar para baixo" no topo da página que invalida todos os caches do React Query, atualizando jogos ao vivo, filmes, séries e banners.
 
-Analisei todos os 7 modulos admin: Dashboard, Banners, Filmes, Series, Novidades, WhatsApp e Configuracoes.
+### Abordagem
+Criar um hook `usePullToRefresh` customizado que detecta o gesto de arrastar para baixo via touch events (não framer-motion, para evitar conflito com o swipe horizontal entre abas). Quando o usuário puxa além de um limiar (~80px) e solta, invalidamos todas as queries.
 
-### Problemas Encontrados
+### Arquivos
 
-**1. Dashboard sem indicador de conteudo total do site**
-O dashboard mostra contagens individuais mas nao tem um resumo visual do total de conteudo ativo vs inativo (ratio de saude geral). Falta uma barra de progresso ou indicador percentual.
+**1. `src/hooks/usePullToRefresh.ts`** (novo)
+- Hook que registra `touchstart`, `touchmove`, `touchend` no elemento alvo
+- Só ativa quando `window.scrollY === 0` (topo da página)
+- Retorna `{ pullDistance, isRefreshing }` para controlar o indicador visual
+- No release, chama `queryClient.invalidateQueries()` via `useQueryClient()`
+- Após ~800ms, reseta o estado de refreshing
 
-**2. Dashboard sem indicador de banners expirados**
-Banners com `expires_at` no passado continuam contados como "ativos" nos stats. Nao ha alerta para banners expirados que precisam ser removidos.
+**2. `src/components/public/PullToRefreshIndicator.tsx`** (novo)
+- Indicador visual no topo: ícone de seta/spinner com a cor `primary`
+- Transição suave: aparece conforme o `pullDistance` aumenta, gira quando `isRefreshing`
+- Oculto quando `pullDistance === 0` e não está refreshing
 
-**3. Quick Actions sem feedback visual de destino**
-Os botoes de acoes rapidas todos dizem "+ Label" mas nao indicam se a secao correspondente tem itens pendentes ou alertas.
+**3. `src/pages/Index.tsx`** (editar)
+- Importar e usar `usePullToRefresh` passando ref do container `<main>`
+- Renderizar `<PullToRefreshIndicator>` logo acima do conteúdo dentro do `<main>`
+- O hook só ativa em viewports touch (verificação via `'ontouchstart' in window`)
 
-**4. Falta "Atividade Recente" no dashboard**
-Nao ha visibilidade sobre o que foi adicionado/modificado recentemente. O admin precisa entrar em cada secao para saber o que mudou.
-
-**5. Falta busca global no admin**
-Nao existe forma de buscar conteudo (filmes, series, novidades) sem entrar em cada secao individualmente.
-
-**6. Stats cards sem indicador de tendencia**
-Os cards mostram total e ativos mas nao indicam se houve mudanca recente (ex: "+2 esta semana").
-
----
-
-## Plano de Melhorias (4 areas)
-
-### 1. Barra de Saude do Conteudo no Dashboard
-- Adicionar uma barra de progresso mostrando `% de conteudo ativo` (total ativos / total geral)
-- Cores: verde (>80%), amarelo (50-80%), vermelho (<50%)
-- Posicionar entre o card de data e o grid de stats
-
-### 2. Alerta de Banners Expirados
-- No `missingGenre` useMemo, adicionar verificacao de banners com `expires_at` no passado que ainda estao `active`
-- Mostrar alerta ambar linkando para `/admin/banners`
-
-### 3. Atividade Recente no Dashboard
-- Criar secao "Atividade Recente" que mostra os ultimos 5 itens adicionados (qualquer tipo: banner, filme, serie, novidade)
-- Ordenar por `created_at` descendente, mostrar tipo + titulo + data relativa ("ha 2h")
-- Usar dados ja carregados (banners, movies, series, news) — sem query extra
-
-### 4. Resumo Visual nos Stats Cards
-- Adicionar mini indicador nos stats cards mostrando ratio ativo/total como micro barra de progresso abaixo do numero
-- Ajuda a visualizar rapidamente quais secoes precisam de atencao
-
-### Arquivos modificados
-- `src/pages/admin/AdminDashboard.tsx` (saude do conteudo, banners expirados, atividade recente, micro barras)
-
-### Detalhes tecnicos
-- Tudo derivado dos dados ja carregados via React Query (sem queries adicionais)
-- Atividade recente: merge de arrays com `created_at`, sort descrescente, slice(0, 5)
-- Banners expirados: `banners.filter(b => b.active && b.expires_at && new Date(b.expires_at) < new Date())`
-- Micro barra: div com `width: ${(actives/total)*100}%` e cores condicionais
+### Detalhes técnicos
+- Touch events nativos em vez de framer-motion drag vertical para não conflitar com o drag horizontal já existente entre abas
+- `overscroll-behavior-y: contain` no container para evitar o pull-to-refresh nativo do Chrome
+- Invalidação ampla: `queryClient.invalidateQueries()` sem filtro, atualizando tudo de uma vez
+- Feedback tátil com animação spring CSS no indicador
 
