@@ -16,6 +16,10 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Use Brazil timezone for all date comparisons
+    const nowBR = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const todayBR = nowBR.toISOString().split("T")[0];
+
     // Activate banners where publish_at <= now() and active = false
     const { data: activatedBanners, error: bannersError } = await supabase
       .from("banners")
@@ -42,11 +46,26 @@ Deno.serve(async (req) => {
       console.error("Error activating daily_games:", gamesError);
     }
 
-    // Cleanup: remove games from past dates
+    // Cleanup: remove games older than 2 days (Brazil timezone)
+    // This gives a safety margin so games from yesterday are kept
+    const cleanupDate = new Date(nowBR);
+    cleanupDate.setDate(cleanupDate.getDate() - 2);
+    const cleanupDateStr = cleanupDate.toISOString().split("T")[0];
+
+    // Log what will be deleted before deleting
+    const { data: gamesToDelete } = await supabase
+      .from("daily_games")
+      .select("id, date, home_team, away_team")
+      .lt("date", cleanupDateStr);
+
+    if (gamesToDelete?.length) {
+      console.log(`Will delete ${gamesToDelete.length} old games:`, gamesToDelete.map(g => `${g.date}: ${g.home_team} x ${g.away_team} (${g.id})`));
+    }
+
     const { data: deletedGames, error: cleanupError } = await supabase
       .from("daily_games")
       .delete()
-      .lt("date", new Date().toISOString().split("T")[0])
+      .lt("date", cleanupDateStr)
       .select("id");
 
     if (cleanupError) {
@@ -57,6 +76,8 @@ Deno.serve(async (req) => {
       activated_banners: activatedBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
       cleaned_old_games: deletedGames?.length || 0,
+      today_br: todayBR,
+      cleanup_before: cleanupDateStr,
       checked_at: new Date().toISOString(),
     };
 
