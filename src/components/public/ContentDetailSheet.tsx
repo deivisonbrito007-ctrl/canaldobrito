@@ -1,7 +1,7 @@
-import { useState, forwardRef } from "react";
+import { useState, useRef, useCallback, forwardRef } from "react";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 
 interface ContentDetailSheetProps {
   open: boolean;
@@ -20,6 +20,8 @@ interface ContentDetailSheetProps {
   } | null;
 }
 
+const DISMISS_THRESHOLD = 120;
+
 export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetProps>(({ open, onClose, item }, ref) => {
   const { trailerKey, loading: loadingTrailer } = useTrailerKey(
     item?.tmdb_id,
@@ -27,6 +29,24 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
     open
   );
   const [expandOverview, setExpandOverview] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dragY = useMotionValue(0);
+  const backdropOpacity = useTransform(dragY, [0, 300], [1, 0.2]);
+
+  const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
+    if (info.offset.y > DISMISS_THRESHOLD || info.velocity.y > 500) {
+      onClose();
+    }
+  }, [onClose]);
+
+  // Only allow drag when scrolled to top
+  const handleDragStart = useCallback((_: unknown, info: PanInfo) => {
+    const el = scrollRef.current;
+    if (el && el.scrollTop > 0 && info.delta.y > 0) {
+      // User is scrolled down and dragging down — don't interfere
+      return;
+    }
+  }, []);
 
   if (!item) return null;
 
@@ -42,18 +62,27 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            style={{ opacity: backdropOpacity }}
             onClick={onClose}
           />
 
           <motion.div
+            ref={scrollRef}
             className="fixed bottom-0 left-0 right-0 z-[60] max-h-[85vh] overflow-y-auto rounded-t-3xl bg-card border-t border-border/30"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.6 }}
+            dragSnapToOrigin
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            style={{ y: dragY, touchAction: "pan-x" }}
           >
-            <div className="sticky top-0 z-10 flex justify-center pt-3 pb-2 bg-card/80 backdrop-blur-md rounded-t-3xl">
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+            <div className="sticky top-0 z-10 flex justify-center pt-3 pb-2 bg-card/80 backdrop-blur-md rounded-t-3xl cursor-grab active:cursor-grabbing">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
 
             <button
@@ -74,7 +103,7 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
                 <img
                   src={backdrop}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                   loading="eager"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
@@ -87,7 +116,7 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
                   <img
                     src={poster}
                     alt={item.title}
-                    className="w-24 h-auto rounded-xl object-cover border border-border/20 premium-shadow-sm"
+                    className="w-24 h-auto rounded-xl object-cover border border-border/20 premium-shadow-sm pointer-events-none"
                   />
                 )}
                 <div className="flex-1 space-y-2 pt-1">
@@ -168,5 +197,3 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
     </AnimatePresence>
   );
 });
-
-ContentDetailSheet.displayName = "ContentDetailSheet";
