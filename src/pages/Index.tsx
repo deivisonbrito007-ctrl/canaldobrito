@@ -161,7 +161,13 @@ const Index = () => {
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.15}
-            onDragStart={() => { swipingRef.current = true; }}
+            onDragStart={(e) => {
+              const target = (e as PointerEvent).target as HTMLElement | null;
+              if (target?.closest?.("[data-horizontal-scroll]")) {
+                return false;
+              }
+              swipingRef.current = true;
+            }}
             onDragEnd={handleDragEnd}
             style={{ touchAction: "pan-y" }}
           >

@@ -32,6 +32,7 @@ export const CategoryIconsCarousel = () => {
   return (
     <section className="py-3 animate-fade-up stagger-3">
       <div
+        data-horizontal-scroll
         className="overflow-hidden marquee-container marquee-mask"
         onTouchStart={pauseAnimation}
         onTouchEnd={resumeAnimation}
