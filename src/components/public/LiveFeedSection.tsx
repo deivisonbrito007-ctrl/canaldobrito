@@ -149,9 +149,15 @@ export const LiveFeedSection = () => {
             {matches.length} jogos
           </span>
         </div>
-        <span className="text-[10px] text-primary font-semibold font-body cursor-pointer hover:underline shrink-0 ml-2 min-h-[44px] flex items-center">
+        <button
+          onClick={() => {
+            const tab = document.querySelector('[data-value="schedule"]') as HTMLElement;
+            tab?.click();
+          }}
+          className="text-[10px] text-primary font-semibold font-body hover:underline shrink-0 ml-2 min-h-[44px] flex items-center"
+        >
           Ver todos →
-        </span>
+        </button>
       </div>
 
       <div className="px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-[9px]">
