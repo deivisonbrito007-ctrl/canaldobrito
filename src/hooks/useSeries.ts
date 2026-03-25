@@ -6,6 +6,7 @@ export interface FeaturedSeries {
   tmdb_id: number;
   title: string;
   poster_url: string | null;
+  backdrop_url: string | null;
   overview: string | null;
   rating: number | null;
   year: number | null;
@@ -67,7 +68,7 @@ export const useToggleSeries = () => {
 export const useUpdateSeries = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; genre?: string | null; rating?: number | null; overview?: string | null; poster_url?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; genre?: string | null; rating?: number | null; overview?: string | null; poster_url?: string | null; backdrop_url?: string | null }) => {
       const { error } = await supabase.from("featured_series").update(updates).eq("id", id);
       if (error) throw error;
     },
