@@ -56,18 +56,6 @@ const Index = () => {
   const swipingRef = useRef(false);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
-  // Listen for nav-tab-change events from other components
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const tabId = (e as CustomEvent).detail;
-      if (TAB_ORDER.includes(tabId)) {
-        handleTabChange(tabId);
-      }
-    };
-    window.addEventListener("nav-tab-change", handler);
-    return () => window.removeEventListener("nav-tab-change", handler);
-  }, [handleTabChange]);
-
   const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
 
   const navigateTo = useCallback((newTab: string, direction: number) => {
