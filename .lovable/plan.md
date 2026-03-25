@@ -1,40 +1,21 @@
 
 
-# Situacao Atual e Plano de Protecao
+# Batch Update: Atualizar Todos (incluindo backdrops)
 
-## Diagnostico
+## Problema
+O botao batch atual so atualiza filmes/series **sem genero** (`!m.genre`). Itens que ja tem genero mas nao tem `backdrop_url` ficam de fora.
 
-| Data | Status |
-|------|--------|
-| 24/03 | **0 jogos** — apagados pela versao antiga da Edge Function (irrecuperavel) |
-| 25/03 | **17 jogos** inativos — agendados para ativar as 00:00 BRT (03:00 UTC) |
+## Correcao
 
-A correcao de timezone ja aplicada impede que isso se repita. Os jogos de 25/03 estao seguros.
+### AdminFilmes.tsx e AdminSeries.tsx — mesma mudanca em ambos:
 
-## Plano: Soft Delete para protecao futura
+1. **Expandir filtro**: trocar `!m.genre` por `!m.genre || !m.backdrop_url` para incluir itens sem backdrop
+2. **Adicionar botao "Atualizar Todos"** separado que forca update de TODOS os itens (ignora filtro)
+3. **Atualizar contagem**: mostrar `missingDataCount` (sem genero OU sem backdrop) no botao existente, e adicionar botao "Atualizar Todos" que roda em todos
 
-### 1. Adicionar coluna `archived` na tabela `daily_games`
-- `archived boolean default false`
-- Jogos arquivados ficam invisiveis na pagina publica mas continuam no banco
+Na pratica, a abordagem mais simples: adicionar um segundo botao **"Atualizar Todos"** que itera sobre todos os filmes/series sem filtro, atualizando genero, rating, overview e backdrop de uma vez. O botao existente continua para itens incompletos.
 
-### 2. Atualizar Edge Function `activate-scheduled`
-- Trocar `DELETE` por `UPDATE SET archived = true` para jogos > 2 dias
-- Manter hard delete apenas para jogos > 30 dias (limpeza final)
-- Assim, jogos apagados por engano podem ser recuperados pelo admin
-
-### 3. Atualizar hook `useDailyGames`
-- Query publica: adicionar `.eq("archived", false)`
-- Query admin (`useAllDailyGames`): mostrar todos, com badge "Arquivado" nos antigos
-
-### 4. Botao "Desarquivar" no admin
-- No `DailyGamesManager`, jogos arquivados aparecem com opacity reduzida e botao para reativar
-
-### 5. Ativar jogos de hoje (25/03) manualmente agora
-- Executar UPDATE para setar `active = true` e `publish_at = null` nos 17 jogos de 25/03, sem esperar o cron
-
-## Arquivos modificados
-- Migration SQL: coluna `archived`, default false
-- `supabase/functions/activate-scheduled/index.ts`: soft delete
-- `src/hooks/useDailyGames.ts`: filtro archived
-- `src/components/admin/DailyGamesManager.tsx`: UI para arquivados
+### Arquivos modificados
+- `src/pages/admin/AdminFilmes.tsx` — adicionar `handleBatchUpdateAll` + botao + contagem de missing backdrop
+- `src/pages/admin/AdminSeries.tsx` — mesma mudanca
 
