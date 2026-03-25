@@ -71,15 +71,12 @@ const AdminFilmes = () => {
     finally { setRefreshingId(null); }
   };
 
-  const handleBatchUpdate = async () => {
-    if (!movies || movies.length === 0) return;
-    const needsUpdate = movies.filter((m) => !m.genre);
-    if (needsUpdate.length === 0) { toast.info("Todos os filmes já têm gênero"); return; }
-    setBatchProgress({ current: 0, total: needsUpdate.length });
+  const runBatch = async (list: NonNullable<typeof movies>, label: string) => {
+    setBatchProgress({ current: 0, total: list.length });
     let updated = 0;
-    for (let i = 0; i < needsUpdate.length; i++) {
-      const m = needsUpdate[i];
-      setBatchProgress({ current: i + 1, total: needsUpdate.length });
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i];
+      setBatchProgress({ current: i + 1, total: list.length });
       try {
         const details = await fetchDetails("movie_details", m.tmdb_id);
         if (details) {
@@ -96,12 +93,24 @@ const AdminFilmes = () => {
       } catch { /* continue */ }
     }
     setBatchProgress(null);
-    toast.success(`${updated} de ${needsUpdate.length} filmes atualizados!`);
+    toast.success(`${updated} de ${list.length} ${label} atualizados!`);
+  };
+
+  const handleBatchUpdate = async () => {
+    if (!movies || movies.length === 0) return;
+    const needsUpdate = movies.filter((m) => !m.genre || !m.backdrop_url);
+    if (needsUpdate.length === 0) { toast.info("Todos os filmes já estão completos"); return; }
+    await runBatch(needsUpdate, "filmes incompletos");
+  };
+
+  const handleBatchUpdateAll = async () => {
+    if (!movies || movies.length === 0) return;
+    await runBatch(movies, "filmes");
   };
 
   const activeCount = movies?.filter((m) => m.active).length || 0;
   const totalCount = movies?.length || 0;
-  const missingGenreCount = movies?.filter((m) => !m.genre).length || 0;
+  const missingDataCount = movies?.filter((m) => !m.genre || !m.backdrop_url).length || 0;
 
   return (
     <div className="space-y-5">
