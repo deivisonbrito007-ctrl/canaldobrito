@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
 import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
