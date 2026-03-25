@@ -49,11 +49,43 @@ export function detectSportType(competition: string): SportType {
 }
 
 /**
- * Returns today's date as YYYY-MM-DD in the browser's local timezone.
+ * Returns today's date as YYYY-MM-DD in America/Sao_Paulo timezone.
+ * Falls back to browser local timezone if Intl is unavailable.
  */
 export function getLocalDateString(date?: Date): string {
   const d = date ?? new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  try {
+    // Format in São Paulo timezone
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d); // returns YYYY-MM-DD in en-CA locale
+    return parts;
+  } catch {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+}
+
+/**
+ * Returns current hours and minutes in America/Sao_Paulo timezone.
+ */
+function getNowInSaoPaulo(): { hours: number; minutes: number } {
+  const now = new Date();
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(now);
+    const h = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+    const m = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    return { hours: h, minutes: m };
+  } catch {
+    return { hours: now.getHours(), minutes: now.getMinutes() };
+  }
 }
 
 /**
@@ -65,7 +97,8 @@ export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportTyp
 
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const sp = getNowInSaoPaulo();
+  const nowMinutes = sp.hours * 60 + sp.minutes;
   const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   return nowMinutes >= gameMinutes && nowMinutes < gameMinutes + duration;
@@ -81,7 +114,8 @@ export function getElapsedMinutes(gameTime: string, gameDate: string, sportType:
 
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const sp = getNowInSaoPaulo();
+  const nowMinutes = sp.hours * 60 + sp.minutes;
   const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   const elapsed = nowMinutes - gameMinutes;
@@ -98,7 +132,8 @@ export function getMinutesUntilStart(gameTime: string, gameDate: string): number
 
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const sp = getNowInSaoPaulo();
+  const nowMinutes = sp.hours * 60 + sp.minutes;
 
   const diff = gameMinutes - nowMinutes;
   if (diff <= 0) return null;

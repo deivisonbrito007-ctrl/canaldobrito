@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 import { gameKey } from "@/lib/dedup";
+import { getLocalDateString } from "@/lib/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -209,7 +210,7 @@ function getGameWarnings(game: ParsedGame): string[] {
 }
 
 export const ProgramacaoTexto = () => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   const [text, setText] = useState("");
   const [selectedDate, setSelectedDate] = useState(today);
   const [parsed, setParsed] = useState<ParsedGame[]>([]);

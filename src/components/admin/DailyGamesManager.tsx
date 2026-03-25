@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
-import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { detectSportType, SPORT_EMOJI, getLocalDateString, type SportType } from "@/lib/gameUtils";
 import { gameKey } from "@/lib/dedup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const queryClient = useQueryClient();
   const { data: games, isLoading } = useAllDailyGames(selectedDate);
