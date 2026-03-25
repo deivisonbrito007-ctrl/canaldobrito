@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
       .from("daily_games")
       .update({ active: true, publish_at: null })
       .eq("active", false)
+      .eq("archived", false)
       .not("publish_at", "is", null)
       .lte("publish_at", new Date().toISOString())
       .select("id");
@@ -46,38 +47,56 @@ Deno.serve(async (req) => {
       console.error("Error activating daily_games:", gamesError);
     }
 
-    // Cleanup: remove games older than 2 days (Brazil timezone)
-    // This gives a safety margin so games from yesterday are kept
-    const cleanupDate = new Date(nowBR);
-    cleanupDate.setDate(cleanupDate.getDate() - 2);
-    const cleanupDateStr = cleanupDate.toISOString().split("T")[0];
+    // Soft delete: archive games older than 2 days (Brazil timezone)
+    const archiveDate = new Date(nowBR);
+    archiveDate.setDate(archiveDate.getDate() - 2);
+    const archiveDateStr = archiveDate.toISOString().split("T")[0];
 
-    // Log what will be deleted before deleting
-    const { data: gamesToDelete } = await supabase
+    const { data: gamesToArchive } = await supabase
       .from("daily_games")
       .select("id, date, home_team, away_team")
-      .lt("date", cleanupDateStr);
+      .eq("archived", false)
+      .lt("date", archiveDateStr);
 
-    if (gamesToDelete?.length) {
-      console.log(`Will delete ${gamesToDelete.length} old games:`, gamesToDelete.map(g => `${g.date}: ${g.home_team} x ${g.away_team} (${g.id})`));
+    if (gamesToArchive?.length) {
+      console.log(`Archiving ${gamesToArchive.length} old games:`, gamesToArchive.map(g => `${g.date}: ${g.home_team} x ${g.away_team} (${g.id})`));
     }
 
-    const { data: deletedGames, error: cleanupError } = await supabase
+    const { data: archivedGames, error: archiveError } = await supabase
       .from("daily_games")
-      .delete()
-      .lt("date", cleanupDateStr)
+      .update({ archived: true, active: false })
+      .eq("archived", false)
+      .lt("date", archiveDateStr)
       .select("id");
 
-    if (cleanupError) {
-      console.error("Error cleaning old games:", cleanupError);
+    if (archiveError) {
+      console.error("Error archiving old games:", archiveError);
+    }
+
+    // Hard delete: permanently remove games archived for more than 30 days
+    const hardDeleteDate = new Date(nowBR);
+    hardDeleteDate.setDate(hardDeleteDate.getDate() - 30);
+    const hardDeleteDateStr = hardDeleteDate.toISOString().split("T")[0];
+
+    const { data: deletedGames, error: deleteError } = await supabase
+      .from("daily_games")
+      .delete()
+      .eq("archived", true)
+      .lt("date", hardDeleteDateStr)
+      .select("id");
+
+    if (deleteError) {
+      console.error("Error deleting old archived games:", deleteError);
     }
 
     const result = {
       activated_banners: activatedBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
-      cleaned_old_games: deletedGames?.length || 0,
+      archived_games: archivedGames?.length || 0,
+      hard_deleted_games: deletedGames?.length || 0,
       today_br: todayBR,
-      cleanup_before: cleanupDateStr,
+      archive_before: archiveDateStr,
+      hard_delete_before: hardDeleteDateStr,
       checked_at: new Date().toISOString(),
     };
 

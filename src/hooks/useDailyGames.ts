@@ -29,6 +29,7 @@ export const useDailyGames = (date: string) =>
         .select("*")
         .eq("date", date)
         .eq("active", true)
+        .eq("archived", false)
         .order("game_time", { ascending: true });
       if (error) throw error;
       return data as DailyGame[];
