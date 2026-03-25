@@ -87,6 +87,22 @@ export const useDeleteDailyGame = () => {
   });
 };
 
+export const useArchivedDailyGames = () =>
+  useQuery({
+    queryKey: ["daily_games", "archived"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_games")
+        .select("*")
+        .eq("archived", true)
+        .order("date", { ascending: false })
+        .order("game_time", { ascending: true });
+      if (error) throw error;
+      return data as DailyGame[];
+    },
+    refetchInterval: 60_000,
+  });
+
 export const useDeleteDailyGamesByDate = () => {
   const qc = useQueryClient();
   return useMutation({
