@@ -16,6 +16,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
+import { ContentHealthBar } from "@/components/admin/ContentHealthBar";
+import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
+import { RecentActivity } from "@/components/admin/RecentActivity";
 
 const useCountUp = (target: number, duration = 800) => {
   const [count, setCount] = useState(0);
@@ -35,11 +38,11 @@ const useCountUp = (target: number, duration = 800) => {
 };
 
 const statCards = [
-  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", route: "/admin/banners" },
-  { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", route: "/admin/filmes" },
-  { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", route: "/admin/series" },
-  { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", route: "/admin/novidades" },
-  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", route: "/admin/banners?tab=programacao" },
+  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", barColor: "bg-emerald-500", route: "/admin/banners" },
+  { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", barColor: "bg-blue-500", route: "/admin/filmes" },
+  { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", barColor: "bg-purple-500", route: "/admin/series" },
+  { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", barColor: "bg-amber-500", route: "/admin/novidades" },
+  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", barColor: "bg-red-500", route: "/admin/banners?tab=programacao" },
 ];
 
 const quickActions = [
@@ -93,16 +96,18 @@ const AdminDashboard = () => {
 
   const counts: Record<string, number> = { banners: bCount, filmes: mCount, series: sCount, novidades: nCount, jogos: gCount };
   const actives: Record<string, number> = { banners: activeBanners, filmes: activeMovies, series: activeSeries, novidades: activeNews, jogos: activeGames };
+  const totals: Record<string, number> = { banners: totalBanners, filmes: totalMovies, series: totalSeries, novidades: totalNews, jogos: totalGames };
   const todayFormatted = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
-  // Last updated timestamp
+  const totalAllContent = totalBanners + totalMovies + totalSeries + totalNews;
+  const totalActiveContent = activeBanners + activeMovies + activeSeries + activeNews;
+
   const lastUpdated = useMemo(() => {
     const timestamps = [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames].filter(Boolean);
     if (timestamps.length === 0) return null;
     return Math.max(...timestamps);
   }, [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames]);
 
-  // Content health: items missing genre
   const missingGenre = useMemo(() => {
     const moviesMissing = movies?.filter((m) => !m.genre || m.genre.trim() === "").length || 0;
     const seriesMissing = series?.filter((s) => !s.genre || s.genre.trim() === "").length || 0;
@@ -139,6 +144,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Content Health Bar */}
+      <ContentHealthBar totalActive={totalActiveContent} totalAll={totalAllContent} isLoading={isLoading} />
+
       {/* Error alert */}
       {hasError && (
         <Alert variant="destructive" className="border-destructive/30 bg-destructive/10">
@@ -151,6 +159,9 @@ const AdminDashboard = () => {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Expired banners alert */}
+      <ExpiredBannersAlert banners={banners} isLoading={isLoading} />
 
       {/* Content health alert */}
       {!isLoading && missingGenre.total > 0 && (
@@ -177,36 +188,51 @@ const AdminDashboard = () => {
         </Alert>
       )}
 
-      {/* Stats grid */}
+      {/* Stats grid with micro progress bars */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {statCards.map((card, i) => (
-          <div
-            key={card.key}
-            className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] cursor-pointer`}
-            onClick={() => navigate(card.route)}
-          >
-            {isLoading ? (
-              <div className="flex flex-col items-center text-center gap-2">
-                <Skeleton className="h-5 w-5 rounded-full" />
-                <Skeleton className="h-7 w-10 rounded" />
-                <Skeleton className="h-3 w-16 rounded" />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center text-center gap-2">
-                <card.icon className={`h-5 w-5 ${card.color}`} />
-                <p className={`text-2xl font-black ${card.color}`}>{counts[card.key]}</p>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">{card.label}</p>
-                  <p className="text-[9px] text-muted-foreground/60">{actives[card.key]} ativos</p>
+        {statCards.map((card, i) => {
+          const total = totals[card.key] || 0;
+          const active = actives[card.key] || 0;
+          const ratio = total > 0 ? (active / total) * 100 : 0;
+          return (
+            <div
+              key={card.key}
+              className={`admin-stagger-${i + 1} glass-panel rounded-xl p-4 bg-gradient-to-br ${card.bg} border ${card.border} transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] cursor-pointer`}
+              onClick={() => navigate(card.route)}
+            >
+              {isLoading ? (
+                <div className="flex flex-col items-center text-center gap-2">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-7 w-10 rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              ) : (
+                <div className="flex flex-col items-center text-center gap-2">
+                  <card.icon className={`h-5 w-5 ${card.color}`} />
+                  <p className={`text-2xl font-black ${card.color}`}>{counts[card.key]}</p>
+                  <div className="w-full">
+                    <p className="text-[10px] text-muted-foreground">{card.label}</p>
+                    <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
+                    {/* Micro progress bar */}
+                    <div className="mt-1.5 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${card.barColor} transition-all duration-700`}
+                        style={{ width: `${ratio}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Upcoming Activations */}
       <UpcomingActivations />
+
+      {/* Recent Activity */}
+      <RecentActivity banners={banners} movies={movies} series={series} news={news} isLoading={isLoading} />
 
       {/* Quick Actions */}
       <div>
