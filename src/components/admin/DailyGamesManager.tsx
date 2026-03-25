@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
   const today = new Date().toISOString().split("T")[0];
@@ -46,6 +47,31 @@ export const DailyGamesManager = () => {
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
+  };
+
+  const handleArchiveDay = async () => {
+    const nonArchived = games?.filter((g) => !g.archived) || [];
+    if (nonArchived.length === 0) {
+      toast.info("Nenhum jogo para arquivar nesta data");
+      return;
+    }
+    if (!confirm(`Arquivar todos os ${nonArchived.length} jogos de ${selectedDate}?`)) return;
+    try {
+      const { error } = await supabase
+        .from("daily_games")
+        .update({ archived: true, active: false } as any)
+        .eq("date", selectedDate)
+        .eq("archived", false);
+      if (error) throw error;
+      toast.success(`${nonArchived.length} jogos arquivados!`);
+      // invalidate queries
+      deleteByDate.reset();
+      window.dispatchEvent(new Event("daily-games-refresh"));
+      // refetch
+      location.reload();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const handleClearDay = async () => {
