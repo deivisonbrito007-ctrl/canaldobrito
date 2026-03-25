@@ -65,7 +65,7 @@ const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) =
 // --- Main AdminBanners ---
 const AdminBanners = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") === "programacao" ? "programacao" : "categories";
+  const initialTab = searchParams.get("tab") === "categories" ? "categories" : "programacao";
   const [activeSection, setActiveSection] = useState<"categories" | "programacao">(initialTab);
 
   const [selectedCategory, setSelectedCategory] = useState<BannerCategory>("cover");
@@ -88,7 +88,7 @@ const AdminBanners = () => {
   // Sync tab to URL
   const handleSetSection = useCallback((section: "categories" | "programacao") => {
     setActiveSection(section);
-    setSearchParams(section === "categories" ? {} : { tab: section });
+    setSearchParams(section === "programacao" ? {} : { tab: section });
   }, [setSearchParams]);
 
   const uploadAndCreateCategory = useCallback(async (file: File) => {
@@ -163,8 +163,8 @@ const AdminBanners = () => {
     <div className="space-y-4">
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
-          { key: "categories" as const, label: "📁 Categorias" },
           { key: "programacao" as const, label: "📋 Programação" },
+          { key: "categories" as const, label: "📁 Categorias" },
         ].map((s) => (
           <button
             key={s.key}
