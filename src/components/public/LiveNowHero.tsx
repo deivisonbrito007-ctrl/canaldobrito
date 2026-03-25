@@ -166,17 +166,6 @@ const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
 EventCard.displayName = "EventCard";
 
 const MotionEventCard = motion.create(EventCard);
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[9px] text-muted-foreground font-body tabular-nums">
-              {event.game_time?.slice(0, 5)}
-            </span>
-            {channel && <ChannelBadge name={channel} />}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /* ── Clock display ── */
 const LiveClock = () => {
