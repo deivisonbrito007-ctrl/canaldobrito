@@ -163,7 +163,8 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
       <div className={`relative rounded-2xl overflow-hidden border transition-all duration-300
         bg-card/60 backdrop-blur-xl
         ${highlight ? "border-primary/30 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.15)]" : "border-border/20"}
-        hover:border-primary/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-0.5`}
+        hover:border-primary/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-0.5
+        focus-within:ring-2 focus-within:ring-primary/50 focus-within:ring-offset-2 focus-within:ring-offset-background`}
       >
         {/* Top accent line */}
         <div className={`h-[3px] bg-gradient-to-r ${topGradient} to-transparent`} />
@@ -428,7 +429,7 @@ export const DailyGamesSection = () => {
   }
 
   return (
-    <section id="esportes" className="space-y-4 w-full min-w-0 overflow-hidden">
+    <section id="esportes" className="space-y-4 w-full min-w-0 overflow-hidden" aria-label="Programação de jogos do dia">
       {/* Header with integrated stats */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20">
