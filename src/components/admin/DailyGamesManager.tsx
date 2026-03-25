@@ -127,11 +127,12 @@ export const DailyGamesManager = () => {
           <div className="space-y-2">
             {filteredGames.map((game) => {
               const isScheduled = game.publish_at && !game.active && new Date(game.publish_at) > new Date();
+              const isArchived = game.archived;
               return (
                 <div
                   key={game.id}
                   className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
-                    !game.active && !isScheduled ? "opacity-40" : ""
+                    isArchived ? "opacity-30 border border-dashed border-muted-foreground/20" : !game.active && !isScheduled ? "opacity-40" : ""
                   }`}
                 >
                   {editingId === game.id ? (
