@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,7 +20,7 @@ interface ContentDetailSheetProps {
   } | null;
 }
 
-export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetProps) => {
+export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetProps>(({ open, onClose, item }, ref) => {
   const { trailerKey, loading: loadingTrailer } = useTrailerKey(
     item?.tmdb_id,
     item?.content_type,
@@ -167,4 +167,6 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
       )}
     </AnimatePresence>
   );
-};
+});
+
+ContentDetailSheet.displayName = "ContentDetailSheet";

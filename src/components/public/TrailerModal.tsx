@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,7 +10,7 @@ interface TrailerModalProps {
   title?: string;
 }
 
-export const TrailerModal = ({ open, onClose, trailerKey, loading, title }: TrailerModalProps) => (
+export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ open, onClose, trailerKey, loading, title }, ref) => (
   <AnimatePresence>
     {open && (
       <>
@@ -64,4 +65,6 @@ export const TrailerModal = ({ open, onClose, trailerKey, loading, title }: Trai
       </>
     )}
   </AnimatePresence>
-);
+));
+
+TrailerModal.displayName = "TrailerModal";
