@@ -338,6 +338,33 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          game_ids: string[]
+          id: string
+          p256dh: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          game_ids?: string[]
+          id?: string
+          p256dh: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          game_ids?: string[]
+          id?: string
+          p256dh?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
