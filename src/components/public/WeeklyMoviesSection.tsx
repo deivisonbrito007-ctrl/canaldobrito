@@ -105,6 +105,12 @@ export const WeeklyMoviesSection = () => {
   const [selected, setSelected] = useState<MovieItem | null>(null);
   const [trailerItem, setTrailerItem] = useState<MovieItem | null>(null);
 
+  const availabilityItems = useMemo(
+    () => movies?.map((m) => ({ tmdb_id: m.tmdb_id, content_type: "movie" as const })),
+    [movies]
+  );
+  const { available: trailerMap } = useTrailerAvailability(availabilityItems);
+
   const { trailerKey, loading: trailerLoading } = useTrailerKey(
     trailerItem?.tmdb_id,
     "movie",
@@ -133,6 +139,7 @@ export const WeeklyMoviesSection = () => {
             key={item.id}
             item={item}
             index={idx}
+            hasTrailer={trailerMap.get(item.tmdb_id) === true}
             onSelect={() => setSelected(item)}
             onPlayTrailer={(e) => {
               e.stopPropagation();
