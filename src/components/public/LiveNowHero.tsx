@@ -54,104 +54,118 @@ const SPORT_ACCENT: Record<string, string> = {
 };
 
 /* ── Match card (adversarial) ── */
-const MatchCard = ({ game, index }: { game: DailyGame; index: number }) => {
-  const sportType = (game.sport_type || "football") as SportType;
-  const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);
-  const emoji = SPORT_EMOJI[sportType] || "⚽";
-  const channel = game.channels?.[0];
-  const accent = SPORT_ACCENT[game.sport_type] || "bg-destructive";
-  const league = [game.competition, game.competition_detail].filter(Boolean).join(" · ");
+const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
+  ({ game }, ref) => {
+    const sportType = (game.sport_type || "football") as SportType;
+    const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);
+    const emoji = SPORT_EMOJI[sportType] || "⚽";
+    const channel = game.channels?.[0];
+    const accent = SPORT_ACCENT[game.sport_type] || "bg-destructive";
+    const league = [game.competition, game.competition_detail].filter(Boolean).join(" · ");
 
-  return (
-    <div
-      className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-all duration-300 hover:-translate-y-0.5 hover:border-destructive/30 animate-fade-in"
-      style={{ animationDelay: `${index * 80}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex">
-        {/* Sport accent bar */}
-        <div className={`w-[3px] ${accent}`} />
-
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between gap-2">
-            <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
-              {emoji} {league}
-            </p>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-              </span>
-              <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
-                {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
-              </span>
-            </div>
-          </div>
-
-          {/* Teams */}
-          <div className="px-3 pb-2 space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate">
-                {game.home_team}
+    return (
+      <div
+        ref={ref}
+        className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
+      >
+        <div className="flex">
+          <div className={`w-[3px] ${accent}`} />
+          <div className="flex-1 min-w-0">
+            <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between gap-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
+                {emoji} {league}
               </p>
-              <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1.5 py-0.5 rounded bg-surface border border-border">
-                VS
-              </span>
-              <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate text-right">
-                {game.away_team}
-              </p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                </span>
+                <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
+                  {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+                </span>
+              </div>
             </div>
-            {game.is_womens && (
-              <p className="text-[9px] text-muted-foreground font-body text-center">Feminino</p>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border/40">
-            <span className="text-[9px] text-muted-foreground font-body tabular-nums">
-              Começou {game.game_time?.slice(0, 5)}
-            </span>
-            {channel && <ChannelBadge name={channel} />}
+            <div className="px-3 pb-2 space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate">
+                  {game.home_team}
+                </p>
+                <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1.5 py-0.5 rounded bg-surface border border-border">
+                  VS
+                </span>
+                <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate text-right">
+                  {game.away_team}
+                </p>
+              </div>
+              {game.is_womens && (
+                <p className="text-[9px] text-muted-foreground font-body text-center">Feminino</p>
+              )}
+            </div>
+            <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border/40">
+              <span className="text-[9px] text-muted-foreground font-body tabular-nums">
+                Começou {game.game_time?.slice(0, 5)}
+              </span>
+              {channel && <ChannelBadge name={channel} />}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+MatchCard.displayName = "MatchCard";
+
+const MotionMatchCard = motion.create(MatchCard);
 
 /* ── Event card (non-adversarial) ── */
-const EventCard = ({ event, index }: { event: DailyGame; index: number }) => {
-  const sportType = (event.sport_type || "f1") as SportType;
-  const elapsed = getElapsedMinutes(event.game_time, event.date, sportType);
-  const emoji = SPORT_EMOJI[sportType] || "🏁";
-  const channel = event.channels?.[0];
-  const accent = SPORT_ACCENT[event.sport_type] || "bg-amber-500";
+const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
+  ({ event }, ref) => {
+    const sportType = (event.sport_type || "f1") as SportType;
+    const elapsed = getElapsedMinutes(event.game_time, event.date, sportType);
+    const emoji = SPORT_EMOJI[sportType] || "🏁";
+    const channel = event.channels?.[0];
+    const accent = SPORT_ACCENT[event.sport_type] || "bg-amber-500";
 
-  return (
-    <div
-      className="rounded-xl overflow-hidden bg-surface-2 border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 animate-fade-in"
-      style={{ animationDelay: `${index * 80 + 200}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex">
-        <div className={`w-[3px] ${accent}`} />
-        <div className="flex-1 min-w-0 p-2.5 space-y-1">
-          <div className="flex items-center justify-between gap-1">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
-              {emoji} {event.competition}
+    return (
+      <div
+        ref={ref}
+        className="rounded-xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-200 hover:border-amber-500/30"
+      >
+        <div className="flex">
+          <div className={`w-[3px] ${accent}`} />
+          <div className="flex-1 min-w-0 p-2.5 space-y-1">
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
+                {emoji} {event.competition}
+              </p>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                </span>
+                <span className="text-[9px] font-bold text-amber-500 tabular-nums font-body">
+                  {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+                </span>
+              </div>
+            </div>
+            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-1">
+              {event.home_team}
             </p>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 animate-ping" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9px] text-muted-foreground font-body tabular-nums">
+                {event.game_time?.slice(0, 5)}
               </span>
-              <span className="text-[9px] font-bold text-amber-500 tabular-nums font-body">
-                {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
-              </span>
+              {channel && <ChannelBadge name={channel} />}
             </div>
           </div>
-          <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-1">
-            {event.home_team}
-          </p>
+        </div>
+      </div>
+    );
+  }
+);
+EventCard.displayName = "EventCard";
+
+const MotionEventCard = motion.create(EventCard);
           <div className="flex items-center justify-between gap-1">
             <span className="text-[9px] text-muted-foreground font-body tabular-nums">
               {event.game_time?.slice(0, 5)}
