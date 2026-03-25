@@ -12,6 +12,19 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return arr;
 }
 
+async function syncKeysToDb(sub: PushSubscription) {
+  const json = sub.toJSON();
+  const keys = json.keys as { p256dh: string; auth: string };
+  await supabase.from("push_subscriptions").upsert(
+    {
+      endpoint: sub.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+    },
+    { onConflict: "endpoint" }
+  );
+}
+
 export function usePushSubscription() {
   const { data: settings } = useSettings();
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
@@ -21,14 +34,18 @@ export function usePushSubscription() {
 
   const vapidPublicKey = settings?.vapid_public_key;
 
-  // Register custom SW for push on mount
+  // On mount: check existing subscription via the unified SW and re-sync keys
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
 
-    navigator.serviceWorker.register("/sw-custom.js", { scope: "/" }).then(async (reg) => {
+    navigator.serviceWorker.ready.then(async (reg) => {
       const sub = await reg.pushManager.getSubscription();
-      if (sub) setSubscription(sub);
-    }).catch(() => {});
+      if (sub) {
+        setSubscription(sub);
+        // Always re-sync keys in case browser rotated them
+        syncKeysToDb(sub).catch(() => {});
+      }
+    });
   }, []);
 
   const subscribe = useCallback(async (): Promise<PushSubscription | null> => {
@@ -55,18 +72,7 @@ export function usePushSubscription() {
         });
       }
       setSubscription(sub);
-
-      // Save to DB
-      const json = sub.toJSON();
-      const keys = json.keys as { p256dh: string; auth: string };
-      await supabase.from("push_subscriptions" as any).upsert(
-        {
-          endpoint: sub.endpoint,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-        },
-        { onConflict: "endpoint" }
-      );
+      await syncKeysToDb(sub);
 
       return sub;
     } catch (err) {
@@ -84,8 +90,7 @@ export function usePushSubscription() {
         if (!sub) return false;
       }
 
-      // Add game_id to array in DB
-      const { error } = await supabase.rpc("add_push_game_id" as any, {
+      const { error } = await supabase.rpc("add_push_game_id", {
         _endpoint: sub.endpoint,
         _game_id: gameId,
       });
@@ -103,7 +108,7 @@ export function usePushSubscription() {
     async (gameId: string) => {
       if (!subscription) return false;
 
-      const { error } = await supabase.rpc("remove_push_game_id" as any, {
+      const { error } = await supabase.rpc("remove_push_game_id", {
         _endpoint: subscription.endpoint,
         _game_id: gameId,
       });
