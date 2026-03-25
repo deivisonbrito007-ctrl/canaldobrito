@@ -27,8 +27,8 @@ const HighlightsTab = () => (
     <div className="px-4">
       <SectionHeader icon={Star} title="Destaques" subtitle="Seleção da semana" />
     </div>
-    <WeeklyMoviesSection />
-    <WeeklySeriesSection />
+    <div className="cv-auto-posters"><WeeklyMoviesSection /></div>
+    <div className="cv-auto-posters"><WeeklySeriesSection /></div>
     <HighlightsEmptyState />
   </div>
 );
