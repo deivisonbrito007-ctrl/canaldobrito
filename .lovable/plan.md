@@ -1,41 +1,27 @@
 
 
-# Verificação do Sistema — Resultado e Correção Pendente
+# Plano Atualizado: Correção de Fuso Horário
 
-## Status Atual: Sistema Saudável
+## Diagnóstico
 
-- Zero erros no console do navegador
-- Todas as requisições de rede (Supabase, TMDB proxy) retornando status 200
-- Página pública renderizando corretamente com skeletons, content-visibility e trailer pre-fetch funcionando
-- Painel admin acessível e funcional
+Os jogos estão corretamente gravados com `date = 2026-03-25`. O sistema está funcionando como esperado: às 23:24 horário de SP (02:24 UTC), `getLocalDateString()` retorna `2026-03-24`, então os jogos de 25/03 só aparecerão a partir da meia-noite SP. **Não é necessária migração de dados.**
 
-## Problema Pendente: Duplicatas em daily_games
+## Problemas Reais a Corrigir
 
-O único problema real identificado é a ausência de validação de duplicatas ao inserir jogos via ProgramacaoTexto ou DailyGamesManager. Isso já foi diagnosticado nas mensagens anteriores.
+### 1. `ProgramacaoTexto.tsx` — Timezone do agendamento
+- `buildInsertPayload` usa `new Date(y, m-1, d)` que cria meia-noite no fuso do **browser** (UTC no sandbox), não de SP
+- Corrigir para usar offset explícito: `new Date(\`${date}T00:00:00-03:00\`)`
+- `isDateInPast` também usa timezone do browser; corrigir para comparar com `getLocalDateString()`
 
-### Plano de Correção (3 arquivos)
-
-#### 1. `src/hooks/useDailyGames.ts` — Dedup automático no insert
-- No `useInsertDailyGames`, antes de inserir, buscar jogos existentes na mesma `date`
-- Criar chave normalizada: `home_team.toLowerCase().trim() + away_team.toLowerCase().trim() + game_time`
-- Filtrar jogos que já existem e retornar contagem de ignorados
-- Deletar automaticamente duplicatas existentes no banco (mesma chave composta, manter apenas o primeiro registro)
-
-#### 2. `src/components/admin/ProgramacaoTexto.tsx` — Alerta visual + auto-deselect
-- Após parsear o texto, consultar jogos existentes no banco para a data
-- Marcar jogos duplicados com badge "Duplicado" amarelo na preview
-- Desmarcar jogos duplicados por padrão (`selected = false`)
-- Admin ainda pode forçar seleção manual se quiser
-
-#### 3. `src/components/admin/DailyGamesManager.tsx` — Guard no formulário manual
-- Antes de inserir jogo avulso, verificar existência por chave composta
-- Mostrar toast de aviso se duplicado detectado
-
-### Limpeza automática
-- Ao carregar jogos no admin (`useAllDailyGames`), detectar e deletar duplicatas automaticamente mantendo o registro mais antigo (por `created_at`)
+### 2. `src/lib/gameUtils.ts` — Helper de meia-noite SP
+- Adicionar `export function midnightInSaoPaulo(dateStr: string): Date` que retorna meia-noite de uma data em SP timezone (offset -03:00)
+- Reutilizável no agendamento e em futuras comparações
 
 ### Arquivos modificados
-- `src/hooks/useDailyGames.ts`
-- `src/components/admin/ProgramacaoTexto.tsx`
-- `src/components/admin/DailyGamesManager.tsx`
+- `src/lib/gameUtils.ts` (adicionar helper)
+- `src/components/admin/ProgramacaoTexto.tsx` (corrigir timezone no agendamento)
+
+### O que NÃO fazer
+- ~~Migration para alterar datas existentes~~ — os dados estão corretos como `2026-03-25`
+- A página pública mostrará os jogos automaticamente quando o relógio SP atingir meia-noite (00:00 de 25/03)
 
