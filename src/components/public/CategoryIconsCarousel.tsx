@@ -59,11 +59,6 @@ export const CategoryIconsCarousel = () => {
                 >
                   {cat.label}
                 </span>
-                {cat.badge && (
-                  <span className="text-[9px] font-bold bg-primary/20 text-primary rounded-full px-1.5 py-0.5 font-body">
-                    {cat.badge}
-                  </span>
-                )}
               </div>
             );
           })}
