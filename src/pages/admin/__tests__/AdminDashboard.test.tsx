@@ -5,16 +5,16 @@ import { MemoryRouter } from "react-router-dom";
 import AdminDashboard from "../AdminDashboard";
 
 vi.mock("@/hooks/useBanners", () => ({
-  useAllBanners: () => ({ data: [{ active: true }, { active: false }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllBanners: () => ({ data: [{ active: true, title: "Banner 1", image_url: "https://example.com/a.jpg", created_at: new Date().toISOString() }, { active: false, title: "Banner 2", image_url: "https://example.com/b.jpg", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
 }));
 vi.mock("@/hooks/useMovies", () => ({
-  useAllMovies: () => ({ data: [{ active: true, genre: "Action" }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllMovies: () => ({ data: [{ active: true, genre: "Action", title: "Movie 1", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
 }));
 vi.mock("@/hooks/useSeries", () => ({
-  useAllSeries: () => ({ data: [{ active: true, genre: null }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllSeries: () => ({ data: [{ active: true, genre: null, title: "Series 1", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
 }));
 vi.mock("@/hooks/useNewsReleases", () => ({
-  useAllNewsReleases: () => ({ data: [{ active: true, genres: "Drama" }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllNewsReleases: () => ({ data: [{ active: true, genres: "Drama", title: "News 1", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
 }));
 vi.mock("@/hooks/useDailyGames", () => ({
   useAllDailyGames: () => ({ data: [{ active: true }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
