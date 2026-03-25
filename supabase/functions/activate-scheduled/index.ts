@@ -76,6 +76,8 @@ Deno.serve(async (req) => {
       activated_banners: activatedBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
       cleaned_old_games: deletedGames?.length || 0,
+      today_br: todayBR,
+      cleanup_before: cleanupDateStr,
       checked_at: new Date().toISOString(),
     };
 
