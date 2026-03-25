@@ -141,6 +141,7 @@ export const WeeklySeriesSection = () => {
             key={item.id}
             item={item}
             index={idx}
+            hasTrailer={trailerMap.get(item.tmdb_id) === true}
             onSelect={() => setSelected(item)}
             onPlayTrailer={(e) => {
               e.stopPropagation();
