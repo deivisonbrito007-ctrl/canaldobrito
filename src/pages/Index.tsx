@@ -50,9 +50,11 @@ const swipeVariants = {
 };
 
 const Index = () => {
+  const mainRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState("home");
   const [swipeDir, setSwipeDir] = useState(0);
   const swipingRef = useRef(false);
+  const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
 
