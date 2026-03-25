@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX uq_daily_games_match ON public.daily_games (date, lower(trim(home_team)), lower(trim(away_team)), game_time);
