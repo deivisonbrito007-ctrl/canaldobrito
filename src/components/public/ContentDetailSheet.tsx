@@ -10,6 +10,7 @@ interface ContentDetailSheetProps {
     title: string;
     overview?: string | null;
     poster_url?: string | null;
+    backdrop_url?: string | null;
     image_url?: string | null;
     rating?: number | null;
     year?: number | null;
@@ -30,6 +31,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
   if (!item) return null;
 
   const poster = item.poster_url || item.image_url;
+  const backdrop = item.backdrop_url;
 
   return (
     <AnimatePresence>
@@ -50,18 +52,31 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
           >
-            <div className="sticky top-0 z-10 flex justify-center pt-3 pb-2 bg-card rounded-t-3xl">
+            <div className="sticky top-0 z-10 flex justify-center pt-3 pb-2 bg-card/80 backdrop-blur-md rounded-t-3xl">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
             </div>
 
             <button
               onClick={onClose}
-              className="absolute top-3 right-4 p-2 rounded-full hover:bg-secondary/50 text-muted-foreground z-20"
+              className="absolute top-3 right-4 p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-secondary/50 text-foreground z-20"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="px-4 pb-24 space-y-4">
+            {/* Backdrop hero */}
+            {backdrop && (
+              <div className="relative w-full aspect-[16/9] -mt-2 overflow-hidden">
+                <img
+                  src={backdrop}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+              </div>
+            )}
+
+            <div className={`px-4 pb-24 space-y-4 ${backdrop ? '-mt-16 relative z-10' : ''}`}>
               <div className="flex gap-3">
                 {poster && (
                   <img
