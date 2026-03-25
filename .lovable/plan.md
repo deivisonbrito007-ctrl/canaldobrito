@@ -1,53 +1,40 @@
 
 
-# Causa Raiz: Jogos Apagados pela Edge Function
+# Situacao Atual e Plano de Protecao
 
-## O que aconteceu
+## Diagnostico
 
-A Edge Function `activate-scheduled` executa a cada minuto via pg_cron e contem esta logica na linha 46-49:
+| Data | Status |
+|------|--------|
+| 24/03 | **0 jogos** — apagados pela versao antiga da Edge Function (irrecuperavel) |
+| 25/03 | **17 jogos** inativos — agendados para ativar as 00:00 BRT (03:00 UTC) |
 
-```typescript
-// Cleanup: remove games from past dates
-const { data: deletedGames, error: cleanupError } = await supabase
-  .from("daily_games")
-  .delete()
-  .lt("date", new Date().toISOString().split("T")[0])
-  .select("id");
-```
+A correcao de timezone ja aplicada impede que isso se repita. Os jogos de 25/03 estao seguros.
 
-O problema e duplo:
+## Plano: Soft Delete para protecao futura
 
-1. **Fuso horario**: O servidor roda em UTC. O Brasil esta em UTC-3. As 21h no Brasil, o servidor ja considera que e o dia seguinte (00:00 UTC). Nesse momento, a funcao deleta todos os jogos do dia que ainda esta em andamento no Brasil.
+### 1. Adicionar coluna `archived` na tabela `daily_games`
+- `archived boolean default false`
+- Jogos arquivados ficam invisiveis na pagina publica mas continuam no banco
 
-2. **Delecao automatica agressiva**: A funcao apaga PERMANENTEMENTE todos os jogos de datas passadas. Nao ha soft-delete nem periodo de retencao. Se o admin inseriu jogos para hoje e o cron roda apos meia-noite UTC, os jogos somem.
+### 2. Atualizar Edge Function `activate-scheduled`
+- Trocar `DELETE` por `UPDATE SET archived = true` para jogos > 2 dias
+- Manter hard delete apenas para jogos > 30 dias (limpeza final)
+- Assim, jogos apagados por engano podem ser recuperados pelo admin
 
-## Correcoes
+### 3. Atualizar hook `useDailyGames`
+- Query publica: adicionar `.eq("archived", false)`
+- Query admin (`useAllDailyGames`): mostrar todos, com badge "Arquivado" nos antigos
 
-### 1. Usar fuso horario brasileiro na comparacao
-Trocar `new Date().toISOString().split("T")[0]` por uma data calculada em UTC-3 (America/Sao_Paulo), garantindo que a limpeza so acontece quando o dia realmente acabou no Brasil.
+### 4. Botao "Desarquivar" no admin
+- No `DailyGamesManager`, jogos arquivados aparecem com opacity reduzida e botao para reativar
 
-### 2. Adicionar margem de seguranca de 2 dias
-Em vez de deletar `date < hoje`, deletar `date < hoje - 2 dias`. Isso garante que jogos de ontem (que podem ter terminado de madrugada) sobrevivem. Jogos de 3+ dias atras sao limpos automaticamente.
-
-### 3. Log detalhado antes de deletar
-Adicionar log com a lista de IDs e datas que serao deletados, facilitando debug futuro.
+### 5. Ativar jogos de hoje (25/03) manualmente agora
+- Executar UPDATE para setar `active = true` e `publish_at = null` nos 17 jogos de 25/03, sem esperar o cron
 
 ## Arquivos modificados
-
-| Arquivo | Acao |
-|---------|------|
-| `supabase/functions/activate-scheduled/index.ts` | Corrigir timezone para America/Sao_Paulo, adicionar margem de 2 dias, melhorar logs |
-
-## Detalhe tecnico
-
-```text
-Antes (UTC):
-  21:00 BRT = 00:00 UTC (dia seguinte)
-  → deleta jogos de "hoje" no Brasil
-
-Depois (BRT com margem):
-  Calcula data em America/Sao_Paulo
-  Subtrai 2 dias da data atual
-  → so deleta jogos de 3+ dias atras
-```
+- Migration SQL: coluna `archived`, default false
+- `supabase/functions/activate-scheduled/index.ts`: soft delete
+- `src/hooks/useDailyGames.ts`: filtro archived
+- `src/components/admin/DailyGamesManager.tsx`: UI para arquivados
 
