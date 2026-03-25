@@ -2,7 +2,8 @@ import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ImageOff, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -44,6 +45,12 @@ export const NovidadesCard = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchRef = useRef<number | null>(null);
   const didSwipe = useRef(false);
+
+  const availabilityItems = useMemo(
+    () => items?.map((i) => ({ tmdb_id: i.tmdb_id, content_type: i.content_type })),
+    [items]
+  );
+  const { available: trailerMap } = useTrailerAvailability(availabilityItems);
 
   const { trailerKey, loading: trailerLoading } = useTrailerKey(
     trailerItem?.tmdb_id,
