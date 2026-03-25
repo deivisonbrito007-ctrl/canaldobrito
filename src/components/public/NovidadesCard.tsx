@@ -308,6 +308,7 @@ export const NovidadesCard = () => {
           title: selectedItem.title,
           overview: selectedItem.overview,
           poster_url: selectedItem.image_url,
+          backdrop_url: selectedItem.backdrop_url,
           rating: selectedItem.rating,
           year: selectedItem.year,
           genre: selectedItem.genres,
