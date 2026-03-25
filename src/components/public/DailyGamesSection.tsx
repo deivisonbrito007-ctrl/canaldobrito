@@ -9,6 +9,8 @@ import { ChannelBadge } from "./ChannelBadge";
 import { DayStatsBar } from "./DayStatsBar";
 import { NextGameHero } from "./NextGameHero";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
+import { toast } from "sonner";
 
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
