@@ -1,0 +1,101 @@
+import { useMemo } from "react";
+import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const COLORS = {
+  banners: "#34d399",
+  filmes: "#60a5fa",
+  series: "#a78bfa",
+  novidades: "#fbbf24",
+  jogos: "#f87171",
+};
+
+const LABELS: Record<string, string> = {
+  banners: "Banners",
+  filmes: "Filmes",
+  series: "Séries",
+  novidades: "Novidades",
+  jogos: "Jogos",
+};
+
+const barConfig: ChartConfig = {
+  ativos: { label: "Ativos", color: "#34d399" },
+  inativos: { label: "Inativos", color: "hsl(var(--muted))" },
+};
+
+interface Props {
+  totals: Record<string, number>;
+  actives: Record<string, number>;
+  isLoading: boolean;
+}
+
+export const ContentCharts = ({ totals, actives, isLoading }: Props) => {
+  const barData = useMemo(
+    () =>
+      Object.keys(LABELS).map((key) => ({
+        name: LABELS[key],
+        ativos: actives[key] || 0,
+        inativos: (totals[key] || 0) - (actives[key] || 0),
+      })),
+    [totals, actives],
+  );
+
+  const pieData = useMemo(
+    () =>
+      Object.keys(LABELS)
+        .map((key) => ({ name: LABELS[key], value: actives[key] || 0, key }))
+        .filter((d) => d.value > 0),
+    [actives],
+  );
+
+  const pieConfig: ChartConfig = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(LABELS).map(([key, label]) => [label, { label, color: COLORS[key as keyof typeof COLORS] }]),
+      ),
+    [],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Skeleton className="h-52 rounded-xl" />
+        <Skeleton className="h-52 rounded-xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Bar chart */}
+      <div className="glass-panel rounded-xl p-4 border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.01]">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ativo vs Inativo</h3>
+        <ChartContainer config={barConfig} className="aspect-[4/3] w-full">
+          <BarChart data={barData} layout="vertical" margin={{ left: 12, right: 12, top: 4, bottom: 4 }}>
+            <XAxis type="number" hide />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={72} axisLine={false} tickLine={false} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="ativos" stackId="a" radius={[0, 0, 0, 0]} fill="var(--color-ativos)" />
+            <Bar dataKey="inativos" stackId="a" radius={[0, 4, 4, 0]} fill="var(--color-inativos)" />
+          </BarChart>
+        </ChartContainer>
+      </div>
+
+      {/* Donut chart */}
+      <div className="glass-panel rounded-xl p-4 border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.01]">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Distribuição Ativos</h3>
+        <ChartContainer config={pieConfig} className="aspect-[4/3] w-full">
+          <PieChart>
+            <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+            <Pie data={pieData} dataKey="value" nameKey="name" innerRadius="50%" outerRadius="80%" paddingAngle={3} strokeWidth={0}>
+              {pieData.map((entry) => (
+                <Cell key={entry.key} fill={COLORS[entry.key as keyof typeof COLORS]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+      </div>
+    </div>
+  );
+};

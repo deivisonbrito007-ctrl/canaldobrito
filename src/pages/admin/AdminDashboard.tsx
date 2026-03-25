@@ -19,6 +19,7 @@ import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
 import { ContentHealthBar } from "@/components/admin/ContentHealthBar";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { RecentActivity } from "@/components/admin/RecentActivity";
+import { ContentCharts } from "@/components/admin/ContentCharts";
 
 const useCountUp = (target: number, duration = 800) => {
   const [count, setCount] = useState(0);
