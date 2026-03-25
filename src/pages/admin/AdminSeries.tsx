@@ -174,12 +174,16 @@ const AdminSeries = () => {
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionadas</h3>
           <div className="flex items-center gap-2">
-            {missingGenreCount > 0 && (
+            {missingDataCount > 0 && (
               <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
                 {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                Atualizar {missingGenreCount} sem gênero
+                Atualizar {missingDataCount} incompletas
               </Button>
             )}
+            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
+              {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Atualizar Todas
+            </Button>
             <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">
               {activeCount} ativas / {totalCount}
             </span>
