@@ -360,12 +360,31 @@ export const ProgramacaoTexto = () => {
       toast.error("Selecione pelo menos um jogo");
       return;
     }
+
+    // Warn if scheduling is ON but all dates are in the past
+    if (scheduleMidnight) {
+      const allPast = [...new Set(selected.map((g) => g.date))].every(isDateInPast);
+      if (allPast) {
+        toast.warning("Agendamento ativo, mas todas as datas são passadas — publicando imediatamente");
+      }
+    }
+
     try {
       const toInsert = buildInsertPayload(selected);
-      await insertGames.mutateAsync(toInsert);
-      toast.success(scheduleMidnight
-        ? `${selected.length} jogos agendados para meia-noite!`
-        : `${selected.length} jogos publicados!`);
+      const result = await insertGames.mutateAsync(toInsert);
+      const { inserted, skipped } = result;
+
+      if (inserted === 0 && skipped > 0) {
+        toast.warning(`Todos os ${skipped} jogos já existem no banco`);
+      } else if (skipped > 0) {
+        toast.success(`${inserted} jogo(s) publicado(s), ${skipped} duplicata(s) ignorada(s)`);
+      } else {
+        const hasScheduled = toInsert.some((g) => g.publish_at);
+        toast.success(hasScheduled
+          ? `${inserted} jogo(s) agendado(s) para meia-noite!`
+          : `${inserted} jogo(s) publicado(s)!`);
+      }
+
       setParsed([]);
       setText("");
     } catch (err: any) {
@@ -718,7 +737,9 @@ export const ProgramacaoTexto = () => {
                 ) : (
                   <Check className="h-4 w-4 mr-2" />
                 )}
-                {scheduleMidnight ? `Agendar ${selectedCount}` : `Publicar ${selectedCount}`}
+                {scheduleMidnight && !getScheduleLabel().isPast
+                  ? `Agendar ${selectedCount}`
+                  : `Publicar ${selectedCount}`}
               </Button>
               <Button
                 onClick={handleRepublish}
