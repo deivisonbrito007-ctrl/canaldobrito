@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { gameKey } from "@/lib/dedup";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera } from "lucide-react";
+import { useInsertDailyGames, useDeleteDailyGamesByDate, fetchExistingGameKeys } from "@/hooks/useDailyGames";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -220,7 +221,9 @@ export const ProgramacaoTexto = () => {
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
 
-  const handleProcess = () => {
+  const [existingKeys, setExistingKeys] = useState<Set<string>>(new Set());
+
+  const handleProcess = async () => {
     if (!text.trim()) {
       toast.error("Cole o texto da programação primeiro");
       return;
@@ -230,8 +233,30 @@ export const ProgramacaoTexto = () => {
       toast.error("Nenhum jogo detectado. Verifique o formato do texto.");
       return;
     }
-    setParsed(games);
-    toast.success(`${games.length} jogo(s) detectado(s)!`);
+
+    // Fetch existing games for all dates to mark duplicates
+    const dates = [...new Set(games.map((g) => g.date))];
+    const allKeys = new Set<string>();
+    for (const d of dates) {
+      const keys = await fetchExistingGameKeys(d);
+      keys.forEach((k) => allKeys.add(k));
+    }
+    setExistingKeys(allKeys);
+
+    // Auto-deselect duplicates
+    let dupCount = 0;
+    const markedGames = games.map((g) => {
+      const isDup = allKeys.has(gameKey(g));
+      if (isDup) dupCount++;
+      return { ...g, selected: isDup ? false : g.selected };
+    });
+
+    setParsed(markedGames);
+    if (dupCount > 0) {
+      toast.warning(`${dupCount} jogo(s) já existente(s) — desmarcados automaticamente`);
+    } else {
+      toast.success(`${games.length} jogo(s) detectado(s)!`);
+    }
     setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
@@ -642,6 +667,12 @@ export const ProgramacaoTexto = () => {
                                   {game.is_womens && (
                                     <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
                                       Feminino
+                                    </span>
+                                  )}
+                                  {existingKeys.has(gameKey(game)) && (
+                                    <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-semibold">
+                                      <Copy className="h-2.5 w-2.5" />
+                                      Duplicado
                                     </span>
                                   )}
                                   {warnings.map((w, wi) => (

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
 import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { gameKey } from "@/lib/dedup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -308,8 +309,16 @@ const AddGameForm = ({
       toast.error("Preencha times e horário");
       return;
     }
+
+    // Check for duplicates before inserting
+    const newGame = {
+      home_team: home,
+      away_team: away,
+      game_time: time,
+    };
+
     try {
-      await insertGames.mutateAsync([
+      const result = await insertGames.mutateAsync([
         {
           date,
           home_team: home,
@@ -326,7 +335,11 @@ const AddGameForm = ({
           status_short: "NS",
         },
       ]);
-      toast.success("Jogo adicionado!");
+      if (result.skipped > 0) {
+        toast.warning("Jogo já existe — não foi adicionado");
+      } else {
+        toast.success("Jogo adicionado!");
+      }
       onClose();
     } catch (err: any) {
       toast.error(err.message);
