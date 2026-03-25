@@ -1,4 +1,5 @@
-import { useState, useCallback, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, lazy, Suspense } from "react";
+import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { Hero } from "@/components/public/Hero";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
@@ -30,22 +31,88 @@ const ScheduleFallback = () => (
   </div>
 );
 
-/** Skeleton for lazy below-fold sections (Novidades + Promo + Banners) */
 const BelowFoldSkeleton = () => (
   <div className="space-y-5 px-4" style={{ minHeight: 560 }}>
     <NewsBannerSkeleton />
-    {/* Promo strip placeholder */}
     <div className="rounded-xl skeleton-shimmer h-[88px]" />
   </div>
 );
 
+const TAB_ORDER = ["home", "highlights", "schedule"] as const;
+const SWIPE_THRESHOLD = 50;
+
+const swipeVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0.4 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0.4 }),
+};
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const [swipeDir, setSwipeDir] = useState(0);
+  const swipingRef = useRef(false);
 
-  const handleTabChange = useCallback((tabId: string) => {
-    setActiveTab(tabId);
+  const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
+
+  const navigateTo = useCallback((newTab: string, direction: number) => {
+    setSwipeDir(direction);
+    setActiveTab(newTab);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  const handleTabChange = useCallback((tabId: string) => {
+    const newIdx = TAB_ORDER.indexOf(tabId as typeof TAB_ORDER[number]);
+    const dir = newIdx > tabIndex ? 1 : -1;
+    navigateTo(tabId, dir);
+  }, [tabIndex, navigateTo]);
+
+  const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    const swipe = Math.abs(offset.x) * velocity.x;
+
+    if (offset.x < -SWIPE_THRESHOLD || swipe < -1000) {
+      // swipe left → next tab
+      if (tabIndex < TAB_ORDER.length - 1) {
+        navigateTo(TAB_ORDER[tabIndex + 1], 1);
+      }
+    } else if (offset.x > SWIPE_THRESHOLD || swipe > 1000) {
+      // swipe right → previous tab
+      if (tabIndex > 0) {
+        navigateTo(TAB_ORDER[tabIndex - 1], -1);
+      }
+    }
+    setTimeout(() => { swipingRef.current = false; }, 50);
+  }, [tabIndex, navigateTo]);
+
+  const renderContent = () => {
+    if (activeTab === "highlights") {
+      return (
+        <Suspense fallback={<HighlightsFallback />}>
+          <HighlightsTab />
+        </Suspense>
+      );
+    }
+    if (activeTab === "schedule") {
+      return (
+        <Suspense fallback={<ScheduleFallback />}>
+          <ScheduleTab />
+        </Suspense>
+      );
+    }
+    return (
+      <div className="space-y-5 min-h-[80vh]">
+        <Hero />
+        <CategoryIconsCarousel />
+        <LiveFeedSection />
+        <LiveEventsSection />
+        <Suspense fallback={<BelowFoldSkeleton />}>
+          <LazyNovidadesCard />
+          <LazyPromoStrip />
+          <LazyBannerSections />
+        </Suspense>
+      </div>
+    );
+  };
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background overflow-x-hidden">
@@ -66,28 +133,26 @@ const Index = () => {
 
       <AppNavbar />
 
-      <main className="relative z-10 flex-1 pb-28" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))" }}>
-        {activeTab === "highlights" ? (
-          <Suspense fallback={<HighlightsFallback />}>
-            <HighlightsTab />
-          </Suspense>
-        ) : activeTab === "schedule" ? (
-          <Suspense fallback={<ScheduleFallback />}>
-            <ScheduleTab />
-          </Suspense>
-        ) : (
-          <div className="space-y-5 min-h-[80vh]">
-            <Hero />
-            <CategoryIconsCarousel />
-            <LiveFeedSection />
-            <LiveEventsSection />
-            <Suspense fallback={<BelowFoldSkeleton />}>
-              <LazyNovidadesCard />
-              <LazyPromoStrip />
-              <LazyBannerSections />
-            </Suspense>
-          </div>
-        )}
+      <main className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))" }}>
+        <AnimatePresence mode="wait" custom={swipeDir} initial={false}>
+          <motion.div
+            key={activeTab}
+            custom={swipeDir}
+            variants={swipeVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "spring", stiffness: 350, damping: 35, mass: 0.8 }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDragStart={() => { swipingRef.current = true; }}
+            onDragEnd={handleDragEnd}
+            style={{ touchAction: "pan-y" }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <PublicFooter />
