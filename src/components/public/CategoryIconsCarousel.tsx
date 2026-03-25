@@ -1,7 +1,7 @@
 import { useRef, useCallback } from "react";
 
 const categories = [
-  { emoji: "🔥", label: "Em Alta", badge: "8" },
+  { emoji: "🔥", label: "Em Alta" },
   { emoji: "⚽", label: "Futebol" },
   { emoji: "🏀", label: "Basquete" },
   { emoji: "🥊", label: "UFC/MMA" },

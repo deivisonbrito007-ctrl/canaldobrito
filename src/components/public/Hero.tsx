@@ -66,7 +66,7 @@ export const Hero = () => {
             </div>
             <div className="px-3 py-2.5 text-center">
               <p className="text-base sm:text-lg font-bold text-foreground font-body tabular-nums">{stats.tonight}</p>
-              <p className="text-[8px] uppercase font-bold tracking-wider text-muted-foreground font-body">Esta noite</p>
+              <p className="text-[8px] uppercase font-bold tracking-wider text-muted-foreground font-body">Hoje</p>
             </div>
             <div className="px-3 py-2.5 text-center">
               <p className="text-base sm:text-lg font-bold text-foreground font-body tabular-nums">{stats.channels}</p>
