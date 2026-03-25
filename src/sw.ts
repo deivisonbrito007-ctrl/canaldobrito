@@ -44,7 +44,7 @@ self.addEventListener("push", (event) => {
     data = { title: "Canal do Brito", body: event.data.text() };
   }
 
-  const options: NotificationOptions = {
+  const options = {
     body: data.body || "",
     icon: "/pwa-192x192.png",
     badge: "/pwa-192x192.png",
@@ -53,7 +53,7 @@ self.addEventListener("push", (event) => {
     renotify: true,
     data: { url: data.url || "/" },
     actions: [{ action: "open", title: "Abrir" }],
-  };
+  } as NotificationOptions & { vibrate: number[]; renotify: boolean; actions: Array<{ action: string; title: string }> };
 
   event.waitUntil(
     self.registration.showNotification(data.title || "Canal do Brito", options)
