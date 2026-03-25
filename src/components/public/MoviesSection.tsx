@@ -7,6 +7,9 @@ import { ContentDetailSheet } from "./ContentDetailSheet";
 
 const MovieCard = ({ movie, index, onClick }: { movie: FeaturedMovie; index: number; onClick: () => void }) => {
   const [imgErr, setImgErr] = useState(false);
+  const [backdropErr, setBackdropErr] = useState(false);
+  const hasBackdrop = movie.backdrop_url && !backdropErr;
+  const hasPoster = movie.poster_url && !imgErr;
 
   return (
     <motion.div
@@ -17,10 +20,21 @@ const MovieCard = ({ movie, index, onClick }: { movie: FeaturedMovie; index: num
       onClick={onClick}
     >
       <div className="relative overflow-hidden rounded-2xl border border-border/20 bg-card premium-shadow-sm aspect-[2/3] transition-all duration-300 group-hover:scale-[1.03] group-hover:premium-shadow group-hover:border-primary/20">
-        {movie.poster_url && !imgErr ? (
-          <img src={movie.poster_url} alt={movie.title} className="w-full h-full object-cover" loading="lazy" onError={() => setImgErr(true)} />
+        {/* Backdrop cinematic layer */}
+        {hasBackdrop && (
+          <img
+            src={movie.backdrop_url!}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-[2px] opacity-30 transition-opacity duration-500 group-hover:opacity-50 group-hover:blur-[1px]"
+            loading="lazy"
+            onError={() => setBackdropErr(true)}
+          />
+        )}
+        {/* Main poster */}
+        {hasPoster ? (
+          <img src={movie.poster_url!} alt={movie.title} className="relative w-full h-full object-cover" loading="lazy" onError={() => setImgErr(true)} />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 gap-2">
+          <div className="relative w-full h-full flex flex-col items-center justify-center bg-secondary/50 gap-2">
             <ImageOff className="h-10 w-10 text-muted-foreground/20" />
           </div>
         )}
