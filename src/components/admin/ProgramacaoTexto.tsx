@@ -737,7 +737,9 @@ export const ProgramacaoTexto = () => {
                 ) : (
                   <Check className="h-4 w-4 mr-2" />
                 )}
-                {scheduleMidnight ? `Agendar ${selectedCount}` : `Publicar ${selectedCount}`}
+                {scheduleMidnight && !getScheduleLabel().isPast
+                  ? `Agendar ${selectedCount}`
+                  : `Publicar ${selectedCount}`}
               </Button>
               <Button
                 onClick={handleRepublish}
