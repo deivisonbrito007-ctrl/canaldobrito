@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -5,17 +6,19 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import AdminLayout from "./pages/AdminLayout";
-import AdminBanners from "./pages/admin/AdminBanners";
-import AdminFilmes from "./pages/admin/AdminFilmes";
-import AdminSeries from "./pages/admin/AdminSeries";
-import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
-import AdminNovidades from "./pages/admin/AdminNovidades";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
-import NotFound from "./pages/NotFound";
-import Assinar from "./pages/Assinar";
+
+// Lazy-load non-critical routes
+const Login = lazy(() => import("./pages/Login"));
+const Assinar = lazy(() => import("./pages/Assinar"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminLayout = lazy(() => import("./pages/AdminLayout"));
+const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
+const AdminFilmes = lazy(() => import("./pages/admin/AdminFilmes"));
+const AdminSeries = lazy(() => import("./pages/admin/AdminSeries"));
+const AdminConfiguracoes = lazy(() => import("./pages/admin/AdminConfiguracoes"));
+const AdminNovidades = lazy(() => import("./pages/admin/AdminNovidades"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 
 const queryClient = new QueryClient();
 
@@ -26,22 +29,24 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/assinar" element={<Assinar />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="banners" element={<AdminBanners />} />
-              <Route path="filmes" element={<AdminFilmes />} />
-              <Route path="series" element={<AdminSeries />} />
-              <Route path="novidades" element={<AdminNovidades />} />
-              <Route path="whatsapp" element={<AdminWhatsApp />} />
-              <Route path="configuracoes" element={<AdminConfiguracoes />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/assinar" element={<Assinar />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="banners" element={<AdminBanners />} />
+                <Route path="filmes" element={<AdminFilmes />} />
+                <Route path="series" element={<AdminSeries />} />
+                <Route path="novidades" element={<AdminNovidades />} />
+                <Route path="whatsapp" element={<AdminWhatsApp />} />
+                <Route path="configuracoes" element={<AdminConfiguracoes />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
