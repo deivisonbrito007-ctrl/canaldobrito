@@ -5,8 +5,9 @@ import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
 import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
+import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 type MovieItem = NonNullable<ReturnType<typeof useActiveMovies>["data"]>[number];
 
@@ -15,11 +16,13 @@ const MovieCard = ({
   index,
   onSelect,
   onPlayTrailer,
+  hasTrailer,
 }: {
   item: MovieItem;
   index: number;
   onSelect: () => void;
   onPlayTrailer: (e: React.MouseEvent) => void;
+  hasTrailer: boolean;
 }) => {
   const [imgErr, setImgErr] = useState(false);
 
@@ -67,7 +70,7 @@ const MovieCard = ({
         )}
 
         {/* Play button overlay */}
-        {item.tmdb_id && (
+        {hasTrailer && (
           <button
             onClick={onPlayTrailer}
             className="absolute inset-0 m-auto w-11 h-11 flex items-center justify-center rounded-full bg-primary/80 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-primary hover:scale-110 active:scale-95 shadow-lg"
@@ -102,6 +105,12 @@ export const WeeklyMoviesSection = () => {
   const [selected, setSelected] = useState<MovieItem | null>(null);
   const [trailerItem, setTrailerItem] = useState<MovieItem | null>(null);
 
+  const availabilityItems = useMemo(
+    () => movies?.map((m) => ({ tmdb_id: m.tmdb_id, content_type: "movie" as const })),
+    [movies]
+  );
+  const { available: trailerMap } = useTrailerAvailability(availabilityItems);
+
   const { trailerKey, loading: trailerLoading } = useTrailerKey(
     trailerItem?.tmdb_id,
     "movie",
@@ -130,6 +139,7 @@ export const WeeklyMoviesSection = () => {
             key={item.id}
             item={item}
             index={idx}
+            hasTrailer={trailerMap.get(item.tmdb_id) === true}
             onSelect={() => setSelected(item)}
             onPlayTrailer={(e) => {
               e.stopPropagation();
