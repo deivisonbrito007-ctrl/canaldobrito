@@ -70,6 +70,18 @@ const Index = () => {
     navigateTo(tabId, dir);
   }, [tabIndex, navigateTo]);
 
+  // Listen for nav-tab-change events from other components
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tabId = (e as CustomEvent).detail;
+      if (TAB_ORDER.includes(tabId)) {
+        handleTabChange(tabId);
+      }
+    };
+    window.addEventListener("nav-tab-change", handler);
+    return () => window.removeEventListener("nav-tab-change", handler);
+  }, [handleTabChange]);
+
   const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
     const { offset, velocity } = info;
     const swipe = Math.abs(offset.x) * velocity.x;
