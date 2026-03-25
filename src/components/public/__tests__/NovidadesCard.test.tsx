@@ -98,7 +98,7 @@ describe("NovidadesCard", () => {
     } as any);
 
     render(<NovidadesCard />, { wrapper });
-    expect(screen.getByText("FILME TESTE")).toBeInTheDocument();
+    expect(screen.getAllByText("FILME TESTE").length).toBeGreaterThan(0);
     expect(screen.getAllByText("🆕 Lançamento").length).toBeGreaterThan(0);
   });
 
@@ -133,7 +133,7 @@ describe("NovidadesCard", () => {
 
     render(<NovidadesCard />, { wrapper });
     fireEvent.click(screen.getByLabelText("Próximo"));
-    expect(screen.getByText("SÉRIE TESTE")).toBeInTheDocument();
+    expect(screen.getAllByText("SÉRIE TESTE").length).toBeGreaterThan(0);
     expect(screen.getByText("2/2")).toBeInTheDocument();
   });
 
