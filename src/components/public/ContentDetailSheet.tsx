@@ -81,7 +81,7 @@ export const ContentDetailSheet = ({ open, onClose, item }: ContentDetailSheetPr
               </motion.div>
             )}
 
-            <div className={`px-4 pb-24 space-y-4 ${backdrop ? '-mt-16 relative z-10' : ''}`}>
+            <div className={`px-4 space-y-4 ${backdrop ? '-mt-16 relative z-10' : ''}`} style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}>
               <div className="flex gap-3">
                 {poster && (
                   <img

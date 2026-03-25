@@ -30,7 +30,7 @@ export const TrailerModal = ({ open, onClose, trailerKey, loading, title }: Trai
           <div className="relative w-full max-w-2xl pointer-events-auto">
             <button
               onClick={onClose}
-              className="absolute -top-10 right-0 p-2 rounded-full text-foreground/70 hover:text-foreground transition-colors"
+              className="absolute -top-10 right-0 p-2 rounded-full text-foreground/70 hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Fechar trailer"
             >
               <X className="h-6 w-6" />
