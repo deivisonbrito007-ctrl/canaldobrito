@@ -151,6 +151,11 @@ export const DailyGamesManager = () => {
                           <p className="text-sm font-bold text-foreground truncate">
                             {game.home_team} x {game.away_team}
                           </p>
+                          {isArchived && (
+                            <Badge className="bg-muted/50 text-muted-foreground border-muted text-[9px] px-1.5 py-0 shrink-0">
+                              Arquivado
+                            </Badge>
+                          )}
                           {isScheduled && (
                             <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0 shrink-0">
                               <Clock className="h-2.5 w-2.5 mr-0.5" />
@@ -167,19 +172,32 @@ export const DailyGamesManager = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <Switch
-                          checked={game.active}
-                          onCheckedChange={() => handleToggleActive(game.id, game.active)}
-                        />
-                        <button onClick={() => setEditingId(game.id)} className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => { if (confirm("Excluir jogo?")) deleteGame.mutate(game.id); }}
-                          className="p-1 rounded hover:bg-destructive/10 text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {isArchived ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => updateGame.mutate({ id: game.id, archived: false, active: true })}
+                            className="h-7 text-xs text-primary"
+                          >
+                            Desarquivar
+                          </Button>
+                        ) : (
+                          <>
+                            <Switch
+                              checked={game.active}
+                              onCheckedChange={() => handleToggleActive(game.id, game.active)}
+                            />
+                            <button onClick={() => setEditingId(game.id)} className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm("Excluir jogo?")) deleteGame.mutate(game.id); }}
+                              className="p-1 rounded hover:bg-destructive/10 text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </>
                   )}
