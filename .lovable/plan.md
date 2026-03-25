@@ -1,51 +1,33 @@
 
 
-## Problema
+## Melhorar Dashboard Admin com Graficos de Conteudo Ativo
 
-O carrossel horizontal de filmes/series na aba Destaques usa scroll nativo (`overflow-x-auto`), mas o container pai (`motion.div` no Index.tsx) tem `drag="x"` para swipe entre abas. Resultado: ao tentar rolar os cards horizontalmente, o gesto e capturado pelo drag de abas, mudando de aba em vez de rolar o carrossel.
+### O que sera adicionado
 
-## Solucao
+Um novo componente `ContentCharts` com dois graficos usando Recharts (ja disponivel via `chart.tsx`):
 
-Detectar quando o usuario esta interagindo com um carrossel horizontal e bloquear o drag de abas nesse caso.
+1. **Grafico de barras** — Conteudo ativo vs inativo por categoria (Banners, Filmes, Series, Novidades, Jogos), com barras empilhadas verde/cinza
+2. **Grafico de rosca (donut)** — Distribuicao percentual do conteudo ativo entre categorias, usando as cores ja definidas nos `statCards`
 
 ### Alteracoes
 
-**1. Index.tsx — Bloquear drag quando toque inicia em area de scroll horizontal**
+**1. Novo componente `src/components/admin/ContentCharts.tsx`**
 
-- Adicionar `onDragStart` que verifica se o elemento tocado (ou um ancestral proximo) tem `overflow-x: auto/scroll` ou um atributo `data-horizontal-scroll`.
-- Se sim, cancelar o drag retornando `false` ou setando uma flag que faz `onDragEnd` ignorar o swipe.
-- Alternativa mais robusta: usar `dragListener={false}` + `dragControls` e so iniciar o drag quando o toque nao esta sobre um carrossel.
+- Recebe `totals` e `actives` como props (os mesmos Records ja calculados no dashboard)
+- Recebe `isLoading` para mostrar skeleton enquanto carrega
+- Grafico de barras horizontal empilhado: barra verde = ativos, barra cinza = inativos
+- Grafico de rosca: fatias coloridas por categoria (emerald, blue, purple, amber, red)
+- Usa `ChartContainer`, `ChartTooltip`, `ChartTooltipContent` do `chart.tsx`
+- Layout: lado a lado em desktop (`grid-cols-2`), empilhado em mobile (`grid-cols-1`)
+- Estilo glass-panel consistente com o resto do dashboard
 
-**Abordagem escolhida**: Adicionar `data-horizontal-scroll` nos containers de carrossel e usar `onDragStart` para verificar:
+**2. Editar `src/pages/admin/AdminDashboard.tsx`**
 
-```tsx
-// Index.tsx - no motion.div
-onDragStart={(e) => {
-  const target = e.target as HTMLElement;
-  if (target.closest("[data-horizontal-scroll]")) {
-    return false; // framer-motion ignora
-  }
-}}
-```
-
-**2. WeeklyMoviesSection.tsx e WeeklySeriesSection.tsx — Marcar carrosseis**
-
-Adicionar `data-horizontal-scroll` e `touch-action: pan-x` no container flex de scroll:
-
-```tsx
-<div
-  data-horizontal-scroll
-  className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2"
-  style={{ touchAction: "pan-x" }}
->
-```
-
-**3. Tambem aplicar nos outros carrosseis horizontais da home** (LiveNowHero match cards, CategoryIconsCarousel) para consistencia.
+- Importar `ContentCharts`
+- Inserir entre o grid de stats e `UpcomingActivations`
+- Passar `totals`, `actives`, `isLoading` como props
 
 ### Arquivos modificados
-- `src/pages/Index.tsx` — drag guard no `onDragStart`
-- `src/components/public/WeeklyMoviesSection.tsx` — `data-horizontal-scroll` + `touch-action: pan-x`
-- `src/components/public/WeeklySeriesSection.tsx` — idem
-- `src/components/public/LiveNowHero.tsx` — idem no carrossel de matches
-- `src/components/public/CategoryIconsCarousel.tsx` — idem
+- `src/components/admin/ContentCharts.tsx` — novo
+- `src/pages/admin/AdminDashboard.tsx` — importar e posicionar o componente
 
