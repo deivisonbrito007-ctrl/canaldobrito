@@ -669,6 +669,12 @@ export const ProgramacaoTexto = () => {
                                       Feminino
                                     </span>
                                   )}
+                                  {existingKeys.has(gameKey(game)) && (
+                                    <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-semibold">
+                                      <Copy className="h-2.5 w-2.5" />
+                                      Duplicado
+                                    </span>
+                                  )}
                                   {warnings.map((w, wi) => (
                                     <span key={wi} className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
                                       <AlertTriangle className="h-2.5 w-2.5" />
