@@ -129,7 +129,7 @@ function toggleReminder(gameId: string): boolean {
 }
 
 /* ── Game Card ── */
-const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
+const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: number; onPushReminder?: (gameId: string, add: boolean) => void }) => {
   const sportType = (game.sport_type || 'football') as SportType;
   const sportEmoji = SPORT_EMOJI[sportType] || '⚽';
   const live = isGameLive(game);
@@ -146,7 +146,8 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
     e.stopPropagation();
     const isNowReminded = toggleReminder(game.id);
     setReminded(isNowReminded);
-  }, [game.id]);
+    onPushReminder?.(game.id, isNowReminded);
+  }, [game.id, onPushReminder]);
 
   const gameLabel = game.away_team
     ? `${game.home_team} vs ${game.away_team}, ${game.competition}, ${game.game_time?.slice(0, 5)}`
