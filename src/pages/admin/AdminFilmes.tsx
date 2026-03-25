@@ -10,6 +10,7 @@ import { Search, Plus, Trash2, Star, ImageOff, Loader2, Film, RefreshCw } from "
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
+const TMDB_BACKDROP = "https://image.tmdb.org/t/p/w780";
 const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
 
 const AdminFilmes = () => {
@@ -40,6 +41,7 @@ const AdminFilmes = () => {
       await addMovie.mutateAsync({
         tmdb_id: r.id, title: r.title || r.name || "",
         poster_url: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
+        backdrop_url: (r as any).backdrop_path ? `${TMDB_BACKDROP}${(r as any).backdrop_path}` : null,
         overview: r.overview || null,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
         year: r.release_date ? parseInt(r.release_date) : null,
@@ -62,6 +64,7 @@ const AdminFilmes = () => {
         genre: genreText,
         rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : movie.rating,
         overview: (details as any).overview || movie.overview,
+        backdrop_url: (details as any).backdrop_path ? `${TMDB_BACKDROP}${(details as any).backdrop_path}` : movie.backdrop_url,
       });
       toast.success(`"${movie.title}" atualizado!`);
     } catch (err: any) { toast.error(err.message); }
@@ -86,6 +89,7 @@ const AdminFilmes = () => {
             genre: genreText,
             rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : m.rating,
             overview: (details as any).overview || m.overview,
+            backdrop_url: (details as any).backdrop_path ? `${TMDB_BACKDROP}${(details as any).backdrop_path}` : m.backdrop_url,
           });
           updated++;
         }
