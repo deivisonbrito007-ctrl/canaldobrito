@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export const DailyGamesManager = () => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const queryClient = useQueryClient();
   const { data: games, isLoading } = useAllDailyGames(selectedDate);

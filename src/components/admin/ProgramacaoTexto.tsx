@@ -210,7 +210,7 @@ function getGameWarnings(game: ParsedGame): string[] {
 }
 
 export const ProgramacaoTexto = () => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   const [text, setText] = useState("");
   const [selectedDate, setSelectedDate] = useState(today);
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
