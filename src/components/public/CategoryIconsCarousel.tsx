@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import React, { useRef, useCallback } from "react";
 
 const categories = [
   { emoji: "🔥", label: "Em Alta" },
