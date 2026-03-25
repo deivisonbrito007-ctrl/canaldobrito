@@ -233,7 +233,7 @@ export const NovidadesCard = () => {
                       {item.overview}
                     </p>
                   )}
-                  {item.tmdb_id && (
+                  {item.tmdb_id && trailerMap.get(item.tmdb_id) === true && (
                     <button
                       onClick={handleTrailerClick}
                       className="shrink-0 flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/20 px-3 py-1.5 text-[11px] font-bold text-primary font-body hover:bg-primary/25 transition-colors"
@@ -262,7 +262,7 @@ export const NovidadesCard = () => {
                     {item.overview}
                   </p>
                 )}
-                {item.tmdb_id && (
+                {item.tmdb_id && trailerMap.get(item.tmdb_id) === true && (
                   <button
                     onClick={handleTrailerClick}
                     className="self-start flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/20 px-4 py-2 text-xs font-bold text-primary font-body hover:bg-primary/25 transition-colors"
