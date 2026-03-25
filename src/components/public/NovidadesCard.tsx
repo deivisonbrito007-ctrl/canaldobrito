@@ -1,3 +1,4 @@
+import React from "react";
 import { useActiveNewsReleases } from "@/hooks/useNewsReleases";
 import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
@@ -21,19 +22,22 @@ const getContentTypeLabel = (content_type: string) => {
   return null;
 };
 
-const MetadataRow = ({ item }: { item: { content_type: string; year?: number | null; genres?: string | null } }) => {
-  const typeLabel = getContentTypeLabel(item.content_type);
-  const parts: string[] = [];
-  if (typeLabel) parts.push(typeLabel);
-  if (item.year) parts.push(String(item.year));
-  if (item.genres) parts.push(item.genres.split(",").slice(0, 2).join(", "));
-  if (parts.length === 0) return null;
-  return (
-    <p className="text-[11px] text-muted-foreground font-body">
-      {parts.join(" · ")}
-    </p>
-  );
-};
+const MetadataRow = React.forwardRef<HTMLParagraphElement, { item: { content_type: string; year?: number | null; genres?: string | null } }>(
+  ({ item }, ref) => {
+    const typeLabel = getContentTypeLabel(item.content_type);
+    const parts: string[] = [];
+    if (typeLabel) parts.push(typeLabel);
+    if (item.year) parts.push(String(item.year));
+    if (item.genres) parts.push(item.genres.split(",").slice(0, 2).join(", "));
+    if (parts.length === 0) return null;
+    return (
+      <p ref={ref} className="text-[11px] text-muted-foreground font-body">
+        {parts.join(" · ")}
+      </p>
+    );
+  }
+);
+MetadataRow.displayName = "MetadataRow";
 
 export const NovidadesCard = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
