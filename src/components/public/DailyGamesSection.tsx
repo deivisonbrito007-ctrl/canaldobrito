@@ -312,6 +312,17 @@ export const DailyGamesSection = () => {
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const [openFilter, setOpenFilter] = useState<"sport" | "comp" | "channel" | null>(null);
+  const { addGameReminder, removeGameReminder, isSupported: pushSupported } = usePushSubscription();
+
+  const handlePushReminder = useCallback(async (gameId: string, add: boolean) => {
+    if (!pushSupported) return;
+    if (add) {
+      const ok = await addGameReminder(gameId);
+      if (ok) toast.success("Você será notificado 15min antes!");
+    } else {
+      await removeGameReminder(gameId);
+    }
+  }, [addGameReminder, removeGameReminder, pushSupported]);
 
   useEffect(() => {
     const interval = setInterval(() => {
