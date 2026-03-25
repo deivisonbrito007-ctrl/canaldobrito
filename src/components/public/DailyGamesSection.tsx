@@ -480,6 +480,8 @@ export const DailyGamesSection = () => {
           {availableComps.length > 1 && (
             <button
               onClick={() => toggleFilter("comp")}
+              aria-expanded={openFilter === "comp"}
+              aria-label={compFilter ? `Filtro de competição: ${compFilter}` : "Filtrar por competição"}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "comp" || compFilter
                   ? "bg-primary/15 text-primary border-primary/30"
@@ -493,6 +495,8 @@ export const DailyGamesSection = () => {
           {availableChannels.length > 1 && (
             <button
               onClick={() => toggleFilter("channel")}
+              aria-expanded={openFilter === "channel"}
+              aria-label={channelFilter ? `Filtro de canal: ${channelFilter}` : "Filtrar por canal"}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-xl text-[11px] font-bold transition-all border ${
                 openFilter === "channel" || channelFilter
                   ? "bg-primary/15 text-primary border-primary/30"
@@ -506,8 +510,8 @@ export const DailyGamesSection = () => {
           {hasActiveFilters && (
             <button
               onClick={clearAll}
-              className="shrink-0 p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all border border-destructive/20"
-              title="Limpar filtros"
+              className="shrink-0 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all border border-destructive/20"
+              aria-label="Limpar todos os filtros"
             >
               <X className="h-3.5 w-3.5" />
             </button>
