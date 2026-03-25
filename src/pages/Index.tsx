@@ -82,10 +82,8 @@ const Index = () => {
             <LiveFeedSection />
             <LiveEventsSection />
             <Suspense fallback={<BelowFoldSkeleton />}>
-              <div className="space-y-5 px-4">
-                <LazyNovidadesCard />
-                <LazyPromoStrip />
-              </div>
+              <LazyNovidadesCard />
+              <LazyPromoStrip />
               <LazyBannerSections />
             </Suspense>
           </div>
