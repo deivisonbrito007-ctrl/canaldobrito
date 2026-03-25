@@ -69,6 +69,26 @@ export function getLocalDateString(date?: Date): string {
 }
 
 /**
+ * Returns current hours and minutes in America/Sao_Paulo timezone.
+ */
+function getNowInSaoPaulo(): { hours: number; minutes: number } {
+  const now = new Date();
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(now);
+    const h = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+    const m = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    return { hours: h, minutes: m };
+  } catch {
+    return { hours: now.getHours(), minutes: now.getMinutes() };
+  }
+}
+
+/**
  * Checks if a game is currently live based on its scheduled time and sport duration.
  */
 export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportType: SportType = 'football'): boolean {
@@ -77,7 +97,8 @@ export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportTyp
 
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const sp = getNowInSaoPaulo();
+  const nowMinutes = sp.hours * 60 + sp.minutes;
   const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   return nowMinutes >= gameMinutes && nowMinutes < gameMinutes + duration;
@@ -93,7 +114,8 @@ export function getElapsedMinutes(gameTime: string, gameDate: string, sportType:
 
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const sp = getNowInSaoPaulo();
+  const nowMinutes = sp.hours * 60 + sp.minutes;
   const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
   const elapsed = nowMinutes - gameMinutes;
@@ -110,7 +132,8 @@ export function getMinutesUntilStart(gameTime: string, gameDate: string): number
 
   const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
   const gameMinutes = gh * 60 + gm;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const sp = getNowInSaoPaulo();
+  const nowMinutes = sp.hours * 60 + sp.minutes;
 
   const diff = gameMinutes - nowMinutes;
   if (diff <= 0) return null;
