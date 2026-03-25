@@ -1,69 +1,38 @@
 
 
-## Auditoria: Notificações Push — Problemas Encontrados e Correções
+## Seção "Jogos ao Vivo Agora" — Destaque Visual Unificado
 
-### Problemas Identificados
+### Situação Atual
+O app já possui duas seções ao vivo separadas: `LiveFeedSection` (partidas adversariais) e `LiveEventsSection` (eventos individuais). Ambas funcionam bem mas são visualmente discretas.
 
-**1. Conflito de Service Workers (CRÍTICO)**
-O `sw-custom.js` é registrado com `scope: "/"`, mas o `vite-plugin-pwa` também gera um SW com o mesmo scope. Apenas UM service worker pode controlar um scope — o segundo registro pode sobrescrever o primeiro, fazendo com que o push listener **ou** o cache offline pare de funcionar.
+### Proposta
+Criar uma nova seção unificada `LiveNowHero` que substitui as duas seções existentes, com destaque visual premium: fundo gradiente pulsante, contador animado, e cards maiores com mais impacto.
 
-**2. Race condition no `game_ids` (MÉDIO)**
-Quando o cron dispara e encontra múltiplos jogos para a mesma subscription, ele faz `array_remove` sequencialmente, mas cada iteração lê o array antigo e sobrescreve. Isso pode re-adicionar IDs já removidos.
+### O que muda
 
-**3. Limite de 1000 rows na query de subscriptions (MÉDIO)**
-A query `push_subscriptions.overlaps(game_ids, gameIds)` usa o limite padrão de 1000 rows. Se houver mais de 1000 inscritos num jogo popular, alguns não receberão notificação.
+**1. Nova seção `LiveNowHero`**
+- Fundo gradiente escuro com borda vermelha pulsante quando há jogos ao vivo
+- Header com ícone animado, título "AO VIVO AGORA", contador de jogos e relógio
+- Carrossel horizontal de cards grandes (min-w 300px) para jogos adversariais
+- Grid compacto abaixo para eventos não-adversariais
+- Auto-atualização a cada 60s (tick pattern existente)
+- Seção desaparece automaticamente quando não há nada ao vivo
 
-**4. Timeout da Edge Function (MÉDIO)**
-O envio é sequencial — para cada subscription, faz crypto + HTTP request. Com centenas de subs, pode exceder o timeout de 60s da edge function.
+**2. Cards com destaque visual**
+- Barra lateral colorida por esporte (vermelho futebol, azul basquete, etc.)
+- Dot pulsante vermelho + minutos decorridos em destaque
+- Nome dos times em fonte maior (15px)
+- Badge do canal com mais destaque
+- Animação de entrada escalonada (stagger)
 
-**5. Subscription keys desatualizadas (BAIXO)**
-Se o browser regenerar as chaves (reinstalação do PWA, limpeza de dados), o upsert por endpoint atualiza `p256dh`/`auth`, mas se o usuário não clicar no 🔔 novamente, os dados antigos ficam no DB e o push falha silenciosamente.
-
-### Plano de Correções
-
-**Etapa 1: Unificar Service Workers**
-- Migrar o `vite-plugin-pwa` para `injectManifest` strategy no `vite.config.ts`
-- Criar `src/sw.ts` que importa o precache do workbox E adiciona os listeners de push/notificationclick
-- Remover `public/sw-custom.js`
-- Atualizar `usePushSubscription` para usar `navigator.serviceWorker.ready` em vez de registrar manualmente
-
-**Etapa 2: Corrigir race condition nos game_ids**
-- Alterar a edge function para remover TODOS os game_ids notificados de uma vez com uma única query SQL usando `array_remove` encadeado, em vez de um update por jogo
-- Usar uma function SQL `remove_multiple_game_ids(_endpoint, _ids text[])` para atomicidade
-
-**Etapa 3: Paginar subscriptions**
-- Na edge function, buscar subscriptions em lotes de 500 usando `.range(offset, offset+499)` em loop até não haver mais resultados
-
-**Etapa 4: Paralelizar envio**
-- Usar `Promise.allSettled()` para enviar em lotes de 10 notificações simultaneamente em vez de sequencialmente
-- Isso reduz o tempo de execução ~10x
-
-**Etapa 5: Atualizar keys no subscribe**
-- No hook, ao detectar subscription existente no browser, sempre fazer upsert das keys no DB (já faz isso no `subscribe()`, mas não no `useEffect` de mount)
-- No mount, se encontrar subscription existente, re-sincronizar keys no DB
+**3. Substituição no Index.tsx**
+- Remover `LiveFeedSection` e `LiveEventsSection` do home
+- Inserir `LiveNowHero` no mesmo local
+- Manter os componentes antigos no código (usados na aba Schedule)
 
 ### Arquivos Afetados
-
-| Arquivo | Mudança |
-|---------|---------|
-| `vite.config.ts` | Mudar PWA para `injectManifest` |
-| `src/sw.ts` | Novo — SW unificado com precache + push |
-| `public/sw-custom.js` | Remover |
-| `src/hooks/usePushSubscription.ts` | Remover registro manual, re-sync keys no mount |
-| `supabase/functions/send-push-notifications/index.ts` | Paginação, envio paralelo, batch remove |
-| Migration SQL | Nova function `remove_multiple_game_ids` |
-
-### Detalhes Técnicos
-
-```text
-Antes (2 SWs conflitantes):
-  vite-plugin-pwa → sw.js (scope /)  ← controla cache
-  sw-custom.js (scope /)              ← controla push
-  ⚠️ Apenas 1 vence — push pode não funcionar
-
-Depois (1 SW unificado):
-  vite-plugin-pwa (injectManifest) → sw.ts (scope /)
-    ├── precache (workbox)
-    └── push + notificationclick listeners
-```
+| Arquivo | Ação |
+|---------|------|
+| `src/components/public/LiveNowHero.tsx` | Criar — seção unificada |
+| `src/pages/Index.tsx` | Substituir imports das duas seções pela nova |
 
