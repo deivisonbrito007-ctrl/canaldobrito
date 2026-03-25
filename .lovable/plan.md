@@ -1,21 +1,41 @@
 
 
-# Batch Update: Atualizar Todos (incluindo backdrops)
+# Verificação do Sistema — Resultado e Correção Pendente
 
-## Problema
-O botao batch atual so atualiza filmes/series **sem genero** (`!m.genre`). Itens que ja tem genero mas nao tem `backdrop_url` ficam de fora.
+## Status Atual: Sistema Saudável
 
-## Correcao
+- Zero erros no console do navegador
+- Todas as requisições de rede (Supabase, TMDB proxy) retornando status 200
+- Página pública renderizando corretamente com skeletons, content-visibility e trailer pre-fetch funcionando
+- Painel admin acessível e funcional
 
-### AdminFilmes.tsx e AdminSeries.tsx — mesma mudanca em ambos:
+## Problema Pendente: Duplicatas em daily_games
 
-1. **Expandir filtro**: trocar `!m.genre` por `!m.genre || !m.backdrop_url` para incluir itens sem backdrop
-2. **Adicionar botao "Atualizar Todos"** separado que forca update de TODOS os itens (ignora filtro)
-3. **Atualizar contagem**: mostrar `missingDataCount` (sem genero OU sem backdrop) no botao existente, e adicionar botao "Atualizar Todos" que roda em todos
+O único problema real identificado é a ausência de validação de duplicatas ao inserir jogos via ProgramacaoTexto ou DailyGamesManager. Isso já foi diagnosticado nas mensagens anteriores.
 
-Na pratica, a abordagem mais simples: adicionar um segundo botao **"Atualizar Todos"** que itera sobre todos os filmes/series sem filtro, atualizando genero, rating, overview e backdrop de uma vez. O botao existente continua para itens incompletos.
+### Plano de Correção (3 arquivos)
+
+#### 1. `src/hooks/useDailyGames.ts` — Dedup automático no insert
+- No `useInsertDailyGames`, antes de inserir, buscar jogos existentes na mesma `date`
+- Criar chave normalizada: `home_team.toLowerCase().trim() + away_team.toLowerCase().trim() + game_time`
+- Filtrar jogos que já existem e retornar contagem de ignorados
+- Deletar automaticamente duplicatas existentes no banco (mesma chave composta, manter apenas o primeiro registro)
+
+#### 2. `src/components/admin/ProgramacaoTexto.tsx` — Alerta visual + auto-deselect
+- Após parsear o texto, consultar jogos existentes no banco para a data
+- Marcar jogos duplicados com badge "Duplicado" amarelo na preview
+- Desmarcar jogos duplicados por padrão (`selected = false`)
+- Admin ainda pode forçar seleção manual se quiser
+
+#### 3. `src/components/admin/DailyGamesManager.tsx` — Guard no formulário manual
+- Antes de inserir jogo avulso, verificar existência por chave composta
+- Mostrar toast de aviso se duplicado detectado
+
+### Limpeza automática
+- Ao carregar jogos no admin (`useAllDailyGames`), detectar e deletar duplicatas automaticamente mantendo o registro mais antigo (por `created_at`)
 
 ### Arquivos modificados
-- `src/pages/admin/AdminFilmes.tsx` — adicionar `handleBatchUpdateAll` + botao + contagem de missing backdrop
-- `src/pages/admin/AdminSeries.tsx` — mesma mudanca
+- `src/hooks/useDailyGames.ts`
+- `src/components/admin/ProgramacaoTexto.tsx`
+- `src/components/admin/DailyGamesManager.tsx`
 
