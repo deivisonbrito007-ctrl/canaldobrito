@@ -1,0 +1,59 @@
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
+const THRESHOLD = 80;
+
+export function usePullToRefresh(targetRef: React.RefObject<HTMLElement | null>) {
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const startY = useRef(0);
+  const pulling = useRef(false);
+  const queryClient = useQueryClient();
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries();
+    setTimeout(() => setIsRefreshing(false), 800);
+  }, [queryClient]);
+
+  useEffect(() => {
+    if (!("ontouchstart" in window)) return;
+    const el = targetRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.scrollY > 0 || isRefreshing) return;
+      startY.current = e.touches[0].clientY;
+      pulling.current = true;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pulling.current) return;
+      const dy = Math.max(0, e.touches[0].clientY - startY.current);
+      // Dampen the pull
+      const dampened = Math.min(dy * 0.4, 140);
+      setPullDistance(dampened);
+    };
+
+    const onTouchEnd = () => {
+      if (!pulling.current) return;
+      pulling.current = false;
+      if (pullDistance >= THRESHOLD) {
+        onRefresh();
+      }
+      setPullDistance(0);
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [targetRef, isRefreshing, pullDistance, onRefresh]);
+
+  return { pullDistance, isRefreshing };
+}

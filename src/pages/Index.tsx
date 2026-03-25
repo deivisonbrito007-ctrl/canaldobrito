@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, lazy, Suspense } from "react";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
 import { Hero } from "@/components/public/Hero";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
 import { LiveFeedSection } from "@/components/public/LiveFeedSection";
@@ -48,9 +50,11 @@ const swipeVariants = {
 };
 
 const Index = () => {
+  const mainRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState("home");
   const [swipeDir, setSwipeDir] = useState(0);
   const swipingRef = useRef(false);
+  const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
 
@@ -133,7 +137,8 @@ const Index = () => {
 
       <AppNavbar />
 
-      <main className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))" }}>
+      <main ref={mainRef} className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))", overscrollBehaviorY: "contain" }}>
+        <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
         <AnimatePresence mode="wait" custom={swipeDir} initial={false}>
           <motion.div
             key={activeTab}
