@@ -3,18 +3,14 @@ import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { getLocalDateString, isGameCurrentlyLive, type SportType } from "@/lib/gameUtils";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useLiveTick } from "@/hooks/useLiveTick";
 
 export const AppNavbar = () => {
   const today = new Date();
   const dateStr = getLocalDateString();
   const { data: games } = useDailyGames(dateStr);
-  const [tick, setTick] = useState(Math.floor(Date.now() / 60000));
-
-  useEffect(() => {
-    const timer = setInterval(() => setTick(Math.floor(Date.now() / 60000)), 60000);
-    return () => clearInterval(timer);
-  }, []);
+  const tick = useLiveTick();
 
   const liveCount = useMemo(() => {
     return (games || []).filter((g) => {

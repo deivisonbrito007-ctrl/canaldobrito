@@ -189,7 +189,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Stats grid with micro progress bars */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((card, i) => {
           const total = totals[card.key] || 0;
           const active = actives[card.key] || 0;
@@ -238,12 +238,12 @@ const AdminDashboard = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ações Rápidas</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {quickActions.map((action, i) => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {quickActions.map((action) => (
             <button
               key={action.label}
               onClick={() => navigate(action.path)}
-              className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border font-semibold text-xs transition-all min-h-[48px] cursor-pointer ${action.color} ${i === quickActions.length - 1 && quickActions.length % 2 !== 0 ? "col-span-2" : ""}`}
+              className={`flex items-center justify-center gap-1.5 p-3 rounded-xl border font-semibold text-[11px] sm:text-xs transition-all min-h-[48px] cursor-pointer ${action.color}`}
             >
               <action.icon className="h-4 w-4" />
               + {action.label}
