@@ -190,17 +190,17 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
               )}
               {/* Reminder button */}
               {!live && (
-                <button
-                  onClick={handleReminder}
-                  className={`p-1 rounded-lg transition-all ${
-                    reminded
-                      ? "bg-primary/15 text-primary border border-primary/30"
-                      : "bg-card/40 text-muted-foreground/40 border border-transparent hover:text-primary/60 hover:bg-primary/5"
-                  }`}
-                  title={reminded ? "Remover lembrete" : "Adicionar lembrete"}
-                >
-                  {reminded ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-                </button>
+                 <button
+                   onClick={handleReminder}
+                   className={`p-1.5 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                     reminded
+                       ? "bg-primary/15 text-primary border border-primary/30"
+                       : "bg-card/40 text-muted-foreground/40 border border-transparent hover:text-primary/60 hover:bg-primary/5"
+                   }`}
+                   title={reminded ? "Remover lembrete" : "Adicionar lembrete"}
+                 >
+                   {reminded ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+                 </button>
               )}
             </div>
           </div>
@@ -482,7 +482,7 @@ export const DailyGamesSection = () => {
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <button
                   onClick={() => { setSportFilter(null); setOpenFilter(null); }}
-                  className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${
                     !sportFilter ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -492,7 +492,7 @@ export const DailyGamesSection = () => {
                   <button
                     key={st}
                     onClick={() => { setSportFilter(sportFilter === st ? null : st); setOpenFilter(null); }}
-                    className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${
                       sportFilter === st ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -515,7 +515,7 @@ export const DailyGamesSection = () => {
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <button
                   onClick={() => { setCompFilter(null); setOpenFilter(null); }}
-                  className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${
                     !compFilter ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -525,7 +525,7 @@ export const DailyGamesSection = () => {
                   <button
                     key={c.label}
                     onClick={() => { setCompFilter(compFilter === c.label ? null : c.label); setOpenFilter(null); }}
-                    className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+                    className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
                       compFilter === c.label ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -549,7 +549,7 @@ export const DailyGamesSection = () => {
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <button
                   onClick={() => { setChannelFilter(null); setOpenFilter(null); }}
-                  className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${
                     !channelFilter ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -559,7 +559,7 @@ export const DailyGamesSection = () => {
                   <button
                     key={ch.label}
                     onClick={() => { setChannelFilter(channelFilter === ch.label ? null : ch.label); setOpenFilter(null); }}
-                    className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+                    className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
                       channelFilter === ch.label ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/40 border border-border/15 text-muted-foreground hover:text-foreground"
                     }`}
                   >
