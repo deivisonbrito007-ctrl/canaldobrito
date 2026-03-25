@@ -9,6 +9,8 @@ import { ChannelBadge } from "./ChannelBadge";
 import { DayStatsBar } from "./DayStatsBar";
 import { NextGameHero } from "./NextGameHero";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
+import { toast } from "sonner";
 
 /* ── colour maps ── */
 const COMP_COLORS: Record<string, { bg: string; border: string }> = {
@@ -127,7 +129,7 @@ function toggleReminder(gameId: string): boolean {
 }
 
 /* ── Game Card ── */
-const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
+const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: number; onPushReminder?: (gameId: string, add: boolean) => void }) => {
   const sportType = (game.sport_type || 'football') as SportType;
   const sportEmoji = SPORT_EMOJI[sportType] || '⚽';
   const live = isGameLive(game);
@@ -144,7 +146,8 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
     e.stopPropagation();
     const isNowReminded = toggleReminder(game.id);
     setReminded(isNowReminded);
-  }, [game.id]);
+    onPushReminder?.(game.id, isNowReminded);
+  }, [game.id, onPushReminder]);
 
   const gameLabel = game.away_team
     ? `${game.home_team} vs ${game.away_team}, ${game.competition}, ${game.game_time?.slice(0, 5)}`
@@ -272,7 +275,7 @@ const GameCard = ({ game, index }: { game: DailyGame; index: number }) => {
 };
 
 /* ── Period Group (Collapsible) ── */
-const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] }) => {
+const PeriodGroup = ({ group, games, onPushReminder }: { group: TimeGroup; games: DailyGame[]; onPushReminder?: (gameId: string, add: boolean) => void }) => {
   const [open, setOpen] = useState(true);
   const meta = GROUP_META[group];
 
@@ -292,7 +295,7 @@ const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] })
       <CollapsibleContent>
         <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-2.5 sm:mt-3" role="list" aria-label={`Jogos do período ${meta.label}`}>
           {games.map((game, idx) => (
-            <GameCard key={game.id} game={game} index={idx} />
+            <GameCard key={game.id} game={game} index={idx} onPushReminder={onPushReminder} />
           ))}
         </div>
       </CollapsibleContent>
@@ -309,6 +312,17 @@ export const DailyGamesSection = () => {
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const [openFilter, setOpenFilter] = useState<"sport" | "comp" | "channel" | null>(null);
+  const { addGameReminder, removeGameReminder, isSupported: pushSupported } = usePushSubscription();
+
+  const handlePushReminder = useCallback(async (gameId: string, add: boolean) => {
+    if (!pushSupported) return;
+    if (add) {
+      const ok = await addGameReminder(gameId);
+      if (ok) toast.success("Você será notificado 15min antes!");
+    } else {
+      await removeGameReminder(gameId);
+    }
+  }, [addGameReminder, removeGameReminder, pushSupported]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -645,7 +659,7 @@ export const DailyGamesSection = () => {
         {GROUP_ORDER.map((group) => {
           const groupGames = grouped[group];
           if (!groupGames || groupGames.length === 0) return null;
-          return <PeriodGroup key={group} group={group} games={groupGames} />;
+          return <PeriodGroup key={group} group={group} games={groupGames} onPushReminder={handlePushReminder} />;
         })}
       </div>
 
