@@ -143,6 +143,13 @@ export function getMinutesUntilStart(gameTime: string, gameDate: string): number
 /**
  * Formats minutes into a human-readable countdown string (pt-BR).
  */
+/**
+ * Returns a Date object representing midnight of the given date in São Paulo (UTC-3).
+ */
+export function midnightInSaoPaulo(dateStr: string): Date {
+  return new Date(`${dateStr}T00:00:00-03:00`);
+}
+
 export function formatCountdown(minutes: number): string {
   if (minutes < 1) return "Agora!";
   const h = Math.floor(minutes / 60);

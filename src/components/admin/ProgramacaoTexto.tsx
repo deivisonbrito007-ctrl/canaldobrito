@@ -310,8 +310,7 @@ export const ProgramacaoTexto = () => {
   };
 
   const isDateInPast = (dateStr: string): boolean => {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const midnight = new Date(y, m - 1, d, 0, 0, 0);
+    const midnight = midnightInSaoPaulo(dateStr);
     return midnight.getTime() <= Date.now();
   };
 
@@ -332,8 +331,7 @@ export const ProgramacaoTexto = () => {
       let active = true;
 
       if (scheduleMidnight) {
-        const [y, m, d] = g.date.split("-").map(Number);
-        const midnight = new Date(y, m - 1, d, 0, 0, 0);
+        const midnight = midnightInSaoPaulo(g.date);
         if (midnight.getTime() > Date.now()) {
           publishAt = midnight.toISOString();
           active = false;
