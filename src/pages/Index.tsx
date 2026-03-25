@@ -139,6 +139,7 @@ const Index = () => {
 
       <main ref={mainRef} className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))", overscrollBehaviorY: "contain" }}>
         <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
+        <AnimatePresence mode="wait" custom={swipeDir} initial={false}>
           <motion.div
             key={activeTab}
             custom={swipeDir}
