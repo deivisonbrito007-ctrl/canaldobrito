@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const DailyGamesManager = () => {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const queryClient = useQueryClient();
   const { data: games, isLoading } = useAllDailyGames(selectedDate);
   const updateGame = useUpdateDailyGame();
   const deleteGame = useDeleteDailyGame();
@@ -65,11 +66,7 @@ export const DailyGamesManager = () => {
         .eq("archived", false);
       if (error) throw error;
       toast.success(`${nonArchived.length} jogos arquivados!`);
-      // invalidate queries
-      deleteByDate.reset();
-      window.dispatchEvent(new Event("daily-games-refresh"));
-      // refetch
-      location.reload();
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
     } catch (err: any) {
       toast.error(err.message);
     }
