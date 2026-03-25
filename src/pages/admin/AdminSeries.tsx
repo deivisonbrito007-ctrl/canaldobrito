@@ -71,15 +71,12 @@ const AdminSeries = () => {
     finally { setRefreshingId(null); }
   };
 
-  const handleBatchUpdate = async () => {
-    if (!series || series.length === 0) return;
-    const needsUpdate = series.filter((s) => !s.genre);
-    if (needsUpdate.length === 0) { toast.info("Todas as séries já têm gênero"); return; }
-    setBatchProgress({ current: 0, total: needsUpdate.length });
+  const runBatch = async (list: NonNullable<typeof series>, label: string) => {
+    setBatchProgress({ current: 0, total: list.length });
     let updated = 0;
-    for (let i = 0; i < needsUpdate.length; i++) {
-      const s = needsUpdate[i];
-      setBatchProgress({ current: i + 1, total: needsUpdate.length });
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      setBatchProgress({ current: i + 1, total: list.length });
       try {
         const details = await fetchDetails("tv_details", s.tmdb_id);
         if (details) {
@@ -96,12 +93,24 @@ const AdminSeries = () => {
       } catch { /* continue */ }
     }
     setBatchProgress(null);
-    toast.success(`${updated} de ${needsUpdate.length} séries atualizadas!`);
+    toast.success(`${updated} de ${list.length} ${label} atualizadas!`);
+  };
+
+  const handleBatchUpdate = async () => {
+    if (!series || series.length === 0) return;
+    const needsUpdate = series.filter((s) => !s.genre || !s.backdrop_url);
+    if (needsUpdate.length === 0) { toast.info("Todas as séries já estão completas"); return; }
+    await runBatch(needsUpdate, "séries incompletas");
+  };
+
+  const handleBatchUpdateAll = async () => {
+    if (!series || series.length === 0) return;
+    await runBatch(series, "séries");
   };
 
   const activeCount = series?.filter((s) => s.active).length || 0;
   const totalCount = series?.length || 0;
-  const missingGenreCount = series?.filter((s) => !s.genre).length || 0;
+  const missingDataCount = series?.filter((s) => !s.genre || !s.backdrop_url).length || 0;
 
   return (
     <div className="space-y-5">
@@ -165,12 +174,16 @@ const AdminSeries = () => {
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionadas</h3>
           <div className="flex items-center gap-2">
-            {missingGenreCount > 0 && (
+            {missingDataCount > 0 && (
               <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
                 {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                Atualizar {missingGenreCount} sem gênero
+                Atualizar {missingDataCount} incompletas
               </Button>
             )}
+            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
+              {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Atualizar Todas
+            </Button>
             <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">
               {activeCount} ativas / {totalCount}
             </span>
