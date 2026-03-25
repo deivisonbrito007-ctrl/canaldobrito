@@ -32,7 +32,7 @@ const ScheduleFallback = () => (
 
 /** Skeleton for lazy below-fold sections (Novidades + Promo + Banners) */
 const BelowFoldSkeleton = () => (
-  <div className="space-y-5 px-4">
+  <div className="space-y-5 px-4" style={{ minHeight: 560 }}>
     <NewsBannerSkeleton />
     {/* Promo strip placeholder */}
     <div className="rounded-xl skeleton-shimmer h-[88px]" />
