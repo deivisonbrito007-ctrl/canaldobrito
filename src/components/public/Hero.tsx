@@ -1,16 +1,12 @@
 import { useDailyGames } from "@/hooks/useDailyGames";
 import { getLocalDateString, isGameCurrentlyLive, type SportType } from "@/lib/gameUtils";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useLiveTick } from "@/hooks/useLiveTick";
 
 export const Hero = () => {
   const dateStr = getLocalDateString();
   const { data: games } = useDailyGames(dateStr);
-  const [tick, setTick] = useState(Math.floor(Date.now() / 60000));
-
-  useEffect(() => {
-    const timer = setInterval(() => setTick(Math.floor(Date.now() / 60000)), 60000);
-    return () => clearInterval(timer);
-  }, []);
+  const tick = useLiveTick();
   const stats = useMemo(() => {
     const allGames = games || [];
     const liveCount = allGames.filter((g) => {

@@ -1,9 +1,10 @@
 import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff, X } from "lucide-react";
+import { useLiveTick } from "@/hooks/useLiveTick";
 import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 import { DayStatsBar } from "./DayStatsBar";
@@ -305,12 +306,12 @@ const PeriodGroup = ({ group, games, onPushReminder }: { group: TimeGroup; games
 
 /* ── Section ── */
 export const DailyGamesSection = () => {
-  const [today, setToday] = useState(() => getLocalDateString());
+  const tick = useLiveTick();
+  const today = useMemo(() => getLocalDateString(), [tick]);
   const { data: games, isLoading } = useDailyGames(today);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
-  const [, setTick] = useState(0);
   const [openFilter, setOpenFilter] = useState<"sport" | "comp" | "channel" | null>(null);
   const { addGameReminder, removeGameReminder, isSupported: pushSupported } = usePushSubscription();
 
@@ -323,14 +324,6 @@ export const DailyGamesSection = () => {
       await removeGameReminder(gameId);
     }
   }, [addGameReminder, removeGameReminder, pushSupported]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTick((t) => t + 1);
-      setToday(getLocalDateString());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   /* Dynamic filter options from today's games */
   const { availableSports, availableComps, availableChannels } = useMemo(() => {

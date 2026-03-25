@@ -10,6 +10,7 @@ import {
   type SportType,
 } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
+import { useLiveTick } from "@/hooks/useLiveTick";
 
 /* ── Framer-motion variants ── */
 const containerVariants = {
@@ -66,7 +67,7 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
     return (
       <div
         ref={ref}
-        className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
+        className="min-w-[260px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
       >
         <div className="flex">
           <div className={`w-[3px] ${accent}`} />
@@ -189,17 +190,9 @@ const LiveClock = () => {
 
 /* ── Main component ── */
 export const LiveNowHero = () => {
-  const [today, setToday] = useState(() => getLocalDateString());
+  const tick = useLiveTick();
+  const today = useMemo(() => getLocalDateString(), [tick]);
   const { data: games, isLoading } = useDailyGames(today);
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTick((t) => t + 1);
-      setToday(getLocalDateString());
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, []);
 
   const { matches, events } = useMemo(() => {
     const all = games || [];
@@ -212,8 +205,7 @@ export const LiveNowHero = () => {
       else m.push(g);
     }
     return { matches: m, events: e };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [games, Math.floor(Date.now() / 60_000)]);
+  }, [games, tick]);
 
   const totalLive = matches.length + events.length;
 
@@ -236,8 +228,9 @@ export const LiveNowHero = () => {
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.section
+        key={totalLive > 0 ? "live" : "empty"}
         className="mx-4 rounded-2xl overflow-hidden relative"
         variants={sectionVariants}
         initial="hidden"
@@ -256,7 +249,7 @@ export const LiveNowHero = () => {
                 <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
               </span>
-              <h3 className="text-sm font-black text-foreground font-body tracking-tight uppercase">
+              <h3 className="text-xs sm:text-sm font-black text-foreground font-body tracking-tight uppercase whitespace-nowrap">
                 Ao Vivo Agora
               </h3>
               <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
