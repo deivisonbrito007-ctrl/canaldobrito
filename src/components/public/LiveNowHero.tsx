@@ -236,57 +236,75 @@ export const LiveNowHero = () => {
   }
 
   return (
-    <section className="mx-4 rounded-2xl overflow-hidden relative animate-fade-in">
-      {/* Pulsing red border glow */}
-      <div className="absolute inset-0 rounded-2xl border border-destructive/30 animate-pulse pointer-events-none z-10" />
-      
-      {/* Background */}
-      <div className="bg-gradient-to-br from-destructive/[0.06] via-surface-2 to-surface-2 rounded-2xl p-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="relative flex h-3 w-3 shrink-0">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
-            </span>
-            <h3 className="text-sm font-black text-foreground font-body tracking-tight uppercase">
-              Ao Vivo Agora
-            </h3>
-            <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
-              {totalLive} {totalLive === 1 ? "jogo" : "jogos"}
-            </span>
+    <AnimatePresence>
+      <motion.section
+        className="mx-4 rounded-2xl overflow-hidden relative"
+        variants={sectionVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      >
+        {/* Pulsing red border glow */}
+        <div className="absolute inset-0 rounded-2xl border border-destructive/30 animate-pulse pointer-events-none z-10" />
+        
+        {/* Background */}
+        <div className="bg-gradient-to-br from-destructive/[0.06] via-surface-2 to-surface-2 rounded-2xl p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
+              </span>
+              <h3 className="text-sm font-black text-foreground font-body tracking-tight uppercase">
+                Ao Vivo Agora
+              </h3>
+              <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
+                {totalLive} {totalLive === 1 ? "jogo" : "jogos"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <LiveClock />
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "schedule" }));
+                }}
+                className="text-[10px] text-primary font-semibold font-body hover:underline min-h-[44px] flex items-center"
+              >
+                Ver todos →
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <LiveClock />
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "schedule" }));
-              }}
-              className="text-[10px] text-primary font-semibold font-body hover:underline min-h-[44px] flex items-center"
+
+          {/* Match carousel */}
+          {matches.length > 0 && (
+            <motion.div
+              className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
             >
-              Ver todos →
-            </button>
-          </div>
+              {matches.map((g) => (
+                <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
+              ))}
+            </motion.div>
+          )}
+
+          {/* Events grid */}
+          {events.length > 0 && (
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {events.map((e) => (
+                <MotionEventCard key={e.id} event={e} variants={cardVariants} />
+              ))}
+            </motion.div>
+          )}
         </div>
-
-        {/* Match carousel */}
-        {matches.length > 0 && (
-          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1">
-            {matches.map((g, i) => (
-              <MatchCard key={g.id} game={g} index={i} />
-            ))}
-          </div>
-        )}
-
-        {/* Events grid */}
-        {events.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {events.map((e, i) => (
-              <EventCard key={e.id} event={e} index={i} />
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
+      </motion.section>
+    </AnimatePresence>
   );
 };
