@@ -118,8 +118,7 @@ const Index = () => {
       <div className="space-y-5 min-h-[80vh]">
         <Hero />
         <CategoryIconsCarousel />
-        <LiveFeedSection />
-        <LiveEventsSection />
+        <LiveNowHero />
         <Suspense fallback={<BelowFoldSkeleton />}>
           <LazyNovidadesCard />
           <LazyPromoStrip />
