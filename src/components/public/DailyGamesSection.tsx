@@ -275,7 +275,7 @@ const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: num
 };
 
 /* ── Period Group (Collapsible) ── */
-const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] }) => {
+const PeriodGroup = ({ group, games, onPushReminder }: { group: TimeGroup; games: DailyGame[]; onPushReminder?: (gameId: string, add: boolean) => void }) => {
   const [open, setOpen] = useState(true);
   const meta = GROUP_META[group];
 
@@ -295,7 +295,7 @@ const PeriodGroup = ({ group, games }: { group: TimeGroup; games: DailyGame[] })
       <CollapsibleContent>
         <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-2.5 sm:mt-3" role="list" aria-label={`Jogos do período ${meta.label}`}>
           {games.map((game, idx) => (
-            <GameCard key={game.id} game={game} index={idx} />
+            <GameCard key={game.id} game={game} index={idx} onPushReminder={onPushReminder} />
           ))}
         </div>
       </CollapsibleContent>
