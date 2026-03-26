@@ -7,7 +7,7 @@ import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString } from "@/lib/gameUtils";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -52,7 +52,7 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
 const AdminWhatsApp = () => {
   const { todayStr, formattedDate, dayName, templates } = useMemo(() => {
     const now = new Date();
-    const tStr = now.toISOString().split("T")[0];
+    const tStr = getLocalDateString(now);
     const fDate = format(now, "dd/MM/yyyy");
     const dName = format(now, "EEEE", { locale: ptBR });
 
@@ -93,34 +93,46 @@ const AdminWhatsApp = () => {
     const list = games ?? [];
     if (list.length === 0) return null;
 
+    const lines: string[] = [];
+    const [, m, d] = todayStr.split("-");
+    lines.push(`📅 Programação ${d}/${m}`);
+    lines.push("");
+
     // Group by sport_type
-    const grouped: Record<string, typeof list> = {};
+    const bySport: Record<string, typeof list> = {};
     list.forEach((g) => {
-      const key = g.sport_type || "default";
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(g);
+      const key = g.sport_type || "football";
+      if (!bySport[key]) bySport[key] = [];
+      bySport[key].push(g);
     });
 
-    const sections = Object.entries(grouped)
-      .map(([sport, items]) => {
-        const emoji = SPORT_EMOJI[sport as SportType] ?? "🏆";
-        const label = SPORT_LABEL[sport as SportType] ?? "Outros";
-        const header = `${emoji} *${label.toUpperCase()}*`;
-        const lines = items.map((g) => {
-          const time = g.game_time.slice(0, 5);
-          const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
-          const details: string[] = [];
-          if (g.competition) details.push(`🏆 ${g.competition}`);
-          if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
-          const detailLine = details.length > 0 ? `\n${details.join(" | ")}` : "";
-          return `${time} — ${teams}${detailLine}`;
-        });
-        return `${header}\n\n${lines.join("\n\n")}`;
-      })
-      .join("\n\n");
+    for (const [sport, sportGames] of Object.entries(bySport)) {
+      const emoji = SPORT_EMOJI[sport as SportType] ?? "⚽";
+      const label = SPORT_LABEL[sport as SportType] ?? sport.toUpperCase();
+      lines.push(`${emoji} ${label.toUpperCase()}`);
 
-    return `🏆 *Jogos de Hoje — ${formattedDate}*\n\n${sections}\n\n👉 ${siteUrl}`;
-  }, [games, formattedDate, siteUrl]);
+      const sorted = [...sportGames].sort((a, b) => a.game_time.localeCompare(b.game_time));
+      for (const g of sorted) {
+        const time = g.game_time.slice(0, 5);
+        const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
+        lines.push(`${time} — ${teams}`);
+
+        const details: string[] = [];
+        if (g.competition) {
+          const comp = g.competition_detail
+            ? `🏆 ${g.competition} · ${g.competition_detail}`
+            : `🏆 ${g.competition}`;
+          details.push(comp);
+        }
+        if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
+        if (details.length > 0) lines.push(details.join(" | "));
+        lines.push("");
+      }
+    }
+
+    lines.push(`👉 ${siteUrl}`);
+    return lines.join("\n").trim();
+  }, [games, todayStr, siteUrl]);
 
   const customFinal = customMsg.trim()
     ? `${customMsg.trim()}\n\n👉 ${siteUrl}`
