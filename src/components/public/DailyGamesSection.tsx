@@ -35,6 +35,18 @@ const COMP_COLORS: Record<string, { bg: string; border: string }> = {
   "copa do rei":          { bg: "bg-yellow-600/20",   border: "border-yellow-600/50" },
 };
 
+/* ── Sport badge background colors (inline style) ── */
+const SPORT_BADGE_BG: Record<string, string> = {
+  football: "#e53e3e",
+  basketball: "#3b82f6",
+  volleyball: "#8b5cf6",
+  tennis: "#10b981",
+  f1: "#f59e0b",
+  mma: "#f97316",
+  hockey: "#0ea5e9",
+  baseball: "#ca8a04",
+};
+
 const COMP_TOP_COLORS: Record<string, string> = {
   "brasileirão":          "from-emerald-500",
   "brasileirao":          "from-emerald-500",
@@ -177,8 +189,14 @@ const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: num
           {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[45vw] sm:max-w-[200px]`}>
-                {sportEmoji} {game.competition}
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold text-white uppercase tracking-wide shrink-0"
+                style={{ backgroundColor: SPORT_BADGE_BG[sportType] || "#e53e3e" }}
+              >
+                {sportEmoji} {SPORT_LABEL[sportType] || "Futebol"}
+              </span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[35vw] sm:max-w-[180px]`}>
+                {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
             </div>
