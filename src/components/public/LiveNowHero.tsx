@@ -6,6 +6,7 @@ import {
   getLocalDateString,
   getElapsedMinutes,
   SPORT_EMOJI,
+  SPORT_LABEL,
   isNonAdversarial,
   type SportType,
 } from "@/lib/gameUtils";
@@ -54,6 +55,18 @@ const SPORT_ACCENT: Record<string, string> = {
   mma: "bg-orange-500",
   hockey: "bg-sky-500",
   baseball: "bg-yellow-600",
+};
+
+/* ── Sport badge background colors (inline style) ── */
+const SPORT_BADGE_BG: Record<string, string> = {
+  football: "#e53e3e",
+  basketball: "#3b82f6",
+  volleyball: "#8b5cf6",
+  tennis: "#10b981",
+  f1: "#f59e0b",
+  mma: "#f97316",
+  hockey: "#0ea5e9",
+  baseball: "#ca8a04",
 };
 
 const INITIAL_VISIBLE = 6;
