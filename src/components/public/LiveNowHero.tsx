@@ -111,6 +111,10 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
                 </span>
               </div>
             </div>
+            <div className="px-2.5 pb-1.5 space-y-1">
+              <div className="space-y-0.5 text-center">
+                <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+                  {game.home_team}
                 </p>
                 <p className="text-[9px] text-muted-foreground font-body text-center">VS</p>
                 <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
