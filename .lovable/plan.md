@@ -1,41 +1,46 @@
 
 
-## Adicionar botão "Copiar resumo" na ProgramacaoTexto
+## Melhorar o Resumo de Jogos na Pagina WhatsApp
 
-### O que será feito
+### Problema
+A pagina WhatsApp ja tem uma secao "Jogos do Dia" que gera texto automatico dos jogos cadastrados, mas o formato e basico — tudo numa linha so. O botao "Copiar resumo" da Programacao exige varios passos (colar texto, processar, selecionar). O ideal e ter o resumo bonito direto no WhatsApp.
 
-Adicionar um botão **"Copiar resumo"** na barra de ações do Step 3 (Preview) que gera texto formatado dos jogos selecionados, agrupados por data e esporte, com emojis — pronto para colar no WhatsApp.
+### O que sera feito
 
-### Formato do texto gerado
+Melhorar o formato do texto gerado na secao "Jogos do Dia" do `AdminWhatsApp.tsx` para usar o mesmo estilo rico do "Copiar resumo":
 
-```text
-📅 Programação 20/03
+**Formato atual:**
+```
+⏰ 19:00 — Flamengo x Palmeiras (Brasileirão) — Sportv, Premiere
+```
 
-⚽ FUTEBOL
+**Formato novo:**
+```
+⚽ *FUTEBOL*
+
 19:00 — Flamengo x Palmeiras
 🏆 Brasileirão | 📺 Sportv, Premiere
 
 21:00 — Barcelona x Real Madrid
 🏆 La Liga | 📺 ESPN
 
-🎾 TÊNIS
-15:00 — Nadal x Djokovic
-🏆 Roland Garros | 📺 ESPN 2
+🏀 *BASQUETE*
+
+20:00 — Lakers x Celtics
+🏆 NBA | 📺 ESPN 2
 ```
 
-### Alterações
+### Alteracoes
 
-**`src/components/admin/ProgramacaoTexto.tsx`**
+**`src/pages/admin/AdminWhatsApp.tsx`**
 
-1. Criar função `generateWhatsAppSummary(games: ParsedGame[])` que:
-   - Filtra apenas jogos selecionados
-   - Agrupa por data, depois por `sport_type`
-   - Formata cada jogo como `HH:MM — Home x Away` (ou só `Home` se sem away)
-   - Adiciona linha de competição e canais
-   - Retorna string formatada
+1. Importar `SPORT_EMOJI` e `SPORT_LABEL` de `@/lib/gameUtils` (remover o mapa local duplicado)
+2. Reescrever o `gamesText` useMemo para:
+   - Ordenar jogos por horario dentro de cada grupo
+   - Formatar cada jogo em 2 linhas (time + competicao/canais separados)
+   - Usar `SPORT_LABEL` em maiusculas no header
+3. Manter os botoes Copiar e Enviar como estao
 
-2. Adicionar botão `"📋 Copiar resumo"` ao lado dos botões Publicar/Republicar, usando `navigator.clipboard.writeText()` e `toast.success("Resumo copiado!")`
-
-### Arquivos modificados
-- `src/components/admin/ProgramacaoTexto.tsx` — nova função + botão
+### Arquivo modificado
+- `src/pages/admin/AdminWhatsApp.tsx`
 
