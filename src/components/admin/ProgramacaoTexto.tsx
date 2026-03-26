@@ -213,7 +213,7 @@ function formatDatePt(dateStr: string): string {
 /** Get validation warnings for a parsed game */
 function getGameWarnings(game: ParsedGame): string[] {
   const warnings: string[] = [];
-  if (game.game_time === "00:00") warnings.push("Horário não detectado");
+  if (game.game_time === "00:00") warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
   if (!game.channels.length) warnings.push("Sem canal");
   if (!game.competition) warnings.push("Sem competição");
   return warnings;
@@ -421,7 +421,12 @@ export const ProgramacaoTexto = () => {
     });
   };
 
-  const handlePublish = async () => {
+  const [midnightConfirmOpen, setMidnightConfirmOpen] = useState(false);
+  const [pendingPublishAction, setPendingPublishAction] = useState<"publish" | "republish" | null>(null);
+
+  const midnightGamesCount = parsed.filter((g) => g.selected && g.game_time === "00:00").length;
+
+  const executePublish = async () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) {
       toast.error("Selecione pelo menos um jogo");
@@ -459,7 +464,21 @@ export const ProgramacaoTexto = () => {
     }
   };
 
-  const handleRepublish = async () => {
+  const handlePublish = () => {
+    const selected = parsed.filter((g) => g.selected);
+    if (selected.length === 0) {
+      toast.error("Selecione pelo menos um jogo");
+      return;
+    }
+    if (midnightGamesCount > 0) {
+      setPendingPublishAction("publish");
+      setMidnightConfirmOpen(true);
+      return;
+    }
+    executePublish();
+  };
+
+  const executeRepublish = async () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
     try {
@@ -475,6 +494,17 @@ export const ProgramacaoTexto = () => {
     } catch (err: any) {
       toast.error(err.message || "Erro ao republicar");
     }
+  };
+
+  const handleRepublish = () => {
+    const selected = parsed.filter((g) => g.selected);
+    if (selected.length === 0) return;
+    if (midnightGamesCount > 0) {
+      setPendingPublishAction("republish");
+      setMidnightConfirmOpen(true);
+      return;
+    }
+    executeRepublish();
   };
 
   const toggleGame = (idx: number) => {
@@ -875,6 +905,38 @@ export const ProgramacaoTexto = () => {
           </div>
         </div>
       )}
+
+      {/* Midnight time confirmation dialog */}
+      <AlertDialog open={midnightConfirmOpen} onOpenChange={setMidnightConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Jogos com horário 00:00
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {midnightGamesCount} jogo(s) selecionado(s) com horário <strong>00:00</strong>.
+              Jogos à meia-noite podem aparecer como "Ao Vivo" logo após a virada do dia.
+              <br /><br />
+              <strong>Verifique se a data está correta</strong> — um jogo de "amanhã às 00:00" deve ter a data do dia seguinte.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingPublishAction(null)}>Voltar e corrigir</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setMidnightConfirmOpen(false);
+                if (pendingPublishAction === "republish") executeRepublish();
+                else executePublish();
+                setPendingPublishAction(null);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Confirmar e publicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
