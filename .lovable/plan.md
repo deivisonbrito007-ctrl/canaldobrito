@@ -1,24 +1,26 @@
 
 
-## Ajustar card "Jogos do Dia" com tabs Hoje / Amanhã
+## Problema: jogos agendados nao aparecem na tab Amanha
 
-### O que muda
+### Causa raiz
 
-O card existente "⚽ Jogos do Dia" (linhas ~175-195) será ajustado para incluir **duas tabs**: **Hoje** e **Amanhã**. Sem criar card novo, sem tab "Completa" — cada dia é copiado separadamente.
+O `AdminWhatsApp.tsx` usa o hook `useDailyGames` (linha 135-136), que filtra por `active=true` e `archived=false`. Jogos agendados com `publish_at` futuro tem `active=false` ate a Edge Function `activate-scheduled` os ativar. Por isso nao aparecem na tab Amanha.
 
-### Alterações em `src/pages/admin/AdminWhatsApp.tsx`
+### Correcao
 
-1. **Calcular `tomorrowStr`** a partir de `todayStr` (adicionar 1 dia respeitando São Paulo timezone)
-2. **Buscar jogos de amanhã** com `useDailyGames(tomorrowStr)`
-3. **Extrair a lógica de montar texto** para uma função reutilizável `buildDayText(games, dateStr, dayLabel, siteUrl)` — usada para hoje e amanhã
-4. **Substituir o card atual** por um card com `Tabs` (shadcn):
-   - Tab **"Hoje (N)"** — mostra o texto de hoje com preview + Copiar + Enviar
-   - Tab **"Amanhã (N)"** — mostra o texto de amanhã (se houver jogos) ou mensagem "Nenhum jogo agendado ainda"
-   - Badge com contagem de jogos em cada tab
-5. **Importar** `Tabs, TabsList, TabsTrigger, TabsContent` de `@/components/ui/tabs`
-6. **Incluir dia da semana** no header do texto (ex: `📅 Quinta-feira, 27/03`)
+**Arquivo:** `src/pages/admin/AdminWhatsApp.tsx`
 
-### Sugestão extra
+Trocar `useDailyGames` por `useAllDailyGames` nas linhas 135-136. O hook `useAllDailyGames` ja existe em `useDailyGames.ts` e busca todos os jogos da data sem filtrar por `active` ou `archived`.
 
-Adicionar `addDays` do `date-fns` para calcular a data de amanhã de forma limpa, já que `date-fns` já está no projeto.
+Depois, filtrar no `buildDayText` para excluir apenas os `archived=true` (jogos deletados), mas incluir os `active=false` (agendados).
+
+Alteracoes:
+1. Importar `useAllDailyGames` em vez de `useDailyGames`
+2. Trocar as chamadas nas linhas 135-136 para `useAllDailyGames(todayStr)` e `useAllDailyGames(tomorrowStr)`
+3. No `buildDayText`, filtrar `games.filter(g => !g.archived)` para nao incluir arquivados
+
+### Resultado esperado
+- Jogos agendados (com `publish_at` futuro, `active=false`) aparecerao na tab Amanha
+- Jogos arquivados continuam excluidos
+- O admin pode copiar a programacao completa mesmo antes da ativacao automatica
 
