@@ -16,9 +16,9 @@ vi.mock("@/hooks/useLiveTick", () => ({
   useLiveTick: () => 0,
 }));
 
-const mockUseDailyGames = vi.fn();
+const mockUseAllDailyGames = vi.fn();
 vi.mock("@/hooks/useDailyGames", () => ({
-  useDailyGames: (...args: any[]) => mockUseDailyGames(...args),
+  useAllDailyGames: (...args: any[]) => mockUseAllDailyGames(...args),
 }));
 
 // Mock gameUtils to control "live" status
