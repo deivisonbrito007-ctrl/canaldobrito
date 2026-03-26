@@ -1,19 +1,64 @@
 
 
-## Melhorar identificação visual dos esportes na seção "Ao Vivo"
+## Problema: PWA mostra versão antiga após publicação
 
-### Problema atual
-Os cards usam apenas um emoji pequeno (9px) junto ao nome da liga para diferenciar os esportes. Em telas mobile, isso é difícil de perceber rapidamente — o usuário precisa ler o texto para saber se é futebol, NBA, etc.
+O `registerType: "autoUpdate"` no `vite-plugin-pwa` registra o SW automaticamente, mas **não força a ativação imediata** do novo SW. O comportamento padrão do browser é: o novo SW fica "waiting" até que todas as abas sejam fechadas. Isso faz com que usuários com o PWA instalado continuem vendo a versão antiga.
 
-### Proposta: Badge de esporte colorido
+Além disso, o `main.tsx` não tem nenhum código para detectar atualizações do SW e recarregar a página.
 
-Adicionar um **badge/pill do esporte** visualmente destacado no card, usando a cor de acento já existente por esporte (`SPORT_ACCENT`) e o label em português (`SPORT_LABEL` do `gameUtils.ts`).
+## Solução: Forçar `skipWaiting` + reload automático
 
-### Alterações em `src/components/public/LiveNowHero.tsx`
+### 1. `src/sw.ts` — Adicionar `skipWaiting` e `clientsClaim`
 
-**1. Importar `SPORT_LABEL`** de `@/lib/gameUtils`
+No topo do service worker, após o `precacheAndRoute`, adicionar:
 
-**2. MatchCard — adicionar badge de esporte:**
-- No header do card (onde fica o emoji + liga), substituir o emoji solto por um **badge colorido**:
-  ```
-  [
+```ts
+import { clientsClaim } from "workbox-core";
+clientsClaim();
+self.skipWaiting();
+```
+
+Isso faz o novo SW assumir o controle imediatamente, sem esperar fechar abas.
+
+### 2. `src/main.tsx` — Detectar atualização e recarregar
+
+Após montar o React, registrar um listener que detecta quando o SW é atualizado e recarrega a página automaticamente:
+
+```ts
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.location.reload();
+  });
+}
+```
+
+### 3. `src/sw.ts` — Limpar caches antigos na ativação
+
+Adicionar listener de `activate` que limpa caches obsoletos:
+
+```ts
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(
+        names
+          .filter((name) => name !== "google-fonts" && name !== "tmdb-images")
+          .filter((name) => !name.startsWith("workbox-precache"))
+          .map((name) => caches.delete(name))
+      )
+    )
+  );
+});
+```
+
+### Resultado esperado
+
+- Ao publicar, o novo SW é instalado e assume controle imediatamente (`skipWaiting` + `clientsClaim`)
+- A página recarrega automaticamente quando o novo SW ativa (`controllerchange`)
+- Caches obsoletos são limpos na ativação
+- Usuários com PWA instalado recebem a versão nova sem precisar fechar e reabrir o app
+
+### Arquivos alterados
+- `src/sw.ts` (2 adições: imports + activate listener)
+- `src/main.tsx` (1 adição: controllerchange listener)
+
