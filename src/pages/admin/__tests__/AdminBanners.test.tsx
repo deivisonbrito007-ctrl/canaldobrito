@@ -46,6 +46,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe("AdminBanners", () => {
   it("renders category pills", () => {
     render(<AdminBanners />, { wrapper });
+    // Default tab is now "programacao", switch to categories first
+    fireEvent.click(screen.getByText("📁 Categorias"));
     const capas = screen.getAllByText("📺 Capa");
     expect(capas.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("⚽ Futebol")).toBeInTheDocument();
@@ -66,6 +68,7 @@ describe("AdminBanners", () => {
 
   it("shows empty state for category with no banners", () => {
     render(<AdminBanners />, { wrapper });
+    fireEvent.click(screen.getByText("📁 Categorias"));
     expect(screen.getByText("Nenhum banner nesta categoria")).toBeInTheDocument();
   });
 });
