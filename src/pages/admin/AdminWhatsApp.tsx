@@ -7,18 +7,7 @@ import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-
-const SPORT_EMOJI: Record<string, string> = {
-  football: "⚽",
-  basketball: "🏀",
-  tennis: "🎾",
-  f1: "🏎️",
-  mma: "🥊",
-  volleyball: "🏐",
-  default: "🏆",
-};
-
-const sportLabel = (type: string) => SPORT_EMOJI[type] ?? SPORT_EMOJI.default;
+import { SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
