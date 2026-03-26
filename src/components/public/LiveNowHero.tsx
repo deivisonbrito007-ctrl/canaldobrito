@@ -6,6 +6,7 @@ import {
   getLocalDateString,
   getElapsedMinutes,
   SPORT_EMOJI,
+  SPORT_LABEL,
   isNonAdversarial,
   type SportType,
 } from "@/lib/gameUtils";
@@ -56,6 +57,18 @@ const SPORT_ACCENT: Record<string, string> = {
   baseball: "bg-yellow-600",
 };
 
+/* ── Sport badge background colors (inline style) ── */
+const SPORT_BADGE_BG: Record<string, string> = {
+  football: "#e53e3e",
+  basketball: "#3b82f6",
+  volleyball: "#8b5cf6",
+  tennis: "#10b981",
+  f1: "#f59e0b",
+  mma: "#f97316",
+  hockey: "#0ea5e9",
+  baseball: "#ca8a04",
+};
+
 const INITIAL_VISIBLE = 6;
 
 /* ── Match card (adversarial) ── */
@@ -77,9 +90,17 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
           <div className={`w-[3px] ${accent}`} />
           <div className="flex-1 min-w-0">
             <div className="px-2.5 pt-2 pb-1 flex items-center justify-between gap-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
-                {emoji} {league}
-              </p>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold text-white uppercase tracking-wide shrink-0"
+                  style={{ backgroundColor: SPORT_BADGE_BG[sportType] || "#e53e3e" }}
+                >
+                  {emoji} {SPORT_LABEL[sportType] || "Futebol"}
+                </span>
+                <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
+                  {league}
+                </p>
+              </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
@@ -138,9 +159,12 @@ const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
           <div className={`w-[3px] ${accent}`} />
           <div className="flex-1 min-w-0 p-2.5 space-y-1">
             <div className="flex items-center justify-between gap-1">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
-                {emoji} {event.competition}
-              </p>
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold text-white uppercase tracking-wide shrink-0"
+                style={{ backgroundColor: SPORT_BADGE_BG[sportType] || "#f59e0b" }}
+              >
+                {emoji} {SPORT_LABEL[sportType] || "Esporte"}
+              </span>
               <div className="flex items-center gap-1 shrink-0">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 animate-ping" />
@@ -151,6 +175,9 @@ const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
                 </span>
               </div>
             </div>
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
+              {event.competition}
+            </p>
             <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2 text-center">
               {event.home_team}
             </p>
