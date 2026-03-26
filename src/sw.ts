@@ -1,10 +1,15 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute } from "workbox-precaching";
+import { clientsClaim } from "workbox-core";
 import { registerRoute } from "workbox-routing";
 import { CacheFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 
 declare const self: ServiceWorkerGlobalScope;
+
+// Force immediate activation
+clientsClaim();
+self.skipWaiting();
 
 // Workbox precache (injected by vite-plugin-pwa)
 precacheAndRoute(self.__WB_MANIFEST);
@@ -75,5 +80,19 @@ self.addEventListener("notificationclick", (event) => {
         }
         return self.clients.openWindow(url);
       })
+  );
+});
+
+// ── Clean stale caches on activate ──────────────────────────────────
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(
+        names
+          .filter((name) => name !== "google-fonts" && name !== "tmdb-images")
+          .filter((name) => !name.startsWith("workbox-precache"))
+          .map((name) => caches.delete(name))
+      )
+    )
   );
 });
