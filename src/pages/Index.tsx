@@ -52,7 +52,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
-  const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
+  
 
   const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
