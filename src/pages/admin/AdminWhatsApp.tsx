@@ -70,7 +70,15 @@ function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): str
     bySport[key].push(g);
   });
 
-  for (const [sport, sportGames] of Object.entries(bySport)) {
+  const sportOrder: string[] = ['football', 'basketball', 'volleyball', 'tennis', 'mma', 'f1'];
+  const sortedSports = Object.keys(bySport).sort((a, b) => {
+    const ia = sportOrder.indexOf(a);
+    const ib = sportOrder.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+
+  for (const sport of sortedSports) {
+    const sportGames = bySport[sport];
     const emoji = SPORT_EMOJI[sport as SportType] ?? "⚽";
     const label = SPORT_LABEL[sport as SportType] ?? sport.toUpperCase();
     lines.push(`${emoji} *${label.toUpperCase()}*`);
