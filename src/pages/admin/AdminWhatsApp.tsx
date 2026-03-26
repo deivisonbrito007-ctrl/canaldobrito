@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
+import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,7 +52,8 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
 
 /** Build WhatsApp-ready text for a list of games on a given date */
 function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): string | null {
-  if (!games || games.length === 0) return null;
+  const filtered = games.filter(g => !g.archived);
+  if (!filtered || filtered.length === 0) return null;
 
   const spDate = midnightInSaoPaulo(dateStr);
   const dayLabel = format(spDate, "EEEE", { locale: ptBR });
@@ -63,7 +64,7 @@ function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): str
   lines.push("");
 
   const bySport: Record<string, DailyGame[]> = {};
-  games.forEach((g) => {
+  filtered.forEach((g) => {
     const key = g.sport_type || "football";
     if (!bySport[key]) bySport[key] = [];
     bySport[key].push(g);
@@ -132,8 +133,8 @@ const AdminWhatsApp = () => {
     };
   }, []);
 
-  const { data: todayGames } = useDailyGames(todayStr);
-  const { data: tomorrowGames } = useDailyGames(tomorrowStr);
+  const { data: todayGames } = useAllDailyGames(todayStr);
+  const { data: tomorrowGames } = useAllDailyGames(tomorrowStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
 
