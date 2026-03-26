@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { detectSportType, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { detectSportType, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { gameKey } from "@/lib/dedup";
 import { getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
 import { Button } from "@/components/ui/button";
@@ -202,6 +202,58 @@ function getGameWarnings(game: ParsedGame): string[] {
   if (!game.channels.length) warnings.push("Sem canal");
   if (!game.competition) warnings.push("Sem competição");
   return warnings;
+}
+
+function generateWhatsAppSummary(games: ParsedGame[]): string {
+  const selected = games.filter((g) => g.selected);
+  if (selected.length === 0) return "";
+
+  // Group by date, then by sport
+  const byDate: Record<string, ParsedGame[]> = {};
+  for (const g of selected) {
+    if (!byDate[g.date]) byDate[g.date] = [];
+    byDate[g.date].push(g);
+  }
+
+  const lines: string[] = [];
+  const sortedDates = Object.keys(byDate).sort();
+
+  for (const date of sortedDates) {
+    const [, m, d] = date.split("-");
+    lines.push(`📅 Programação ${d}/${m}`);
+    lines.push("");
+
+    const dateGames = byDate[date];
+    const bySport: Record<string, ParsedGame[]> = {};
+    for (const g of dateGames) {
+      const sport = g.sport_type || detectSportType(g.competition);
+      if (!bySport[sport]) bySport[sport] = [];
+      bySport[sport].push(g);
+    }
+
+    for (const [sport, sportGames] of Object.entries(bySport)) {
+      const emoji = SPORT_EMOJI[sport as SportType] || "⚽";
+      const label = SPORT_LABEL[sport as SportType] || sport.toUpperCase();
+      lines.push(`${emoji} ${label.toUpperCase()}`);
+
+      // Sort by time
+      const sorted = [...sportGames].sort((a, b) => a.game_time.localeCompare(b.game_time));
+      for (const g of sorted) {
+        const matchLine = g.away_team
+          ? `${g.game_time} — ${g.home_team} x ${g.away_team}`
+          : `${g.game_time} — ${g.home_team}`;
+        lines.push(matchLine);
+
+        const details: string[] = [];
+        if (g.competition) details.push(`🏆 ${g.competition}${g.competition_detail ? ` · ${g.competition_detail}` : ""}`);
+        if (g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
+        if (details.length > 0) lines.push(details.join(" | "));
+        lines.push("");
+      }
+    }
+  }
+
+  return lines.join("\n").trim();
 }
 
 export const ProgramacaoTexto = () => {
@@ -756,6 +808,23 @@ export const ProgramacaoTexto = () => {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+
+              <Button
+                variant="outline"
+                disabled={selectedCount === 0}
+                onClick={() => {
+                  const summary = generateWhatsAppSummary(parsed);
+                  navigator.clipboard.writeText(summary).then(() => {
+                    toast.success("Resumo copiado!");
+                  }).catch(() => {
+                    toast.error("Erro ao copiar");
+                  });
+                }}
+                className="border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Clipboard className="h-4 w-4 mr-2" />
+                Copiar resumo
+              </Button>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
