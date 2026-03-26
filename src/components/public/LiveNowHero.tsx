@@ -56,6 +56,8 @@ const SPORT_ACCENT: Record<string, string> = {
   baseball: "bg-yellow-600",
 };
 
+const INITIAL_VISIBLE = 6;
+
 /* ── Match card (adversarial) ── */
 const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
   ({ game }, ref) => {
@@ -69,12 +71,12 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
     return (
       <div
         ref={ref}
-        className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
+        className="rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
       >
         <div className="flex">
           <div className={`w-[3px] ${accent}`} />
           <div className="flex-1 min-w-0">
-            <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between gap-2">
+            <div className="px-2.5 pt-2 pb-1 flex items-center justify-between gap-2">
               <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
                 {emoji} {league}
               </p>
@@ -88,7 +90,7 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
                 </span>
               </div>
             </div>
-            <div className="px-3 pb-2 space-y-1">
+            <div className="px-2.5 pb-1.5 space-y-1">
               <div className="flex items-center gap-2">
                 <p className="flex-1 min-w-0 text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                   {game.home_team}
@@ -104,7 +106,7 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
                 <p className="text-[9px] text-muted-foreground font-body text-center">Feminino</p>
               )}
             </div>
-            <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border/40">
+            <div className="px-2.5 py-1.5 flex items-center justify-between gap-2 border-t border-border/40">
               <span className="text-[9px] text-muted-foreground font-body tabular-nums">
                 Começou {game.game_time?.slice(0, 5)}
               </span>
@@ -195,6 +197,7 @@ export const LiveNowHero = () => {
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
   const { data: allGames, isLoading } = useAllDailyGames(today);
+  const [expanded, setExpanded] = useState(false);
 
   const { matches, events } = useMemo(() => {
     const all = (allGames || []).filter((g) => !g.archived);
@@ -220,14 +223,18 @@ export const LiveNowHero = () => {
           <div className="h-3 w-3 rounded-full skeleton-shimmer" />
           <div className="h-4 w-32 rounded skeleton-shimmer" />
         </div>
-        <div className="flex gap-3 overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[0, 1].map((i) => (
-            <div key={i} className="min-w-[280px] h-[110px] rounded-2xl skeleton-shimmer" />
+            <div key={i} className="h-[100px] rounded-2xl skeleton-shimmer" />
           ))}
         </div>
       </section>
     );
   }
+
+  const visibleMatches = expanded ? matches : matches.slice(0, INITIAL_VISIBLE);
+  const visibleEvents = expanded ? events : events.slice(0, Math.max(0, INITIAL_VISIBLE - matches.length));
+  const hasMore = totalLive > INITIAL_VISIBLE && !expanded;
 
   return (
     <AnimatePresence mode="wait">
@@ -271,35 +278,22 @@ export const LiveNowHero = () => {
             </div>
           </div>
 
-          {/* Match carousel */}
-          {matches.length > 0 && (
-            matches.length <= 4 ? (
-              <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {matches.map((g) => (
-                  <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div
-                data-horizontal-scroll className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1" style={{ touchAction: "pan-x" }}
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {matches.map((g) => (
-                  <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
-                ))}
-              </motion.div>
-            )
+          {/* Match grid (vertical) */}
+          {visibleMatches.length > 0 && (
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {visibleMatches.map((g) => (
+                <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
+              ))}
+            </motion.div>
           )}
 
           {/* Events grid */}
-          {events.length > 0 && (
+          {visibleEvents.length > 0 && (
             <motion.div
               className="grid grid-cols-1 sm:grid-cols-2 gap-2"
               variants={containerVariants}
@@ -310,6 +304,16 @@ export const LiveNowHero = () => {
                 <MotionEventCard key={e.id} event={e} variants={cardVariants} />
               ))}
             </motion.div>
+          )}
+
+          {/* Show more button */}
+          {hasMore && (
+            <button
+              onClick={() => setExpanded(true)}
+              className="w-full text-center text-[11px] font-semibold text-primary font-body py-2 rounded-xl border border-border/60 bg-surface hover:bg-surface-2 transition-colors min-h-[44px]"
+            >
+              Ver todos os {totalLive} jogos
+            </button>
           )}
         </div>
       </motion.section>
