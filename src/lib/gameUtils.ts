@@ -1,4 +1,4 @@
-export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball';
+export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'hockey' | 'baseball';
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
@@ -8,6 +8,8 @@ export const SPORT_DURATION: Record<SportType, number> = {
   f1: 130,         // race + safety car margin
   mma: 180,        // full card (prelims or main) ~3h
   volleyball: 120, // sets + tie-break margin
+  hockey: 150,     // 60 game + intervals + overtime
+  baseball: 210,   // 9 innings + extras
 };
 
 /** Extra buffer after duration ends to cover delays/overtime */
@@ -21,6 +23,8 @@ export const SPORT_EMOJI: Record<SportType, string> = {
   f1: '🏎️',
   mma: '🥊',
   volleyball: '🏐',
+  hockey: '🏒',
+  baseball: '⚾',
 };
 
 /** Sport label map */
@@ -31,6 +35,8 @@ export const SPORT_LABEL: Record<SportType, string> = {
   f1: 'F1',
   mma: 'MMA',
   volleyball: 'Vôlei',
+  hockey: 'Hóquei',
+  baseball: 'Baseball',
 };
 
 /** Sports that don't have two adversarial teams (e.g. motorsport) */
@@ -41,6 +47,8 @@ export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.incl
 export function detectSportType(competition: string): SportType {
   const c = competition.toLowerCase();
   if (/\b(nba|nbb|euroleague|wnba|basquete)\b/i.test(c)) return 'basketball';
+  if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|rangers|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|flames|canucks|senators|panthers|islanders|hurricanes|predators|blue jackets|wild|sharks|ducks|coyotes|kraken|devils|sabres|blues|jets|stars)\b/i.test(c)) return 'hockey';
+  if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|giants|cubs|mets|astros|braves|cardinals|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|reds|royals|tigers|white sox|angels|rangers|nationals|marlins|athletics)\b/i.test(c)) return 'baseball';
   if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
   if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|stock car|e-prix)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';
