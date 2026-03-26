@@ -74,7 +74,11 @@ async function encryptPayload(
   const ikmInput = new Uint8Array([...ikmInfo, ...subPubBytes, ...localPubRaw]);
 
   const prkAuth = await crypto.subtle.importKey("raw", authSecret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const ikm = new Uint8Array(await crypto.subtle.sign("HMAC", prkAuth, sharedSecret));
+  const prkKey1 = new Uint8Array(await crypto.subtle.sign("HMAC", prkAuth, sharedSecret));
+
+  // Step 2: IKM = HMAC-Expand(PRK_key, key_info || 0x01) — RFC 8291
+  const prkKey1Import = await crypto.subtle.importKey("raw", prkKey1, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const ikm = new Uint8Array(await crypto.subtle.sign("HMAC", prkKey1Import, new Uint8Array([...ikmInput, 1])));
 
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const prkSalt = await crypto.subtle.importKey("raw", salt, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -266,7 +270,7 @@ Deno.serve(async (req) => {
           : game.home_team;
 
         const payload = JSON.stringify({
-          title: "⚽ Começa em 15 min!",
+          title: "Comeca em 15 min!",
           body: `${title} — ${game.competition}`,
           tag: `game-${game.id}`,
           url: "/#esportes",
