@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
-import { useDailyGames } from "@/hooks/useDailyGames";
+import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString } from "@/lib/gameUtils";
+import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
