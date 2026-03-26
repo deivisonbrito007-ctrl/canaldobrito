@@ -478,7 +478,7 @@ export const ProgramacaoTexto = () => {
     executePublish();
   };
 
-  const handleRepublish = async () => {
+  const executeRepublish = async () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
     try {
@@ -494,6 +494,17 @@ export const ProgramacaoTexto = () => {
     } catch (err: any) {
       toast.error(err.message || "Erro ao republicar");
     }
+  };
+
+  const handleRepublish = () => {
+    const selected = parsed.filter((g) => g.selected);
+    if (selected.length === 0) return;
+    if (midnightGamesCount > 0) {
+      setPendingPublishAction("republish");
+      setMidnightConfirmOpen(true);
+      return;
+    }
+    executeRepublish();
   };
 
   const toggleGame = (idx: number) => {
