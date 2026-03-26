@@ -85,7 +85,7 @@ function parseCompAndTime(compLine: string) {
   return { competition, competition_detail, game_time };
 }
 
-/** Strip markdown bold, residual emojis, double spaces, placeholder chars */
+/** Strip markdown bold, residual emojis, surrogates, double spaces */
 function cleanText(s: string): string {
   return s
     .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold** → bold
@@ -93,7 +93,18 @@ function cleanText(s: string): string {
     .replace(/[🏆🎾🏎️🏎🥊🏀🏐📺⏰]/g, "") // residual sport/channel emojis
     .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")  // remove flag emojis (🇧🇷, 🇫🇷, etc.)
     .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "") // remove subdivision flags
+    .replace(/[\uD800-\uDFFF]/g, "")     // remove broken UTF-16 surrogates
     .replace(/\s{2,}/g, " ")             // double spaces
+    .trim();
+}
+
+/** Sanitize any string to be JSON-safe (remove surrogates + flag emojis) */
+function sanitizeStr(s: string): string {
+  return s
+    .replace(/[\uD800-\uDFFF]/g, "")
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
+    .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 
@@ -387,11 +398,16 @@ export const ProgramacaoTexto = () => {
         }
       }
 
-      // Use emoji-detected sport_type if available, otherwise fall back to detectSportType
       const finalSportType = parsedSport || detectSportType(g.competition);
 
+      // Second barrier: sanitize all string fields before insert
       return {
         ...g,
+        home_team: sanitizeStr(g.home_team),
+        away_team: sanitizeStr(g.away_team),
+        competition: sanitizeStr(g.competition),
+        competition_detail: sanitizeStr(g.competition_detail),
+        channels: g.channels.map(sanitizeStr),
         active,
         archived: false,
         is_live: false,

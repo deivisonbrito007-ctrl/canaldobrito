@@ -88,6 +88,27 @@ export const useAllDailyGames = (date: string) =>
  * Insert daily games with automatic dedup:
  * fetches existing games for the date(s) and skips duplicates.
  */
+/** Defensive sanitization: remove broken surrogates from any string */
+function sanitizeGameStr(s: string): string {
+  return s
+    .replace(/[\uD800-\uDFFF]/g, "")
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
+    .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function sanitizeGame(game: Record<string, any>): Record<string, any> {
+  const out = { ...game };
+  for (const key of ["home_team", "away_team", "competition", "competition_detail"] as const) {
+    if (typeof out[key] === "string") out[key] = sanitizeGameStr(out[key]);
+  }
+  if (Array.isArray(out.channels)) {
+    out.channels = out.channels.map((c: any) => typeof c === "string" ? sanitizeGameStr(c) : c);
+  }
+  return out;
+}
+
 export const useInsertDailyGames = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -112,7 +133,9 @@ export const useInsertDailyGames = () => {
       const skipped = games.length - unique.length;
 
       if (unique.length > 0) {
-        const { error } = await supabase.from("daily_games").insert(unique as any);
+        // Sanitize all string fields as final barrier
+        const sanitized = unique.map(sanitizeGame);
+        const { error } = await supabase.from("daily_games").insert(sanitized as any);
         if (error) throw error;
       }
 
