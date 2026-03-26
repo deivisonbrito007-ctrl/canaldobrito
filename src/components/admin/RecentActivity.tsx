@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,7 +27,7 @@ interface RecentActivityProps {
   isLoading: boolean;
 }
 
-export const RecentActivity = ({ banners, movies, series, news, isLoading }: RecentActivityProps) => {
+export const RecentActivity = React.forwardRef<HTMLDivElement, RecentActivityProps>(({ banners, movies, series, news, isLoading }, ref) => {
   const navigate = useNavigate();
 
   const items = useMemo(() => {
@@ -42,7 +42,7 @@ export const RecentActivity = ({ banners, movies, series, news, isLoading }: Rec
   if (isLoading || items.length === 0) return null;
 
   return (
-    <div>
+    <div ref={ref}>
       <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Atividade Recente</h2>
       <div className="space-y-2">
         {items.map((item, i) => {
@@ -70,4 +70,5 @@ export const RecentActivity = ({ banners, movies, series, news, isLoading }: Rec
       </div>
     </div>
   );
-};
+});
+RecentActivity.displayName = "RecentActivity";
