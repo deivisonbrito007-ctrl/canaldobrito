@@ -8,7 +8,7 @@ import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
+import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -65,7 +65,10 @@ function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): str
 
   const bySport: Record<string, DailyGame[]> = {};
   filtered.forEach((g) => {
-    const key = g.sport_type || "football";
+    // Re-detect sport from competition/team names for better grouping
+    const saved = g.sport_type || "football";
+    const detected = detectSportType(`${g.competition} ${g.home_team} ${g.away_team}`);
+    const key = detected !== "football" ? detected : saved;
     if (!bySport[key]) bySport[key] = [];
     bySport[key].push(g);
   });
