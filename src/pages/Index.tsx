@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
-import { AnimatePresence, motion, type PanInfo } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
@@ -40,34 +40,24 @@ const BelowFoldSkeleton = () => (
 );
 
 const TAB_ORDER = ["home", "highlights", "schedule"] as const;
-const SWIPE_THRESHOLD = 50;
 
-const swipeVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0.4 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0.4 }),
+const fadeVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState("home");
-  const [swipeDir, setSwipeDir] = useState(0);
-  const swipingRef = useRef(false);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const tabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
 
-  const navigateTo = useCallback((newTab: string, direction: number) => {
-    setSwipeDir(direction);
-    setActiveTab(newTab);
+  const handleTabChange = useCallback((tabId: string) => {
+    setActiveTab(tabId);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-
-  const handleTabChange = useCallback((tabId: string) => {
-    const newIdx = TAB_ORDER.indexOf(tabId as typeof TAB_ORDER[number]);
-    const dir = newIdx > tabIndex ? 1 : -1;
-    navigateTo(tabId, dir);
-  }, [tabIndex, navigateTo]);
 
   // Listen for nav-tab-change events from other components
   useEffect(() => {
@@ -80,24 +70,6 @@ const Index = () => {
     window.addEventListener("nav-tab-change", handler);
     return () => window.removeEventListener("nav-tab-change", handler);
   }, [handleTabChange]);
-
-  const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
-    const { offset, velocity } = info;
-    const swipe = Math.abs(offset.x) * velocity.x;
-
-    if (offset.x < -SWIPE_THRESHOLD || swipe < -1000) {
-      // swipe left → next tab
-      if (tabIndex < TAB_ORDER.length - 1) {
-        navigateTo(TAB_ORDER[tabIndex + 1], 1);
-      }
-    } else if (offset.x > SWIPE_THRESHOLD || swipe > 1000) {
-      // swipe right → previous tab
-      if (tabIndex > 0) {
-        navigateTo(TAB_ORDER[tabIndex - 1], -1);
-      }
-    }
-    setTimeout(() => { swipingRef.current = false; }, 50);
-  }, [tabIndex, navigateTo]);
 
   const renderContent = () => {
     if (activeTab === "highlights") {
@@ -149,27 +121,14 @@ const Index = () => {
 
       <main ref={mainRef} className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))", overscrollBehaviorY: "contain" }}>
         <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
-        <AnimatePresence mode="wait" custom={swipeDir} initial={false}>
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={activeTab}
-            custom={swipeDir}
-            variants={swipeVariants}
-            initial="enter"
-            animate="center"
+            variants={fadeVariants}
+            initial="hidden"
+            animate="visible"
             exit="exit"
-            transition={{ type: "spring", stiffness: 350, damping: 35, mass: 0.8 }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.15}
-            onDragStart={(e) => {
-              const target = (e as PointerEvent).target as HTMLElement | null;
-              if (target?.closest?.("[data-horizontal-scroll]")) {
-                return false;
-              }
-              swipingRef.current = true;
-            }}
-            onDragEnd={handleDragEnd}
-            style={{ touchAction: "pan-y" }}
+            transition={{ duration: 0.15 }}
           >
             {renderContent()}
           </motion.div>
