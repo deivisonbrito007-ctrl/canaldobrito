@@ -1,34 +1,33 @@
 
 
-## Auditoria e Correções da Aba Banners/Programação
+## Auditoria da Aba Programacao + Correcoes de Warnings + Sugestoes
 
-### Problemas Identificados
+### Problemas encontrados
 
-1. **Erro de agendamento**: O `buildInsertPayload` verifica se a data é futura para agendar, mas se a data selecionada é hoje (meia-noite já passou), o agendamento é ignorado silenciosamente e publica imediatamente. Além disso, o toast de sucesso mostra `selected.length` em vez do número real inserido, e se houver duplicatas o `useInsertDailyGames` mostra toast de "duplicados ignorados" mas `handlePublish` ainda mostra "X jogos agendados" com o total, causando confusão.
+1. **Warning: RecentActivity nao usa forwardRef** — Console mostra "Function components cannot be given refs" em `AdminDashboard` ao renderizar `RecentActivity`.
 
-2. **Warning de ref no Badge**: O componente `Badge` é uma função simples sem `forwardRef`. O Tooltip ou outro componente dentro de `ProgramacaoTexto` está tentando passar ref para ele.
+2. **Warning: ChartStyle nao usa forwardRef** — Console mostra o mesmo warning para `ChartStyle` dentro de `chart.tsx` (displayName "Chart").
 
-3. **Ordem das abas**: Atualmente "Categorias" vem primeiro, mas o usuário quer "Programação" primeiro.
+3. **Fluxo ProgramacaoTexto** — Codigo esta correto apos as correcoes anteriores. O fluxo de parse, dedup visual, agendamento com validacao de data passada, AlertDialog de confirmacao e feedback real (inserted vs skipped) estao todos implementados. Nenhum bug logico restante.
 
-### Alterações
+### Alteracoes
 
-**1. `src/components/ui/badge.tsx` — Adicionar forwardRef**
+**1. `src/components/admin/RecentActivity.tsx` — Converter para forwardRef**
 
-Converter o Badge para usar `React.forwardRef` para eliminar o warning do console.
+Envolver o componente com `React.forwardRef` para eliminar o warning do console.
 
-**2. `src/pages/admin/AdminBanners.tsx` — Trocar ordem das abas**
+**2. `src/components/ui/chart.tsx` — Converter ChartStyle para forwardRef**
 
-Inverter a ordem dos botões de seção: "Programação" primeiro, "Categorias" segundo. Também mudar o `initialTab` default para "programacao".
+`ChartStyle` na linha 61 e uma funcao simples que recebe ref indiretamente. Converter para `forwardRef` ou simplesmente nao retornar um elemento que receba ref (o problema real e que `ChartContainer` renderiza `ChartStyle` como child direto). Na verdade, `ChartStyle` retorna `<style>` — o warning vem do Recharts/React tentando passar ref. A solucao e envolver com `forwardRef`.
 
-**3. `src/components/admin/ProgramacaoTexto.tsx` — Corrigir fluxo de agendamento**
+**3. Rodar testes** — Executar a suite de testes para verificar regressoes.
 
-- No `handlePublish`, usar o resultado real do `insertGames.mutateAsync` para mostrar quantos foram inseridos vs ignorados.
-- Quando `scheduleMidnight` está ON mas a data é passada, mostrar aviso claro ANTES de publicar (já existe o label, mas reforçar no botão de ação).
-- No botão de publicar, mostrar "Publicar imediatamente" quando a data é passada mesmo com agendamento ON, para evitar confusão.
-- Adicionar validação: se `scheduleMidnight` está ON e TODAS as datas são passadas, mostrar `toast.warning` explicando que será publicado imediatamente.
+### Sugestoes de melhoria adicionais
+
+- **Dashboard**: Adicionar contagem de jogos agendados (com `publish_at` no futuro) no card de Jogos, alem dos ativos
+- **ProgramacaoTexto**: Botao de "Copiar resumo" que gera texto formatado dos jogos selecionados para colar no WhatsApp
 
 ### Arquivos modificados
-- `src/components/ui/badge.tsx` — forwardRef
-- `src/pages/admin/AdminBanners.tsx` — ordem das abas + default
-- `src/components/admin/ProgramacaoTexto.tsx` — fix mensagens de agendamento e resultado real
+- `src/components/admin/RecentActivity.tsx` — forwardRef
+- `src/components/ui/chart.tsx` — forwardRef no ChartStyle
 
