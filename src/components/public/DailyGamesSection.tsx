@@ -35,6 +35,18 @@ const COMP_COLORS: Record<string, { bg: string; border: string }> = {
   "copa do rei":          { bg: "bg-yellow-600/20",   border: "border-yellow-600/50" },
 };
 
+/* ── Sport badge background colors (inline style) ── */
+const SPORT_BADGE_BG: Record<string, string> = {
+  football: "#e53e3e",
+  basketball: "#3b82f6",
+  volleyball: "#8b5cf6",
+  tennis: "#10b981",
+  f1: "#f59e0b",
+  mma: "#f97316",
+  hockey: "#0ea5e9",
+  baseball: "#ca8a04",
+};
+
 const COMP_TOP_COLORS: Record<string, string> = {
   "brasileirão":          "from-emerald-500",
   "brasileirao":          "from-emerald-500",
