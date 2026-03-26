@@ -397,7 +397,6 @@ export const ProgramacaoTexto = () => {
   };
 
   const handleRepublish = async () => {
-    if (!confirm("Isso vai apagar todos os jogos do dia e publicar os novos. Continuar?")) return;
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
     try {
