@@ -91,14 +91,12 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
               </div>
             </div>
             <div className="px-2.5 pb-1.5 space-y-1">
-              <div className="flex items-center gap-2">
-                <p className="flex-1 min-w-0 text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+              <div className="space-y-0.5">
+                <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                   {game.home_team}
                 </p>
-                <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1.5 py-0.5 rounded bg-surface border border-border">
-                  VS
-                </span>
-                <p className="flex-1 min-w-0 text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2 text-right">
+                <p className="text-[9px] text-muted-foreground font-body text-center">VS</p>
+                <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                   {game.away_team}
                 </p>
               </div>
@@ -218,7 +216,7 @@ export const LiveNowHero = () => {
 
   if (isLoading) {
     return (
-      <section className="mx-4 rounded-2xl bg-surface-2 border border-border p-4 space-y-3">
+      <section className="mx-3 rounded-2xl bg-surface-2 border border-border p-3 space-y-3">
         <div className="flex items-center gap-2">
           <div className="h-3 w-3 rounded-full skeleton-shimmer" />
           <div className="h-4 w-32 rounded skeleton-shimmer" />
@@ -240,7 +238,7 @@ export const LiveNowHero = () => {
     <AnimatePresence mode="wait">
       <motion.section
         key={totalLive > 0 ? "live" : "empty"}
-        className="mx-4 rounded-2xl overflow-hidden relative"
+        className="mx-3 rounded-2xl overflow-hidden relative"
         variants={sectionVariants}
         initial="hidden"
         animate="visible"
@@ -250,22 +248,22 @@ export const LiveNowHero = () => {
         <div className="absolute inset-0 rounded-2xl border border-destructive/30 animate-pulse pointer-events-none z-10" />
         
         {/* Background */}
-        <div className="bg-gradient-to-br from-destructive/[0.06] via-surface-2 to-surface-2 rounded-2xl p-4 space-y-3">
+        <div className="bg-gradient-to-br from-destructive/[0.06] via-surface-2 to-surface-2 rounded-2xl p-3 space-y-3">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="space-y-1">
             <div className="flex items-center gap-2 min-w-0">
               <span className="relative flex h-3 w-3 shrink-0">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
               </span>
-              <h3 className="text-xs sm:text-sm font-black text-foreground font-body tracking-tight uppercase whitespace-nowrap">
+              <h3 className="text-xs sm:text-sm font-black text-foreground font-body tracking-tight uppercase">
                 Ao Vivo Agora
               </h3>
               <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
                 {totalLive} {totalLive === 1 ? "jogo" : "jogos"}
               </span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center justify-between">
               <LiveClock />
               <button
                 onClick={() => {
@@ -281,7 +279,7 @@ export const LiveNowHero = () => {
           {/* Match grid (vertical) */}
           {visibleMatches.length > 0 && (
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
@@ -295,12 +293,12 @@ export const LiveNowHero = () => {
           {/* Events grid */}
           {visibleEvents.length > 0 && (
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
             >
-              {events.map((e) => (
+              {visibleEvents.map((e) => (
                 <MotionEventCard key={e.id} event={e} variants={cardVariants} />
               ))}
             </motion.div>
