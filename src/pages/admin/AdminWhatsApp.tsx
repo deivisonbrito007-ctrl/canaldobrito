@@ -180,22 +180,57 @@ const AdminWhatsApp = () => {
         </div>
       </div>
 
-      {/* Games of the Day */}
-      {gamesText && (
-        <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
-          <span className="text-sm font-bold text-foreground">⚽ Jogos do Dia ({(games ?? []).length})</span>
-          <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[200px] overflow-y-auto">
-            {gamesText}
-          </pre>
-          <div className="flex gap-2">
-            <CopyButton text={gamesText} label="Copiar" />
-            <Button size="sm" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(gamesText)}`, "_blank")} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
-              <MessageCircle className="h-3.5 w-3.5" />
-              Enviar
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Games Schedule with Tabs */}
+      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
+        <Tabs defaultValue="today">
+          <TabsList className="w-full">
+            <TabsTrigger value="today" className="flex-1 text-xs">
+              Hoje ({todayCount})
+            </TabsTrigger>
+            <TabsTrigger value="tomorrow" className="flex-1 text-xs">
+              Amanhã ({tomorrowCount})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="today" className="space-y-3 mt-3">
+            {todayText ? (
+              <>
+                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[240px] overflow-y-auto">
+                  {todayText}
+                </pre>
+                <div className="flex gap-2">
+                  <CopyButton text={todayText} label="Copiar" />
+                  <Button size="sm" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(todayText)}`, "_blank")} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Enviar
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhum jogo agendado para hoje.</p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tomorrow" className="space-y-3 mt-3">
+            {tomorrowText ? (
+              <>
+                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[240px] overflow-y-auto">
+                  {tomorrowText}
+                </pre>
+                <div className="flex gap-2">
+                  <CopyButton text={tomorrowText} label="Copiar" />
+                  <Button size="sm" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(tomorrowText)}`, "_blank")} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Enviar
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhum jogo agendado para amanhã.</p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Custom Message */}
       <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-4">
