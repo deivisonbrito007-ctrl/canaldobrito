@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
+import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   isGameCurrentlyLive,
   getLocalDateString,
@@ -52,6 +52,8 @@ const SPORT_ACCENT: Record<string, string> = {
   tennis: "bg-emerald-500",
   f1: "bg-amber-500",
   mma: "bg-orange-500",
+  hockey: "bg-sky-500",
+  baseball: "bg-yellow-600",
 };
 
 /* ── Match card (adversarial) ── */
@@ -67,7 +69,7 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
     return (
       <div
         ref={ref}
-        className="min-w-[260px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
+        className="min-w-[280px] sm:min-w-[300px] snap-start shrink-0 rounded-2xl overflow-hidden bg-surface-2 border border-border/60 transition-colors duration-300 hover:border-destructive/30"
       >
         <div className="flex">
           <div className={`w-[3px] ${accent}`} />
@@ -88,13 +90,13 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
             </div>
             <div className="px-3 pb-2 space-y-1">
               <div className="flex items-center gap-2">
-                <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate">
+                <p className="flex-1 min-w-0 text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                   {game.home_team}
                 </p>
                 <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1.5 py-0.5 rounded bg-surface border border-border">
                   VS
                 </span>
-                <p className="flex-1 min-w-0 text-[15px] font-bold text-foreground leading-tight font-body truncate text-right">
+                <p className="flex-1 min-w-0 text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2 text-right">
                   {game.away_team}
                 </p>
               </div>
@@ -149,7 +151,7 @@ const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
                 </span>
               </div>
             </div>
-            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-1">
+            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
               {event.home_team}
             </p>
             <div className="flex items-center justify-between gap-1">
@@ -192,10 +194,10 @@ const LiveClock = () => {
 export const LiveNowHero = () => {
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
-  const { data: games, isLoading } = useDailyGames(today);
+  const { data: allGames, isLoading } = useAllDailyGames(today);
 
   const { matches, events } = useMemo(() => {
-    const all = games || [];
+    const all = (allGames || []).filter((g) => !g.archived);
     const m: DailyGame[] = [];
     const e: DailyGame[] = [];
     for (const g of all) {
@@ -205,7 +207,7 @@ export const LiveNowHero = () => {
       else m.push(g);
     }
     return { matches: m, events: e };
-  }, [games, tick]);
+  }, [allGames, tick]);
 
   const totalLive = matches.length + events.length;
 
@@ -271,16 +273,29 @@ export const LiveNowHero = () => {
 
           {/* Match carousel */}
           {matches.length > 0 && (
-            <motion.div
-              data-horizontal-scroll className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1" style={{ touchAction: "pan-x" }}
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {matches.map((g) => (
-                <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
-              ))}
-            </motion.div>
+            matches.length <= 4 ? (
+              <motion.div
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {matches.map((g) => (
+                  <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                data-horizontal-scroll className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1" style={{ touchAction: "pan-x" }}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {matches.map((g) => (
+                  <MotionMatchCard key={g.id} game={g} variants={cardVariants} />
+                ))}
+              </motion.div>
+            )
           )}
 
           {/* Events grid */}

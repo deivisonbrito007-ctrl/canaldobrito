@@ -16,9 +16,9 @@ vi.mock("@/hooks/useLiveTick", () => ({
   useLiveTick: () => 0,
 }));
 
-const mockUseDailyGames = vi.fn();
+const mockUseAllDailyGames = vi.fn();
 vi.mock("@/hooks/useDailyGames", () => ({
-  useDailyGames: (...args: any[]) => mockUseDailyGames(...args),
+  useAllDailyGames: (...args: any[]) => mockUseAllDailyGames(...args),
 }));
 
 // Mock gameUtils to control "live" status
@@ -39,7 +39,7 @@ describe("LiveNowHero", () => {
   });
 
   it("renders nothing when there are no live games", () => {
-    mockUseDailyGames.mockReturnValue({ data: [], isLoading: false });
+    mockUseAllDailyGames.mockReturnValue({ data: [], isLoading: false });
     (isGameCurrentlyLive as any).mockReturnValue(false);
 
     const { container } = render(<LiveNowHero />);
@@ -47,7 +47,7 @@ describe("LiveNowHero", () => {
   });
 
   it("shows skeleton during loading", () => {
-    mockUseDailyGames.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseAllDailyGames.mockReturnValue({ data: undefined, isLoading: true });
 
     render(<LiveNowHero />);
     // Skeleton has shimmer elements
@@ -56,7 +56,7 @@ describe("LiveNowHero", () => {
 
   it("renders live match cards when games are live", () => {
     (isGameCurrentlyLive as any).mockReturnValue(true);
-    mockUseDailyGames.mockReturnValue({
+    mockUseAllDailyGames.mockReturnValue({
       data: [
         {
           id: "1",
@@ -90,7 +90,7 @@ describe("LiveNowHero", () => {
 
   it("shows correct plural for multiple live games", () => {
     (isGameCurrentlyLive as any).mockReturnValue(true);
-    mockUseDailyGames.mockReturnValue({
+    mockUseAllDailyGames.mockReturnValue({
       data: [
         { id: "1", home_team: "A", away_team: "B", competition: "X", game_time: "16:00", date: "2026-03-25", sport_type: "football", channels: [], active: true, archived: false, is_live: true, is_womens: false, status_short: "live", created_at: "", competition_detail: null, elapsed_minutes: null, publish_at: null },
         { id: "2", home_team: "C", away_team: "D", competition: "Y", game_time: "16:30", date: "2026-03-25", sport_type: "football", channels: [], active: true, archived: false, is_live: true, is_womens: false, status_short: "live", created_at: "", competition_detail: null, elapsed_minutes: null, publish_at: null },
