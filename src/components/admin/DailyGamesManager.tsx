@@ -331,7 +331,7 @@ const AddGameForm = ({
           is_womens: home.includes("(F)") || away.includes("(F)"),
           active: true,
           archived: false,
-          sport_type: detectSportType(comp),
+          sport_type: detectSportType(comp, `${home} ${away}`),
           status_short: "NS",
         },
       ]);

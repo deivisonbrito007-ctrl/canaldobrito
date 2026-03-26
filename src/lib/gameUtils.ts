@@ -43,9 +43,9 @@ export const SPORT_LABEL: Record<SportType, string> = {
 const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
 
-/** Detect sport type from competition name */
-export function detectSportType(competition: string): SportType {
-  const c = competition.toLowerCase();
+/** Detect sport type from competition name and optional team names */
+export function detectSportType(competition: string, teamNames?: string): SportType {
+  const c = `${competition} ${teamNames || ''}`.toLowerCase();
   if (/\b(nba|nbb|euroleague|wnba|basquete)\b/i.test(c)) return 'basketball';
   if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|canucks|senators|islanders|hurricanes|predators|blue jackets|sharks|ducks|coyotes|kraken|devils|sabres)\b/i.test(c)) return 'hockey';
   if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|cubs|mets|astros|braves|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|royals|tigers|white sox|marlins)\b/i.test(c)) return 'baseball';

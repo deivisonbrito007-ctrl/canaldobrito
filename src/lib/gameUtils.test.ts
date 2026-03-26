@@ -98,6 +98,18 @@ describe("detectSportType", () => {
     expect(detectSportType("Champions League")).toBe("football");
     expect(detectSportType("La Liga")).toBe("football");
   });
+
+  it("detects baseball from team names when competition is generic", () => {
+    expect(detectSportType("21:30 | ESPN 4", "Los Angeles Dodgers Arizona Diamondbacks")).toBe("baseball");
+  });
+
+  it("detects tennis from team names when competition is generic", () => {
+    expect(detectSportType("14:00 | ESPN 2", "ATP Tour")).toBe("tennis");
+  });
+
+  it("detects hockey from team names when competition is generic", () => {
+    expect(detectSportType("22:00 | ESPN", "Toronto Maple Leafs Boston Bruins")).toBe("hockey");
+  });
 });
 
 describe("isGameCurrentlyLive", () => {

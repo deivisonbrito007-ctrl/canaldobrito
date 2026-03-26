@@ -241,7 +241,7 @@ function generateWhatsAppSummary(games: ParsedGame[]): string {
     const dateGames = byDate[date];
     const bySport: Record<string, ParsedGame[]> = {};
     for (const g of dateGames) {
-      const sport = g.sport_type || detectSportType(g.competition);
+      const sport = g.sport_type || detectSportType(g.competition, `${g.home_team} ${g.away_team}`);
       if (!bySport[sport]) bySport[sport] = [];
       bySport[sport].push(g);
     }
@@ -400,7 +400,7 @@ export const ProgramacaoTexto = () => {
         }
       }
 
-      const finalSportType = parsedSport || detectSportType(g.competition);
+      const finalSportType = parsedSport || detectSportType(g.competition, `${g.home_team} ${g.away_team}`);
 
       // Second barrier: sanitize all string fields before insert
       return {
@@ -744,7 +744,7 @@ export const ProgramacaoTexto = () => {
                     {group.games.map((game, localIdx) => {
                       const globalIdx = group.indices[localIdx];
                       const warnings = getGameWarnings(game);
-                      const resolvedSport = game.sport_type || detectSportType(game.competition);
+                      const resolvedSport = game.sport_type || detectSportType(game.competition, `${game.home_team} ${game.away_team}`);
                       const sportEmoji = SPORT_EMOJI[resolvedSport] || '⚽';
                       return (
                         <div
