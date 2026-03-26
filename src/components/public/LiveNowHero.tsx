@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
+import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   isGameCurrentlyLive,
   getLocalDateString,
