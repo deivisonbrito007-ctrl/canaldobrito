@@ -189,8 +189,14 @@ const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: num
           {/* Competition badge + Live badge + Reminder */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[45vw] sm:max-w-[200px]`}>
-                {sportEmoji} {game.competition}
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold text-white uppercase tracking-wide shrink-0"
+                style={{ backgroundColor: SPORT_BADGE_BG[sportType] || "#e53e3e" }}
+              >
+                {sportEmoji} {SPORT_LABEL[sportType] || "Futebol"}
+              </span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${compColor.bg} ${compColor.border} text-foreground/80 truncate max-w-[35vw] sm:max-w-[180px]`}>
+                {game.competition}
               </span>
               {highlight && <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />}
             </div>
