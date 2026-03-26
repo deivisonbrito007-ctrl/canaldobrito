@@ -29,23 +29,14 @@ export interface ParsedGame {
   sport_type?: SportType;
 }
 
-const PLACEHOLDER = `📅**Dia 18/03**
+const PLACEHOLDER = `Cole aqui a programação do dia...
+
+Exemplo:
+📅**Dia 20/03**
 
 Flamengo x Palmeiras
-🏆 Brasileirão (oitavas de final) / ⏰ 19h00
-📺 Sportv, Premiere
-
-ATP e WTA
-🎾 Tênis (Indian Wells) / ⏰ 20h00
-📺 ESPN 2
-
-GP da Arábia Saudita
-🏎️ Fórmula 1 (Classificação) / ⏰ 13h00
-📺 Band, BandSports
-
-UFC 315 (Card Principal)
-🥊 MMA / ⏰ 23h00
-📺 Combate`;
+🏆 Brasileirão / ⏰ 19h00
+📺 Sportv, Premiere`;
 
 const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
 
