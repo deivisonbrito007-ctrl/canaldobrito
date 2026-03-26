@@ -58,19 +58,21 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
+const ChartStyle = React.forwardRef<HTMLStyleElement, { id: string; config: ChartConfig }>(
+  ({ id, config }, ref) => {
+    const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
-  if (!colorConfig.length) {
-    return null;
-  }
+    if (!colorConfig.length) {
+      return null;
+    }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
+    return (
+      <style
+        ref={ref}
+        dangerouslySetInnerHTML={{
+          __html: Object.entries(THEMES)
+            .map(
+              ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
@@ -80,13 +82,14 @@ ${colorConfig
   .join("\n")}
 }
 `,
-          )
-          .join("\n"),
-      }}
-    />
-  );
-};
-
+            )
+            .join("\n"),
+        }}
+      />
+    );
+  }
+);
+ChartStyle.displayName = "ChartStyle";
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
 const ChartTooltipContent = React.forwardRef<
