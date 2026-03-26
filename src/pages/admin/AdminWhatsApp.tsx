@@ -7,18 +7,7 @@ import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-
-const SPORT_EMOJI: Record<string, string> = {
-  football: "⚽",
-  basketball: "🏀",
-  tennis: "🎾",
-  f1: "🏎️",
-  mma: "🥊",
-  volleyball: "🏐",
-  default: "🏆",
-};
-
-const sportLabel = (type: string) => SPORT_EMOJI[type] ?? SPORT_EMOJI.default;
+import { SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -114,16 +103,19 @@ const AdminWhatsApp = () => {
 
     const sections = Object.entries(grouped)
       .map(([sport, items]) => {
-        const emoji = sportLabel(sport);
-        const header = items.length > 0 ? `${emoji} *${sport === "football" ? "Futebol" : sport === "basketball" ? "Basquete" : sport === "tennis" ? "Tênis" : sport === "f1" ? "Fórmula 1" : sport === "mma" ? "MMA/UFC" : sport === "volleyball" ? "Vôlei" : "Outros"}*` : "";
+        const emoji = SPORT_EMOJI[sport as SportType] ?? "🏆";
+        const label = SPORT_LABEL[sport as SportType] ?? "Outros";
+        const header = `${emoji} *${label.toUpperCase()}*`;
         const lines = items.map((g) => {
           const time = g.game_time.slice(0, 5);
           const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
-          const comp = g.competition ? ` (${g.competition})` : "";
-          const channels = g.channels && g.channels.length > 0 ? ` — ${g.channels.join(", ")}` : "";
-          return `⏰ ${time} — ${teams}${comp}${channels}`;
+          const details: string[] = [];
+          if (g.competition) details.push(`🏆 ${g.competition}`);
+          if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
+          const detailLine = details.length > 0 ? `\n${details.join(" | ")}` : "";
+          return `${time} — ${teams}${detailLine}`;
         });
-        return `${header}\n${lines.join("\n")}`;
+        return `${header}\n\n${lines.join("\n\n")}`;
       })
       .join("\n\n");
 
