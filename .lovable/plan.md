@@ -1,58 +1,36 @@
 
 
-## Correções no Sistema PWA + Push Notifications
+## Corrigir formatação do texto de jogos na aba WhatsApp
 
-### Problemas encontrados
+### Problemas identificados
 
-**1. Bug critico na criptografia das notificações push (Edge Function)**
+1. **Data usa UTC em vez de São Paulo** — `new Date().toISOString().split("T")[0]` pode mostrar data errada à noite no Brasil (após 21h BRT = 00h UTC do dia seguinte). Deve usar `getLocalDateString()`.
 
-No arquivo `supabase/functions/send-push-notifications/index.ts`, a funcao `encryptPayload` tem um erro na derivacao de chaves. A variavel `ikmInput` (linha 74) e calculada mas **nunca usada**. O fluxo correto segundo a RFC 8291 e:
+2. **Formatação dos jogos desorganizada** — O texto gerado no `gamesText` do `AdminWhatsApp.tsx` tem problemas:
+   - Espaçamento duplo (`\n\n`) entre cada jogo — fica muito espaçado no WhatsApp
+   - Emoji `🏆` aparece no header principal E em cada linha de competição (redundante)
+   - Não inclui `competition_detail` (fase do campeonato)
+   - Formato inconsistente com o "Copiar resumo" do `ProgramacaoTexto.tsx`
 
-```text
-Passo 1: PRK_key  = HMAC(auth_secret, shared_secret)        ✓ feito (linha 77)
-Passo 2: IKM      = HMAC(PRK_key, key_info || 0x01)         ✗ FALTANDO
-Passo 3: PRK      = HMAC(salt, IKM)                         ✓ feito (mas usa resultado errado)
-Passo 4: CEK/Nonce derivados do PRK                          ✓ feito
-```
+3. **Formato de hora pode vir com segundos** — `game_time.slice(0, 5)` funciona, mas o formato do `generateWhatsAppSummary` usa o `game_time` direto sem tratar.
 
-O passo 2 esta faltando — o codigo pula direto do passo 1 para o 3, usando `PRK_key` como se fosse `IKM`. Resultado: a criptografia gera dados que o navegador **nao consegue descriptografar**, entao as notificacoes push nunca aparecem no dispositivo do cliente, mesmo que o envio retorne status 201.
+### Correção
 
-**Correcao:** Na funcao `encryptPayload`, apos calcular `ikm` (que na verdade e `PRK_key`), adicionar o passo de HKDF-Expand usando `ikmInput` para derivar o IKM real:
+**Arquivo:** `src/pages/admin/AdminWhatsApp.tsx`
 
-```typescript
-// Step 1: PRK_key = HMAC(auth_secret, shared_secret)
-const prkAuth = await crypto.subtle.importKey("raw", authSecret, ...);
-const prkKey1 = new Uint8Array(await crypto.subtle.sign("HMAC", prkAuth, sharedSecret));
+1. Importar `getLocalDateString` de `@/lib/gameUtils` e usar no lugar de `toISOString().split("T")[0]`
 
-// Step 2: IKM = HMAC(PRK_key, key_info || 0x01)  ← ADICIONAR
-const prkKey1Import = await crypto.subtle.importKey("raw", prkKey1, ...);
-const ikm = new Uint8Array(await crypto.subtle.sign("HMAC", prkKey1Import, 
-  new Uint8Array([...ikmInput, 1])));
+2. Reescrever o `gamesText` para ficar igual ao `generateWhatsAppSummary` do `ProgramacaoTexto`:
+   - Header de esporte com emoji + label em bold (`*FUTEBOL*`)
+   - Cada jogo: `HH:MM — Time A x Time B` em uma linha
+   - Detalhes: `🏆 Competição · detalhe | 📺 Canais` na linha seguinte
+   - Uma linha em branco entre jogos (não duas)
+   - Jogos ordenados por horário dentro de cada esporte
 
-// Step 3: PRK = HMAC(salt, IKM)  ← agora usa o IKM correto
-```
-
-**2. Manifesto PWA duplicado/conflitante**
-
-O arquivo `public/manifest.json` tem apenas um icone de favicon (48x48). Porem o `vite.config.ts` gera um manifesto completo com icones 192 e 512. No build, o VitePWA gera o manifesto correto, mas o `index.html` aponta para `/manifest.json` (o estatico). No build final o VitePWA injeta o link correto, mas o arquivo estatico pode causar confusao.
-
-**Correcao:** Remover `public/manifest.json` (o estatico) e remover o `<link rel="manifest">` do `index.html` — o VitePWA ja injeta o link automaticamente no build.
-
-**3. Emoji no titulo da notificacao pode falhar em alguns push services**
-
-O payload usa `"⚽ Começa em 15 min!"` como titulo. Alguns push services intermediarios podem cortar/corromper o emoji. Nao e critico, mas seria mais seguro usar texto puro.
-
-### Resumo das alteracoes
-
-| Arquivo | O que muda |
-|---------|-----------|
-| `supabase/functions/send-push-notifications/index.ts` | Corrigir HKDF step 2 na `encryptPayload` |
-| `public/manifest.json` | Remover arquivo (VitePWA gera o correto) |
-| `index.html` | Remover `<link rel="manifest">` manual |
+3. Incluir `competition_detail` quando disponível
 
 ### Resultado esperado
-
-- Notificacoes push serao **realmente recebidas** pelos clientes (hoje a criptografia esta quebrada)
-- PWA instalara com os icones corretos sem manifesto duplicado
-- Cada cliente que ativar o lembrete de um jogo recebera sua notificacao individual 15 minutos antes
+- Texto copiado fica limpo e bem organizado para colar no WhatsApp
+- Data correta mesmo à noite no fuso de São Paulo
+- Formato consistente entre "Copiar resumo" da Programação e a aba WhatsApp
 
