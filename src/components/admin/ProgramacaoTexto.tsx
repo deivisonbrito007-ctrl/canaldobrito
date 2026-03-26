@@ -7,6 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { useInsertDailyGames, useDeleteDailyGamesByDate, fetchExistingGameKeys } from "@/hooks/useDailyGames";
 import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -393,7 +397,6 @@ export const ProgramacaoTexto = () => {
   };
 
   const handleRepublish = async () => {
-    if (!confirm("Isso vai apagar todos os jogos do dia e publicar os novos. Continuar?")) return;
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
     try {
@@ -727,28 +730,67 @@ export const ProgramacaoTexto = () => {
           {/* Sticky action bar */}
           <div className="p-4 border-t border-white/[0.06] bg-background/80 backdrop-blur-sm sticky bottom-0">
             <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handlePublish}
-                disabled={insertGames.isPending || selectedCount === 0}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8"
-              >
-                {insertGames.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Check className="h-4 w-4 mr-2" />
-                )}
-                {scheduleMidnight && !getScheduleLabel().isPast
-                  ? `Agendar ${selectedCount}`
-                  : `Publicar ${selectedCount}`}
-              </Button>
-              <Button
-                onClick={handleRepublish}
-                variant="outline"
-                disabled={deleteByDate.isPending || selectedCount === 0}
-                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-              >
-                Limpar e Republicar
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    disabled={insertGames.isPending || selectedCount === 0}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8"
+                  >
+                    {insertGames.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-2" />
+                    )}
+                    {scheduleMidnight && !getScheduleLabel().isPast
+                      ? `Agendar ${selectedCount}`
+                      : `Publicar ${selectedCount}`}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="glass-panel border-white/[0.08]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {scheduleMidnight && !getScheduleLabel().isPast ? "Confirmar agendamento" : "Confirmar publicação"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {scheduleMidnight && !getScheduleLabel().isPast
+                        ? `Agendar ${selectedCount} jogo(s) para meia-noite? Eles ficarão visíveis automaticamente.`
+                        : `Publicar ${selectedCount} jogo(s) imediatamente? Eles ficarão visíveis agora.`}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handlePublish} className="bg-emerald-600 hover:bg-emerald-700">
+                      {scheduleMidnight && !getScheduleLabel().isPast ? "Agendar" : "Publicar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={deleteByDate.isPending || selectedCount === 0}
+                    className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  >
+                    Limpar e Republicar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="glass-panel border-white/[0.08]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar republicação</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Isso vai <strong>apagar todos os jogos existentes</strong> das datas selecionadas e publicar {selectedCount} novo(s). Essa ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRepublish} className="bg-amber-600 hover:bg-amber-700">
+                      Limpar e Republicar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
