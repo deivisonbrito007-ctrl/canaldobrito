@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom";
 
 // Polyfill ResizeObserver for jsdom (used by Recharts)
-global.ResizeObserver = class {
+(globalThis as any).ResizeObserver = class {
   observe() {}
   unobserve() {}
   disconnect() {}
