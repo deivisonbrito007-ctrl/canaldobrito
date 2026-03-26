@@ -1,36 +1,24 @@
 
 
-## Corrigir formatação do texto de jogos na aba WhatsApp
+## Ajustar card "Jogos do Dia" com tabs Hoje / Amanhã
 
-### Problemas identificados
+### O que muda
 
-1. **Data usa UTC em vez de São Paulo** — `new Date().toISOString().split("T")[0]` pode mostrar data errada à noite no Brasil (após 21h BRT = 00h UTC do dia seguinte). Deve usar `getLocalDateString()`.
+O card existente "⚽ Jogos do Dia" (linhas ~175-195) será ajustado para incluir **duas tabs**: **Hoje** e **Amanhã**. Sem criar card novo, sem tab "Completa" — cada dia é copiado separadamente.
 
-2. **Formatação dos jogos desorganizada** — O texto gerado no `gamesText` do `AdminWhatsApp.tsx` tem problemas:
-   - Espaçamento duplo (`\n\n`) entre cada jogo — fica muito espaçado no WhatsApp
-   - Emoji `🏆` aparece no header principal E em cada linha de competição (redundante)
-   - Não inclui `competition_detail` (fase do campeonato)
-   - Formato inconsistente com o "Copiar resumo" do `ProgramacaoTexto.tsx`
+### Alterações em `src/pages/admin/AdminWhatsApp.tsx`
 
-3. **Formato de hora pode vir com segundos** — `game_time.slice(0, 5)` funciona, mas o formato do `generateWhatsAppSummary` usa o `game_time` direto sem tratar.
+1. **Calcular `tomorrowStr`** a partir de `todayStr` (adicionar 1 dia respeitando São Paulo timezone)
+2. **Buscar jogos de amanhã** com `useDailyGames(tomorrowStr)`
+3. **Extrair a lógica de montar texto** para uma função reutilizável `buildDayText(games, dateStr, dayLabel, siteUrl)` — usada para hoje e amanhã
+4. **Substituir o card atual** por um card com `Tabs` (shadcn):
+   - Tab **"Hoje (N)"** — mostra o texto de hoje com preview + Copiar + Enviar
+   - Tab **"Amanhã (N)"** — mostra o texto de amanhã (se houver jogos) ou mensagem "Nenhum jogo agendado ainda"
+   - Badge com contagem de jogos em cada tab
+5. **Importar** `Tabs, TabsList, TabsTrigger, TabsContent` de `@/components/ui/tabs`
+6. **Incluir dia da semana** no header do texto (ex: `📅 Quinta-feira, 27/03`)
 
-### Correção
+### Sugestão extra
 
-**Arquivo:** `src/pages/admin/AdminWhatsApp.tsx`
-
-1. Importar `getLocalDateString` de `@/lib/gameUtils` e usar no lugar de `toISOString().split("T")[0]`
-
-2. Reescrever o `gamesText` para ficar igual ao `generateWhatsAppSummary` do `ProgramacaoTexto`:
-   - Header de esporte com emoji + label em bold (`*FUTEBOL*`)
-   - Cada jogo: `HH:MM — Time A x Time B` em uma linha
-   - Detalhes: `🏆 Competição · detalhe | 📺 Canais` na linha seguinte
-   - Uma linha em branco entre jogos (não duas)
-   - Jogos ordenados por horário dentro de cada esporte
-
-3. Incluir `competition_detail` quando disponível
-
-### Resultado esperado
-- Texto copiado fica limpo e bem organizado para colar no WhatsApp
-- Data correta mesmo à noite no fuso de São Paulo
-- Formato consistente entre "Copiar resumo" da Programação e a aba WhatsApp
+Adicionar `addDays` do `date-fns` para calcular a data de amanhã de forma limpa, já que `date-fns` já está no projeto.
 
