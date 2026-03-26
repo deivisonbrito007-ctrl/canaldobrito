@@ -133,7 +133,9 @@ export const useInsertDailyGames = () => {
       const skipped = games.length - unique.length;
 
       if (unique.length > 0) {
-        const { error } = await supabase.from("daily_games").insert(unique as any);
+        // Sanitize all string fields as final barrier
+        const sanitized = unique.map(sanitizeGame);
+        const { error } = await supabase.from("daily_games").insert(sanitized as any);
         if (error) throw error;
       }
 
