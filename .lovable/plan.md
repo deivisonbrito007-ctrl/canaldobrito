@@ -1,64 +1,31 @@
 
 
-## Problema: PWA mostra versão antiga após publicação
+## Problema: Jogo de amanhã aparece como "Ao Vivo"
 
-O `registerType: "autoUpdate"` no `vite-plugin-pwa` registra o SW automaticamente, mas **não força a ativação imediata** do novo SW. O comportamento padrão do browser é: o novo SW fica "waiting" até que todas as abas sejam fechadas. Isso faz com que usuários com o PWA instalado continuem vendo a versão antiga.
+### Diagnóstico
 
-Além disso, o `main.tsx` não tem nenhum código para detectar atualizações do SW e recarregar a página.
+O screenshot mostra **00:04** no relógio. O jogo tem horário **00:00** e provavelmente foi cadastrado com a data de **hoje** (26/03). A função `isGameCurrentlyLive("00:00", "2026-03-26")` retorna `true` porque 4 minutos se passaram desde o início — dentro da duração de 105min do futebol.
 
-## Solução: Forçar `skipWaiting` + reload automático
+O Google mostra "Amanhã, 00:00" porque ele considera o contexto do dia anterior, mas no sistema o jogo está com a data correta (dia 26).
 
-### 1. `src/sw.ts` — Adicionar `skipWaiting` e `clientsClaim`
+Além disso, o `useAllDailyGames` não filtra por `active: true`, então jogos desativados também podem aparecer como ao vivo.
 
-No topo do service worker, após o `precacheAndRoute`, adicionar:
+### Solução
 
+Duas correções:
+
+#### 1. `src/components/public/LiveNowHero.tsx` — Filtrar jogos inativos
+Na linha 228, adicionar filtro por `active`:
 ```ts
-import { clientsClaim } from "workbox-core";
-clientsClaim();
-self.skipWaiting();
+const all = (allGames || []).filter((g) => !g.archived && g.active);
 ```
 
-Isso faz o novo SW assumir o controle imediatamente, sem esperar fechar abas.
+#### 2. Verificar dados do jogo
+O jogo provavelmente está com a data correta (hoje) e horário 00:00. Se o jogo realmente é amanhã, a data no banco precisa ser corrigida para 27/03 no painel admin.
 
-### 2. `src/main.tsx` — Detectar atualização e recarregar
+**Nota:** Não é um bug de lógica — a função `isGameCurrentlyLive` está funcionando corretamente. Um jogo com data de hoje e horário 00:00, acessado às 00:04, **é** ao vivo pela lógica do sistema. A solução é garantir que a data do jogo no banco esteja correta.
 
-Após montar o React, registrar um listener que detecta quando o SW é atualizado e recarrega a página automaticamente:
-
-```ts
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    window.location.reload();
-  });
-}
-```
-
-### 3. `src/sw.ts` — Limpar caches antigos na ativação
-
-Adicionar listener de `activate` que limpa caches obsoletos:
-
-```ts
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names
-          .filter((name) => name !== "google-fonts" && name !== "tmdb-images")
-          .filter((name) => !name.startsWith("workbox-precache"))
-          .map((name) => caches.delete(name))
-      )
-    )
-  );
-});
-```
-
-### Resultado esperado
-
-- Ao publicar, o novo SW é instalado e assume controle imediatamente (`skipWaiting` + `clientsClaim`)
-- A página recarrega automaticamente quando o novo SW ativa (`controllerchange`)
-- Caches obsoletos são limpos na ativação
-- Usuários com PWA instalado recebem a versão nova sem precisar fechar e reabrir o app
-
-### Arquivos alterados
-- `src/sw.ts` (2 adições: imports + activate listener)
-- `src/main.tsx` (1 adição: controllerchange listener)
+### Ação recomendada
+- Corrigir o filtro de jogos ativos no `LiveNowHero`
+- Verificar/corrigir a data do jogo no painel admin (se deveria ser 27/03, alterar a data)
 
