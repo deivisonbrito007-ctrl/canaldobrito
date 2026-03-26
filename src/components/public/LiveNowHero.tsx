@@ -225,7 +225,7 @@ export const LiveNowHero = () => {
   const [expanded, setExpanded] = useState(false);
 
   const { matches, events } = useMemo(() => {
-    const all = (allGames || []).filter((g) => !g.archived);
+    const all = (allGames || []).filter((g) => !g.archived && g.active);
     const m: DailyGame[] = [];
     const e: DailyGame[] = [];
     for (const g of all) {
