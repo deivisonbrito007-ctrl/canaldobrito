@@ -213,7 +213,7 @@ function formatDatePt(dateStr: string): string {
 /** Get validation warnings for a parsed game */
 function getGameWarnings(game: ParsedGame): string[] {
   const warnings: string[] = [];
-  if (game.game_time === "00:00") warnings.push("Horário não detectado");
+  if (game.game_time === "00:00") warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
   if (!game.channels.length) warnings.push("Sem canal");
   if (!game.competition) warnings.push("Sem competição");
   return warnings;
@@ -421,7 +421,12 @@ export const ProgramacaoTexto = () => {
     });
   };
 
-  const handlePublish = async () => {
+  const [midnightConfirmOpen, setMidnightConfirmOpen] = useState(false);
+  const [pendingPublishAction, setPendingPublishAction] = useState<"publish" | "republish" | null>(null);
+
+  const midnightGamesCount = parsed.filter((g) => g.selected && g.game_time === "00:00").length;
+
+  const executePublish = async () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) {
       toast.error("Selecione pelo menos um jogo");
@@ -457,6 +462,20 @@ export const ProgramacaoTexto = () => {
     } catch (err: any) {
       toast.error(err.message || "Erro ao publicar");
     }
+  };
+
+  const handlePublish = () => {
+    const selected = parsed.filter((g) => g.selected);
+    if (selected.length === 0) {
+      toast.error("Selecione pelo menos um jogo");
+      return;
+    }
+    if (midnightGamesCount > 0) {
+      setPendingPublishAction("publish");
+      setMidnightConfirmOpen(true);
+      return;
+    }
+    executePublish();
   };
 
   const handleRepublish = async () => {
