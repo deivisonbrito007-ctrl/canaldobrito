@@ -91,7 +91,7 @@ const MatchCard = React.forwardRef<HTMLDivElement, { game: DailyGame }>(
               </div>
             </div>
             <div className="px-2.5 pb-1.5 space-y-1">
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 text-center">
                 <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
                   {game.home_team}
                 </p>
@@ -151,7 +151,7 @@ const EventCard = React.forwardRef<HTMLDivElement, { event: DailyGame }>(
                 </span>
               </div>
             </div>
-            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+            <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2 text-center">
               {event.home_team}
             </p>
             <div className="flex items-center justify-between gap-1">
