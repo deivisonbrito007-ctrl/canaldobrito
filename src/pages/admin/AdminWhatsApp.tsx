@@ -50,17 +50,63 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
   );
 };
 
+/** Build WhatsApp-ready text for a list of games on a given date */
+function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): string | null {
+  if (!games || games.length === 0) return null;
+
+  const spDate = midnightInSaoPaulo(dateStr);
+  const dayLabel = format(spDate, "EEEE", { locale: ptBR });
+  const [, m, d] = dateStr.split("-");
+
+  const lines: string[] = [];
+  lines.push(`📅 *${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}, ${d}/${m}*`);
+  lines.push("");
+
+  const bySport: Record<string, DailyGame[]> = {};
+  games.forEach((g) => {
+    const key = g.sport_type || "football";
+    if (!bySport[key]) bySport[key] = [];
+    bySport[key].push(g);
+  });
+
+  for (const [sport, sportGames] of Object.entries(bySport)) {
+    const emoji = SPORT_EMOJI[sport as SportType] ?? "⚽";
+    const label = SPORT_LABEL[sport as SportType] ?? sport.toUpperCase();
+    lines.push(`${emoji} *${label.toUpperCase()}*`);
+
+    const sorted = [...sportGames].sort((a, b) => a.game_time.localeCompare(b.game_time));
+    for (const g of sorted) {
+      const time = g.game_time.slice(0, 5);
+      const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
+      lines.push(`${time} — ${teams}`);
+
+      const details: string[] = [];
+      if (g.competition) {
+        details.push(g.competition_detail ? `🏆 ${g.competition} · ${g.competition_detail}` : `🏆 ${g.competition}`);
+      }
+      if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
+      if (details.length > 0) lines.push(details.join(" | "));
+      lines.push("");
+    }
+  }
+
+  lines.push(`👉 ${siteUrl}`);
+  return lines.join("\n").trim();
+}
+
 const AdminWhatsApp = () => {
-  const { todayStr, formattedDate, dayName, templates } = useMemo(() => {
+  const { todayStr, tomorrowStr, templates } = useMemo(() => {
     const now = new Date();
     const tStr = getLocalDateString(now);
+    const spNow = midnightInSaoPaulo(tStr);
+    const tomorrowDate = addDays(spNow, 1);
+    const tmStr = getLocalDateString(tomorrowDate);
     const fDate = format(now, "dd/MM/yyyy");
     const dName = format(now, "EEEE", { locale: ptBR });
 
     return {
       todayStr: tStr,
-      formattedDate: fDate,
-      dayName: dName,
+      tomorrowStr: tmStr,
       templates: [
         {
           id: "geral",
@@ -86,54 +132,16 @@ const AdminWhatsApp = () => {
     };
   }, []);
 
-  const { data: games } = useDailyGames(todayStr);
+  const { data: todayGames } = useDailyGames(todayStr);
+  const { data: tomorrowGames } = useDailyGames(tomorrowStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
 
-  const gamesText = useMemo(() => {
-    const list = games ?? [];
-    if (list.length === 0) return null;
+  const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
+  const tomorrowText = useMemo(() => buildDayText(tomorrowGames ?? [], tomorrowStr, siteUrl), [tomorrowGames, tomorrowStr, siteUrl]);
 
-    const lines: string[] = [];
-    const [, m, d] = todayStr.split("-");
-    lines.push(`📅 Programação ${d}/${m}`);
-    lines.push("");
-
-    // Group by sport_type
-    const bySport: Record<string, typeof list> = {};
-    list.forEach((g) => {
-      const key = g.sport_type || "football";
-      if (!bySport[key]) bySport[key] = [];
-      bySport[key].push(g);
-    });
-
-    for (const [sport, sportGames] of Object.entries(bySport)) {
-      const emoji = SPORT_EMOJI[sport as SportType] ?? "⚽";
-      const label = SPORT_LABEL[sport as SportType] ?? sport.toUpperCase();
-      lines.push(`${emoji} ${label.toUpperCase()}`);
-
-      const sorted = [...sportGames].sort((a, b) => a.game_time.localeCompare(b.game_time));
-      for (const g of sorted) {
-        const time = g.game_time.slice(0, 5);
-        const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
-        lines.push(`${time} — ${teams}`);
-
-        const details: string[] = [];
-        if (g.competition) {
-          const comp = g.competition_detail
-            ? `🏆 ${g.competition} · ${g.competition_detail}`
-            : `🏆 ${g.competition}`;
-          details.push(comp);
-        }
-        if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
-        if (details.length > 0) lines.push(details.join(" | "));
-        lines.push("");
-      }
-    }
-
-    lines.push(`👉 ${siteUrl}`);
-    return lines.join("\n").trim();
-  }, [games, todayStr, siteUrl]);
+  const todayCount = todayGames?.length ?? 0;
+  const tomorrowCount = tomorrowGames?.length ?? 0;
 
   const customFinal = customMsg.trim()
     ? `${customMsg.trim()}\n\n👉 ${siteUrl}`
