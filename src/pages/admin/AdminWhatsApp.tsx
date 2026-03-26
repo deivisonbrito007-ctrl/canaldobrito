@@ -73,7 +73,7 @@ function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): str
     bySport[key].push(g);
   });
 
-  const sportOrder: string[] = ['football', 'basketball', 'volleyball', 'tennis', 'mma', 'f1'];
+  const sportOrder: string[] = ['football', 'basketball', 'volleyball', 'tennis', 'hockey', 'baseball', 'mma', 'f1'];
   const sortedSports = Object.keys(bySport).sort((a, b) => {
     const ia = sportOrder.indexOf(a);
     const ib = sportOrder.indexOf(b);
