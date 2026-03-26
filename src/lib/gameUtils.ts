@@ -47,8 +47,8 @@ export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.incl
 export function detectSportType(competition: string): SportType {
   const c = competition.toLowerCase();
   if (/\b(nba|nbb|euroleague|wnba|basquete)\b/i.test(c)) return 'basketball';
-  if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|rangers|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|flames|canucks|senators|panthers|islanders|hurricanes|predators|blue jackets|wild|sharks|ducks|coyotes|kraken|devils|sabres|blues|jets|stars)\b/i.test(c)) return 'hockey';
-  if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|giants|cubs|mets|astros|braves|cardinals|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|reds|royals|tigers|white sox|angels|rangers|nationals|marlins|athletics)\b/i.test(c)) return 'baseball';
+  if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|canucks|senators|islanders|hurricanes|predators|blue jackets|sharks|ducks|coyotes|kraken|devils|sabres)\b/i.test(c)) return 'hockey';
+  if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|cubs|mets|astros|braves|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|royals|tigers|white sox|marlins)\b/i.test(c)) return 'baseball';
   if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
   if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|stock car|e-prix)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';
