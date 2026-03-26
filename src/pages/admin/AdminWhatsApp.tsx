@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
-import { useDailyGames } from "@/hooks/useDailyGames";
+import { useDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Copy, Check, MessageCircle, Link2, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString } from "@/lib/gameUtils";
+import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -49,17 +50,63 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
   );
 };
 
+/** Build WhatsApp-ready text for a list of games on a given date */
+function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): string | null {
+  if (!games || games.length === 0) return null;
+
+  const spDate = midnightInSaoPaulo(dateStr);
+  const dayLabel = format(spDate, "EEEE", { locale: ptBR });
+  const [, m, d] = dateStr.split("-");
+
+  const lines: string[] = [];
+  lines.push(`📅 *${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}, ${d}/${m}*`);
+  lines.push("");
+
+  const bySport: Record<string, DailyGame[]> = {};
+  games.forEach((g) => {
+    const key = g.sport_type || "football";
+    if (!bySport[key]) bySport[key] = [];
+    bySport[key].push(g);
+  });
+
+  for (const [sport, sportGames] of Object.entries(bySport)) {
+    const emoji = SPORT_EMOJI[sport as SportType] ?? "⚽";
+    const label = SPORT_LABEL[sport as SportType] ?? sport.toUpperCase();
+    lines.push(`${emoji} *${label.toUpperCase()}*`);
+
+    const sorted = [...sportGames].sort((a, b) => a.game_time.localeCompare(b.game_time));
+    for (const g of sorted) {
+      const time = g.game_time.slice(0, 5);
+      const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
+      lines.push(`${time} — ${teams}`);
+
+      const details: string[] = [];
+      if (g.competition) {
+        details.push(g.competition_detail ? `🏆 ${g.competition} · ${g.competition_detail}` : `🏆 ${g.competition}`);
+      }
+      if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
+      if (details.length > 0) lines.push(details.join(" | "));
+      lines.push("");
+    }
+  }
+
+  lines.push(`👉 ${siteUrl}`);
+  return lines.join("\n").trim();
+}
+
 const AdminWhatsApp = () => {
-  const { todayStr, formattedDate, dayName, templates } = useMemo(() => {
+  const { todayStr, tomorrowStr, templates } = useMemo(() => {
     const now = new Date();
     const tStr = getLocalDateString(now);
+    const spNow = midnightInSaoPaulo(tStr);
+    const tomorrowDate = addDays(spNow, 1);
+    const tmStr = getLocalDateString(tomorrowDate);
     const fDate = format(now, "dd/MM/yyyy");
     const dName = format(now, "EEEE", { locale: ptBR });
 
     return {
       todayStr: tStr,
-      formattedDate: fDate,
-      dayName: dName,
+      tomorrowStr: tmStr,
       templates: [
         {
           id: "geral",
@@ -85,54 +132,16 @@ const AdminWhatsApp = () => {
     };
   }, []);
 
-  const { data: games } = useDailyGames(todayStr);
+  const { data: todayGames } = useDailyGames(todayStr);
+  const { data: tomorrowGames } = useDailyGames(tomorrowStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
 
-  const gamesText = useMemo(() => {
-    const list = games ?? [];
-    if (list.length === 0) return null;
+  const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
+  const tomorrowText = useMemo(() => buildDayText(tomorrowGames ?? [], tomorrowStr, siteUrl), [tomorrowGames, tomorrowStr, siteUrl]);
 
-    const lines: string[] = [];
-    const [, m, d] = todayStr.split("-");
-    lines.push(`📅 Programação ${d}/${m}`);
-    lines.push("");
-
-    // Group by sport_type
-    const bySport: Record<string, typeof list> = {};
-    list.forEach((g) => {
-      const key = g.sport_type || "football";
-      if (!bySport[key]) bySport[key] = [];
-      bySport[key].push(g);
-    });
-
-    for (const [sport, sportGames] of Object.entries(bySport)) {
-      const emoji = SPORT_EMOJI[sport as SportType] ?? "⚽";
-      const label = SPORT_LABEL[sport as SportType] ?? sport.toUpperCase();
-      lines.push(`${emoji} ${label.toUpperCase()}`);
-
-      const sorted = [...sportGames].sort((a, b) => a.game_time.localeCompare(b.game_time));
-      for (const g of sorted) {
-        const time = g.game_time.slice(0, 5);
-        const teams = g.away_team ? `${g.home_team} x ${g.away_team}` : g.home_team;
-        lines.push(`${time} — ${teams}`);
-
-        const details: string[] = [];
-        if (g.competition) {
-          const comp = g.competition_detail
-            ? `🏆 ${g.competition} · ${g.competition_detail}`
-            : `🏆 ${g.competition}`;
-          details.push(comp);
-        }
-        if (g.channels && g.channels.length > 0) details.push(`📺 ${g.channels.join(", ")}`);
-        if (details.length > 0) lines.push(details.join(" | "));
-        lines.push("");
-      }
-    }
-
-    lines.push(`👉 ${siteUrl}`);
-    return lines.join("\n").trim();
-  }, [games, todayStr, siteUrl]);
+  const todayCount = todayGames?.length ?? 0;
+  const tomorrowCount = tomorrowGames?.length ?? 0;
 
   const customFinal = customMsg.trim()
     ? `${customMsg.trim()}\n\n👉 ${siteUrl}`
@@ -171,22 +180,57 @@ const AdminWhatsApp = () => {
         </div>
       </div>
 
-      {/* Games of the Day */}
-      {gamesText && (
-        <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
-          <span className="text-sm font-bold text-foreground">⚽ Jogos do Dia ({(games ?? []).length})</span>
-          <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[200px] overflow-y-auto">
-            {gamesText}
-          </pre>
-          <div className="flex gap-2">
-            <CopyButton text={gamesText} label="Copiar" />
-            <Button size="sm" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(gamesText)}`, "_blank")} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
-              <MessageCircle className="h-3.5 w-3.5" />
-              Enviar
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Games Schedule with Tabs */}
+      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
+        <Tabs defaultValue="today">
+          <TabsList className="w-full">
+            <TabsTrigger value="today" className="flex-1 text-xs">
+              Hoje ({todayCount})
+            </TabsTrigger>
+            <TabsTrigger value="tomorrow" className="flex-1 text-xs">
+              Amanhã ({tomorrowCount})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="today" className="space-y-3 mt-3">
+            {todayText ? (
+              <>
+                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[240px] overflow-y-auto">
+                  {todayText}
+                </pre>
+                <div className="flex gap-2">
+                  <CopyButton text={todayText} label="Copiar" />
+                  <Button size="sm" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(todayText)}`, "_blank")} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Enviar
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhum jogo agendado para hoje.</p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tomorrow" className="space-y-3 mt-3">
+            {tomorrowText ? (
+              <>
+                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[240px] overflow-y-auto">
+                  {tomorrowText}
+                </pre>
+                <div className="flex gap-2">
+                  <CopyButton text={tomorrowText} label="Copiar" />
+                  <Button size="sm" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(tomorrowText)}`, "_blank")} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Enviar
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhum jogo agendado para amanhã.</p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Custom Message */}
       <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-4">
