@@ -905,6 +905,38 @@ export const ProgramacaoTexto = () => {
           </div>
         </div>
       )}
+
+      {/* Midnight time confirmation dialog */}
+      <AlertDialog open={midnightConfirmOpen} onOpenChange={setMidnightConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Jogos com horário 00:00
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {midnightGamesCount} jogo(s) selecionado(s) com horário <strong>00:00</strong>.
+              Jogos à meia-noite podem aparecer como "Ao Vivo" logo após a virada do dia.
+              <br /><br />
+              <strong>Verifique se a data está correta</strong> — um jogo de "amanhã às 00:00" deve ter a data do dia seguinte.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingPublishAction(null)}>Voltar e corrigir</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setMidnightConfirmOpen(false);
+                if (pendingPublishAction === "republish") executeRepublish();
+                else executePublish();
+                setPendingPublishAction(null);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Confirmar e publicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
