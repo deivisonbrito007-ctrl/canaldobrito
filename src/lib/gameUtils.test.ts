@@ -40,6 +40,27 @@ describe("detectSportType", () => {
     expect(detectSportType("EuroLeague")).toBe("basketball");
   });
 
+  it("detects hockey", () => {
+    expect(detectSportType("NHL")).toBe("hockey");
+    expect(detectSportType("Hóquei no Gelo")).toBe("hockey");
+    expect(detectSportType("Toronto Maple Leafs")).toBe("hockey");
+    expect(detectSportType("Boston Bruins")).toBe("hockey");
+  });
+
+  it("detects baseball", () => {
+    expect(detectSportType("MLB")).toBe("baseball");
+    expect(detectSportType("Baseball")).toBe("baseball");
+    expect(detectSportType("New York Yankees")).toBe("baseball");
+    expect(detectSportType("Red Sox")).toBe("baseball");
+  });
+
+  it("does not misclassify ambiguous names", () => {
+    // These names exist in multiple sports — should default to football
+    expect(detectSportType("Rangers")).toBe("football");
+    expect(detectSportType("Giants")).toBe("football");
+    expect(detectSportType("Cardinals")).toBe("football");
+  });
+
   it("detects tennis", () => {
     expect(detectSportType("ATP Finals")).toBe("tennis");
     expect(detectSportType("Roland Garros")).toBe("tennis");
