@@ -88,6 +88,7 @@ const AdminDashboard = () => {
   const activeNews = news?.filter((n) => n.active).length || 0;
   const totalGames = todayGames?.length || 0;
   const activeGames = todayGames?.filter((g) => g.active).length || 0;
+  const scheduledGames = todayGames?.filter((g) => !g.active && g.publish_at && new Date(g.publish_at) > new Date()).length || 0;
 
   const bCount = useCountUp(totalBanners);
   const mCount = useCountUp(totalMovies);
@@ -215,6 +216,9 @@ const AdminDashboard = () => {
                   <div className="w-full">
                     <p className="text-[10px] text-muted-foreground">{card.label}</p>
                     <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
+                    {card.key === "jogos" && scheduledGames > 0 && (
+                      <p className="text-[9px] text-amber-400/70">{scheduledGames} agendado{scheduledGames !== 1 ? "s" : ""}</p>
+                    )}
                     {/* Micro progress bar */}
                     <div className="mt-1.5 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
                       <div
