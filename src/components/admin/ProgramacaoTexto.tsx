@@ -91,6 +91,8 @@ function cleanText(s: string): string {
     .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold** → bold
     .replace(/\*/g, "")                  // stray asterisks
     .replace(/[🏆🎾🏎️🏎🥊🏀🏐📺⏰]/g, "") // residual sport/channel emojis
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")  // remove flag emojis (🇧🇷, 🇫🇷, etc.)
+    .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "") // remove subdivision flags
     .replace(/\s{2,}/g, " ")             // double spaces
     .trim();
 }
