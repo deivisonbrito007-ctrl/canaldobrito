@@ -127,6 +127,110 @@ function cleanupGame(game: ParsedGame): ParsedGame {
   return { ...game, home_team: home, away_team: away, competition, competition_detail };
 }
 
+/** Check if a line is a metadata line (🏆, 📍, ⏰, 📺) */
+function isMetadataLine(line: string): boolean {
+  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
+}
+
+/** Check if a line is a section header (e.g. FUTEBOL, NBA, Brasileirão Feminino) */
+function isSectionHeader(line: string, nextLine?: string): boolean {
+  // Skip lines that are metadata
+  if (isMetadataLine(line)) return false;
+  // Skip date headers (handled separately)
+  if (/(?:📅|🗓|🗓️|\*\*Dia|Dia)\s*\**\s*(?:Dia\s*)?\**\s*\d{1,2}\/\d{1,2}/i.test(line)) return false;
+  // Skip lines with " x " (team matchups)
+  if (/\sx\s/i.test(line)) return false;
+
+  // All-caps text without metadata emoji → section header
+  const stripped = line.replace(/[^a-zA-ZÀ-ÿ\s]/g, "").trim();
+  if (stripped.length > 0 && stripped === stripped.toUpperCase()) return true;
+
+  // Known section names (mixed case)
+  const sectionPatterns = /^(FIFA Series|Amistosos? Internacion|Brasileir[aã]o|Copa Argentina|Liga das Na[çc][oõ]es|Superliga|LA Open|Miami Open|ATP|WTA|Horários de Brasília|AGENDA ESPORTIVA)/i;
+  if (sectionPatterns.test(line)) {
+    // Only a header if next line is NOT a metadata line (otherwise it's a game title)
+    if (nextLine && isMetadataLine(nextLine)) return false;
+    return true;
+  }
+
+  return false;
+}
+
+/** Collect metadata from lines following a game title */
+function collectMetadata(lines: string[], startIdx: number): {
+  competition: string;
+  competition_detail: string;
+  game_time: string;
+  channels: string[];
+  sport_type: SportType | null;
+  linesConsumed: number;
+} {
+  let competition = "";
+  let competition_detail = "";
+  let game_time = "00:00";
+  let channels: string[] = [];
+  let sport_type: SportType | null = null;
+  let consumed = 0;
+
+  let j = startIdx;
+  while (j < lines.length && isMetadataLine(lines[j])) {
+    const ml = lines[j];
+
+    // 🏆 or sport emoji → competition line
+    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)/.test(ml)) {
+      sport_type = detectSportFromEmoji(ml);
+      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)\s*/, "").trim();
+      // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
+      if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
+        const parsed = parseCompAndTime(ml);
+        competition = parsed.competition;
+        competition_detail = parsed.competition_detail;
+        game_time = parsed.game_time;
+      } else {
+        // Competition only — may have detail in parentheses
+        const detailMatch = cleaned.match(/\(([^)]+)\)/);
+        if (detailMatch) {
+          competition_detail = detailMatch[1];
+          competition = cleaned.replace(/\([^)]+\)/, "").trim();
+        } else {
+          competition = cleaned;
+        }
+      }
+      // Also check if line has 📺 (old format all-in-one)
+      if (/📺/.test(ml)) {
+        const afterTv = ml.split("📺").pop() || "";
+        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+      }
+    }
+    // 📍 → competition detail
+    else if (/^📍/.test(ml)) {
+      competition_detail = ml.replace(/^📍\s*/, "").trim();
+    }
+    // ⏰ or clock emoji → time
+    else if (/^(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
+      const timeMatch = ml.match(/(\d{1,2})[hH:](\d{2})/);
+      if (timeMatch) {
+        game_time = `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}`;
+      } else {
+        const timeMatchShort = ml.match(/(\d{1,2})[hH]\b/);
+        if (timeMatchShort) {
+          game_time = `${timeMatchShort[1].padStart(2, "0")}:00`;
+        }
+      }
+    }
+    // 📺 → channels
+    else if (/^📺/.test(ml)) {
+      const afterTv = ml.replace(/^📺\s*/, "");
+      channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+    }
+
+    consumed++;
+    j++;
+  }
+
+  return { competition, competition_detail, game_time, channels, sport_type, linesConsumed: consumed };
+}
+
 export function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
@@ -147,55 +251,79 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
       continue;
     }
 
-    const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
-    const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
-
-    // FORMAT A: line has " x " → two teams
-    if (/\sx\s/i.test(line)) {
-      const teamParts = line.split(/\sx\s/i).map((t) => t.trim());
-      const home_team = teamParts[0] || "";
-      const away_team = teamParts[1] || "";
-      const is_womens = /\(F\)/i.test(line);
-
-      const { competition, competition_detail, game_time } = isCompetitionLine(nextLine)
-        ? parseCompAndTime(nextLine)
-        : { competition: "", competition_detail: "", game_time: "00:00" };
-
-      const sport_type = isCompetitionLine(nextLine) ? detectSportFromEmoji(nextLine) : null;
-
-      let channels: string[] = [];
-      if (channelLine.includes("📺")) {
-        const afterTv = channelLine.split("📺").pop() || "";
-        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+    // Date detection for "SEXTA 27/03" style headers
+    const headerDateMatch = line.match(/(\d{1,2})\/(\d{1,2})$/);
+    if (headerDateMatch && !isMetadataLine(line) && !/\sx\s/i.test(line)) {
+      const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
+      if (!isMetadataLine(nextLine)) {
+        const day = headerDateMatch[1].padStart(2, "0");
+        const month = headerDateMatch[2].padStart(2, "0");
+        const year = new Date().getFullYear();
+        currentDate = `${year}-${month}-${day}`;
+        i++;
+        continue;
       }
+    }
 
-      games.push(cleanupGame({
-        home_team, away_team, competition, competition_detail, game_time,
-        channels, is_womens, date: currentDate, selected: true,
-        sport_type: sport_type || undefined,
-      }));
-      i += 3;
+    const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
+
+    // Skip section headers
+    if (isSectionHeader(line, nextLine)) {
+      i++;
       continue;
     }
 
-    // FORMAT B: line has NO " x " but next line is a competition line → event/individual sport
-    if (isCompetitionLine(nextLine)) {
-      const home_team = line;
-      const { competition, competition_detail, game_time } = parseCompAndTime(nextLine);
-      const sport_type = detectSportFromEmoji(nextLine);
+    // Check if this line is a game/event title (has metadata lines following)
+    const hasMetadataAfter = i + 1 < lines.length && isMetadataLine(lines[i + 1]);
+    // Also support old format: line with " x " followed by comp+time line
+    const isOldFormatTeamLine = /\sx\s/i.test(line) && isCompetitionLine(nextLine);
 
-      let channels: string[] = [];
-      if (channelLine.includes("📺")) {
-        const afterTv = channelLine.split("📺").pop() || "";
-        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+    if (hasMetadataAfter || isOldFormatTeamLine) {
+      // Parse teams
+      let home_team = "";
+      let away_team = "";
+      let is_womens = false;
+
+      if (/\sx\s/i.test(line)) {
+        const teamParts = line.split(/\sx\s/i).map((t) => t.trim());
+        home_team = teamParts[0] || "";
+        away_team = teamParts[1] || "";
+        is_womens = /\(F\)/i.test(line);
+      } else {
+        home_team = line;
+        is_womens = /\(F\)/i.test(line);
+      }
+
+      // Collect metadata from following lines
+      const meta = collectMetadata(lines, i + 1);
+
+      // For old format compatibility: if no metadata lines consumed but nextLine is comp line
+      if (meta.linesConsumed === 0 && isCompetitionLine(nextLine)) {
+        const parsed = parseCompAndTime(nextLine);
+        meta.competition = parsed.competition;
+        meta.competition_detail = parsed.competition_detail;
+        meta.game_time = parsed.game_time;
+        meta.sport_type = detectSportFromEmoji(nextLine);
+        meta.linesConsumed = 1;
+        // Check channel line
+        const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
+        if (channelLine.includes("📺")) {
+          const afterTv = channelLine.split("📺").pop() || "";
+          meta.channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+          meta.linesConsumed = 2;
+        }
       }
 
       games.push(cleanupGame({
-        home_team, away_team: "", competition, competition_detail, game_time,
-        channels, is_womens: false, date: currentDate, selected: true,
-        sport_type: sport_type || undefined,
+        home_team, away_team,
+        competition: meta.competition,
+        competition_detail: meta.competition_detail,
+        game_time: meta.game_time,
+        channels: meta.channels,
+        is_womens, date: currentDate, selected: true,
+        sport_type: meta.sport_type || undefined,
       }));
-      i += 3;
+      i += 1 + meta.linesConsumed;
       continue;
     }
 
