@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -73,6 +73,48 @@ export const DailyGamesManager = () => {
     }
   };
 
+  const [reclassifying, setReclassifying] = useState(false);
+
+  const handleReclassifySports = async () => {
+    setReclassifying(true);
+    try {
+      // Fetch ALL non-archived games (no date filter)
+      const { data: allGames, error } = await supabase
+        .from("daily_games")
+        .select("id, home_team, away_team, competition, sport_type")
+        .eq("archived", false);
+
+      if (error) throw error;
+      if (!allGames || allGames.length === 0) {
+        toast.info("Nenhum jogo encontrado para re-classificar");
+        return;
+      }
+
+      let updated = 0;
+      for (const g of allGames) {
+        const correct = detectSportType(g.competition, `${g.home_team} ${g.away_team}`);
+        if (correct !== g.sport_type) {
+          const { error: upErr } = await supabase
+            .from("daily_games")
+            .update({ sport_type: correct })
+            .eq("id", g.id);
+          if (!upErr) updated++;
+        }
+      }
+
+      if (updated === 0) {
+        toast.success("Todos os jogos já estão classificados corretamente!");
+      } else {
+        toast.success(`${updated} jogo(s) re-classificado(s)!`);
+        queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao re-classificar");
+    } finally {
+      setReclassifying(false);
+    }
+  };
+
   const handleClearDay = async () => {
     if (!confirm(`Excluir todos os jogos de ${selectedDate}?`)) return;
     try {
@@ -130,6 +172,10 @@ export const DailyGamesManager = () => {
           </Button>
           <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleReclassifySports} disabled={reclassifying} className="text-xs text-blue-400 hover:text-blue-300">
+            {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+            Re-classificar
           </Button>
         </div>
       </div>
