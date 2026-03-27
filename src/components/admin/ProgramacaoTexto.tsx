@@ -1094,6 +1094,9 @@ const EditGameForm = ({
   const [detail, setDetail] = useState(game.competition_detail);
   const [time, setTime] = useState(game.game_time);
   const [channels, setChannels] = useState(game.channels.join(", "));
+  const [sportType, setSportType] = useState<SportType>(
+    game.sport_type || detectSportType(game.competition, `${game.home_team} ${game.away_team}`)
+  );
 
   return (
     <div className="space-y-2">
@@ -1101,9 +1104,18 @@ const EditGameForm = ({
         <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa / Evento" className="h-8 text-xs" />
         <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Time visitante (vazio = evento)" className="h-8 text-xs" />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Input value={comp} onChange={(e) => setComp(e.target.value)} placeholder="Competição" className="h-8 text-xs" />
         <Input value={time} onChange={(e) => setTime(e.target.value)} placeholder="HH:MM" className="h-8 text-xs" />
+        <select
+          value={sportType}
+          onChange={(e) => setSportType(e.target.value as SportType)}
+          className="h-8 text-xs rounded-md border border-input bg-background px-2"
+        >
+          {(Object.keys(SPORT_EMOJI) as SportType[]).map((st) => (
+            <option key={st} value={st}>{SPORT_EMOJI[st]} {SPORT_LABEL[st]}</option>
+          ))}
+        </select>
       </div>
       <Input value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Fase (ex: oitavas)" className="h-8 text-xs" />
       <Input value={channels} onChange={(e) => setChannels(e.target.value)} placeholder="Canais separados por vírgula" className="h-8 text-xs" />
@@ -1118,6 +1130,7 @@ const EditGameForm = ({
               competition_detail: detail,
               game_time: time,
               channels: channels.split(",").map((c) => c.trim()).filter(Boolean),
+              sport_type: sportType,
             })
           }
           className="h-7 text-xs bg-emerald-600"
