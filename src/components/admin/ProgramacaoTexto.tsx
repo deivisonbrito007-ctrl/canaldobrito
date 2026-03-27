@@ -314,6 +314,16 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
         }
       }
 
+      // Use detectSportType with competition + team names for accurate detection
+      const autoSport = detectSportType(
+        meta.competition || "",
+        `${home_team} ${away_team}`
+      );
+      // Only trust emoji-based detection if it's NOT generic football
+      const finalSport = (meta.sport_type && meta.sport_type !== 'football')
+        ? meta.sport_type
+        : autoSport;
+
       games.push(cleanupGame({
         home_team, away_team,
         competition: meta.competition,
@@ -321,7 +331,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
         game_time: meta.game_time,
         channels: meta.channels,
         is_womens, date: currentDate, selected: true,
-        sport_type: meta.sport_type || undefined,
+        sport_type: finalSport,
       }));
       i += 1 + meta.linesConsumed;
       continue;
