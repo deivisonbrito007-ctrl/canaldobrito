@@ -903,9 +903,19 @@ export const ProgramacaoTexto = () => {
                                   📺 {game.channels.join(", ") || "—"}
                                 </p>
                                 <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                  <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-white/[0.1] text-muted-foreground">
-                                    {sportEmoji} {resolvedSport}
-                                  </Badge>
+                                  <select
+                                    value={resolvedSport}
+                                    onChange={(e) => updateGame(globalIdx, { sport_type: e.target.value as SportType })}
+                                    className="text-[9px] py-0.5 px-1.5 rounded-md border border-white/[0.1] bg-secondary/50 text-foreground cursor-pointer appearance-none pr-4"
+                                    style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
+                                    title="Clique para corrigir o esporte"
+                                  >
+                                    {(Object.keys(SPORT_EMOJI) as SportType[]).map((st) => (
+                                      <option key={st} value={st}>
+                                        {SPORT_EMOJI[st]} {SPORT_LABEL[st]}
+                                      </option>
+                                    ))}
+                                  </select>
                                   {game.is_womens && (
                                     <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
                                       Feminino
