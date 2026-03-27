@@ -199,8 +199,8 @@ Botafogo (F) x Corinthians (F)
     const games = parseScheduleText(text, fallback);
     expect(games).toHaveLength(1);
     expect(games[0].is_womens).toBe(true);
-    expect(games[0].home_team).toBe("Botafogo");
-    expect(games[0].away_team).toBe("Corinthians");
+    expect(games[0].home_team).toBe("Botafogo (F)");
+    expect(games[0].away_team).toBe("Corinthians (F)");
     expect(games[0].competition).toBe("Brasileirão Feminino");
   });
 
