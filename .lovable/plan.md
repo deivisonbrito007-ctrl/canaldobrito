@@ -1,63 +1,60 @@
 
 
-## Problema: Jogos classificados com esporte errado
+## Problema: Parser não reconhece formato multi-linha
 
-### Jogos encontrados com classificação errada no banco
+### Formato esperado pelo parser atual (3 linhas)
+```
+Flamengo x Palmeiras
+🏆 Brasileirão (oitavas) / ⏰ 19h00
+📺 Sportv
+```
 
-| Jogo | competition | sport_type atual | Correto |
-|------|------------|-----------------|---------|
-| Los Angeles Dodgers x Arizona Diamondbacks | 21:30 \| ESPN 4 | football | **baseball** |
-| ATP Tour (x2) | 14:00 \| ESPN 2, 20:00 \| ESPN 2 | football | **tennis** |
+### Formato enviado pelo usuário (5 linhas)
+```
+China x Curaçao
+🏆 FIFA Series 2026
+📍 Fase de grupos
+⏰ 03:00
+📺 DAZN
+```
 
-### Causa raiz
-
-`detectSportType()` recebe **apenas o campo `competition`**, que frequentemente contém horário/canal (ex: `"21:30 | ESPN 4"`) em vez do nome do torneio. Os nomes dos times (Dodgers, Diamondbacks) e competição real (ATP Tour — que fica no `home_team`) nunca são analisados.
+O parser consome exatamente 3 linhas por jogo (team, comp+time, channels). Quando competição, detalhe, horário e canal estão em linhas separadas, ele perde dados ou pula jogos.
 
 ### Solução
 
-#### 1. Expandir `detectSportType` para aceitar nomes dos times
+Refatorar `parseScheduleText` em `src/lib/gameUtils.ts` → `src/components/admin/ProgramacaoTexto.tsx` para usar uma abordagem de **coleta multi-linha**:
 
-**`src/lib/gameUtils.ts`** — adicionar parâmetro opcional `teamNames`:
+#### 1. `src/components/admin/ProgramacaoTexto.tsx` — Refatorar `parseScheduleText`
 
-```ts
-export function detectSportType(competition: string, teamNames?: string): SportType {
-  const c = `${competition} ${teamNames || ''}`.toLowerCase();
-  // ... mesmas regras regex existentes
-}
+Em vez de consumir exatamente 3 linhas, após detectar a linha de times (ou evento), **coletar todas as linhas seguintes** que sejam de metadados (🏆, 📍, ⏰, 📺) até encontrar a próxima linha de times, data, ou seção:
+
+```
+Ao encontrar linha de times:
+  - Avançar e coletar linhas enquanto começarem com 🏆, 📍, ⏰, 📺
+  - Extrair competition de 🏆
+  - Extrair competition_detail de 📍
+  - Extrair game_time de ⏰
+  - Extrair channels de 📺
+  - Manter compatibilidade com formato antigo (tudo numa linha com /)
 ```
 
-#### 2. Passar nomes dos times em todos os call sites
+Também ignorar linhas de "cabeçalho de seção" como `FUTEBOL`, `BASQUETE`, `FIFA Series 2026`, `Amistosos Internacionais`, `NBA`, etc. — linhas soltas sem emoji de metadado que antecedem jogos.
 
-- **`src/components/admin/ProgramacaoTexto.tsx`** (3 ocorrências):
-  - `detectSportType(g.competition)` → `detectSportType(g.competition, \`${g.home_team} ${g.away_team}\`)`
+#### 2. Adicionar detecção de linhas de cabeçalho de seção
 
-- **`src/components/admin/DailyGamesManager.tsx`** (1 ocorrência no AddGameForm):
-  - `detectSportType(comp)` → `detectSportType(comp, \`${home} ${away}\`)`
+Linhas como `FUTEBOL`, `NBA`, `TÊNIS`, `Brasileirão Feminino`, `Copa Argentina` são títulos de seção e devem ser ignoradas. Detectar por:
+- Texto todo em maiúsculas sem emoji de metadado
+- Texto que não contém " x " e cuja próxima linha NÃO é uma linha de metadado (🏆/📍/⏰/📺)
 
-#### 3. Corrigir jogos existentes no banco
+#### 3. Atualizar testes
 
-Executar UPDATE para os 3 registros identificados:
-- Dodgers vs Diamondbacks → `baseball`
-- ATP Tour (2 registros) → `tennis`
-
-#### 4. Atualizar testes
-
-**`src/lib/gameUtils.test.ts`** — adicionar testes para detecção via nomes de times:
-
-```ts
-it("detects baseball from team names when competition is generic", () => {
-  expect(detectSportType("21:30 | ESPN 4", "Los Angeles Dodgers Arizona Diamondbacks")).toBe("baseball");
-});
-
-it("detects tennis from team names when competition is generic", () => {
-  expect(detectSportType("14:00 | ESPN 2", "ATP Tour")).toBe("tennis");
-});
-```
+Adicionar teste em `ProgramacaoTexto.test.tsx` para o formato multi-linha de 5 linhas, garantindo que competition, detail, time e channels sejam extraídos corretamente.
 
 ### Arquivos alterados
-- `src/lib/gameUtils.ts` — parâmetro `teamNames`
-- `src/components/admin/ProgramacaoTexto.tsx` — 3 call sites
-- `src/components/admin/DailyGamesManager.tsx` — 1 call site
-- `src/lib/gameUtils.test.ts` — novos testes
-- Banco: UPDATE de 3 registros
+- `src/components/admin/ProgramacaoTexto.tsx` — refatorar `parseScheduleText`, `isCompetitionLine`, `parseCompAndTime`
+- `src/components/public/__tests__/` ou `src/components/admin/__tests__/ProgramacaoTexto.test.tsx` — novos testes
+
+### Compatibilidade
+- O formato antigo de 3 linhas (com `/` separando competição e horário) continua funcionando
+- O novo formato de 5 linhas é suportado coletando linhas de metadado individualmente
 
