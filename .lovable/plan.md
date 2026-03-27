@@ -1,60 +1,53 @@
 
 
-## Problema: Parser não reconhece formato multi-linha
+## Problema: Todos os jogos são classificados como futebol
 
-### Formato esperado pelo parser atual (3 linhas)
-```
-Flamengo x Palmeiras
-🏆 Brasileirão (oitavas) / ⏰ 19h00
-📺 Sportv
-```
+### Causa raiz
 
-### Formato enviado pelo usuário (5 linhas)
-```
-China x Curaçao
-🏆 FIFA Series 2026
-📍 Fase de grupos
-⏰ 03:00
-📺 DAZN
-```
+Em `collectMetadata` (linha 181), `detectSportFromEmoji` retorna `'football'` para `🏆` — que é o emoji usado em **todos** os jogos do texto. Resultado: NBA, vôlei, tênis → tudo vira futebol.
 
-O parser consome exatamente 3 linhas por jogo (team, comp+time, channels). Quando competição, detalhe, horário e canal estão em linhas separadas, ele perde dados ou pula jogos.
+A função `detectSportType(competition, teamNames)` que sabe identificar NBA, ATP, Superliga etc. **nunca é chamada** durante o parsing.
 
 ### Solução
 
-Refatorar `parseScheduleText` em `src/lib/gameUtils.ts` → `src/components/admin/ProgramacaoTexto.tsx` para usar uma abordagem de **coleta multi-linha**:
+Após coletar os metadados e montar o jogo, usar `detectSportType` como fallback inteligente:
 
-#### 1. `src/components/admin/ProgramacaoTexto.tsx` — Refatorar `parseScheduleText`
-
-Em vez de consumir exatamente 3 linhas, após detectar a linha de times (ou evento), **coletar todas as linhas seguintes** que sejam de metadados (🏆, 📍, ⏰, 📺) até encontrar a próxima linha de times, data, ou seção:
+**`src/components/admin/ProgramacaoTexto.tsx`** — na montagem do jogo (linha ~317-326):
 
 ```
-Ao encontrar linha de times:
-  - Avançar e coletar linhas enquanto começarem com 🏆, 📍, ⏰, 📺
-  - Extrair competition de 🏆
-  - Extrair competition_detail de 📍
-  - Extrair game_time de ⏰
-  - Extrair channels de 📺
-  - Manter compatibilidade com formato antigo (tudo numa linha com /)
+// Determine sport: use detectSportType with all available info
+const autoSport = detectSportType(
+  meta.competition, 
+  `${home_team} ${away_team}`
+);
+
+// Only trust emoji-based detection if it's NOT generic football
+// (since 🏆 always returns football which is unhelpful)
+const finalSport = (meta.sport_type && meta.sport_type !== 'football') 
+  ? meta.sport_type 
+  : autoSport;
+
+games.push(cleanupGame({
+  ...
+  sport_type: finalSport,
+}));
 ```
 
-Também ignorar linhas de "cabeçalho de seção" como `FUTEBOL`, `BASQUETE`, `FIFA Series 2026`, `Amistosos Internacionais`, `NBA`, etc. — linhas soltas sem emoji de metadado que antecedem jogos.
+Mesma lógica no bloco do formato antigo (linha ~301-315).
 
-#### 2. Adicionar detecção de linhas de cabeçalho de seção
+### Resultado esperado
 
-Linhas como `FUTEBOL`, `NBA`, `TÊNIS`, `Brasileirão Feminino`, `Copa Argentina` são títulos de seção e devem ser ignoradas. Detectar por:
-- Texto todo em maiúsculas sem emoji de metadado
-- Texto que não contém " x " e cuja próxima linha NÃO é uma linha de metadado (🏆/📍/⏰/📺)
-
-#### 3. Atualizar testes
-
-Adicionar teste em `ProgramacaoTexto.test.tsx` para o formato multi-linha de 5 linhas, garantindo que competition, detail, time e channels sejam extraídos corretamente.
+| Jogo | competition | Detecção |
+|------|-----------|----------|
+| Clippers x Pacers | NBA | `basketball` ✅ |
+| Vôlei Renata x Cruzeiro | Superliga Masculina | `volleyball` ✅ |
+| LA Open / Miami Open | ATP Challenger / ATP-WTA 1000 | `tennis` ✅ |
+| China x Curaçao | FIFA Series 2026 | `football` ✅ |
 
 ### Arquivos alterados
-- `src/components/admin/ProgramacaoTexto.tsx` — refatorar `parseScheduleText`, `isCompetitionLine`, `parseCompAndTime`
-- `src/components/public/__tests__/` ou `src/components/admin/__tests__/ProgramacaoTexto.test.tsx` — novos testes
+- `src/components/admin/ProgramacaoTexto.tsx` — lógica de sport_type no `parseScheduleText`
 
-### Compatibilidade
-- O formato antigo de 3 linhas (com `/` separando competição e horário) continua funcionando
-- O novo formato de 5 linhas é suportado coletando linhas de metadado individualmente
+### Extras
+- Adicionar "Superliga" ao regex de volleyball em `detectSportType` no `gameUtils.ts` (já existe parcialmente, validar)
+- Adicionar "FIFA" ao regex de football para reforçar
 
