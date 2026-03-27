@@ -177,11 +177,11 @@ function collectMetadata(lines: string[], startIdx: number): {
     const ml = lines[j];
 
     // 🏆 or sport emoji → competition line
-    if (/^[🏆🎾🏎️🏎🥊🏀🏐🏒⚾]/.test(ml)) {
+    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)/.test(ml)) {
       sport_type = detectSportFromEmoji(ml);
-      const cleaned = ml.replace(/^[🏆🎾🏎️🏎🥊🏀🏐🏒⚾]\s*/, "").trim();
+      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)\s*/, "").trim();
       // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
-      if (/[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]/.test(ml)) {
+      if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
         const parsed = parseCompAndTime(ml);
         competition = parsed.competition;
         competition_detail = parsed.competition_detail;
@@ -207,7 +207,7 @@ function collectMetadata(lines: string[], startIdx: number): {
       competition_detail = ml.replace(/^📍\s*/, "").trim();
     }
     // ⏰ or clock emoji → time
-    else if (/^[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]/.test(ml)) {
+    else if (/^(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
       const timeMatch = ml.match(/(\d{1,2})[hH:](\d{2})/);
       if (timeMatch) {
         game_time = `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}`;
