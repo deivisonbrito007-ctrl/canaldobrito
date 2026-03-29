@@ -1,0 +1,1 @@
+UPDATE daily_games SET sport_type = 'f1' WHERE id IN ('0b4e3733-df43-427f-907f-c091f9907c0d', 'f8fda80a-2356-43be-8ada-00932f29dfc0');
