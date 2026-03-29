@@ -1,0 +1,1 @@
+UPDATE public.daily_games SET date = '2026-03-30' WHERE home_team = 'Cabo Verde' AND away_team = 'Finlândia' AND date = '2026-03-29';
