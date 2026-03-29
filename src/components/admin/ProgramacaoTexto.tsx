@@ -321,10 +321,12 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
         meta.competition || "",
         `${home_team} ${away_team}`
       );
-      // Only trust emoji-based detection if it's NOT generic football
+      // Priority: emoji (non-generic) > detectSportType > section header > football
       const finalSport = (meta.sport_type && meta.sport_type !== 'football')
         ? meta.sport_type
-        : autoSport;
+        : (autoSport !== 'football')
+          ? autoSport
+          : currentSectionSport || 'football';
 
       games.push(cleanupGame({
         home_team, away_team,
