@@ -96,6 +96,8 @@ const Index = () => {
         <Suspense fallback={<BelowFoldSkeleton />}>
           <LazyNovidadesCard />
           <LazyPromoStrip />
+          <LazyWeeklyMovies />
+          <LazyWeeklySeries />
           <LazyBannerSections />
         </Suspense>
       </div>
