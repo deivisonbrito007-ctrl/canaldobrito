@@ -235,6 +235,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
+  let currentSectionSport: SportType | null = null;
 
   let i = 0;
   while (i < lines.length) {
@@ -267,8 +268,9 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
 
     const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
 
-    // Skip section headers
+    // Capture section header sport and skip
     if (isSectionHeader(line, nextLine)) {
+      currentSectionSport = detectSportType(line, "");
       i++;
       continue;
     }
@@ -319,10 +321,12 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
         meta.competition || "",
         `${home_team} ${away_team}`
       );
-      // Only trust emoji-based detection if it's NOT generic football
+      // Priority: emoji (non-generic) > detectSportType > section header > football
       const finalSport = (meta.sport_type && meta.sport_type !== 'football')
         ? meta.sport_type
-        : autoSport;
+        : (autoSport !== 'football')
+          ? autoSport
+          : currentSectionSport || 'football';
 
       games.push(cleanupGame({
         home_team, away_team,
