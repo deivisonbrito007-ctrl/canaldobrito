@@ -235,6 +235,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
+  let currentSectionSport: SportType | null = null;
 
   let i = 0;
   while (i < lines.length) {
@@ -267,8 +268,9 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
 
     const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
 
-    // Skip section headers
+    // Capture section header sport and skip
     if (isSectionHeader(line, nextLine)) {
+      currentSectionSport = detectSportType(line, "");
       i++;
       continue;
     }
