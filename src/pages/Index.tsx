@@ -15,8 +15,6 @@ const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
 const LazyNovidadesCard = lazy(() => import("@/components/public/NovidadesCard").then(m => ({ default: m.NovidadesCard })));
 const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
 const LazyBannerSections = lazy(() => import("@/components/public/BannerSections").then(m => ({ default: m.BannerSections })));
-const LazyWeeklyMovies = lazy(() => import("@/components/public/WeeklyMoviesSection").then(m => ({ default: m.WeeklyMoviesSection })));
-const LazyWeeklySeries = lazy(() => import("@/components/public/WeeklySeriesSection").then(m => ({ default: m.WeeklySeriesSection })));
 
 const HighlightsFallback = () => (
   <div className="pt-5 pb-3 space-y-6">
@@ -96,8 +94,6 @@ const Index = () => {
         <Suspense fallback={<BelowFoldSkeleton />}>
           <LazyNovidadesCard />
           <LazyPromoStrip />
-          <LazyWeeklyMovies />
-          <LazyWeeklySeries />
           <LazyBannerSections />
         </Suspense>
       </div>
