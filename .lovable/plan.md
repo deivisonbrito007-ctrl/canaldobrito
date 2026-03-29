@@ -1,45 +1,71 @@
 
 
-## Problema: Conteúdos não aparecem no portal
+## Problema: Categorias dos eventos erradas
 
-### Diagnóstico
+### Causa raiz
 
-**Novidades (news_releases):**
-- Existem **11 itens ativos** no banco, mas o hook `useActiveNewsReleases` usa `.limit(6)` — os 5 itens mais recentes (A Nobreza do Amor, Máquina de Guerra, Outlander, Lindas e Letais, Hannah Montana) não aparecem.
+O parser **descarta** os cabeçalhos de seção como "BASQUETE", "TÊNIS", "VÔLEI", "NBA" sem extrair informação de esporte deles. Quando os jogos abaixo usam `🏆` (genérico) na competição, o `detectSportType` pode não ter dados suficientes para classificar corretamente — por exemplo, jogos de NBA com competição "NBA" já funcionam, mas jogos de tênis com competição "ATP Challenger" dentro de uma seção "TÊNIS" dependem apenas do regex.
 
-**Destaques (featured_movies / featured_series):**
-- Existem **10+ filmes** e **10+ séries** ativos no banco.
-- Esses conteúdos só aparecem na **aba Destaques** (Highlights), que requer clique do usuário. Na aba Home não há nenhuma seção de filmes/séries.
+A solução é **rastrear o cabeçalho de seção atual** como contexto de esporte e usá-lo como fallback adicional.
 
 ### Correções
 
-#### 1. Aumentar ou remover o limite de Novidades
-**Arquivo:** `src/hooks/useNewsReleases.ts`
+#### 1. Capturar sport do cabeçalho de seção (`ProgramacaoTexto.tsx`)
 
-Remover o `.limit(6)` do `useActiveNewsReleases` para mostrar todos os itens ativos, ou aumentar para `.limit(12)`.
-
-#### 2. Exibir filmes e séries na aba Home
-**Arquivo:** `src/pages/Index.tsx`
-
-Adicionar `WeeklyMoviesSection` e `WeeklySeriesSection` na aba Home (dentro do bloco de lazy-loaded content abaixo do fold), para que filmes e séries da semana apareçam sem precisar trocar de aba.
+No `parseScheduleText`, quando um `isSectionHeader` é detectado, extrair o esporte do texto do cabeçalho e armazená-lo em uma variável `currentSectionSport`:
 
 ```
-<Suspense fallback={<BelowFoldSkeleton />}>
-  <LazyNovidadesCard />
-  <LazyPromoStrip />
-  <LazyWeeklyMovies />     ← NOVO
-  <LazyWeeklySeries />     ← NOVO
-  <LazyBannerSections />
-</Suspense>
+let currentSectionSport: SportType | null = null;
+
+// Dentro do loop, quando isSectionHeader:
+if (isSectionHeader(line, nextLine)) {
+  currentSectionSport = detectSportType(line, "");
+  i++;
+  continue;
+}
 ```
 
-Adicionar lazy imports:
+Assim, "BASQUETE" → `basketball`, "TÊNIS" → `tennis`, "VÔLEI" → `volleyball`, "FUTEBOL" → `football`, etc.
+
+#### 2. Usar `currentSectionSport` como fallback final
+
+Na montagem do jogo, a prioridade ficaria:
+
+```
+1. Emoji específico (🎾, 🏀, etc.) — se NÃO for 🏆/football
+2. detectSportType(competition, teamNames)
+3. currentSectionSport (do cabeçalho da seção)
+4. 'football' (default)
+```
+
+Código:
 ```ts
-const LazyWeeklyMovies = lazy(() => import("@/components/public/WeeklyMoviesSection")...);
-const LazyWeeklySeries = lazy(() => import("@/components/public/WeeklySeriesSection")...);
+const autoSport = detectSportType(meta.competition || "", `${home_team} ${away_team}`);
+const finalSport = 
+  (meta.sport_type && meta.sport_type !== 'football') ? meta.sport_type
+  : (autoSport !== 'football') ? autoSport
+  : currentSectionSport || 'football';
 ```
+
+#### 3. Adicionar keywords em `detectSportType` (`gameUtils.ts`)
+
+Reforçar com termos comuns em pt-BR:
+- Basquete: adicionar `basquete` (sem acento) — já existe
+- Tênis: adicionar `challenger`, `open` (com cuidado para não pegar "Copa Open")  
+- Vôlei: adicionar `v[oô]lei` — já existe
+
+Verificar: adicionar `\bopen\b` ao regex de tênis quando combinado com "atp" ou "wta" (já coberto pelo regex existente).
+
+### Resultado esperado
+
+| Cabeçalho de seção | Jogo | Detecção |
+|---|---|---|
+| BASQUETE | Clippers x Pacers, NBA | `basketball` ✅ |
+| VÔLEI | Vôlei Renata x Cruzeiro, Superliga | `volleyball` ✅ |
+| TÊNIS | LA Open, ATP Challenger | `tennis` ✅ |
+| FUTEBOL | China x Curaçao, FIFA Series | `football` ✅ |
 
 ### Arquivos alterados
-- `src/hooks/useNewsReleases.ts` — remover/aumentar `.limit(6)`
-- `src/pages/Index.tsx` — adicionar seções de filmes e séries na home
+- `src/components/admin/ProgramacaoTexto.tsx` — rastrear `currentSectionSport` e usar como fallback
+- `src/lib/gameUtils.ts` — (se necessário) adicionar keywords extras ao `detectSportType`
 
