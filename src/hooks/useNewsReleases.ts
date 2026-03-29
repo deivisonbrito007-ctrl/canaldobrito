@@ -30,8 +30,7 @@ export const useActiveNewsReleases = () =>
         .from("news_releases")
         .select("*")
         .eq("active", true)
-        .order("display_order", { ascending: true })
-        .limit(6);
+        .order("display_order", { ascending: true });
       if (error) throw error;
       return data as NewsRelease[];
     },
