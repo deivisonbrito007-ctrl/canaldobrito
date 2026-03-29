@@ -1,53 +1,45 @@
 
 
-## Problema: Todos os jogos são classificados como futebol
+## Problema: Conteúdos não aparecem no portal
 
-### Causa raiz
+### Diagnóstico
 
-Em `collectMetadata` (linha 181), `detectSportFromEmoji` retorna `'football'` para `🏆` — que é o emoji usado em **todos** os jogos do texto. Resultado: NBA, vôlei, tênis → tudo vira futebol.
+**Novidades (news_releases):**
+- Existem **11 itens ativos** no banco, mas o hook `useActiveNewsReleases` usa `.limit(6)` — os 5 itens mais recentes (A Nobreza do Amor, Máquina de Guerra, Outlander, Lindas e Letais, Hannah Montana) não aparecem.
 
-A função `detectSportType(competition, teamNames)` que sabe identificar NBA, ATP, Superliga etc. **nunca é chamada** durante o parsing.
+**Destaques (featured_movies / featured_series):**
+- Existem **10+ filmes** e **10+ séries** ativos no banco.
+- Esses conteúdos só aparecem na **aba Destaques** (Highlights), que requer clique do usuário. Na aba Home não há nenhuma seção de filmes/séries.
 
-### Solução
+### Correções
 
-Após coletar os metadados e montar o jogo, usar `detectSportType` como fallback inteligente:
+#### 1. Aumentar ou remover o limite de Novidades
+**Arquivo:** `src/hooks/useNewsReleases.ts`
 
-**`src/components/admin/ProgramacaoTexto.tsx`** — na montagem do jogo (linha ~317-326):
+Remover o `.limit(6)` do `useActiveNewsReleases` para mostrar todos os itens ativos, ou aumentar para `.limit(12)`.
+
+#### 2. Exibir filmes e séries na aba Home
+**Arquivo:** `src/pages/Index.tsx`
+
+Adicionar `WeeklyMoviesSection` e `WeeklySeriesSection` na aba Home (dentro do bloco de lazy-loaded content abaixo do fold), para que filmes e séries da semana apareçam sem precisar trocar de aba.
 
 ```
-// Determine sport: use detectSportType with all available info
-const autoSport = detectSportType(
-  meta.competition, 
-  `${home_team} ${away_team}`
-);
-
-// Only trust emoji-based detection if it's NOT generic football
-// (since 🏆 always returns football which is unhelpful)
-const finalSport = (meta.sport_type && meta.sport_type !== 'football') 
-  ? meta.sport_type 
-  : autoSport;
-
-games.push(cleanupGame({
-  ...
-  sport_type: finalSport,
-}));
+<Suspense fallback={<BelowFoldSkeleton />}>
+  <LazyNovidadesCard />
+  <LazyPromoStrip />
+  <LazyWeeklyMovies />     ← NOVO
+  <LazyWeeklySeries />     ← NOVO
+  <LazyBannerSections />
+</Suspense>
 ```
 
-Mesma lógica no bloco do formato antigo (linha ~301-315).
-
-### Resultado esperado
-
-| Jogo | competition | Detecção |
-|------|-----------|----------|
-| Clippers x Pacers | NBA | `basketball` ✅ |
-| Vôlei Renata x Cruzeiro | Superliga Masculina | `volleyball` ✅ |
-| LA Open / Miami Open | ATP Challenger / ATP-WTA 1000 | `tennis` ✅ |
-| China x Curaçao | FIFA Series 2026 | `football` ✅ |
+Adicionar lazy imports:
+```ts
+const LazyWeeklyMovies = lazy(() => import("@/components/public/WeeklyMoviesSection")...);
+const LazyWeeklySeries = lazy(() => import("@/components/public/WeeklySeriesSection")...);
+```
 
 ### Arquivos alterados
-- `src/components/admin/ProgramacaoTexto.tsx` — lógica de sport_type no `parseScheduleText`
-
-### Extras
-- Adicionar "Superliga" ao regex de volleyball em `detectSportType` no `gameUtils.ts` (já existe parcialmente, validar)
-- Adicionar "FIFA" ao regex de football para reforçar
+- `src/hooks/useNewsReleases.ts` — remover/aumentar `.limit(6)`
+- `src/pages/Index.tsx` — adicionar seções de filmes e séries na home
 
