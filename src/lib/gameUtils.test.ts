@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, detectSportType } from "./gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, getMinutesUntilStart, detectSportType } from "./gameUtils";
 
 /**
  * Helper: creates a Date that represents a specific time in São Paulo (UTC-3).
@@ -244,5 +244,45 @@ describe("getElapsedMinutes", () => {
   it("returns null before game", () => {
     vi.setSystemTime(spDate(2026, 3, 19, 14, 59));
     expect(getElapsedMinutes("15:00", "2026-03-19")).toBe(null);
+  });
+});
+
+describe("getMinutesUntilStart", () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("returns minutes until a future game", () => {
+    vi.setSystemTime(spDate(2026, 3, 19, 14, 30));
+    expect(getMinutesUntilStart("15:00", "2026-03-19")).toBe(30);
+  });
+
+  it("returns null for a game that already started", () => {
+    vi.setSystemTime(spDate(2026, 3, 19, 15, 1));
+    expect(getMinutesUntilStart("15:00", "2026-03-19")).toBe(null);
+  });
+
+  it("returns minutes for a midnight game when it is 23:00 the day before", () => {
+    vi.setSystemTime(spDate(2026, 3, 19, 23, 0));
+    expect(getMinutesUntilStart("00:00", "2026-03-20")).toBe(60);
+  });
+
+  it("returns minutes for a 00:30 game when it is 23:50 the day before", () => {
+    vi.setSystemTime(spDate(2026, 3, 19, 23, 50));
+    expect(getMinutesUntilStart("00:30", "2026-03-20")).toBe(40);
+  });
+});
+
+describe("midnight game scenarios", () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("isGameCurrentlyLive returns true for 00:00 game at 00:30", () => {
+    vi.setSystemTime(spDate(2026, 3, 20, 0, 30));
+    expect(isGameCurrentlyLive("00:00", "2026-03-20", "football")).toBe(true);
+  });
+
+  it("getElapsedMinutes returns 30 for 00:00 game at 00:30", () => {
+    vi.setSystemTime(spDate(2026, 3, 20, 0, 30));
+    expect(getElapsedMinutes("00:00", "2026-03-20", "football")).toBe(30);
   });
 });
