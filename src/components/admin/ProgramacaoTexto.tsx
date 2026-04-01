@@ -97,7 +97,7 @@ function cleanText(s: string): string {
   return s
     .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold** → bold
     .replace(/\*/g, "")                  // stray asterisks
-    .replace(/[🏆🎾🏎️🏎🥊🏀🏐📺⏰]/g, "") // residual sport/channel emojis
+    .replace(/[🏆🎾🏎️🏎🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊📺⏰]/g, "") // residual sport/channel emojis
     .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")  // remove flag emojis (🇧🇷, 🇫🇷, etc.)
     .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "") // remove subdivision flags
     .replace(/[\uD800-\uDFFF]/g, "")     // remove broken UTF-16 surrogates
