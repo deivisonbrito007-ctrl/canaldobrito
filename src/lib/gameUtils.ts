@@ -1,15 +1,21 @@
-export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'hockey' | 'baseball';
+export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf';
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
-  football: 105,   // 90 + 15 halftime (sem acréscimos)
-  basketball: 150, // 48 game + intervals + timeouts
-  tennis: 210,     // covers long matches
-  f1: 130,         // race + safety car margin
-  mma: 180,        // full card (prelims or main) ~3h
-  volleyball: 120, // sets + tie-break margin
-  hockey: 150,     // 60 game + intervals + overtime
-  baseball: 210,   // 9 innings + extras
+  football: 105,
+  basketball: 150,
+  tennis: 210,
+  f1: 130,
+  mma: 180,
+  volleyball: 120,
+  hockey: 150,
+  baseball: 210,
+  rugby: 100,
+  surf: 240,
+  cycling: 300,
+  boxing: 90,
+  swimming: 180,
+  golf: 300,
 };
 
 /** Extra buffer after duration ends to cover delays/overtime */
@@ -25,6 +31,12 @@ export const SPORT_EMOJI: Record<SportType, string> = {
   volleyball: '🏐',
   hockey: '🏒',
   baseball: '⚾',
+  rugby: '🏉',
+  surf: '🏄',
+  cycling: '🚴',
+  boxing: '🥊',
+  swimming: '🏊',
+  golf: '⛳',
 };
 
 /** Sport label map */
@@ -37,10 +49,16 @@ export const SPORT_LABEL: Record<SportType, string> = {
   volleyball: 'Vôlei',
   hockey: 'Hóquei',
   baseball: 'Baseball',
+  rugby: 'Rugby',
+  surf: 'Surf',
+  cycling: 'Ciclismo',
+  boxing: 'Boxe',
+  swimming: 'Natação',
+  golf: 'Golf',
 };
 
 /** Sports that don't have two adversarial teams (e.g. motorsport) */
-const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma'];
+const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
 
 /** Detect sport type from competition name and optional team names */
@@ -49,10 +67,16 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(nba|nbb|euroleague|wnba|basquete)\b/i.test(c)) return 'basketball';
   if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|canucks|senators|islanders|hurricanes|predators|blue jackets|sharks|ducks|coyotes|kraken|devils|sabres)\b/i.test(c)) return 'hockey';
   if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|cubs|mets|astros|braves|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|royals|tigers|white sox|marlins)\b/i.test(c)) return 'baseball';
+  if (/\b(rugby|sevens|svns|world rugby|super rugby)\b/i.test(c)) return 'rugby';
   if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
   if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|stock car|e-prix|superbike|porsche|carrera cup)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';
+  if (/\b(box[e]?|wbc|wba|wbo|ibf)\b/i.test(c)) return 'boxing';
   if (/\b(superliga)\b/i.test(c) || /v[oô]lei/i.test(c) || /liga das na[çc][oõ]es.*v[oô]lei/i.test(c)) return 'volleyball';
+  if (/\b(wsl|surf|pipeline|tahiti pro)\b/i.test(c)) return 'surf';
+  if (/\b(tour de france|giro|vuelta|ciclismo|cycling|paris.roubaix|uci)\b/i.test(c)) return 'cycling';
+  if (/\b(nata[çc][aã]o|swimming|fina|world aquatics)\b/i.test(c)) return 'swimming';
+  if (/\b(golf|golfe|pga|masters|ryder cup|the open)\b/i.test(c)) return 'golf';
   return 'football';
 }
 
