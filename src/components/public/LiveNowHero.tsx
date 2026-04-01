@@ -55,6 +55,12 @@ const SPORT_ACCENT: Record<string, string> = {
   mma: "bg-orange-500",
   hockey: "bg-sky-500",
   baseball: "bg-yellow-600",
+  rugby: "bg-green-600",
+  surf: "bg-cyan-500",
+  cycling: "bg-pink-500",
+  boxing: "bg-red-600",
+  swimming: "bg-teal-500",
+  golf: "bg-lime-600",
 };
 
 /* ── Sport badge background colors (inline style) ── */
