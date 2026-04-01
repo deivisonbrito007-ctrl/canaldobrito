@@ -38,7 +38,7 @@ Flamengo x Palmeiras
 🏆 Brasileirão / ⏰ 19h00
 📺 Sportv, Premiere`;
 
-const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
 
 /** Map emoji at start of competition line to sport_type */
 function detectSportFromEmoji(compLine: string): SportType | null {
