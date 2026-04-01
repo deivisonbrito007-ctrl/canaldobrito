@@ -86,4 +86,59 @@ Flamengo x Palmeiras
     expect(games[1].sport_type).toBe("swimming");
     expect(games[2].sport_type).toBe("football");
   });
+
+  it("detecta MMA via regex UFC", () => {
+    const text = `Islam Makhachev x Arman Tsarukyan
+🥊 UFC 312 / ⏰ 23h00
+📺 Canal Combate`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].sport_type).toBe("mma");
+  });
+
+  it("detecta MMA via regex Bellator", () => {
+    const text = `Patricio Pitbull x AJ McKee
+🥊 Bellator 300 / ⏰ 22h00
+📺 ESPN 2`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].sport_type).toBe("mma");
+  });
+
+  it("detecta Boxe via regex WBC", () => {
+    const text = `Canelo Alvarez x Jermell Charlo
+🥊 WBC Championship / ⏰ 23h00
+📺 ESPN`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].sport_type).toBe("boxing");
+  });
+
+  it("detecta Boxe via regex WBA", () => {
+    const text = `Tyson Fury x Oleksandr Usyk
+🥊 WBA Heavyweight / ⏰ 18h00
+📺 Canal Combate`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].sport_type).toBe("boxing");
+  });
+
+  it("detecta Boxe via palavra 'Boxe'", () => {
+    const text = `Amanda Serrano x Katie Taylor
+🏆 Boxe Internacional / ⏰ 22h00
+📺 ESPN`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].sport_type).toBe("boxing");
+  });
+
+  it("emoji 🥊 com competição genérica cai em football (fallback)", () => {
+    const text = `Lutador A x Lutador B
+🥊 Campeonato Nacional / ⏰ 21h00
+📺 SporTV`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    // 🥊 is ambiguous, detectSportType decides — no UFC/boxing keyword → football fallback
+    expect(games[0].sport_type).toBe("football");
+  });
 });
