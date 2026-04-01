@@ -1,71 +1,57 @@
 
 
-## Problema: Categorias dos eventos erradas
+## Adicionar novos esportes: Rugby, Surf, Ciclismo, Boxe, Natação, Golf
 
-### Causa raiz
+### Escopo
 
-O parser **descarta** os cabeçalhos de seção como "BASQUETE", "TÊNIS", "VÔLEI", "NBA" sem extrair informação de esporte deles. Quando os jogos abaixo usam `🏆` (genérico) na competição, o `detectSportType` pode não ter dados suficientes para classificar corretamente — por exemplo, jogos de NBA com competição "NBA" já funcionam, mas jogos de tênis com competição "ATP Challenger" dentro de uma seção "TÊNIS" dependem apenas do regex.
+Expandir o sistema de detecção para suportar **6 novos esportes**: rugby, surf, ciclismo, boxe, natação e golf. O campo `sport_type` no banco já é `string`, então **não precisa de migração**.
 
-A solução é **rastrear o cabeçalho de seção atual** como contexto de esporte e usá-lo como fallback adicional.
+### Alterações em `src/lib/gameUtils.ts`
 
-### Correções
-
-#### 1. Capturar sport do cabeçalho de seção (`ProgramacaoTexto.tsx`)
-
-No `parseScheduleText`, quando um `isSectionHeader` é detectado, extrair o esporte do texto do cabeçalho e armazená-lo em uma variável `currentSectionSport`:
-
-```
-let currentSectionSport: SportType | null = null;
-
-// Dentro do loop, quando isSectionHeader:
-if (isSectionHeader(line, nextLine)) {
-  currentSectionSport = detectSportType(line, "");
-  i++;
-  continue;
-}
-```
-
-Assim, "BASQUETE" → `basketball`, "TÊNIS" → `tennis`, "VÔLEI" → `volleyball`, "FUTEBOL" → `football`, etc.
-
-#### 2. Usar `currentSectionSport` como fallback final
-
-Na montagem do jogo, a prioridade ficaria:
-
-```
-1. Emoji específico (🎾, 🏀, etc.) — se NÃO for 🏆/football
-2. detectSportType(competition, teamNames)
-3. currentSectionSport (do cabeçalho da seção)
-4. 'football' (default)
-```
-
-Código:
+**1. Expandir o tipo `SportType`:**
 ```ts
-const autoSport = detectSportType(meta.competition || "", `${home_team} ${away_team}`);
-const finalSport = 
-  (meta.sport_type && meta.sport_type !== 'football') ? meta.sport_type
-  : (autoSport !== 'football') ? autoSport
-  : currentSectionSport || 'football';
+export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' 
+  | 'volleyball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' 
+  | 'boxing' | 'swimming' | 'golf';
 ```
 
-#### 3. Adicionar keywords em `detectSportType` (`gameUtils.ts`)
+**2. Adicionar durações:**
+| Esporte | Duração | Justificativa |
+|---------|---------|---------------|
+| rugby | 100min | 80 + intervalo |
+| surf | 240min | etapas longas |
+| cycling | 300min | etapas de Tour ~5h |
+| boxing | 90min | card completo |
+| swimming | 180min | sessão de provas |
+| golf | 300min | rodada completa |
 
-Reforçar com termos comuns em pt-BR:
-- Basquete: adicionar `basquete` (sem acento) — já existe
-- Tênis: adicionar `challenger`, `open` (com cuidado para não pegar "Copa Open")  
-- Vôlei: adicionar `v[oô]lei` — já existe
+**3. Adicionar emojis e labels:**
+| Sport | Emoji | Label |
+|-------|-------|-------|
+| rugby | 🏉 | Rugby |
+| surf | 🏄 | Surf |
+| cycling | 🚴 | Ciclismo |
+| boxing | 🥊 | Boxe |
+| swimming | 🏊 | Natação |
+| golf | ⛳ | Golf |
 
-Verificar: adicionar `\bopen\b` ao regex de tênis quando combinado com "atp" ou "wta" (já coberto pelo regex existente).
+**4. Adicionar ao `NON_ADVERSARIAL`:** surf, cycling, swimming, golf
 
-### Resultado esperado
+**5. Adicionar regexes em `detectSportType`:**
+- **rugby**: `\b(rugby|sevens|svns|world rugby|super rugby)\b`
+- **surf**: `\b(wsl|surf|pipeline|tahiti pro)\b`
+- **cycling**: `\b(tour de france|giro|vuelta|ciclismo|cycling|paris.roubaix|uci)\b`
+- **boxing**: `\b(box[e]?|wbc|wba|wbo|ibf)\b` (separar de MMA que já usa 🥊)
+- **swimming**: `\b(nata[çc][aã]o|swimming|fina|world aquatics)\b`
+- **golf**: `\b(golf|golfe|pga|masters|ryder cup|the open)\b`
 
-| Cabeçalho de seção | Jogo | Detecção |
-|---|---|---|
-| BASQUETE | Clippers x Pacers, NBA | `basketball` ✅ |
-| VÔLEI | Vôlei Renata x Cruzeiro, Superliga | `volleyball` ✅ |
-| TÊNIS | LA Open, ATP Challenger | `tennis` ✅ |
-| FUTEBOL | China x Curaçao, FIFA Series | `football` ✅ |
+**Nota sobre boxe vs MMA:** Boxe usará 🥊 mas será tipo `boxing` separado de `mma`. O regex de MMA já cobre `ufc|bellator|pfl|mma`, e boxe cobrirá `box[e]?|wbc|wba|wbo|ibf`.
+
+### Alterações em `src/lib/gameUtils.test.ts`
+
+Adicionar testes para cada novo esporte na seção `detectSportType`.
 
 ### Arquivos alterados
-- `src/components/admin/ProgramacaoTexto.tsx` — rastrear `currentSectionSport` e usar como fallback
-- `src/lib/gameUtils.ts` — (se necessário) adicionar keywords extras ao `detectSportType`
+- `src/lib/gameUtils.ts` — tipo, durações, emojis, labels, regexes
+- `src/lib/gameUtils.test.ts` — novos testes de detecção
 
