@@ -134,7 +134,7 @@ function cleanupGame(game: ParsedGame): ParsedGame {
 
 /** Check if a line is a metadata line (🏆, 📍, ⏰, 📺) */
 function isMetadataLine(line: string): boolean {
-  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
+  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
 }
 
 /** Check if a line is a section header (e.g. FUTEBOL, NBA, Brasileirão Feminino) */
