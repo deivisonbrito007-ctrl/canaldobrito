@@ -76,7 +76,7 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(wsl|surf|pipeline|tahiti pro)\b/i.test(c)) return 'surf';
   if (/\b(tour de france|giro|vuelta|ciclismo|cycling|paris.roubaix|uci)\b/i.test(c)) return 'cycling';
   if (/\b(nata[çc][aã]o|swimming|fina|world aquatics)\b/i.test(c)) return 'swimming';
-  if (/\b(golf|golfe|pga|masters|ryder cup|the open)\b/i.test(c)) return 'golf';
+  if (/\b(golf|golfe|pga|masters|augusta|ryder cup|the open|lpga)\b/i.test(c)) return 'golf';
   return 'football';
 }
 
