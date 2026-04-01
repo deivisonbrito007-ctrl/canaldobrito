@@ -73,6 +73,12 @@ const SPORT_BADGE_BG: Record<string, string> = {
   mma: "#f97316",
   hockey: "#0ea5e9",
   baseball: "#ca8a04",
+  rugby: "#16a34a",
+  surf: "#06b6d4",
+  cycling: "#ec4899",
+  boxing: "#dc2626",
+  swimming: "#14b8a6",
+  golf: "#65a30d",
 };
 
 const INITIAL_VISIBLE = 6;

@@ -182,9 +182,9 @@ function collectMetadata(lines: string[], startIdx: number): {
     const ml = lines[j];
 
     // 🏆 or sport emoji → competition line
-    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)/.test(ml)) {
+    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)/.test(ml)) {
       sport_type = detectSportFromEmoji(ml);
-      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)\s*/, "").trim();
+      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)\s*/, "").trim();
       // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
       if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
         const parsed = parseCompAndTime(ml);
