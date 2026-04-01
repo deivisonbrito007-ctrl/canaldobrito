@@ -1,15 +1,21 @@
-export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'hockey' | 'baseball';
+export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf';
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
-  football: 105,   // 90 + 15 halftime (sem acréscimos)
-  basketball: 150, // 48 game + intervals + timeouts
-  tennis: 210,     // covers long matches
-  f1: 130,         // race + safety car margin
-  mma: 180,        // full card (prelims or main) ~3h
-  volleyball: 120, // sets + tie-break margin
-  hockey: 150,     // 60 game + intervals + overtime
-  baseball: 210,   // 9 innings + extras
+  football: 105,
+  basketball: 150,
+  tennis: 210,
+  f1: 130,
+  mma: 180,
+  volleyball: 120,
+  hockey: 150,
+  baseball: 210,
+  rugby: 100,
+  surf: 240,
+  cycling: 300,
+  boxing: 90,
+  swimming: 180,
+  golf: 300,
 };
 
 /** Extra buffer after duration ends to cover delays/overtime */
@@ -25,6 +31,12 @@ export const SPORT_EMOJI: Record<SportType, string> = {
   volleyball: '🏐',
   hockey: '🏒',
   baseball: '⚾',
+  rugby: '🏉',
+  surf: '🏄',
+  cycling: '🚴',
+  boxing: '🥊',
+  swimming: '🏊',
+  golf: '⛳',
 };
 
 /** Sport label map */
@@ -37,10 +49,16 @@ export const SPORT_LABEL: Record<SportType, string> = {
   volleyball: 'Vôlei',
   hockey: 'Hóquei',
   baseball: 'Baseball',
+  rugby: 'Rugby',
+  surf: 'Surf',
+  cycling: 'Ciclismo',
+  boxing: 'Boxe',
+  swimming: 'Natação',
+  golf: 'Golf',
 };
 
 /** Sports that don't have two adversarial teams (e.g. motorsport) */
-const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma'];
+const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
 
 /** Detect sport type from competition name and optional team names */
