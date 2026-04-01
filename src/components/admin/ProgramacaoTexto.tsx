@@ -38,18 +38,23 @@ Flamengo x Palmeiras
 🏆 Brasileirão / ⏰ 19h00
 📺 Sportv, Premiere`;
 
-const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
 
 /** Map emoji at start of competition line to sport_type */
 function detectSportFromEmoji(compLine: string): SportType | null {
   if (/^🎾/.test(compLine)) return 'tennis';
   if (/^(?:🏎️|🏎)/.test(compLine)) return 'f1';
-  if (/^🥊/.test(compLine)) return 'mma';
   if (/^🏀/.test(compLine)) return 'basketball';
   if (/^🏐/.test(compLine)) return 'volleyball';
   if (/^🏒/.test(compLine)) return 'hockey';
   if (/^⚾/.test(compLine)) return 'baseball';
-  if (/^🏆/.test(compLine)) return 'football';
+  if (/^🏉/.test(compLine)) return 'rugby';
+  if (/^🏄/.test(compLine)) return 'surf';
+  if (/^🚴/.test(compLine)) return 'cycling';
+  if (/^⛳/.test(compLine)) return 'golf';
+  if (/^🏊/.test(compLine)) return 'swimming';
+  if (/^🥊/.test(compLine)) return null; // boxing or mma — let detectSportType decide
+  if (/^🏆/.test(compLine)) return null; // generic trophy — skip
   return null;
 }
 
@@ -62,7 +67,7 @@ function parseCompAndTime(compLine: string) {
   let competition_detail = "";
   let game_time = "00:00";
 
-  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐]/g, "");
+  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊]/g, "");
   const beforeSlash = cleaned.split("/")[0].trim();
 
   const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
@@ -92,7 +97,7 @@ function cleanText(s: string): string {
   return s
     .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold** → bold
     .replace(/\*/g, "")                  // stray asterisks
-    .replace(/[🏆🎾🏎️🏎🥊🏀🏐📺⏰]/g, "") // residual sport/channel emojis
+    .replace(/[🏆🎾🏎️🏎🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊📺⏰]/g, "") // residual sport/channel emojis
     .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")  // remove flag emojis (🇧🇷, 🇫🇷, etc.)
     .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "") // remove subdivision flags
     .replace(/[\uD800-\uDFFF]/g, "")     // remove broken UTF-16 surrogates
@@ -129,7 +134,7 @@ function cleanupGame(game: ParsedGame): ParsedGame {
 
 /** Check if a line is a metadata line (🏆, 📍, ⏰, 📺) */
 function isMetadataLine(line: string): boolean {
-  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
+  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
 }
 
 /** Check if a line is a section header (e.g. FUTEBOL, NBA, Brasileirão Feminino) */
@@ -177,9 +182,9 @@ function collectMetadata(lines: string[], startIdx: number): {
     const ml = lines[j];
 
     // 🏆 or sport emoji → competition line
-    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)/.test(ml)) {
+    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)/.test(ml)) {
       sport_type = detectSportFromEmoji(ml);
-      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾)\s*/, "").trim();
+      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)\s*/, "").trim();
       // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
       if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
         const parsed = parseCompAndTime(ml);

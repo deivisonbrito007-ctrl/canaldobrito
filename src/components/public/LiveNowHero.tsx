@@ -55,6 +55,12 @@ const SPORT_ACCENT: Record<string, string> = {
   mma: "bg-orange-500",
   hockey: "bg-sky-500",
   baseball: "bg-yellow-600",
+  rugby: "bg-green-600",
+  surf: "bg-cyan-500",
+  cycling: "bg-pink-500",
+  boxing: "bg-red-600",
+  swimming: "bg-teal-500",
+  golf: "bg-lime-600",
 };
 
 /* ── Sport badge background colors (inline style) ── */
@@ -67,6 +73,12 @@ const SPORT_BADGE_BG: Record<string, string> = {
   mma: "#f97316",
   hockey: "#0ea5e9",
   baseball: "#ca8a04",
+  rugby: "#16a34a",
+  surf: "#06b6d4",
+  cycling: "#ec4899",
+  boxing: "#dc2626",
+  swimming: "#14b8a6",
+  golf: "#65a30d",
 };
 
 const INITIAL_VISIBLE = 6;
