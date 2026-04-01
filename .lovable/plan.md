@@ -1,57 +1,54 @@
 
 
-## Adicionar novos esportes: Rugby, Surf, Ciclismo, Boxe, Natação, Golf
+## Problema: Jogo de meia-noite (00:00) nunca aparece como "Próximo evento"
 
-### Escopo
+### Causa raiz
 
-Expandir o sistema de detecção para suportar **6 novos esportes**: rugby, surf, ciclismo, boxe, natação e golf. O campo `sport_type` no banco já é `string`, então **não precisa de migração**.
+A função `getMinutesUntilStart` compara apenas jogos do **mesmo dia** e calcula `diff = gameMinutes - nowMinutes`. Para um jogo às 00:00:
+
+- Se é 23:00 do dia anterior: a data não bate (`gameDate !== today`), retorna `null`
+- Se já é o dia do jogo: `diff = 0 - nowMinutes` = negativo, retorna `null`
+
+Resultado: um jogo às 00:00 **nunca** pode aparecer como próximo evento.
+
+O mesmo problema afeta `isGameCurrentlyLive` — um jogo às 00:00 no dia correto tem `nowMinutes >= 0` e `nowMinutes < duration`, o que funciona, mas só se o jogo for do dia certo.
+
+### Solução
+
+Refatorar `getMinutesUntilStart` e `isGameCurrentlyLive` para usar **timestamps absolutos** em vez de comparar minutos dentro do dia. Isso resolve jogos à meia-noite e também permite mostrar jogos do dia seguinte como próximos (ex: às 23:00 mostrar um jogo às 00:30 do dia seguinte).
 
 ### Alterações em `src/lib/gameUtils.ts`
 
-**1. Expandir o tipo `SportType`:**
+1. Criar uma função auxiliar `getGameTimestamp(gameDate, gameTime)` que retorna um `Date` absoluto em São Paulo:
 ```ts
-export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' 
-  | 'volleyball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' 
-  | 'boxing' | 'swimming' | 'golf';
+function getGameTimestamp(gameDate: string, gameTime: string): Date {
+  const [h, m] = (gameTime || "00:00").split(":").map(Number);
+  return new Date(`${gameDate}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00-03:00`);
+}
 ```
 
-**2. Adicionar durações:**
-| Esporte | Duração | Justificativa |
-|---------|---------|---------------|
-| rugby | 100min | 80 + intervalo |
-| surf | 240min | etapas longas |
-| cycling | 300min | etapas de Tour ~5h |
-| boxing | 90min | card completo |
-| swimming | 180min | sessão de provas |
-| golf | 300min | rodada completa |
+2. Refatorar `getMinutesUntilStart`:
+   - Remover a verificação de data (`gameDate !== getLocalDateString`)
+   - Calcular diff em milissegundos entre `gameTimestamp` e `now`
+   - Retornar minutos se positivo, `null` se negativo
 
-**3. Adicionar emojis e labels:**
-| Sport | Emoji | Label |
-|-------|-------|-------|
-| rugby | 🏉 | Rugby |
-| surf | 🏄 | Surf |
-| cycling | 🚴 | Ciclismo |
-| boxing | 🥊 | Boxe |
-| swimming | 🏊 | Natação |
-| golf | ⛳ | Golf |
+3. Refatorar `isGameCurrentlyLive`:
+   - Usar timestamps absolutos para determinar se `now` está entre início e início+duração
 
-**4. Adicionar ao `NON_ADVERSARIAL`:** surf, cycling, swimming, golf
+4. Refatorar `getElapsedMinutes`:
+   - Mesma abordagem com timestamps absolutos
 
-**5. Adicionar regexes em `detectSportType`:**
-- **rugby**: `\b(rugby|sevens|svns|world rugby|super rugby)\b`
-- **surf**: `\b(wsl|surf|pipeline|tahiti pro)\b`
-- **cycling**: `\b(tour de france|giro|vuelta|ciclismo|cycling|paris.roubaix|uci)\b`
-- **boxing**: `\b(box[e]?|wbc|wba|wbo|ibf)\b` (separar de MMA que já usa 🥊)
-- **swimming**: `\b(nata[çc][aã]o|swimming|fina|world aquatics)\b`
-- **golf**: `\b(golf|golfe|pga|masters|ryder cup|the open)\b`
+### Impacto em `NextGameHero.tsx`
 
-**Nota sobre boxe vs MMA:** Boxe usará 🥊 mas será tipo `boxing` separado de `mma`. O regex de MMA já cobre `ufc|bellator|pfl|mma`, e boxe cobrirá `box[e]?|wbc|wba|wbo|ibf`.
+A função `getMinutesUntilStart` passará a retornar minutos positivos para jogos futuros de **qualquer data**, não só hoje. O componente `NextGameHero` já filtra por `mins > 0`, então funcionará automaticamente.
 
-### Alterações em `src/lib/gameUtils.test.ts`
+Porém, como os dados do query filtram por data específica (`useDailyGames(date)`), jogos de amanhã só aparecerão se o componente que chama `NextGameHero` também buscar jogos do dia seguinte. Isso pode requerer uma pequena alteração no componente pai para buscar jogos de amanhã quando estiver perto da meia-noite.
 
-Adicionar testes para cada novo esporte na seção `detectSportType`.
+### Verificação do `NextGameHero` pai
+
+Preciso verificar como `NextGameHero` recebe os dados para confirmar se precisa de ajuste na query.
 
 ### Arquivos alterados
-- `src/lib/gameUtils.ts` — tipo, durações, emojis, labels, regexes
-- `src/lib/gameUtils.test.ts` — novos testes de detecção
+- `src/lib/gameUtils.ts` — refatorar 3 funções para usar timestamps absolutos
+- Possivelmente o componente pai que alimenta `NextGameHero` — buscar jogos do dia seguinte
 
