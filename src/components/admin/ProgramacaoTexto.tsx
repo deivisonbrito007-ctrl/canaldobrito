@@ -67,7 +67,7 @@ function parseCompAndTime(compLine: string) {
   let competition_detail = "";
   let game_time = "00:00";
 
-  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐]/g, "");
+  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊]/g, "");
   const beforeSlash = cleaned.split("/")[0].trim();
 
   const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
