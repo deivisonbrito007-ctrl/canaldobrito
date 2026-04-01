@@ -44,12 +44,17 @@ const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|�
 function detectSportFromEmoji(compLine: string): SportType | null {
   if (/^🎾/.test(compLine)) return 'tennis';
   if (/^(?:🏎️|🏎)/.test(compLine)) return 'f1';
-  if (/^🥊/.test(compLine)) return 'mma';
   if (/^🏀/.test(compLine)) return 'basketball';
   if (/^🏐/.test(compLine)) return 'volleyball';
   if (/^🏒/.test(compLine)) return 'hockey';
   if (/^⚾/.test(compLine)) return 'baseball';
-  if (/^🏆/.test(compLine)) return 'football';
+  if (/^🏉/.test(compLine)) return 'rugby';
+  if (/^🏄/.test(compLine)) return 'surf';
+  if (/^🚴/.test(compLine)) return 'cycling';
+  if (/^⛳/.test(compLine)) return 'golf';
+  if (/^🏊/.test(compLine)) return 'swimming';
+  if (/^🥊/.test(compLine)) return null; // boxing or mma — let detectSportType decide
+  if (/^🏆/.test(compLine)) return null; // generic trophy — skip
   return null;
 }
 
