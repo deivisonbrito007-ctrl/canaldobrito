@@ -101,23 +101,14 @@ export function getLocalDateString(date?: Date): string {
 }
 
 /**
- * Returns current hours and minutes in America/Sao_Paulo timezone.
+ * Returns an absolute Date for a game given its date (YYYY-MM-DD) and time (HH:MM)
+ * in the America/Sao_Paulo timezone (UTC-3).
  */
-function getNowInSaoPaulo(): { hours: number; minutes: number } {
-  const now = new Date();
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Sao_Paulo',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: false,
-    }).formatToParts(now);
-    const h = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
-    const m = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
-    return { hours: h, minutes: m };
-  } catch {
-    return { hours: now.getHours(), minutes: now.getMinutes() };
-  }
+function getGameTimestamp(gameDate: string, gameTime: string): Date {
+  const [h, m] = (gameTime || "00:00").split(":").map(Number);
+  return new Date(
+    `${gameDate}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00-03:00`
+  );
 }
 
 /**
@@ -125,15 +116,11 @@ function getNowInSaoPaulo(): { hours: number; minutes: number } {
  */
 export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportType: SportType = 'football'): boolean {
   const now = new Date();
-  if (gameDate !== getLocalDateString(now)) return false;
-
-  const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
-  const gameMinutes = gh * 60 + gm;
-  const sp = getNowInSaoPaulo();
-  const nowMinutes = sp.hours * 60 + sp.minutes;
+  const start = getGameTimestamp(gameDate, gameTime);
   const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
+  const end = new Date(start.getTime() + duration * 60_000);
 
-  return nowMinutes >= gameMinutes && nowMinutes < gameMinutes + duration;
+  return now >= start && now < end;
 }
 
 /**
@@ -142,16 +129,13 @@ export function isGameCurrentlyLive(gameTime: string, gameDate: string, sportTyp
  */
 export function getElapsedMinutes(gameTime: string, gameDate: string, sportType: SportType = 'football'): number | null {
   const now = new Date();
-  if (gameDate !== getLocalDateString(now)) return null;
-
-  const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
-  const gameMinutes = gh * 60 + gm;
-  const sp = getNowInSaoPaulo();
-  const nowMinutes = sp.hours * 60 + sp.minutes;
+  const start = getGameTimestamp(gameDate, gameTime);
   const duration = (SPORT_DURATION[sportType] || 115) + LIVE_BUFFER_MINUTES;
 
-  const elapsed = nowMinutes - gameMinutes;
-  if (elapsed < 0 || elapsed >= duration) return null;
+  const elapsedMs = now.getTime() - start.getTime();
+  if (elapsedMs < 0) return null;
+  const elapsed = Math.floor(elapsedMs / 60_000);
+  if (elapsed >= duration) return null;
   return elapsed;
 }
 
@@ -160,16 +144,11 @@ export function getElapsedMinutes(gameTime: string, gameDate: string, sportType:
  */
 export function getMinutesUntilStart(gameTime: string, gameDate: string): number | null {
   const now = new Date();
-  if (gameDate !== getLocalDateString(now)) return null;
+  const start = getGameTimestamp(gameDate, gameTime);
 
-  const [gh, gm] = (gameTime || "00:00").split(":").map(Number);
-  const gameMinutes = gh * 60 + gm;
-  const sp = getNowInSaoPaulo();
-  const nowMinutes = sp.hours * 60 + sp.minutes;
-
-  const diff = gameMinutes - nowMinutes;
-  if (diff <= 0) return null;
-  return diff;
+  const diffMs = start.getTime() - now.getTime();
+  if (diffMs <= 0) return null;
+  return Math.ceil(diffMs / 60_000);
 }
 
 /**
