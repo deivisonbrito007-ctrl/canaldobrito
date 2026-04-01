@@ -483,8 +483,8 @@ export const DailyGamesSection = () => {
       {/* Stats bar */}
       <DayStatsBar games={games} />
 
-      {/* Hero — next upcoming game */}
-      <NextGameHero games={games} />
+      {/* Hero — next upcoming game (includes tomorrow's early games) */}
+      <NextGameHero games={[...games, ...(tomorrowGames || [])]} />
 
       {/* Compact accordion filters */}
       <div className="space-y-2">
