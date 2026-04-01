@@ -93,6 +93,46 @@ describe("detectSportType", () => {
     expect(detectSportType("Vôlei")).toBe("volleyball");
   });
 
+  it("detects rugby", () => {
+    expect(detectSportType("Rugby Sevens")).toBe("rugby");
+    expect(detectSportType("SVNS — Etapa de São Paulo")).toBe("rugby");
+    expect(detectSportType("World Rugby")).toBe("rugby");
+    expect(detectSportType("Super Rugby")).toBe("rugby");
+  });
+
+  it("detects surf", () => {
+    expect(detectSportType("WSL Championship Tour")).toBe("surf");
+    expect(detectSportType("Surf — Pipeline")).toBe("surf");
+    expect(detectSportType("Tahiti Pro")).toBe("surf");
+  });
+
+  it("detects cycling", () => {
+    expect(detectSportType("Tour de France")).toBe("cycling");
+    expect(detectSportType("Giro d'Italia")).toBe("cycling");
+    expect(detectSportType("Vuelta a España")).toBe("cycling");
+    expect(detectSportType("Ciclismo")).toBe("cycling");
+    expect(detectSportType("UCI World Tour")).toBe("cycling");
+  });
+
+  it("detects boxing", () => {
+    expect(detectSportType("Boxe — WBC")).toBe("boxing");
+    expect(detectSportType("WBA Championship")).toBe("boxing");
+    expect(detectSportType("Box")).toBe("boxing");
+  });
+
+  it("detects swimming", () => {
+    expect(detectSportType("Natação")).toBe("swimming");
+    expect(detectSportType("World Aquatics")).toBe("swimming");
+    expect(detectSportType("FINA")).toBe("swimming");
+  });
+
+  it("detects golf", () => {
+    expect(detectSportType("PGA Tour")).toBe("golf");
+    expect(detectSportType("Masters")).toBe("golf");
+    expect(detectSportType("Ryder Cup")).toBe("golf");
+    expect(detectSportType("Golfe")).toBe("golf");
+  });
+
   it("defaults to football", () => {
     expect(detectSportType("Brasileirão")).toBe("football");
     expect(detectSportType("Champions League")).toBe("football");
