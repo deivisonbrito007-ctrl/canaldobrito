@@ -42,7 +42,13 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
       return !live && mins !== null && mins > 0;
     });
     if (upcoming.length === 0) return null;
-    return upcoming[0]; // already sorted by game_time
+    // Sort by absolute start time (handles cross-day)
+    upcoming.sort((a, b) => {
+      const ma = getMinutesUntilStart(a.game_time, a.date) ?? Infinity;
+      const mb = getMinutesUntilStart(b.game_time, b.date) ?? Infinity;
+      return ma - mb;
+    });
+    return upcoming[0];
   }, [games]);
 
   if (!nextGame) return null;

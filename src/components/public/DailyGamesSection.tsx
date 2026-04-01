@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarOff, Clock, Flame, Trophy, ChevronDown, Bell, BellOff, X } from "lucide-react";
 import { useLiveTick } from "@/hooks/useLiveTick";
-import { isGameCurrentlyLive, getLocalDateString, getMinutesUntilStart, formatCountdown, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getTomorrowDateString, getMinutesUntilStart, formatCountdown, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
 import { DayStatsBar } from "./DayStatsBar";
 import { NextGameHero } from "./NextGameHero";
@@ -326,7 +326,9 @@ const PeriodGroup = ({ group, games, onPushReminder }: { group: TimeGroup; games
 export const DailyGamesSection = () => {
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
+  const tomorrow = useMemo(() => getTomorrowDateString(), [tick]);
   const { data: games, isLoading } = useDailyGames(today);
+  const { data: tomorrowGames } = useDailyGames(tomorrow);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
@@ -481,8 +483,8 @@ export const DailyGamesSection = () => {
       {/* Stats bar */}
       <DayStatsBar games={games} />
 
-      {/* Hero — next upcoming game */}
-      <NextGameHero games={games} />
+      {/* Hero — next upcoming game (includes tomorrow's early games) */}
+      <NextGameHero games={[...games, ...(tomorrowGames || [])]} />
 
       {/* Compact accordion filters */}
       <div className="space-y-2">

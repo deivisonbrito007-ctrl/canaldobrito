@@ -101,6 +101,15 @@ export function getLocalDateString(date?: Date): string {
 }
 
 /**
+ * Returns tomorrow's date as YYYY-MM-DD in America/Sao_Paulo timezone.
+ */
+export function getTomorrowDateString(): string {
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  return getLocalDateString(tomorrow);
+}
+
+/**
  * Returns an absolute Date for a game given its date (YYYY-MM-DD) and time (HH:MM)
  * in the America/Sao_Paulo timezone (UTC-3).
  */
