@@ -326,7 +326,9 @@ const PeriodGroup = ({ group, games, onPushReminder }: { group: TimeGroup; games
 export const DailyGamesSection = () => {
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
+  const tomorrow = useMemo(() => getTomorrowDateString(), [tick]);
   const { data: games, isLoading } = useDailyGames(today);
+  const { data: tomorrowGames } = useDailyGames(tomorrow);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
