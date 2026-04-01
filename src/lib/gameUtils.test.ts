@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, detectSportType } from "./gameUtils";
+import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, getMinutesUntilStart, detectSportType } from "./gameUtils";
 
 /**
  * Helper: creates a Date that represents a specific time in São Paulo (UTC-3).
