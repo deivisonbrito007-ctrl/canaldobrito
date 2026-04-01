@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseScheduleText } from "../dev-server/src/components/admin/ProgramacaoTexto";
+import { parseScheduleText } from "../ProgramacaoTexto";
 
 describe("parseScheduleText - novos esportes", () => {
   it("detecta rugby via emoji 🏉", () => {
