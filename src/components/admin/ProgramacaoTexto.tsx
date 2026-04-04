@@ -276,6 +276,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
         const month = headerDateMatch[2].padStart(2, "0");
         const year = new Date().getFullYear();
         currentDate = `${year}-${month}-${day}`;
+        dateFromHeader = true;
         i++;
         continue;
       }
