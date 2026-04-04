@@ -380,7 +380,12 @@ function formatDatePt(dateStr: string): string {
 /** Get validation warnings for a parsed game */
 function getGameWarnings(game: ParsedGame): string[] {
   const warnings: string[] = [];
-  if (game.game_time === "00:00") warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
+  if (game.dateBumped) {
+    const [, m, d] = game.date.split("-");
+    warnings.push(`⏰ Horário ${game.game_time} (madrugada) — data avançada para ${d}/${m}`);
+  } else if (game.game_time === "00:00") {
+    warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
+  }
   if (!game.channels.length) warnings.push("Sem canal");
   if (!game.competition) warnings.push("Sem competição");
   return warnings;
