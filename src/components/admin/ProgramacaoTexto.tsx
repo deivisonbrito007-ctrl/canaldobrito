@@ -672,7 +672,7 @@ export const ProgramacaoTexto = () => {
   const handleRepublish = () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
-    if (midnightGamesCount > 0) {
+    if (midnightGamesCount > 0 || bumpedGamesCount > 0) {
       setPendingPublishAction("republish");
       setMidnightConfirmOpen(true);
       return;
