@@ -27,6 +27,7 @@ export interface ParsedGame {
   date: string;
   selected: boolean;
   sport_type?: SportType;
+  dateBumped?: boolean;
 }
 
 const PLACEHOLDER = `Cole aqui a programação do dia...
