@@ -643,7 +643,7 @@ export const ProgramacaoTexto = () => {
       toast.error("Selecione pelo menos um jogo");
       return;
     }
-    if (midnightGamesCount > 0) {
+    if (midnightGamesCount > 0 || bumpedGamesCount > 0) {
       setPendingPublishAction("publish");
       setMidnightConfirmOpen(true);
       return;
