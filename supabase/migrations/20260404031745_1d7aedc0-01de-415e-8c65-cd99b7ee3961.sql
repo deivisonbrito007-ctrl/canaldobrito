@@ -1,0 +1,1 @@
+UPDATE daily_games SET date = '2026-04-05' WHERE id = '58dee08e-d841-4393-b16b-5fdd4135261c';
