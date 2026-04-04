@@ -142,3 +142,75 @@ Flamengo x Palmeiras
     expect(games[0].sport_type).toBe("football");
   });
 });
+
+describe("Auto-bump date for dawn games (00:00–04:59)", () => {
+  it("bumps date +1 for 00:00 game when date comes from header", () => {
+    const text = `📅 Dia 04/04
+
+Santos Laguna x América-MEX
+🏆 Liga MX
+⏰ 00h00
+📺 ESPN`;
+    const result = parseScheduleText(text, "2026-04-04");
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe("2026-04-05");
+    expect(result[0].dateBumped).toBe(true);
+  });
+
+  it("bumps date +1 for 02:30 game", () => {
+    const text = `📅 Dia 04/04
+
+LA Galaxy x Inter Miami
+🏆 MLS
+⏰ 02h30
+📺 Apple TV`;
+    const result = parseScheduleText(text, "2026-04-04");
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe("2026-04-05");
+    expect(result[0].dateBumped).toBe(true);
+  });
+
+  it("does NOT bump date for 05:00+ games", () => {
+    const text = `📅 Dia 04/04
+
+Arsenal x Chelsea
+🏆 Premier League
+⏰ 08h30
+📺 ESPN`;
+    const result = parseScheduleText(text, "2026-04-04");
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe("2026-04-04");
+    expect(result[0].dateBumped).toBeFalsy();
+  });
+
+  it("does NOT bump when date is from fallback (manual picker)", () => {
+    const text = `Santos Laguna x América-MEX
+🏆 Liga MX
+⏰ 00h00
+📺 ESPN`;
+    const result = parseScheduleText(text, "2026-04-05");
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe("2026-04-05");
+    expect(result[0].dateBumped).toBeFalsy();
+  });
+
+  it("handles mixed dawn and normal games correctly", () => {
+    const text = `📅 Dia 04/04
+
+Flamengo x Palmeiras
+🏆 Brasileirão
+⏰ 21h00
+📺 Globo
+
+Santos Laguna x América-MEX
+🏆 Liga MX
+⏰ 00h00
+📺 ESPN`;
+    const result = parseScheduleText(text, "2026-04-04");
+    expect(result).toHaveLength(2);
+    expect(result[0].date).toBe("2026-04-04");
+    expect(result[0].dateBumped).toBeFalsy();
+    expect(result[1].date).toBe("2026-04-05");
+    expect(result[1].dateBumped).toBe(true);
+  });
+});
