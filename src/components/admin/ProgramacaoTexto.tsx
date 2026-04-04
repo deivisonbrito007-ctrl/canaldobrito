@@ -27,6 +27,7 @@ export interface ParsedGame {
   date: string;
   selected: boolean;
   sport_type?: SportType;
+  dateBumped?: boolean;
 }
 
 const PLACEHOLDER = `Cole aqui a programação do dia...
@@ -236,10 +237,18 @@ function collectMetadata(lines: string[], startIdx: number): {
   return { competition, competition_detail, game_time, channels, sport_type, linesConsumed: consumed };
 }
 
+/** Advance a YYYY-MM-DD date by 1 day */
+function bumpDate(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00"); // noon to avoid DST issues
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
+  let dateFromHeader = false; // track if currentDate came from a 📅 header
   let currentSectionSport: SportType | null = null;
 
   let i = 0;
@@ -253,6 +262,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
       const month = dateMatch[2].padStart(2, "0");
       const year = new Date().getFullYear();
       currentDate = `${year}-${month}-${day}`;
+      dateFromHeader = true;
       i++;
       continue;
     }
@@ -266,6 +276,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
         const month = headerDateMatch[2].padStart(2, "0");
         const year = new Date().getFullYear();
         currentDate = `${year}-${month}-${day}`;
+        dateFromHeader = true;
         i++;
         continue;
       }
@@ -333,14 +344,23 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
           ? autoSport
           : currentSectionSport || 'football';
 
+      // Auto-bump: if game_time < 05:00 and date came from header, advance date +1
+      let gameDate = currentDate;
+      let dateBumped = false;
+      if (dateFromHeader && meta.game_time < "05:00") {
+        gameDate = bumpDate(currentDate);
+        dateBumped = true;
+      }
+
       games.push(cleanupGame({
         home_team, away_team,
         competition: meta.competition,
         competition_detail: meta.competition_detail,
         game_time: meta.game_time,
         channels: meta.channels,
-        is_womens, date: currentDate, selected: true,
+        is_womens, date: gameDate, selected: true,
         sport_type: finalSport,
+        dateBumped,
       }));
       i += 1 + meta.linesConsumed;
       continue;
@@ -360,7 +380,12 @@ function formatDatePt(dateStr: string): string {
 /** Get validation warnings for a parsed game */
 function getGameWarnings(game: ParsedGame): string[] {
   const warnings: string[] = [];
-  if (game.game_time === "00:00") warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
+  if (game.dateBumped) {
+    const [, m, d] = game.date.split("-");
+    warnings.push(`⏰ Horário ${game.game_time} (madrugada) — data avançada para ${d}/${m}`);
+  } else if (game.game_time === "00:00") {
+    warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
+  }
   if (!game.channels.length) warnings.push("Sem canal");
   if (!game.competition) warnings.push("Sem competição");
   return warnings;
@@ -571,7 +596,8 @@ export const ProgramacaoTexto = () => {
   const [midnightConfirmOpen, setMidnightConfirmOpen] = useState(false);
   const [pendingPublishAction, setPendingPublishAction] = useState<"publish" | "republish" | null>(null);
 
-  const midnightGamesCount = parsed.filter((g) => g.selected && g.game_time === "00:00").length;
+  const midnightGamesCount = parsed.filter((g) => g.selected && g.game_time < "05:00" && !g.dateBumped).length;
+  const bumpedGamesCount = parsed.filter((g) => g.selected && g.dateBumped).length;
 
   const executePublish = async () => {
     const selected = parsed.filter((g) => g.selected);
@@ -617,7 +643,7 @@ export const ProgramacaoTexto = () => {
       toast.error("Selecione pelo menos um jogo");
       return;
     }
-    if (midnightGamesCount > 0) {
+    if (midnightGamesCount > 0 || bumpedGamesCount > 0) {
       setPendingPublishAction("publish");
       setMidnightConfirmOpen(true);
       return;
@@ -646,7 +672,7 @@ export const ProgramacaoTexto = () => {
   const handleRepublish = () => {
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
-    if (midnightGamesCount > 0) {
+    if (midnightGamesCount > 0 || bumpedGamesCount > 0) {
       setPendingPublishAction("republish");
       setMidnightConfirmOpen(true);
       return;
@@ -1072,10 +1098,16 @@ export const ProgramacaoTexto = () => {
               Jogos com horário 00:00
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {midnightGamesCount} jogo(s) selecionado(s) com horário <strong>00:00</strong>.
-              Jogos à meia-noite podem aparecer como "Ao Vivo" logo após a virada do dia.
-              <br /><br />
-              <strong>Verifique se a data está correta</strong> — um jogo de "amanhã às 00:00" deve ter a data do dia seguinte.
+              {midnightGamesCount > 0 && (
+                <>{midnightGamesCount} jogo(s) selecionado(s) com horário antes das <strong>05:00</strong> sem ajuste automático de data.
+                Jogos de madrugada podem aparecer como "Ao Vivo" no dia errado.
+                <br /><br /></>
+              )}
+              {bumpedGamesCount > 0 && (
+                <>{bumpedGamesCount} jogo(s) tiveram a data avançada automaticamente (+1 dia) por serem de madrugada.
+                <br /><br /></>
+              )}
+              <strong>Verifique as datas no preview</strong> antes de confirmar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
