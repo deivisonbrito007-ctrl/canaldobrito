@@ -344,14 +344,23 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
           ? autoSport
           : currentSectionSport || 'football';
 
+      // Auto-bump: if game_time < 05:00 and date came from header, advance date +1
+      let gameDate = currentDate;
+      let dateBumped = false;
+      if (dateFromHeader && meta.game_time < "05:00") {
+        gameDate = bumpDate(currentDate);
+        dateBumped = true;
+      }
+
       games.push(cleanupGame({
         home_team, away_team,
         competition: meta.competition,
         competition_detail: meta.competition_detail,
         game_time: meta.game_time,
         channels: meta.channels,
-        is_womens, date: currentDate, selected: true,
+        is_womens, date: gameDate, selected: true,
         sport_type: finalSport,
+        dateBumped,
       }));
       i += 1 + meta.linesConsumed;
       continue;
