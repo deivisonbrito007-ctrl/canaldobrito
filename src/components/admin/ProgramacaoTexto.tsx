@@ -596,7 +596,8 @@ export const ProgramacaoTexto = () => {
   const [midnightConfirmOpen, setMidnightConfirmOpen] = useState(false);
   const [pendingPublishAction, setPendingPublishAction] = useState<"publish" | "republish" | null>(null);
 
-  const midnightGamesCount = parsed.filter((g) => g.selected && g.game_time === "00:00").length;
+  const midnightGamesCount = parsed.filter((g) => g.selected && g.game_time < "05:00" && !g.dateBumped).length;
+  const bumpedGamesCount = parsed.filter((g) => g.selected && g.dateBumped).length;
 
   const executePublish = async () => {
     const selected = parsed.filter((g) => g.selected);
