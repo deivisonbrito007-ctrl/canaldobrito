@@ -237,10 +237,18 @@ function collectMetadata(lines: string[], startIdx: number): {
   return { competition, competition_detail, game_time, channels, sport_type, linesConsumed: consumed };
 }
 
+/** Advance a YYYY-MM-DD date by 1 day */
+function bumpDate(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00"); // noon to avoid DST issues
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
+  let dateFromHeader = false; // track if currentDate came from a 📅 header
   let currentSectionSport: SportType | null = null;
 
   let i = 0;
@@ -254,6 +262,7 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
       const month = dateMatch[2].padStart(2, "0");
       const year = new Date().getFullYear();
       currentDate = `${year}-${month}-${day}`;
+      dateFromHeader = true;
       i++;
       continue;
     }
