@@ -1098,10 +1098,16 @@ export const ProgramacaoTexto = () => {
               Jogos com horário 00:00
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {midnightGamesCount} jogo(s) selecionado(s) com horário <strong>00:00</strong>.
-              Jogos à meia-noite podem aparecer como "Ao Vivo" logo após a virada do dia.
-              <br /><br />
-              <strong>Verifique se a data está correta</strong> — um jogo de "amanhã às 00:00" deve ter a data do dia seguinte.
+              {midnightGamesCount > 0 && (
+                <>{midnightGamesCount} jogo(s) selecionado(s) com horário antes das <strong>05:00</strong> sem ajuste automático de data.
+                Jogos de madrugada podem aparecer como "Ao Vivo" no dia errado.
+                <br /><br /></>
+              )}
+              {bumpedGamesCount > 0 && (
+                <>{bumpedGamesCount} jogo(s) tiveram a data avançada automaticamente (+1 dia) por serem de madrugada.
+                <br /><br /></>
+              )}
+              <strong>Verifique as datas no preview</strong> antes de confirmar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
