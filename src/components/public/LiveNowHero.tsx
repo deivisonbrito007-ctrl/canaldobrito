@@ -251,7 +251,27 @@ export const LiveNowHero = () => {
 
   const totalLive = matches.length + events.length;
 
-  if (!isLoading && totalLive === 0) return null;
+  if (!isLoading && totalLive === 0) {
+    return (
+      <section className="mx-3 rounded-2xl bg-surface-2 border border-border p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-muted/50">
+            <span className="text-lg">📺</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-foreground font-body">Nenhum jogo ao vivo agora</p>
+            <p className="text-[10px] text-muted-foreground font-body">Confira a programação completa do dia</p>
+          </div>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "schedule" }))}
+            className="text-[10px] text-primary font-semibold font-body hover:underline min-h-[44px] flex items-center shrink-0"
+          >
+            Ver programação →
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   if (isLoading) {
     return (
