@@ -41,10 +41,10 @@ const BelowFoldSkeleton = () => (
 
 const TAB_ORDER = ["home", "highlights", "schedule"] as const;
 
-const fadeVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
+const slideVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -60 : 60 }),
 };
 
 const Index = () => {
