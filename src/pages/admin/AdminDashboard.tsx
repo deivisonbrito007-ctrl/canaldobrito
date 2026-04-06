@@ -238,6 +238,9 @@ const AdminDashboard = () => {
       {/* Content Charts */}
       <ContentCharts totals={totals} actives={actives} isLoading={isLoading} />
 
+      {/* Sport Stats Filter */}
+      <SportStatsFilter games={todayGames} isLoading={loadingGames} />
+
       {/* Upcoming Activations */}
       <UpcomingActivations />
 
