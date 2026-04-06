@@ -328,6 +328,49 @@ const PeriodGroup = ({ group, games, onPushReminder }: { group: TimeGroup; games
   );
 };
 
+/* ── Tomorrow Section (Collapsible) ── */
+const TomorrowSection = ({ games, onPushReminder }: { games: DailyGame[]; onPushReminder?: (gameId: string, add: boolean) => void }) => {
+  const [open, setOpen] = useState(false);
+  const tomorrowStr = useMemo(() => {
+    if (!games[0]) return "";
+    try {
+      return format(new Date(games[0].date + "T12:00:00"), "EEEE, d 'de' MMM", { locale: ptBR });
+    } catch { return games[0].date; }
+  }, [games]);
+
+  const grouped = useMemo(() => {
+    const groups: Record<TimeGroup, DailyGame[]> = { morning: [], afternoon: [], night: [], dawn: [] };
+    games.forEach((g) => groups[getTimeGroup(g.game_time || "00:00")].push(g));
+    return groups;
+  }, [games]);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="flex items-center gap-3 w-full py-2 group/tomorrow min-h-[44px]">
+          <span className="text-base">📅</span>
+          <span className="text-xs font-bold text-foreground/70 uppercase tracking-widest">Amanhã</span>
+          <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
+            {games.length} jogos
+          </span>
+          <span className="text-[10px] text-muted-foreground/50 capitalize">{tomorrowStr}</span>
+          <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
+          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-5 mt-2">
+          {GROUP_ORDER.map((group) => {
+            const groupGames = grouped[group];
+            if (!groupGames || groupGames.length === 0) return null;
+            return <PeriodGroup key={group} group={group} games={groupGames} onPushReminder={onPushReminder} />;
+          })}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 /* ── Section ── */
 export const DailyGamesSection = () => {
   const tick = useLiveTick();
@@ -681,6 +724,11 @@ export const DailyGamesSection = () => {
           return <PeriodGroup key={group} group={group} games={groupGames} onPushReminder={handlePushReminder} />;
         })}
       </div>
+
+      {/* Tomorrow's games — collapsible section */}
+      {tomorrowGames && tomorrowGames.length > 0 && !hasActiveFilters && (
+        <TomorrowSection games={tomorrowGames} onPushReminder={handlePushReminder} />
+      )}
 
       {/* Empty filtered state */}
       <AnimatePresence>
