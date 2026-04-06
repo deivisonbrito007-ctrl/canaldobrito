@@ -263,7 +263,8 @@ China x Curaçao
 
     const games = parseScheduleText(text, fallback);
     expect(games).toHaveLength(1);
-    expect(games[0].date).toBe(`${new Date().getFullYear()}-03-27`);
+    // Auto-bump: 03:00 is dawn, so date advances to next day (28/03)
+    expect(games[0].date).toBe(`${new Date().getFullYear()}-03-28`);
   });
 
   it("handles full real-world agenda with multiple sports", () => {
@@ -304,7 +305,10 @@ Miami Open
     const games = parseScheduleText(text, fallback);
     expect(games).toHaveLength(4);
     expect(games[0].home_team).toBe("China");
+    // Auto-bump: 03:00 is dawn → date becomes 28/03
+    expect(games[0].date).toBe(`${new Date().getFullYear()}-03-28`);
     expect(games[1].home_team).toBe("Inglaterra");
+    expect(games[1].date).toBe(`${new Date().getFullYear()}-03-27`); // 16:45 — no bump
     expect(games[1].channels).toEqual(["ESPN", "Disney+"]);
     expect(games[2].home_team).toBe("Atlanta Hawks");
     expect(games[3].home_team).toBe("Miami Open");
