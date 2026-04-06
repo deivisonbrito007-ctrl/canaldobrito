@@ -39,12 +39,12 @@ describe("LiveNowHero", () => {
     vi.clearAllMocks();
   });
 
-  it("renders nothing when there are no live games", () => {
+  it("renders empty state when there are no live games", () => {
     mockUseAllDailyGames.mockReturnValue({ data: [], isLoading: false });
     (isGameCurrentlyLive as any).mockReturnValue(false);
 
     const { container } = render(<LiveNowHero />);
-    expect(container.innerHTML).toBe("");
+    expect(container.textContent).toContain("Nenhum jogo ao vivo agora");
   });
 
   it("shows skeleton during loading", () => {
