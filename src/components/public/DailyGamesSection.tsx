@@ -682,6 +682,11 @@ export const DailyGamesSection = () => {
         })}
       </div>
 
+      {/* Tomorrow's games — collapsible section */}
+      {tomorrowGames && tomorrowGames.length > 0 && !hasActiveFilters && (
+        <TomorrowSection games={tomorrowGames} onPushReminder={handlePushReminder} />
+      )}
+
       {/* Empty filtered state */}
       <AnimatePresence>
         {filteredGames.length === 0 && hasActiveFilters && (
