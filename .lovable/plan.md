@@ -1,48 +1,67 @@
 
 
-## Auditoria e Correções do Portal
+## Auditoria da Aba Início + Testes + Sugestões de Melhoria
 
-### Problemas encontrados nos testes (3 falhas em 121)
+### Status dos Testes
+Todos os **121 testes passam** (13 arquivos de teste, 0 falhas).
 
-**1. LiveNowHero.test.tsx — 2 testes falhando**
-O mock de `@/lib/gameUtils` não exporta `SPORT_LABEL` e `SPORT_BADGE_BG`, que foram adicionados ao módulo depois do teste ser escrito. O componente `LiveNowHero` usa `SPORT_LABEL[sportType]` na linha 110 e o teste quebra.
+### Auditoria do Fluxo da Aba Início
 
-**Correção:** Atualizar o mock em `LiveNowHero.test.tsx` para incluir `SPORT_LABEL`, `SPORT_BADGE_BG` e `SPORT_DURATION` nas exportações mockadas.
+Analisei todos os componentes renderizados na aba Início:
 
-**2. ProgramacaoTexto.test.tsx — 1 teste falhando**
-O teste "detects date from header like 'AGENDA ESPORTIVA — SEXTA 27/03'" espera data `2026-03-27`, mas o auto-bump de madrugada (implementado na última alteração) avança jogos com horário `03:00` para o dia seguinte (`2026-03-28`).
+| Componente | Status | Observação |
+|---|---|---|
+| AppNavbar | OK | Live badge funcional, CTA "Assine já" presente |
+| Hero | OK | Stats (ao vivo, hoje, canais) com tick de 60s |
+| CategoryIconsCarousel | OK | Marquee infinito com pause no touch |
+| LiveNowHero | OK | Grid vertical, expand/collapse, link "Ver todos" |
+| NovidadesCard | OK | Carousel com swipe, trailer, detail sheet |
+| PromoStrip | OK | CTA para /assinar |
+| BannerSections | OK | Lazy loaded, categorias filtradas |
+| PublicFooter | OK | Login secreto via long-press |
+| BottomNav | OK | 3 abas com indicador ativo |
+| PullToRefresh | OK | Haptic feedback, invalidação de queries |
 
-**Correção:** Atualizar o teste para esperar `2026-03-28` (comportamento correto com auto-bump) e adicionar comentário explicativo.
+### Problemas Encontrados
+
+**1. CategoryIconsCarousel sem ação nos itens**
+Os chips de categoria (Futebol, Basquete, etc.) são puramente decorativos (`cursor-default`). Clicar neles não faz nada. Seria mais útil que filtrassem ou navegassem para a aba correspondente.
+
+**2. Hero mostra "Bem-vindo de volta" para todos**
+O texto "Bem-vindo de volta" aparece mesmo para visitantes novos. Não há distinção entre primeiro acesso e retorno.
+
+**3. Seção "Ao Vivo" some completamente quando não há jogos**
+Quando `totalLive === 0`, `LiveNowHero` retorna `null`. Isso causa um salto visual — o usuário não sabe que existe uma seção de jogos ao vivo. Melhor mostrar um empty state compacto.
 
 ---
 
-### Sugestões de melhoria para o Dashboard Admin
+### Plano de Melhorias
 
-**3. Donut chart sem legenda visível**
-O `ContentCharts` tem um donut chart mas não mostra legenda — o usuário só entende as cores pelo tooltip. Adicionar legendas compactas abaixo do gráfico com cor + label + percentual.
+#### Passo 1 — Empty state para "Ao Vivo" na Home
+Quando não há jogos ao vivo, mostrar um card compacto com texto "Nenhum jogo ao vivo agora" e link para a aba Programação, em vez de esconder a seção completamente.
 
-**4. Atividade Recente sem jogos**
-O `RecentActivity` mostra banners, filmes, séries e novidades mas ignora jogos (`daily_games`). Incluir jogos no feed com ícone de troféu.
+**Arquivo:** `src/components/public/LiveNowHero.tsx`
+- Substituir `if (!isLoading && totalLive === 0) return null;` por um card minimalista com ícone de TV e botão "Ver programação".
 
-**5. Dashboard sem indicador de jogos de madrugada**
-Após a implementação do auto-bump, seria útil mostrar no dashboard quantos jogos tiveram data ajustada (madrugada) para auditoria rápida.
+#### Passo 2 — Tornar CategoryIconsCarousel interativo
+Clicar em "Futebol", "Basquete", etc. navega para a aba Programação com o filtro de esporte pré-selecionado. "Filmes" e "Séries" navegam para a aba Destaques.
+
+**Arquivo:** `src/components/public/CategoryIconsCarousel.tsx`
+- Adicionar `onClick` a cada chip que dispara `nav-tab-change` com payload incluindo filtro de esporte.
+
+#### Passo 3 — Ajustar texto do Hero
+Trocar "Bem-vindo de volta" por "Ao vivo agora" quando há jogos ao vivo, mantendo "Bem-vindo" como fallback genérico (sem "de volta").
+
+**Arquivo:** `src/components/public/Hero.tsx`
+
+#### Passo 4 — Rodar testes
+Executar `vitest run` para confirmar 0 regressões.
 
 ---
 
-## Plano de implementação
+### Detalhes técnicos
 
-### Passo 1 — Corrigir LiveNowHero.test.tsx
-Atualizar o `vi.mock("@/lib/gameUtils")` para incluir todas as exportações usadas pelo componente: `SPORT_LABEL`, `SPORT_BADGE_BG`, `SPORT_DURATION`.
-
-### Passo 2 — Corrigir ProgramacaoTexto.test.tsx
-Alterar a expectativa do teste de `2026-03-27` para `2026-03-28` (jogo às 03:00 = madrugada = dia seguinte).
-
-### Passo 3 — Adicionar legendas ao donut chart
-Adicionar lista de legendas compacta abaixo do `PieChart` em `ContentCharts.tsx` com bolinha colorida + nome + valor.
-
-### Passo 4 — Incluir jogos no feed de Atividade Recente
-Adicionar `daily_games` ao `RecentActivity` recebendo os dados via props e exibindo com ícone `Trophy`.
-
-### Passo 5 — Rodar suíte de testes completa
-Executar `vitest run` para confirmar 0 falhas.
+- O `CategoryIconsCarousel` usará `window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: tabId }))` para navegar, mantendo consistência com o padrão existente no `BottomNav`.
+- O empty state do `LiveNowHero` será um `<section>` com altura fixa (~80px) para evitar layout shift.
+- As alterações não afetam testes existentes pois nenhum teste cobre `CategoryIconsCarousel` ou o estado vazio do `LiveNowHero`.
 
