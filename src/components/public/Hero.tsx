@@ -35,7 +35,7 @@ export const Hero = () => {
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
             </span>
             <span className="text-[10px] uppercase font-bold tracking-wider text-primary font-body">
-              Bem-vindo de volta
+              {stats.live > 0 ? "Ao vivo agora" : "Bem-vindo"}
             </span>
           </div>
 

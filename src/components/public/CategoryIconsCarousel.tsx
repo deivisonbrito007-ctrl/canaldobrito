@@ -1,15 +1,15 @@
 import React, { useRef, useCallback } from "react";
 
 const categories = [
-  { emoji: "🔥", label: "Em Alta" },
-  { emoji: "⚽", label: "Futebol" },
-  { emoji: "🏀", label: "Basquete" },
-  { emoji: "🥊", label: "UFC/MMA" },
-  { emoji: "🎬", label: "Filmes" },
-  { emoji: "📺", label: "Séries" },
-  { emoji: "🏅", label: "Esportes" },
-  { emoji: "🎾", label: "Tênis" },
-  { emoji: "🏆", label: "Destaques" },
+  { emoji: "🔥", label: "Em Alta", action: { tab: "highlights" } },
+  { emoji: "⚽", label: "Futebol", action: { tab: "schedule" } },
+  { emoji: "🏀", label: "Basquete", action: { tab: "schedule" } },
+  { emoji: "🥊", label: "UFC/MMA", action: { tab: "schedule" } },
+  { emoji: "🎬", label: "Filmes", action: { tab: "highlights" } },
+  { emoji: "📺", label: "Séries", action: { tab: "highlights" } },
+  { emoji: "🏅", label: "Esportes", action: { tab: "schedule" } },
+  { emoji: "🎾", label: "Tênis", action: { tab: "schedule" } },
+  { emoji: "🏆", label: "Destaques", action: { tab: "highlights" } },
 ];
 
 const carouselItems = [...categories, ...categories, ...categories];
@@ -29,6 +29,10 @@ export const CategoryIconsCarousel = () => {
     }, 2000);
   }, []);
 
+  const handleClick = useCallback((action: { tab: string }) => {
+    window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: action.tab }));
+  }, []);
+
   return (
     <section className="py-3 animate-fade-up stagger-3">
       <div
@@ -44,12 +48,13 @@ export const CategoryIconsCarousel = () => {
           {carouselItems.map((cat, i) => {
             const isFirst = cat.label === "Em Alta";
             return (
-              <div
+              <button
                 key={`${cat.label}-${i}`}
-                className={`shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl border transition-all duration-200 cursor-default select-none min-h-[44px] ${
+                onClick={() => handleClick(cat.action)}
+                className={`shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl border transition-all duration-200 cursor-pointer select-none min-h-[44px] active:scale-95 ${
                   isFirst
                     ? "bg-green-dim border-green-border"
-                    : "bg-surface border-border"
+                    : "bg-surface border-border hover:border-primary/30"
                 }`}
               >
                 <span className="text-sm">{cat.emoji}</span>
@@ -60,7 +65,7 @@ export const CategoryIconsCarousel = () => {
                 >
                   {cat.label}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
