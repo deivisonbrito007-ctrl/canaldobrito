@@ -75,6 +75,7 @@ const MovieCard = ({
             onClick={onPlayTrailer}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-primary/80 text-primary-foreground opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-primary hover:scale-110 active:scale-95 shadow-lg"
             aria-label={`Assistir trailer de ${item.title}`}
+            onKeyDown={(e) => { if (e.key === "Enter") onPlayTrailer(e as unknown as React.MouseEvent); }}
           >
             <Play className="h-5 w-5 fill-current ml-0.5" />
           </button>

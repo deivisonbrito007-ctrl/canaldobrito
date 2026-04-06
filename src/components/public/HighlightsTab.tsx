@@ -22,15 +22,38 @@ const HighlightsEmptyState = () => {
   );
 };
 
-const HighlightsTab = () => (
-  <div className="pt-5 pb-3 space-y-6">
-    <div className="px-4">
-      <SectionHeader icon={Star} title="Destaques" subtitle="Seleção da semana" />
+const HighlightsTab = () => {
+  const { data: movies } = useActiveMovies();
+  const { data: series } = useActiveSeries();
+  const totalCount = (movies?.length || 0) + (series?.length || 0);
+
+  return (
+    <div className="pt-5 pb-3 space-y-6">
+      <div className="px-4">
+        <SectionHeader
+          icon={Star}
+          title="Destaques"
+          subtitle="Seleção da semana"
+          badge={
+            totalCount > 0 ? (
+              <span className="ml-auto text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5">
+                {totalCount} {totalCount === 1 ? "título" : "títulos"}
+              </span>
+            ) : undefined
+          }
+        />
+      </div>
+      <WeeklyMoviesSection />
+      {/* Visual separator between sections */}
+      {(movies?.length || 0) > 0 && (series?.length || 0) > 0 && (
+        <div className="px-4">
+          <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+        </div>
+      )}
+      <WeeklySeriesSection />
+      <HighlightsEmptyState />
     </div>
-    <WeeklyMoviesSection />
-    <WeeklySeriesSection />
-    <HighlightsEmptyState />
-  </div>
-);
+  );
+};
 
 export default HighlightsTab;
