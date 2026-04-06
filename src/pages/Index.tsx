@@ -41,21 +41,25 @@ const BelowFoldSkeleton = () => (
 
 const TAB_ORDER = ["home", "highlights", "schedule"] as const;
 
-const fadeVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
+const slideVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -60 : 60 }),
 };
 
 const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState("home");
+  const [direction, setDirection] = useState(0);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
-  
-
   const handleTabChange = useCallback((tabId: string) => {
-    setActiveTab(tabId);
+    setActiveTab((prev) => {
+      const prevIdx = TAB_ORDER.indexOf(prev as typeof TAB_ORDER[number]);
+      const nextIdx = TAB_ORDER.indexOf(tabId as typeof TAB_ORDER[number]);
+      setDirection(nextIdx >= prevIdx ? 1 : -1);
+      return tabId;
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
@@ -121,14 +125,15 @@ const Index = () => {
 
       <main ref={mainRef} className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))", overscrollBehaviorY: "contain" }}>
         <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={activeTab}
-            variants={fadeVariants}
-            initial="hidden"
-            animate="visible"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
             exit="exit"
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
           >
             {renderContent()}
           </motion.div>
