@@ -35,10 +35,11 @@ const wrap = (ui: React.ReactElement) => {
 describe("AdminDashboard", () => {
   it("renders stat card labels", () => {
     wrap(<AdminDashboard />);
-    expect(screen.getByText("Banners")).toBeInTheDocument();
-    expect(screen.getByText("Filmes")).toBeInTheDocument();
-    expect(screen.getByText("Séries")).toBeInTheDocument();
-    expect(screen.getByText("Novidades")).toBeInTheDocument();
+    // Use getAllByText since labels may appear in both stat cards and chart legends
+    expect(screen.getAllByText("Banners").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Filmes").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Séries").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Novidades").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Jogos Hoje")).toBeInTheDocument();
   });
 

@@ -2,11 +2,11 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Image, Film, Clapperboard, Sparkles } from "lucide-react";
+import { Image, Film, Clapperboard, Sparkles, Trophy } from "lucide-react";
 import type { Banner } from "@/hooks/useBanners";
 
 interface ActivityItem {
-  type: "banner" | "filme" | "série" | "novidade";
+  type: "banner" | "filme" | "série" | "novidade" | "jogo";
   title: string;
   created_at: string;
   route: string;
@@ -17,6 +17,7 @@ const typeConfig = {
   filme: { icon: Film, color: "text-blue-400", bg: "bg-blue-500/10" },
   série: { icon: Clapperboard, color: "text-purple-400", bg: "bg-purple-500/10" },
   novidade: { icon: Sparkles, color: "text-amber-400", bg: "bg-amber-500/10" },
+  jogo: { icon: Trophy, color: "text-red-400", bg: "bg-red-500/10" },
 };
 
 interface RecentActivityProps {
@@ -24,10 +25,11 @@ interface RecentActivityProps {
   movies: any[] | undefined;
   series: any[] | undefined;
   news: any[] | undefined;
+  games: any[] | undefined;
   isLoading: boolean;
 }
 
-export const RecentActivity = React.forwardRef<HTMLDivElement, RecentActivityProps>(({ banners, movies, series, news, isLoading }, ref) => {
+export const RecentActivity = React.forwardRef<HTMLDivElement, RecentActivityProps>(({ banners, movies, series, news, games, isLoading }, ref) => {
   const navigate = useNavigate();
 
   const items = useMemo(() => {
@@ -36,8 +38,9 @@ export const RecentActivity = React.forwardRef<HTMLDivElement, RecentActivityPro
     movies?.forEach(m => all.push({ type: "filme", title: m.title, created_at: m.created_at, route: "/admin/filmes" }));
     series?.forEach(s => all.push({ type: "série", title: s.title, created_at: s.created_at, route: "/admin/series" }));
     news?.forEach(n => all.push({ type: "novidade", title: n.title, created_at: n.created_at, route: "/admin/novidades" }));
+    games?.forEach(g => all.push({ type: "jogo", title: `${g.home_team} x ${g.away_team}`, created_at: g.created_at, route: "/admin/banners?tab=programacao" }));
     return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
-  }, [banners, movies, series, news]);
+  }, [banners, movies, series, news, games]);
 
   if (isLoading || items.length === 0) return null;
 

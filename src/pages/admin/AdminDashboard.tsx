@@ -241,7 +241,7 @@ const AdminDashboard = () => {
       <UpcomingActivations />
 
       {/* Recent Activity */}
-      <RecentActivity banners={banners} movies={movies} series={series} news={news} isLoading={isLoading} />
+      <RecentActivity banners={banners} movies={movies} series={series} news={news} games={todayGames} isLoading={isLoading} />
 
       {/* Quick Actions */}
       <div>

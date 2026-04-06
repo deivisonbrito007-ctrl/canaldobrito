@@ -95,6 +95,21 @@ export const ContentCharts = ({ totals, actives, isLoading }: Props) => {
             </Pie>
           </PieChart>
         </ChartContainer>
+        {/* Legend */}
+        {pieData.length > 0 && (() => {
+          const total = pieData.reduce((s, d) => s + d.value, 0);
+          return (
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 justify-center">
+              {pieData.map((entry) => (
+                <div key={entry.key} className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[entry.key as keyof typeof COLORS] }} />
+                  <span className="text-[10px] text-muted-foreground">{entry.name}</span>
+                  <span className="text-[10px] font-semibold text-foreground/70">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

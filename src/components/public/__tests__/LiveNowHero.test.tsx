@@ -28,7 +28,8 @@ vi.mock("@/lib/gameUtils", () => ({
   getElapsedMinutes: () => 45,
   isNonAdversarial: (st: string) => ["f1", "mma"].includes(st),
   SPORT_EMOJI: { football: "⚽", f1: "🏎️" },
-  SPORT_DURATION: {},
+  SPORT_DURATION: { football: 105 },
+  SPORT_LABEL: { football: "Futebol", f1: "F1" },
 }));
 
 const { isGameCurrentlyLive } = await import("@/lib/gameUtils");
