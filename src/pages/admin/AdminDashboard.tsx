@@ -20,6 +20,7 @@ import { ContentHealthBar } from "@/components/admin/ContentHealthBar";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { ContentCharts } from "@/components/admin/ContentCharts";
+import { SportStatsFilter } from "@/components/admin/SportStatsFilter";
 
 const useCountUp = (target: number, duration = 800) => {
   const [count, setCount] = useState(0);
