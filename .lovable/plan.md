@@ -1,26 +1,46 @@
 
 
-## Correção: Programação não publica
+## Correção: erro "dateBumped column not found" ao publicar jogos
 
-### Problema
-Na função `buildInsertPayload` (linha 563 de `ProgramacaoTexto.tsx`), o campo `dateBumped` (usado apenas na UI para indicar jogos de madrugada com data avançada) **não é removido** antes do insert no banco. Como `dateBumped` não existe como coluna na tabela `daily_games`, o insert falha.
+### Diagnóstico
 
-A linha atual desestrutura apenas `selected` e `sport_type`:
-```js
-({ selected: _, sport_type: parsedSport, ...g }) =>
+A correção na linha 563 do `ProgramacaoTexto.tsx` já existe — `dateBumped` é removido via desestruturação no `buildInsertPayload`. Porém, o erro persiste porque pode haver um cache do navegador com a versão antiga, OU porque o `sanitizeGame` no `useDailyGames.ts` faz `{ ...game }` e repassa campos desconhecidos para o Supabase.
+
+### Solução: defesa em profundidade
+
+Adicionar uma **whitelist de campos válidos** no `sanitizeGame` (ou diretamente antes do `.insert()`) para garantir que apenas colunas da tabela `daily_games` sejam enviadas ao banco — independente do que chegue do parser.
+
+### Alterações
+
+**Arquivo: `src/hooks/useDailyGames.ts`** (função `sanitizeGame`, ~linha 101)
+
+Adicionar whitelist de colunas válidas e filtrar campos desconhecidos:
+
+```typescript
+const DAILY_GAMES_COLUMNS = new Set([
+  "date", "home_team", "away_team", "competition", "competition_detail",
+  "game_time", "channels", "is_live", "is_womens", "active", "archived",
+  "status_short", "elapsed_minutes", "publish_at", "sport_type",
+]);
+
+function sanitizeGame(game: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(game)) {
+    if (!DAILY_GAMES_COLUMNS.has(key)) continue; // strip unknown fields
+    if (typeof value === "string" && ["home_team","away_team","competition","competition_detail"].includes(key)) {
+      out[key] = sanitizeGameStr(value);
+    } else {
+      out[key] = value;
+    }
+  }
+  if (Array.isArray(out.channels)) {
+    out.channels = out.channels.map((c: any) => typeof c === "string" ? sanitizeGameStr(c) : c);
+  }
+  return out;
+}
 ```
-Mas `dateBumped` permanece no spread `...g` e é enviado ao banco.
 
-### Correção
-
-**Arquivo:** `src/components/admin/ProgramacaoTexto.tsx`, linha 563
-
-Adicionar `dateBumped` na desestruturação:
-```js
-({ selected: _, sport_type: parsedSport, dateBumped: _bump, ...g }) =>
-```
-
-Isso remove o campo antes de montar o payload de insert, resolvendo o erro.
+Isso garante que `dateBumped`, `selected`, `sport_type` (já tratado no buildInsertPayload) ou qualquer outro campo espúrio nunca chegue ao banco.
 
 ### Validação
 - Rodar `vitest run` para confirmar 0 regressões.
