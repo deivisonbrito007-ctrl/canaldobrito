@@ -98,10 +98,21 @@ function sanitizeGameStr(s: string): string {
     .trim();
 }
 
+const DAILY_GAMES_COLUMNS = new Set([
+  "date", "home_team", "away_team", "competition", "competition_detail",
+  "game_time", "channels", "is_live", "is_womens", "active", "archived",
+  "status_short", "elapsed_minutes", "publish_at", "sport_type",
+]);
+
 function sanitizeGame(game: Record<string, any>): Record<string, any> {
-  const out = { ...game };
-  for (const key of ["home_team", "away_team", "competition", "competition_detail"] as const) {
-    if (typeof out[key] === "string") out[key] = sanitizeGameStr(out[key]);
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(game)) {
+    if (!DAILY_GAMES_COLUMNS.has(key)) continue;
+    if (typeof value === "string" && ["home_team","away_team","competition","competition_detail"].includes(key)) {
+      out[key] = sanitizeGameStr(value);
+    } else {
+      out[key] = value;
+    }
   }
   if (Array.isArray(out.channels)) {
     out.channels = out.channels.map((c: any) => typeof c === "string" ? sanitizeGameStr(c) : c);
