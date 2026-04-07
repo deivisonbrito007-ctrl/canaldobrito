@@ -560,7 +560,7 @@ export const ProgramacaoTexto = () => {
   };
 
   const buildInsertPayload = (selected: ParsedGame[]) => {
-    return selected.map(({ selected: _, sport_type: parsedSport, ...g }) => {
+    return selected.map(({ selected: _, sport_type: parsedSport, dateBumped: _bump, ...g }) => {
       let publishAt: string | null = null;
       let active = true;
 
