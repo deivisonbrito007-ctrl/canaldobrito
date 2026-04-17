@@ -625,9 +625,15 @@ export const ProgramacaoTexto = () => {
         toast.success(`${inserted} jogo(s) publicado(s), ${skipped} duplicata(s) ignorada(s)`);
       } else {
         const hasScheduled = toInsert.some((g) => g.publish_at);
-        toast.success(hasScheduled
+        const msg = hasScheduled
           ? `${inserted} jogo(s) agendado(s) para meia-noite!`
-          : `${inserted} jogo(s) publicado(s)!`);
+          : `${inserted} jogo(s) publicado(s)!`;
+        toast.success(msg, {
+          action: {
+            label: "Ver no público",
+            onClick: () => window.open("/", "_blank"),
+          },
+        });
       }
 
       setParsed([]);
