@@ -22,7 +22,7 @@ export const CategoryPills = ({ onFilter }: CategoryPillsProps) => {
   };
 
   return (
-    <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 py-1">
+    <div data-horizontal-scroll className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 py-1">
       {categories.map((cat) => (
         <button
           key={cat.id}

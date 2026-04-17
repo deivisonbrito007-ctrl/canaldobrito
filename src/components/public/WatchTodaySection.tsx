@@ -109,7 +109,7 @@ export const WatchTodaySection = () => {
       <div className="px-4">
         <SectionHeader />
       </div>
-      <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
+      <div data-horizontal-scroll className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {items.map((item, idx) => (
           <ContentCard key={item.id} item={item} index={idx} />
         ))}

@@ -41,7 +41,7 @@ export const CategoryBar = () => {
           : "bg-transparent"
       }`}
     >
-      <div className="flex gap-2 overflow-x-auto scrollbar-none px-4 sm:px-6 py-2.5">
+      <div data-horizontal-scroll className="flex gap-2 overflow-x-auto scrollbar-none px-4 sm:px-6 py-2.5">
         {SECTIONS.map((s) => (
           <button
             key={s.id}

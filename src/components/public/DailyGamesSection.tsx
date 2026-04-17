@@ -538,7 +538,7 @@ export const DailyGamesSection = () => {
       {/* Compact accordion filters */}
       <div className="space-y-2">
         {/* Filter category buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5" role="toolbar" aria-label="Filtros de jogos">
+        <div data-horizontal-scroll className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0.5" role="toolbar" aria-label="Filtros de jogos">
           {availableSports.length > 1 && (
             <button
               onClick={() => toggleFilter("sport")}
@@ -606,7 +606,7 @@ export const DailyGamesSection = () => {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+              <div data-horizontal-scroll className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <button
                   onClick={() => { setSportFilter(null); setOpenFilter(null); }}
                   className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${
@@ -639,7 +639,7 @@ export const DailyGamesSection = () => {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+              <div data-horizontal-scroll className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <button
                   onClick={() => { setCompFilter(null); setOpenFilter(null); }}
                   className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${
@@ -673,7 +673,7 @@ export const DailyGamesSection = () => {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+              <div data-horizontal-scroll className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <button
                   onClick={() => { setChannelFilter(null); setOpenFilter(null); }}
                   className={`shrink-0 px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-bold transition-all ${

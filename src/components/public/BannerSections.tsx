@@ -67,7 +67,7 @@ const CategoryRow = ({ banners, emoji, label }: { banners: { id: string; image_u
         <div className="flex-1 h-px bg-gradient-to-r from-border/20 to-transparent" />
       </div>
 
-      <div className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
+      <div data-horizontal-scroll className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {banners.map((banner, idx) => (
           <BannerCard key={banner.id} banner={banner} index={idx} />
         ))}
