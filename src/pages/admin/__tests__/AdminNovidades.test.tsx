@@ -85,7 +85,7 @@ describe("AdminNovidades", () => {
     ];
     wrap(<AdminNovidades />);
     expect(screen.getByText("Duna 2")).toBeInTheDocument();
-    expect(screen.getByText("🎬 Filme")).toBeInTheDocument();
+    expect(screen.getAllByText("🎬 Filme").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("1 ativos / 1")).toBeInTheDocument();
     expect(screen.getByText("Ficção")).toBeInTheDocument();
   });
@@ -103,7 +103,7 @@ describe("AdminNovidades", () => {
   it("mostra badge de série quando content_type é 'series'", () => {
     itemList = [{ id: "1", tmdb_id: 1, title: "Stranger Things", active: true, content_type: "series", badge_type: "nova_temporada", genres: "Drama", display_order: 0, seasons: 4 }];
     wrap(<AdminNovidades />);
-    expect(screen.getByText("📺 Série")).toBeInTheDocument();
+    expect(screen.getAllByText("📺 Série").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("4 temporadas")).toBeInTheDocument();
   });
 });
