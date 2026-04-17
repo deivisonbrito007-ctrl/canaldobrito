@@ -34,11 +34,16 @@ export const RecentActivity = React.forwardRef<HTMLDivElement, RecentActivityPro
 
   const items = useMemo(() => {
     const all: ActivityItem[] = [];
-    banners?.forEach(b => all.push({ type: "banner", title: b.title || (b.image_url ? b.image_url.slice(-20) : "Banner"), created_at: b.created_at, route: "/admin/banners" }));
-    movies?.forEach(m => all.push({ type: "filme", title: m.title, created_at: m.created_at, route: "/admin/filmes" }));
-    series?.forEach(s => all.push({ type: "série", title: s.title, created_at: s.created_at, route: "/admin/series" }));
-    news?.forEach(n => all.push({ type: "novidade", title: n.title, created_at: n.created_at, route: "/admin/novidades" }));
-    games?.forEach(g => all.push({ type: "jogo", title: `${g.home_team} x ${g.away_team}`, created_at: g.created_at, route: "/admin/banners?tab=programacao" }));
+    const safe = (created: any) => {
+      if (!created) return null;
+      const t = new Date(created).getTime();
+      return Number.isFinite(t) ? created : null;
+    };
+    banners?.forEach(b => { const c = safe(b.created_at); if (c) all.push({ type: "banner", title: b.title || (b.image_url ? b.image_url.slice(-20) : "Banner"), created_at: c, route: "/admin/banners" }); });
+    movies?.forEach(m => { const c = safe(m.created_at); if (c) all.push({ type: "filme", title: m.title, created_at: c, route: "/admin/filmes" }); });
+    series?.forEach(s => { const c = safe(s.created_at); if (c) all.push({ type: "série", title: s.title, created_at: c, route: "/admin/series" }); });
+    news?.forEach(n => { const c = safe(n.created_at); if (c) all.push({ type: "novidade", title: n.title, created_at: c, route: "/admin/novidades" }); });
+    games?.forEach(g => { const c = safe(g.created_at); if (c) all.push({ type: "jogo", title: `${g.home_team} x ${g.away_team}`, created_at: c, route: "/admin/banners?tab=programacao" }); });
     return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
   }, [banners, movies, series, news, games]);
 
