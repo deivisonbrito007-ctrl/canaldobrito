@@ -134,7 +134,7 @@ export const WeeklyMoviesSection = () => {
       <div className="px-4">
         <SectionHeader icon={Film} title={`Filmes (${movies.length})`} subtitle="Destaques da semana" hideBrand />
       </div>
-      <div data-horizontal-scroll className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2" style={{ touchAction: "pan-x" }}>
+      <div data-horizontal-scroll className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pb-2">
         {movies.map((item, idx) => (
           <MovieCard
             key={item.id}
