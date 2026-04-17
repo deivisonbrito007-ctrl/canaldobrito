@@ -79,17 +79,24 @@ const AdminDashboard = () => {
     refetchBanners(); refetchMovies(); refetchSeries(); refetchNews(); refetchGames();
   };
 
+  const now = new Date();
+  const isScheduled = (item: any) => item?.publish_at && new Date(item.publish_at) > now && !item.active;
+
   const totalBanners = banners?.length || 0;
   const activeBanners = banners?.filter((b) => b.active).length || 0;
+  const scheduledBanners = banners?.filter(isScheduled).length || 0;
   const totalMovies = movies?.length || 0;
   const activeMovies = movies?.filter((m) => m.active).length || 0;
+  const scheduledMovies = movies?.filter(isScheduled).length || 0;
   const totalSeries = series?.length || 0;
   const activeSeries = series?.filter((s) => s.active).length || 0;
+  const scheduledSeriesCount = series?.filter(isScheduled).length || 0;
   const totalNews = news?.length || 0;
   const activeNews = news?.filter((n) => n.active).length || 0;
+  const scheduledNews = news?.filter(isScheduled).length || 0;
   const totalGames = todayGames?.length || 0;
   const activeGames = todayGames?.filter((g) => g.active).length || 0;
-  const scheduledGames = todayGames?.filter((g) => !g.active && g.publish_at && new Date(g.publish_at) > new Date()).length || 0;
+  const scheduledGames = todayGames?.filter((g) => !g.active && g.publish_at && new Date(g.publish_at) > now).length || 0;
 
   const bCount = useCountUp(totalBanners);
   const mCount = useCountUp(totalMovies);
@@ -100,6 +107,7 @@ const AdminDashboard = () => {
   const counts: Record<string, number> = { banners: bCount, filmes: mCount, series: sCount, novidades: nCount, jogos: gCount };
   const actives: Record<string, number> = { banners: activeBanners, filmes: activeMovies, series: activeSeries, novidades: activeNews, jogos: activeGames };
   const totals: Record<string, number> = { banners: totalBanners, filmes: totalMovies, series: totalSeries, novidades: totalNews, jogos: totalGames };
+  const scheduledMap: Record<string, number> = { banners: scheduledBanners, filmes: scheduledMovies, series: scheduledSeriesCount, novidades: scheduledNews, jogos: scheduledGames };
   const todayFormatted = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
   const totalAllContent = totalBanners + totalMovies + totalSeries + totalNews;
@@ -217,8 +225,10 @@ const AdminDashboard = () => {
                   <div className="w-full">
                     <p className="text-[10px] text-muted-foreground">{card.label}</p>
                     <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
-                    {card.key === "jogos" && scheduledGames > 0 && (
-                      <p className="text-[9px] text-amber-400/70">{scheduledGames} agendado{scheduledGames !== 1 ? "s" : ""}</p>
+                    {(scheduledMap[card.key] || 0) > 0 && (
+                      <p className="text-[9px] text-amber-400/70">
+                        {scheduledMap[card.key]} agendado{scheduledMap[card.key] !== 1 ? "s" : ""}
+                      </p>
                     )}
                     {/* Micro progress bar */}
                     <div className="mt-1.5 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">

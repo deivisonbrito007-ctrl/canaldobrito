@@ -1,6 +1,6 @@
 import { useActiveBanners, type BannerCategory } from "@/hooks/useBanners";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import React, { useState, forwardRef } from "react";
 import { motion } from "framer-motion";
 import { ImageOff } from "lucide-react";
 
@@ -76,12 +76,12 @@ const CategoryRow = ({ banners, emoji, label }: { banners: { id: string; image_u
   );
 };
 
-export const BannerSections = () => {
+export const BannerSections = forwardRef<HTMLDivElement>((_props, ref) => {
   const { data: grouped, isLoading } = useActiveBanners();
 
   if (isLoading) {
     return (
-      <div className="space-y-10">
+      <div ref={ref} className="space-y-10">
         <div className="space-y-4">
           <div className="flex items-center gap-2.5 px-4 sm:px-6">
             <span className="text-lg">📺</span>
@@ -100,11 +100,12 @@ export const BannerSections = () => {
   if (!grouped) return null;
 
   return (
-    <div className="space-y-10">
+    <div ref={ref} className="space-y-10">
       <CategoryRow banners={grouped.cover} emoji="📺" label="Destaques" />
       {SPORTS_CATEGORIES.map((sport) => (
         <CategoryRow key={sport.key} banners={grouped[sport.key]} emoji={sport.emoji} label={sport.label} />
       ))}
     </div>
   );
-};
+});
+BannerSections.displayName = "BannerSections";

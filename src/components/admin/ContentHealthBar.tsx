@@ -8,12 +8,13 @@ interface ContentHealthBarProps {
 }
 
 export const ContentHealthBar = ({ totalActive, totalAll, isLoading }: ContentHealthBarProps) => {
-  const { percent, colorClass, barColor, label } = useMemo(() => {
-    if (totalAll === 0) return { percent: 0, colorClass: "text-muted-foreground", barColor: "bg-muted", label: "Sem conteúdo" };
+  const { percent, colorClass, barColor, label, excellent } = useMemo(() => {
+    if (totalAll === 0) return { percent: 0, colorClass: "text-muted-foreground", barColor: "bg-muted", label: "Sem conteúdo", excellent: false };
     const p = Math.round((totalActive / totalAll) * 100);
-    if (p > 80) return { percent: p, colorClass: "text-emerald-400", barColor: "bg-emerald-500", label: "Saudável" };
-    if (p > 50) return { percent: p, colorClass: "text-amber-400", barColor: "bg-amber-500", label: "Atenção" };
-    return { percent: p, colorClass: "text-red-400", barColor: "bg-red-500", label: "Crítico" };
+    if (p >= 90) return { percent: p, colorClass: "text-emerald-400", barColor: "bg-emerald-500", label: "Saudável", excellent: true };
+    if (p > 80) return { percent: p, colorClass: "text-emerald-400", barColor: "bg-emerald-500", label: "Saudável", excellent: false };
+    if (p > 50) return { percent: p, colorClass: "text-amber-400", barColor: "bg-amber-500", label: "Atenção", excellent: false };
+    return { percent: p, colorClass: "text-red-400", barColor: "bg-red-500", label: "Crítico", excellent: false };
   }, [totalActive, totalAll]);
 
   if (isLoading) return null;
@@ -26,6 +27,11 @@ export const ContentHealthBar = ({ totalActive, totalAll, isLoading }: ContentHe
           <span className="text-xs font-semibold text-foreground/90">Saúde do Conteúdo</span>
         </div>
         <div className="flex items-center gap-1.5">
+          {excellent && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              🎉 Excelente
+            </span>
+          )}
           <span className={`text-xs font-bold ${colorClass}`}>{percent}%</span>
           <span className="text-[9px] text-muted-foreground/60">({totalActive}/{totalAll} ativos)</span>
         </div>
