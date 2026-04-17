@@ -31,7 +31,7 @@ export const DayStatsBar = ({ games }: DayStatsBarProps) => {
   if (stats.total === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide py-1">
+    <div data-horizontal-scroll className="flex items-center gap-3 overflow-x-auto scrollbar-hide py-1">
       {/* Total */}
       <div className="flex items-center gap-1.5 shrink-0 bg-card/60 backdrop-blur border border-border/20 rounded-xl px-3 py-1.5">
         <span className="text-[10px] font-bold text-muted-foreground/70">Total</span>

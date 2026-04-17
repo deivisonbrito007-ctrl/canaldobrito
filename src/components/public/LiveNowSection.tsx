@@ -59,7 +59,7 @@ export const LiveNowSection = () => {
           </div>
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory">
+        <div data-horizontal-scroll className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-2 snap-x snap-mandatory">
           {liveGames.map((game, idx) => {
             const sportType = (game.sport_type || 'football') as SportType;
             const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);

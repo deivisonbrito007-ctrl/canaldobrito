@@ -20,7 +20,7 @@ export const ContinueWatchingSection = () => (
       </div>
     </div>
 
-    <div className="flex gap-3.5 overflow-x-auto scrollbar-hide px-4 pb-2">
+    <div data-horizontal-scroll className="flex gap-3.5 overflow-x-auto scrollbar-hide px-4 pb-2">
       {items.map((item) => (
         <div key={item.id} className="shrink-0 w-[200px] group cursor-pointer">
           <div className="relative rounded-xl overflow-hidden bg-card border border-border/10">
