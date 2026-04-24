@@ -498,7 +498,15 @@ export const DailyGamesSection = () => {
             <CalendarOff className="h-8 w-8 text-muted-foreground/40" />
           </div>
           <p className="text-sm font-medium text-muted-foreground/60">Nenhum jogo programado para {format(new Date(today + "T12:00:00"), "EEEE, d 'de' MMM", { locale: ptBR })}</p>
-          <p className="text-xs text-muted-foreground/40">Volte mais tarde para conferir a agenda</p>
+          <p className="text-xs text-muted-foreground/40">Confira os destaques da semana enquanto isso</p>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "highlights" }))}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/15 transition-all duration-200 min-h-[44px]"
+            aria-label="Ir para a aba Destaques"
+          >
+            ⭐ Ver destaques
+          </button>
         </div>
       </section>
     );

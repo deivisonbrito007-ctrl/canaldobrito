@@ -7,22 +7,24 @@ export const Hero = () => {
   const dateStr = getLocalDateString();
   const { data: games } = useDailyGames(dateStr);
   const tick = useLiveTick();
-  const stats = useMemo(() => {
+  // Static counts (channels + total) only depend on `games`
+  const baseStats = useMemo(() => {
     const allGames = games || [];
-    const liveCount = allGames.filter((g) => {
+    const channels = new Set<string>();
+    allGames.forEach((g) => g.channels?.forEach((c) => channels.add(c)));
+    return { tonight: allGames.length, channels: channels.size };
+  }, [games]);
+
+  // Live count needs to re-evaluate as time passes
+  const liveCount = useMemo(() => {
+    const allGames = games || [];
+    return allGames.filter((g) => {
       const st = (g.sport_type || "football") as SportType;
       return isGameCurrentlyLive(g.game_time, g.date, st);
     }).length;
-
-    const channels = new Set<string>();
-    allGames.forEach((g) => g.channels?.forEach((c) => channels.add(c)));
-
-    return {
-      live: liveCount,
-      tonight: allGames.length,
-      channels: channels.size,
-    };
   }, [games, tick]);
+
+  const stats = { live: liveCount, ...baseStats };
 
   return (
     <section className="px-4 py-5 animate-fade-up stagger-1">
