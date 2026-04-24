@@ -157,7 +157,12 @@ const Assinar = () => {
           <p className="text-xs font-body text-primary font-bold uppercase tracking-wider flex items-center justify-center gap-1.5">
             <Zap className="w-3.5 h-3.5" /> Oferta por tempo limitado
           </p>
-          <div className="flex items-center justify-center gap-2">
+          <div
+            className="flex items-center justify-center gap-2"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`Tempo restante: ${h} horas, ${m} minutos e ${s} segundos`}
+          >
             {[
               { val: h, label: "h" },
               { val: m, label: "m" },

@@ -133,13 +133,15 @@ const AdminSeries = () => {
             ))}
           </div>
 
-          {tab === "search" && (
+          {tab === "search" ? (
             <div className="flex gap-2">
-              <Input placeholder="Nome da série..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="glass-panel border-white/[0.1] text-sm h-10" />
-              <Button onClick={handleSearch} disabled={searching} size="icon" className="shrink-0 h-10 w-10">
+              <Input placeholder="Nome da série..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="glass-panel border-white/[0.1] text-sm h-10" aria-label="Buscar série por nome" />
+              <Button onClick={handleSearch} disabled={searching} size="icon" className="shrink-0 h-10 w-10" aria-label="Buscar">
                 {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
             </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground/60 italic px-1">Mostrando séries populares no momento — clique em "Buscar" para voltar.</p>
           )}
 
           {searching && <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" />Buscando...</div>}
@@ -160,7 +162,7 @@ const AdminSeries = () => {
                       <span>{r.vote_average?.toFixed(1)}</span>
                     </div>
                   </div>
-                  <Button size="sm" disabled={addingId === r.id} className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity" onClick={() => handleAdd(r)}>
+                  <Button size="sm" disabled={addingId === r.id} className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity" onClick={() => handleAdd(r)} aria-label={`Adicionar ${r.name || r.title} ao catálogo`}>
                     {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />} Add
                   </Button>
                 </div>
@@ -220,11 +222,11 @@ const AdminSeries = () => {
                       {s.genre ? <span className="text-purple-400/70">• {s.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
                     </p>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-purple-400 shrink-0" disabled={refreshingId === s.id} onClick={() => handleRefreshOne(s)}>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-purple-400 shrink-0 transition-all duration-200" disabled={refreshingId === s.id} onClick={() => handleRefreshOne(s)} aria-label={`Atualizar dados de ${s.title} via TMDB`}>
                     <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === s.id ? "animate-spin" : ""}`} />
                   </Button>
-                  <Switch checked={s.active} onCheckedChange={(v) => toggleSeries.mutate({ id: s.id, active: v })} />
-                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0" onClick={() => { if (confirm("Remover série?")) deleteSeries.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Switch checked={s.active} onCheckedChange={(v) => { console.log("[AdminSeries:toggle]", { id: s.id, active: v }); toggleSeries.mutate({ id: s.id, active: v }); }} aria-label={`${s.active ? "Desativar" : "Ativar"} ${s.title}`} />
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0 transition-all duration-200" onClick={() => { if (confirm("Remover série?")) { console.log("[AdminSeries:delete]", { id: s.id, title: s.title }); deleteSeries.mutate(s.id); } }} aria-label={`Remover ${s.title}`}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>
