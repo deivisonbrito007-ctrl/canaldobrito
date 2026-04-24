@@ -68,6 +68,40 @@ export const NovidadesCard = () => {
 
   const safeIndex = total > 0 ? Math.min(current, total - 1) : 0;
 
+  // Prefetch neighbouring slide images (next + previous) so swipes feel instant.
+  useEffect(() => {
+    if (!items || total <= 1) return;
+    const neighbours = [
+      items[(safeIndex + 1) % total],
+      items[(safeIndex - 1 + total) % total],
+    ];
+    const urls = neighbours
+      .map((it) => it?.image_url)
+      .filter((u): u is string => !!u && u !== items[safeIndex]?.image_url);
+
+    const links: HTMLLinkElement[] = [];
+    urls.forEach((url) => {
+      // <link rel="preload"> warms the HTTP cache early
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = url;
+      document.head.appendChild(link);
+      links.push(link);
+
+      // Also force the browser to decode it off-screen
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      img.decode?.().catch(() => {});
+    });
+
+    return () => {
+      links.forEach((l) => l.parentNode?.removeChild(l));
+    };
+  }, [items, safeIndex, total]);
+
+
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (total <= 1) return;
