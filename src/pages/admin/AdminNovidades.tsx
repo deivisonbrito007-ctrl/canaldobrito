@@ -23,10 +23,18 @@ const AdminNovidades = () => {
   const deleteItem = useDeleteNewsRelease();
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
-  const [badgeType, setBadgeType] = useState<string>("novidade");
+  const [badgeType, setBadgeType] = useState<string>(() => {
+    if (typeof window === "undefined") return "novidade";
+    return localStorage.getItem("admin:lastBadgeType") || "novidade";
+  });
   const [addingId, setAddingId] = useState<number | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const handleBadgeTypeChange = (v: string) => {
+    setBadgeType(v);
+    try { localStorage.setItem("admin:lastBadgeType", v); } catch { /* ignore */ }
+  };
 
   const handleSearch = () => {
     if (query.trim()) search(searchType === "movie" ? "search_movie" : "search_tv", query);
@@ -151,7 +159,7 @@ const AdminNovidades = () => {
                 <SelectItem value="series">📺 Série</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={badgeType} onValueChange={(v) => setBadgeType(v)}>
+            <Select value={badgeType} onValueChange={handleBadgeTypeChange}>
               <SelectTrigger className="glass-panel border-white/[0.1] h-10 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="novidade">🔥 Novidade</SelectItem>

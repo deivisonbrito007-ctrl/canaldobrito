@@ -38,7 +38,18 @@ const AdminConfiguracoes = () => {
       return;
     }
 
+    if (siteUrl) {
+      try {
+        const u = new URL(siteUrl);
+        if (!/^https?:$/.test(u.protocol)) throw new Error("protocolo");
+      } catch {
+        toast.error("URL do site inválida — use o formato https://meusite.com");
+        return;
+      }
+    }
+
     try {
+      console.log("[AdminConfiguracoes:save]", { whatsapp: !!whatsapp, hasTmdb: !!tmdbKey, siteUrl });
       await Promise.all([
         updateSetting.mutateAsync({ key: "whatsapp", value: whatsapp }),
         updateSetting.mutateAsync({ key: "tmdb_api_key", value: tmdbKey }),
@@ -140,7 +151,8 @@ const AdminConfiguracoes = () => {
       <Button
         onClick={handleSave}
         disabled={updateSetting.isPending || !isDirty}
-        className="w-full min-h-[48px] text-sm font-semibold shadow-lg shadow-primary/20"
+        className="w-full min-h-[48px] text-sm font-semibold shadow-lg shadow-primary/20 transition-all duration-200"
+        aria-label={saved ? "Configurações salvas" : "Salvar configurações"}
       >
         {updateSetting.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -151,6 +163,9 @@ const AdminConfiguracoes = () => {
         )}
         {saved ? "Salvo!" : "Salvar"}
       </Button>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {saved ? "Configurações salvas com sucesso" : ""}
+      </p>
     </div>
   );
 };
