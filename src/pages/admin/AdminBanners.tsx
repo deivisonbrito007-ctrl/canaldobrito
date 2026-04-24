@@ -48,7 +48,10 @@ const PasteZone = ({ onImagePasted, uploading }: { onImagePasted: (file: File) =
       onFocus={() => setHighlight(true)}
       onBlur={() => setHighlight(false)}
       tabIndex={0}
-      className={`relative rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all duration-200 outline-none ${
+      role="button"
+      aria-label="Cole (Ctrl+V) ou arraste uma imagem aqui para enviar"
+      aria-busy={uploading}
+      className={`relative rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
         highlight ? "border-primary/60 bg-primary/5" : "border-border/30 hover:border-border/50 bg-transparent"
       } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
     >

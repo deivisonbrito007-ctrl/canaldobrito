@@ -230,12 +230,12 @@ const AdminNovidades = () => {
           ) : (
             <div className="space-y-2">
               {items.map((m, idx) => (
-                <div key={m.id} className="flex items-center gap-3 rounded-lg glass-panel p-3">
+                <div key={m.id} className="flex items-center gap-3 rounded-lg glass-panel p-3 transition-all duration-200">
                   <div className="flex flex-col gap-0.5 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded" disabled={idx === 0} onClick={() => handleReorder(idx, "up")}>
+                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded" disabled={idx === 0} onClick={() => handleReorder(idx, "up")} aria-label={`Mover ${m.title} para cima`}>
                       <ArrowUp className="h-3 w-3" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded" disabled={idx === items.length - 1} onClick={() => handleReorder(idx, "down")}>
+                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded" disabled={idx === items.length - 1} onClick={() => handleReorder(idx, "down")} aria-label={`Mover ${m.title} para baixo`}>
                       <ArrowDown className="h-3 w-3" />
                     </Button>
                   </div>
@@ -273,11 +273,11 @@ const AdminNovidades = () => {
                     {m.runtime && <span className="text-[9px] text-muted-foreground/40">{Math.floor(m.runtime / 60)}h {m.runtime % 60}min</span>}
                     {m.seasons && <span className="text-[9px] text-muted-foreground/40">{m.seasons} temporada{m.seasons > 1 ? "s" : ""}</span>}
                   </div>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-amber-400 shrink-0" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)}>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-amber-400 shrink-0 transition-all duration-200" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)} aria-label={`Atualizar dados de ${m.title}`}>
                     <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === m.id ? "animate-spin" : ""}`} />
                   </Button>
-                  <Switch checked={m.active} onCheckedChange={(v) => toggleItem.mutate({ id: m.id, active: v })} />
-                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0" onClick={() => { if (confirm("Remover item?")) deleteItem.mutate(m.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Switch checked={m.active} onCheckedChange={(v) => { console.log("[AdminNovidades:toggle]", { id: m.id, active: v }); toggleItem.mutate({ id: m.id, active: v }); }} aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`} />
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0 transition-all duration-200" onClick={() => { if (confirm("Remover item?")) { console.log("[AdminNovidades:delete]", { id: m.id, title: m.title }); deleteItem.mutate(m.id); } }} aria-label={`Remover ${m.title}`}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>
