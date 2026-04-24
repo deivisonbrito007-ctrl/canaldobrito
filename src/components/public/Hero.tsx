@@ -56,7 +56,7 @@ export const Hero = () => {
         </div>
 
         {/* Stats bar */}
-        <div className="rounded-xl bg-surface border border-border overflow-hidden">
+        <div className="rounded-xl bg-surface border border-border overflow-hidden" role="group" aria-label="Estatísticas de hoje">
           <div className="grid grid-cols-3 divide-x divide-border">
             <div className="px-3 py-2.5 text-center">
               <p className="text-base sm:text-lg font-bold text-primary font-body tabular-nums">{stats.live}</p>

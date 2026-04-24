@@ -88,8 +88,14 @@ export const NovidadesCard = () => {
     startTimer();
   };
 
-  const prev = () => goTo((safeIndex - 1 + total) % total, -1);
-  const next = () => goTo((safeIndex + 1) % total, 1);
+  const prev = () => {
+    console.log('[FeaturedCarousel:navigate]', 'prev');
+    goTo((safeIndex - 1 + total) % total, -1);
+  };
+  const next = () => {
+    console.log('[FeaturedCarousel:navigate]', 'next');
+    goTo((safeIndex + 1) % total, 1);
+  };
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchRef.current = e.touches[0].clientX;
