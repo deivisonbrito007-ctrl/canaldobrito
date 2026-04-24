@@ -318,7 +318,7 @@ export const LiveNowHero = () => {
               <h3 className="text-xs sm:text-sm font-black text-foreground font-body tracking-tight uppercase">
                 Ao Vivo Agora
               </h3>
-              <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
+              <span className="text-[10px] bg-destructive/20 text-destructive rounded-full px-2 py-0.5 font-bold font-body tabular-nums shrink-0">
                 {totalLive} {totalLive === 1 ? "jogo" : "jogos"}
               </span>
             </div>
@@ -326,8 +326,10 @@ export const LiveNowHero = () => {
               <LiveClock />
               <button
                 onClick={() => {
+                  console.log('[LiveNow:view-all]', true);
                   window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "schedule" }));
                 }}
+                aria-label="Ver todos os jogos ao vivo na programação"
                 className="text-[10px] text-primary font-semibold font-body hover:underline min-h-[44px] flex items-center"
               >
                 Ver todos →
@@ -367,6 +369,7 @@ export const LiveNowHero = () => {
           {hasMore && (
             <button
               onClick={() => setExpanded(true)}
+              aria-label={`Expandir e ver todos os ${totalLive} jogos ao vivo`}
               className="w-full text-center text-[11px] font-semibold text-primary font-body py-2 rounded-xl border border-border/60 bg-surface hover:bg-surface-2 transition-colors min-h-[44px]"
             >
               Ver todos os {totalLive} jogos

@@ -56,6 +56,7 @@ export const AppNavbar = () => {
           )}
           <Link
             to="/assinar"
+            aria-label="Assinar Canal do Brito"
             className="bg-primary text-primary-foreground text-[11px] font-bold px-3.5 rounded-full hover:opacity-90 transition-opacity min-h-[44px] flex items-center"
           >
             Assine já

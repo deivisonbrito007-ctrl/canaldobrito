@@ -29,7 +29,8 @@ export const CategoryIconsCarousel = () => {
     }, 2000);
   }, []);
 
-  const handleClick = useCallback((action: { tab: string }) => {
+  const handleClick = useCallback((action: { tab: string }, label: string) => {
+    console.log('[Home:category-select]', label);
     window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: action.tab }));
   }, []);
 
@@ -50,7 +51,8 @@ export const CategoryIconsCarousel = () => {
             return (
               <button
                 key={`${cat.label}-${i}`}
-                onClick={() => handleClick(cat.action)}
+                onClick={() => handleClick(cat.action, cat.label)}
+                aria-label={`Filtrar por ${cat.label}`}
                 className={`shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl border transition-all duration-200 cursor-pointer select-none min-h-[44px] active:scale-95 ${
                   isFirst
                     ? "bg-green-dim border-green-border"
