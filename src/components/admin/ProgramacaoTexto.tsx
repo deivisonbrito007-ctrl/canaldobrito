@@ -478,18 +478,33 @@ export const ProgramacaoTexto = () => {
     }
     setExistingKeys(allKeys);
 
-    // Auto-deselect duplicates
-    let dupCount = 0;
+    // Auto-deselect duplicates AGAINST DB and INTERNAL duplicates inside the
+    // pasted text itself (root cause of 28/04 publish error: same game listed
+    // twice in the WhatsApp message).
+    let dbDupCount = 0;
+    let internalDupCount = 0;
+    const seenInternal = new Set<string>();
     const markedGames = games.map((g) => {
-      const isDup = allKeys.has(gameKey(g));
-      if (isDup) dupCount++;
-      return { ...g, selected: isDup ? false : g.selected };
+      const key = gameKey(g);
+      const isDbDup = allKeys.has(key);
+      const isInternalDup = seenInternal.has(key);
+      if (!isInternalDup) seenInternal.add(key);
+      if (isDbDup) dbDupCount++;
+      if (isInternalDup) internalDupCount++;
+      const shouldDeselect = isDbDup || isInternalDup;
+      return { ...g, selected: shouldDeselect ? false : g.selected };
     });
 
     setParsed(markedGames);
-    if (dupCount > 0) {
-      toast.warning(`${dupCount} jogo(s) já existente(s) — desmarcados automaticamente`);
-    } else {
+    if (internalDupCount > 0) {
+      toast.warning(
+        `${internalDupCount} duplicata(s) interna(s) no texto — desmarcadas para evitar erro`
+      );
+    }
+    if (dbDupCount > 0) {
+      toast.warning(`${dbDupCount} jogo(s) já existente(s) — desmarcados automaticamente`);
+    }
+    if (internalDupCount === 0 && dbDupCount === 0) {
       toast.success(`${games.length} jogo(s) detectado(s)!`);
     }
     setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
