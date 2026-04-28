@@ -691,7 +691,12 @@ export const ProgramacaoTexto = () => {
       setParsed([]);
       setText("");
     } catch (err: any) {
-      toast.error(err.message || "Erro ao republicar");
+      const code = err?.code || err?.cause?.code;
+      if (code === "23505") {
+        toast.error("Jogos duplicados detectados (mesma data/horário/times). Republicação abortada.");
+      } else {
+        toast.error(err.message || "Erro ao republicar");
+      }
     }
   };
 
