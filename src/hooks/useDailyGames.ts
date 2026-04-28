@@ -124,37 +124,64 @@ export const useInsertDailyGames = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (games: Omit<DailyGame, "id" | "created_at">[]) => {
-      if (games.length === 0) return { inserted: 0, skipped: 0 };
+      if (games.length === 0) return { inserted: 0, skipped: 0, intraBatchSkipped: 0 };
 
-      // Collect unique dates
-      const dates = [...new Set(games.map((g) => g.date))];
+      // STEP 1: dedup INSIDE the batch itself (keep first occurrence).
+      // Without this, two identical rows in the same payload trigger PG 23505
+      // and abort the whole INSERT — which is exactly what failed on 28/04.
+      const seen = new Set<string>();
+      const intraDeduped: typeof games = [];
+      let intraBatchSkipped = 0;
+      for (const g of games) {
+        const k = gameKey(g) + "|" + g.date;
+        if (seen.has(k)) {
+          intraBatchSkipped++;
+          continue;
+        }
+        seen.add(k);
+        intraDeduped.push(g);
+      }
 
-      // Fetch existing games for those dates
+      // STEP 2: dedup against existing rows in DB.
+      const dates = [...new Set(intraDeduped.map((g) => g.date))];
       const { data: existing, error: fetchErr } = await supabase
         .from("daily_games")
-        .select("home_team, away_team, game_time")
+        .select("home_team, away_team, game_time, date")
         .in("date", dates);
       if (fetchErr) throw fetchErr;
 
       const existingKeys = new Set(
-        (existing || []).map((e: any) => gameKey(e))
+        (existing || []).map((e: any) => gameKey(e) + "|" + e.date)
       );
 
-      const unique = games.filter((g) => !existingKeys.has(gameKey(g)));
-      const skipped = games.length - unique.length;
+      const unique = intraDeduped.filter((g) => !existingKeys.has(gameKey(g) + "|" + g.date));
+      const dbSkipped = intraDeduped.length - unique.length;
+      const skipped = dbSkipped + intraBatchSkipped;
 
       if (unique.length > 0) {
-        // Sanitize all string fields as final barrier
         const sanitized = unique.map(sanitizeGame);
         const { error } = await supabase.from("daily_games").insert(sanitized as any);
-        if (error) throw error;
+        if (error) {
+          // PG 23505 = unique_violation. Race condition or hidden duplicate.
+          // Don't blow up with a cryptic message — surface it gracefully.
+          if ((error as any).code === "23505") {
+            toast.warning(
+              "Alguns jogos já existem com data, horário e times idênticos. Foram ignorados."
+            );
+            return { inserted: 0, skipped: skipped + unique.length, intraBatchSkipped };
+          }
+          throw error;
+        }
       }
 
-      if (skipped > 0) {
-        toast.info(`${skipped} jogo(s) duplicado(s) ignorado(s)`);
+      if (intraBatchSkipped > 0) {
+        toast.info(`${intraBatchSkipped} duplicata(s) interna(s) no texto colado ignorada(s)`);
+      }
+      if (dbSkipped > 0) {
+        toast.info(`${dbSkipped} jogo(s) já existente(s) no banco ignorado(s)`);
       }
 
-      return { inserted: unique.length, skipped };
+      return { inserted: unique.length, skipped, intraBatchSkipped };
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["daily_games"] }),
   });
