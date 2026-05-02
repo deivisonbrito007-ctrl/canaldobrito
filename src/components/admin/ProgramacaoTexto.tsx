@@ -792,6 +792,27 @@ export const ProgramacaoTexto = () => {
               </div>
               <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
             </div>
+
+            <div className="sm:col-span-2 flex items-center gap-3 p-3 rounded-xl glass-panel border border-white/[0.08]">
+              <AlertTriangle className={`h-4 w-4 shrink-0 ${autoBumpMidnight ? "text-amber-400" : "text-muted-foreground"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-foreground">
+                  Madrugada conta para o dia anterior
+                </p>
+                <p className="text-[9px] text-muted-foreground leading-tight">
+                  {autoBumpMidnight
+                    ? "Jogos < 05:00 sob um cabeçalho 📅 serão movidos para o dia seguinte (+1)."
+                    : "OFF (recomendado): a data do cabeçalho 📅 é usada exatamente como está."}
+                </p>
+              </div>
+              <Switch
+                checked={autoBumpMidnight}
+                onCheckedChange={(v) => {
+                  setAutoBumpMidnight(v);
+                  try { localStorage.setItem("admin_auto_bump_midnight", String(v)); } catch {}
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
