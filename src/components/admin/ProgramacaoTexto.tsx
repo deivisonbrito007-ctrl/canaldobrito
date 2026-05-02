@@ -475,7 +475,7 @@ export const ProgramacaoTexto = () => {
       toast.error("Cole o texto da programação primeiro");
       return;
     }
-    const games = parseScheduleText(text, selectedDate);
+    const games = parseScheduleText(text, selectedDate, { autoBumpMidnight });
     if (games.length === 0) {
       toast.error("Nenhum jogo detectado. Verifique o formato do texto.");
       return;
