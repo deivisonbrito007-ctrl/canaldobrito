@@ -349,10 +349,11 @@ export function parseScheduleText(
           ? autoSport
           : currentSectionSport || 'football';
 
-      // Auto-bump: if game_time < 05:00 and date came from header, advance date +1
+      // Auto-bump: opt-in. Só avança a data se o usuário ligou explicitamente
+      // o toggle "Madrugada conta para o dia anterior" no admin.
       let gameDate = currentDate;
       let dateBumped = false;
-      if (dateFromHeader && meta.game_time < "05:00") {
+      if (autoBumpMidnight && dateFromHeader && meta.game_time < "05:00") {
         gameDate = bumpDate(currentDate);
         dateBumped = true;
       }
