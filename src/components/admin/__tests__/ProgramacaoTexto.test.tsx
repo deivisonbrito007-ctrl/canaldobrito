@@ -261,9 +261,9 @@ China x Curaçao
 ⏰ 03:00
 📺 DAZN`;
 
-    const games = parseScheduleText(text, fallback);
+    const games = parseScheduleText(text, fallback, { autoBumpMidnight: true });
     expect(games).toHaveLength(1);
-    // Auto-bump: 03:00 is dawn, so date advances to next day (28/03)
+    // Auto-bump (opt-in): 03:00 is dawn, so date advances to next day (28/03)
     expect(games[0].date).toBe(`${new Date().getFullYear()}-03-28`);
   });
 
