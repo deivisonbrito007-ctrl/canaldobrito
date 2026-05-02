@@ -302,10 +302,10 @@ Miami Open
 ⏰ 16:00
 📺 ESPN 2`;
 
-    const games = parseScheduleText(text, fallback);
+    const games = parseScheduleText(text, fallback, { autoBumpMidnight: true });
     expect(games).toHaveLength(4);
     expect(games[0].home_team).toBe("China");
-    // Auto-bump: 03:00 is dawn → date becomes 28/03
+    // Auto-bump (opt-in): 03:00 is dawn → date becomes 28/03
     expect(games[0].date).toBe(`${new Date().getFullYear()}-03-28`);
     expect(games[1].home_team).toBe("Inglaterra");
     expect(games[1].date).toBe(`${new Date().getFullYear()}-03-27`); // 16:45 — no bump
