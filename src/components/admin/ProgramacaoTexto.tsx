@@ -450,6 +450,12 @@ export const ProgramacaoTexto = () => {
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [scheduleMidnight, setScheduleMidnight] = useState(false);
+  // Auto-bump default OFF — empurrar madrugada para +1 dia só quando o WhatsApp
+  // realmente usa a convenção de "dia esportivo". Persiste a preferência local.
+  const [autoBumpMidnight, setAutoBumpMidnight] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("admin_auto_bump_midnight") === "true";
+  });
   const [readingImage, setReadingImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
