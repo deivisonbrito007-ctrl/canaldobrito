@@ -244,7 +244,12 @@ function bumpDate(dateStr: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
+export function parseScheduleText(
+  text: string,
+  fallbackDate: string,
+  options: { autoBumpMidnight?: boolean } = {}
+): ParsedGame[] {
+  const { autoBumpMidnight = false } = options;
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
@@ -344,10 +349,11 @@ export function parseScheduleText(text: string, fallbackDate: string): ParsedGam
           ? autoSport
           : currentSectionSport || 'football';
 
-      // Auto-bump: if game_time < 05:00 and date came from header, advance date +1
+      // Auto-bump: opt-in. Só avança a data se o usuário ligou explicitamente
+      // o toggle "Madrugada conta para o dia anterior" no admin.
       let gameDate = currentDate;
       let dateBumped = false;
-      if (dateFromHeader && meta.game_time < "05:00") {
+      if (autoBumpMidnight && dateFromHeader && meta.game_time < "05:00") {
         gameDate = bumpDate(currentDate);
         dateBumped = true;
       }
@@ -450,6 +456,12 @@ export const ProgramacaoTexto = () => {
   const [parsed, setParsed] = useState<ParsedGame[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [scheduleMidnight, setScheduleMidnight] = useState(false);
+  // Auto-bump default OFF — empurrar madrugada para +1 dia só quando o WhatsApp
+  // realmente usa a convenção de "dia esportivo". Persiste a preferência local.
+  const [autoBumpMidnight, setAutoBumpMidnight] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("admin_auto_bump_midnight") === "true";
+  });
   const [readingImage, setReadingImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -463,7 +475,7 @@ export const ProgramacaoTexto = () => {
       toast.error("Cole o texto da programação primeiro");
       return;
     }
-    const games = parseScheduleText(text, selectedDate);
+    const games = parseScheduleText(text, selectedDate, { autoBumpMidnight });
     if (games.length === 0) {
       toast.error("Nenhum jogo detectado. Verifique o formato do texto.");
       return;
@@ -779,6 +791,27 @@ export const ProgramacaoTexto = () => {
                 )}
               </div>
               <Switch checked={scheduleMidnight} onCheckedChange={setScheduleMidnight} />
+            </div>
+
+            <div className="sm:col-span-2 flex items-center gap-3 p-3 rounded-xl glass-panel border border-white/[0.08]">
+              <AlertTriangle className={`h-4 w-4 shrink-0 ${autoBumpMidnight ? "text-amber-400" : "text-muted-foreground"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-foreground">
+                  Madrugada conta para o dia anterior
+                </p>
+                <p className="text-[9px] text-muted-foreground leading-tight">
+                  {autoBumpMidnight
+                    ? "Jogos < 05:00 sob um cabeçalho 📅 serão movidos para o dia seguinte (+1)."
+                    : "OFF (recomendado): a data do cabeçalho 📅 é usada exatamente como está."}
+                </p>
+              </div>
+              <Switch
+                checked={autoBumpMidnight}
+                onCheckedChange={(v) => {
+                  setAutoBumpMidnight(v);
+                  try { localStorage.setItem("admin_auto_bump_midnight", String(v)); } catch {}
+                }}
+              />
             </div>
           </div>
         </div>
