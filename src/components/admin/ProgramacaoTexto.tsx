@@ -244,7 +244,12 @@ function bumpDate(dateStr: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function parseScheduleText(text: string, fallbackDate: string): ParsedGame[] {
+export function parseScheduleText(
+  text: string,
+  fallbackDate: string,
+  options: { autoBumpMidnight?: boolean } = {}
+): ParsedGame[] {
+  const { autoBumpMidnight = false } = options;
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
