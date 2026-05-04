@@ -19,6 +19,7 @@ const AdminConfiguracoes = lazy(() => import("./pages/admin/AdminConfiguracoes")
 const AdminNovidades = lazy(() => import("./pages/admin/AdminNovidades"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
+const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 
 const queryClient = new QueryClient();
 
