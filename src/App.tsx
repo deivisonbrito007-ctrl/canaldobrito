@@ -45,6 +45,7 @@ const App = () => (
                 <Route path="novidades" element={<AdminNovidades />} />
                 <Route path="whatsapp" element={<AdminWhatsApp />} />
                 <Route path="diagnostico-github" element={<AdminGitHubDiagnostico />} />
+                <Route path="api-sync" element={<AdminApiSync />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
               </Route>
               <Route path="*" element={<NotFound />} />
