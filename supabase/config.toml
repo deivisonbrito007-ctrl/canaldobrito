@@ -10,8 +10,8 @@ verify_jwt = false
 [functions.send-push-notifications]
 verify_jwt = false
 
-[functions.fetch-games]
+[functions.sync-thesportsdb]
 verify_jwt = false
 
-[functions.update-live-games]
+[functions.update-live-thesportsdb]
 verify_jwt = false
