@@ -80,26 +80,25 @@ Deno.serve(async (req) => {
     const allFixtures: any[] = [];
     const errors: string[] = [];
 
-    // Uma chamada por liga (limita escopo + respeita rate limit gratuito).
-    for (const leagueId of leagueIds) {
-      const apiUrl = `https://v3.football.api-sports.io/fixtures?date=${dateParam}&league=${leagueId}&season=${new Date(dateParam).getUTCFullYear()}&timezone=America/Sao_Paulo`;
-      const r = await fetch(apiUrl, {
-        headers: { "x-apisports-key": apiKey },
-      });
-      if (!r.ok) {
-        errors.push(`league ${leagueId}: HTTP ${r.status}`);
-        continue;
-      }
+    // Plano gratuito da API-Football BLOQUEIA filtro por league+season.
+    // Solução: 1 chamada apenas por data, sem filtro de liga; filtramos localmente.
+    const apiUrl = `https://v3.football.api-sports.io/fixtures?date=${dateParam}&timezone=America/Sao_Paulo`;
+    const r = await fetch(apiUrl, { headers: { "x-apisports-key": apiKey } });
+    if (!r.ok) {
+      errors.push(`HTTP ${r.status}`);
+    } else {
       const json = await r.json();
-      // API-Football retorna 200 mesmo em erros de plano/cota — checa json.errors
       if (json.errors && (Array.isArray(json.errors) ? json.errors.length : Object.keys(json.errors).length)) {
         const msg = Array.isArray(json.errors)
           ? json.errors.join("; ")
           : Object.entries(json.errors).map(([k, v]) => `${k}: ${v}`).join("; ");
-        errors.push(`league ${leagueId}: ${msg}`);
-        continue;
+        errors.push(msg);
+      } else if (Array.isArray(json.response)) {
+        const wantedSet = new Set(leagueIds);
+        for (const f of json.response) {
+          if (wantedSet.has(f.league?.id)) allFixtures.push(f);
+        }
       }
-      if (Array.isArray(json.response)) allFixtures.push(...json.response);
     }
 
     // Mapeia para schema daily_games
