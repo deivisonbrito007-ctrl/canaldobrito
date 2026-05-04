@@ -179,12 +179,46 @@ Deno.serve(async (req) => {
     }
 
     let upserted = 0;
-    if (allRows.length > 0) {
-      const { error, count } = await supabase
+    let skipped = 0;
+    // Estratégia em 2 passos para lidar com índice natural (date, home, away, game_time):
+    // 1) Se já existe linha com mesma chave natural → UPDATE preservando id (atualiza canais, status, external_id, source).
+    // 2) Senão → INSERT.
+    for (const row of allRows) {
+      const { data: existing } = await supabase
         .from("daily_games")
-        .upsert(allRows, { onConflict: "external_id", count: "exact" });
-      if (error) throw error;
-      upserted = count ?? allRows.length;
+        .select("id, source, channels, external_id")
+        .eq("date", row.date)
+        .ilike("home_team", row.home_team)
+        .ilike("away_team", row.away_team)
+        .eq("game_time", row.game_time)
+        .maybeSingle();
+
+      if (existing) {
+        // Mescla canais (mantém os manuais que já estavam lá)
+        const existingChannels: string[] = Array.isArray(existing.channels) ? existing.channels : [];
+        const merged = Array.from(new Set([...existingChannels, ...row.channels]));
+        const { error } = await supabase
+          .from("daily_games")
+          .update({
+            competition: row.competition,
+            competition_detail: row.competition_detail,
+            channels: merged,
+            sport_type: row.sport_type,
+            external_id: row.external_id,
+            source: existing.source === "manual" ? "manual" : "thesportsdb",
+          })
+          .eq("id", existing.id);
+        if (error) { skipped++; continue; }
+        upserted++;
+      } else {
+        const { error } = await supabase.from("daily_games").insert(row);
+        if (error) {
+          // pode ser conflito por external_id já existente — ignora silenciosamente
+          skipped++;
+          continue;
+        }
+        upserted++;
+      }
     }
 
     return new Response(JSON.stringify({
