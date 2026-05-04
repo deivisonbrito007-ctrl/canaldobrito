@@ -119,16 +119,30 @@ Deno.serve(async (req) => {
     })();
 
     // Pré-busca TODA a programação de TV do dia em uma única chamada (eventstv.php).
-    // Indexa por idEvent → array de canais (priorizando Brasil e canais internacionais conhecidos).
+    // FILTRO ESTRITO: apenas canais transmitidos no Brasil (strCountry === "Brazil")
+    // OU nomes de canais conhecidos como brasileiros/globais disponíveis no Brasil.
     const tvByEvent = new Map<string, string[]>();
+    // Heurística: nomes de canais que sabidamente operam no Brasil mesmo quando a API marca outro país
+    const BR_CHANNEL_HINTS = [
+      "globo", "sportv", "sporttv", "premiere", "band", "espn brasil", "espn br",
+      "tnt sports brasil", "tnt brasil", "cazé", "caze", "cazétv", "cazetv",
+      "nsports", "n sports", "disney+", "disney plus", "max", "hbo max",
+      "amazon prime video brasil", "prime video brasil", "paramount+ brasil",
+      "apple tv", "youtube", "twitch", "x sports", "rede tv", "sbt", "record",
+      "f1 tv", "ufc fight pass", "nba league pass",
+    ];
+    const isBrazilChannel = (country: string, channel: string) => {
+      if ((country || "").trim().toLowerCase() === "brazil") return true;
+      const c = (channel || "").toLowerCase();
+      return BR_CHANNEL_HINTS.some((h) => c.includes(h));
+    };
+
     if (fetchTV) {
-      const PRIORITY_COUNTRIES = new Set(["Brazil", "United States", "United Kingdom", "International", "Worldwide"]);
       for (const d of candidateDates) {
         try {
           const tvR = await fetch(`${base}/eventstv.php?d=${d}`);
           if (!tvR.ok) { errors.push(`tv@${d}: HTTP ${tvR.status}`); continue; }
           const tvJ = await tvR.json();
-          // API às vezes retorna 'tvevent', às vezes 'tvevents' — aceita ambos
           const list: any[] = Array.isArray(tvJ?.tvevents) ? tvJ.tvevents
             : Array.isArray(tvJ?.tvevent) ? tvJ.tvevent : [];
           for (const t of list) {
@@ -136,13 +150,12 @@ Deno.serve(async (req) => {
             if (!id) continue;
             const ch = (t.strChannel || "").trim();
             if (!ch) continue;
+            // ⚠️ Só aceita canais do Brasil (ou marcas globais conhecidas no BR)
+            if (!isBrazilChannel(t.strCountry || "", ch)) continue;
             if (!tvByEvent.has(id)) tvByEvent.set(id, []);
             const arr = tvByEvent.get(id)!;
-            // adiciona se ainda não existe; canais brasileiros vão pro topo
             if (!arr.some((x) => x.toLowerCase() === ch.toLowerCase())) {
-              if ((t.strCountry || "") === "Brazil") arr.unshift(ch);
-              else if (PRIORITY_COUNTRIES.has(t.strCountry || "")) arr.push(ch);
-              else arr.push(ch);
+              arr.push(ch);
             }
           }
         } catch (e) { errors.push(`tv@${d}: ${(e as Error).message}`); }
