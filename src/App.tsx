@@ -19,6 +19,7 @@ const AdminConfiguracoes = lazy(() => import("./pages/admin/AdminConfiguracoes")
 const AdminNovidades = lazy(() => import("./pages/admin/AdminNovidades"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
+const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="series" element={<AdminSeries />} />
                 <Route path="novidades" element={<AdminNovidades />} />
                 <Route path="whatsapp" element={<AdminWhatsApp />} />
+                <Route path="diagnostico-github" element={<AdminGitHubDiagnostico />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
               </Route>
               <Route path="*" element={<NotFound />} />
