@@ -44,7 +44,12 @@ const AdminApiSync = () => {
       const res = await callFn("fetch-games", { date });
       setLastResult(res);
       if (res.error) toast.error(res.error);
-      else toast.success(`${res.upserted} jogo(s) sincronizados (${res.fixtures} fixtures)`);
+      else if (res.upserted > 0) toast.success(`${res.upserted} jogo(s) sincronizados`);
+      else if (res.errors?.length) {
+        toast.error(`API retornou erro: ${res.errors[0]}`, { duration: 8000 });
+      } else {
+        toast.warning(`Nenhum jogo encontrado para ${date} nas ligas configuradas`);
+      }
       qc.invalidateQueries({ queryKey: ["daily_games"] });
       refetch();
     } catch (e: any) {
