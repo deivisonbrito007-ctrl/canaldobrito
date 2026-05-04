@@ -125,23 +125,35 @@ Deno.serve(async (req) => {
     // Heurística estrita: marcas globais sabidamente disponíveis no Brasil.
     // Usa regex com word-boundary para evitar falsos positivos (ex: "max" casando "BeIn Sports Max").
     const BR_BRAND_PATTERNS: RegExp[] = [
-      /\bglobo\b/i, /\bsportv\b/i, /\bsporttv\b/i, /\bpremiere\b/i,
-      /\bband\b/i, /\bbandsports\b/i,
-      /\bespn\s*(brasil|br)\b/i,
-      /\btnt\s*(sports\s*)?(brasil|br)\b/i,
-      /\bcaz[eé](\s*tv)?\b/i,
+      // TV aberta BR
+      /\bglobo\b/i, /\btv\s*globo\b/i, /\bband(eirantes)?\b/i, /\bsbt\b/i,
+      /\brecord(\s*tv)?\b/i, /\brede\s*tv\b/i, /\bcultura\b/i,
+      // TV fechada / esportes BR
+      /\bsport\s*tv\b/i, /\bsportv\b/i, /\bsporttv\b/i,
+      /\bpremiere\b/i, /\bcombate\b/i, /\bbandsports\b/i, /\bband\s*sports\b/i,
+      /\bespn\b/i, /\bfox\s*sports\s*(brasil|br)\b/i,
+      /\btnt\s*(sports)?\b/i, /\bspace\b/i,
       /\bnsports\b/i, /\bn\s*sports\b/i,
-      /\bdisney\s*(\+|plus)\s*(brasil|br)?\b/i,
-      /\bhbo\s*max\s*(brasil|br)?\b/i,
-      /\bprime\s*video\s*brasil\b/i,
-      /\bparamount\s*\+?\s*(brasil|br)\b/i,
-      /\bapple\s*tv\s*\+?\s*(brasil|br)?\b/i,
-      /\bcanal\s*goat\b/i, /\bgoat\b/i,
-      /\bf1\s*tv\s*(pro)?\b/i,
+      // Streaming disponível no BR
+      /\bglobo\s*play\b/i, /\bglobo\.play\b/i,
+      /\bdisney\s*(\+|plus)\b/i, /\bstar\s*(\+|plus)\b/i,
+      /\bhbo\s*max\b/i, /\bmax\s*(brasil|br)\b/i,
+      /\bprime\s*video\b/i, /\bamazon\s*prime\b/i,
+      /\bparamount\s*\+?\b/i, /\bapple\s*tv\s*\+?\b/i,
+      /\bnetflix\b/i,
+      // YouTube / criadores BR
+      /\bcaz[eé](\s*tv)?\b/i, /\bcanal\s*goat\b/i, /\bgoat\b/i,
+      /\bnosso\s*futebol\b/i, /\bdesimpedidos\b/i, /\bft\s*futebol\b/i,
+      /\bcanal\s*do\s*brito\b/i,
+      // Liga / federação passes globais (vendidos no BR)
+      /\bf1\s*tv\s*(pro|access)?\b/i,
       /\bufc\s*fight\s*pass\b/i,
       /\bnba\s*league\s*pass\b/i,
-      /\brede\s*tv\b/i, /\bsbt\b/i, /\brecord\b/i,
-      /\bcanal\s*do\s*brito\b/i,
+      /\bnfl\s*(game\s*pass|\+)\b/i,
+      /\bnhl\s*(tv|\+)\b/i,
+      /\bmlb\s*\.?\s*tv\b/i,
+      /\batp\s*tour\b/i, /\btennis\s*tv\b/i,
+      /\bdazn\s*(brasil|br)\b/i,
     ];
     const isBrazilChannel = (country: string, channel: string) => {
       if ((country || "").trim().toLowerCase() === "brazil") return true;
