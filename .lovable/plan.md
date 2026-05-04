@@ -1,69 +1,52 @@
-# Deep-links para compartilhar abas no WhatsApp
+# Desativar jogos da API (manter só inserções manuais)
 
-## Problema atual
-Em `AdminWhatsApp.tsx` todos os 4 templates ("Geral", "Jogos", "Entretenimento", "Ao Vivo") usam o mesmo `siteUrl` (raiz). O app é SPA com tabs internas (`home`, `highlights`, `schedule`) controladas por `useState` em `src/pages/Index.tsx` — não existe URL distinta por aba. Resultado: ao clicar no link do status, o usuário sempre cai na Home, nunca direto na seção citada.
+## Situação
+Hoje a tabela `daily_games` tem 3 origens (`source`):
+- `manual`: 956 jogos — 955 com canais ✅
+- `thesportsdb`: 187 jogos — só 17 com canais ❌
+- `api-football`: 1 jogo — sem canal ❌
 
-## Solução
-Criar **deep-links via query string** que, ao carregar, abrem a aba correta e rolam até a seção. Depois usar esses links nos templates do WhatsApp e em botões "Compartilhar" diretamente nas seções públicas.
+Há 3 cron jobs ativos no Postgres puxando das APIs:
+- `sync-daily-games-morning` (08:00) — API-Football
+- `update-live-games-5min` (a cada 5 min)
+- `sync-thesportsdb-daily` (09:00) — TheSportsDB
+- `update-live-thesportsdb` (a cada 5 min)
 
-### 1. Suporte a deep-link em `src/pages/Index.tsx`
-No `useEffect` de inicialização, ler `?tab=` (e opcional `?section=`) da URL e:
-- mapear para `home | highlights | schedule | live | novidades`
-- chamar `handleTabChange` com a aba correta (`live` e `novidades` → aba `home`)
-- após render, fazer `scrollIntoView` no anchor correspondente (`#live`, `#novidades`)
-- limpar a query (`history.replaceState`) para não “grudar” no histórico
+## Solução (desativação reversível)
 
-Mapeamento:
-| Param            | Aba destino | Scroll para |
-|------------------|-------------|-------------|
-| `tab=schedule`   | schedule    | topo        |
-| `tab=highlights` | highlights  | topo        |
-| `tab=live`       | home        | `#live`     |
-| `tab=novidades`  | home        | `#novidades`|
+### 1. Filtrar UI pública: só `source='manual'`
+Em `src/hooks/useDailyGames.ts`, adicionar flag `MANUAL_ONLY = true` que aplica `.eq("source", "manual")` em `useDailyGames` e `useAllDailyGames`. Isso esconde imediatamente todos os jogos sem canal vindos da API, sem precisar deletar nada. Para reativar no futuro, basta trocar `MANUAL_ONLY` para `false`.
 
-### 2. Adicionar `id` âncora nas seções
-- `LiveNowHero` (ou wrapper em `Index.tsx`): `<section id="live">`
-- `NovidadesCard`: `<section id="novidades">`
+Vantagem: rápido, reversível, não perde histórico.
 
-### 3. Helper `buildDeepLink(tab)` em `src/lib/utils.ts`
-```ts
-export const buildDeepLink = (base: string, tab?: string) =>
-  tab ? `${base.replace(/\/$/, '')}/?tab=${tab}` : base;
+### 2. Pausar cron jobs das APIs
+Via insert tool (não migration — contém credenciais por instância):
+```sql
+UPDATE cron.job SET active = false
+WHERE jobname IN (
+  'sync-daily-games-morning',
+  'update-live-games-5min',
+  'sync-thesportsdb-daily',
+  'update-live-thesportsdb'
+);
+```
+Para reativar: `UPDATE cron.job SET active = true WHERE jobname IN (...)`.
+
+### 3. Limpar lixo já gravado (opcional, recomendado)
+Apagar os 188 jogos sem origem manual para o admin não ver mais ruído na aba de gerenciamento:
+```sql
+DELETE FROM daily_games WHERE source <> 'manual';
 ```
 
-### 4. Atualizar `src/pages/admin/AdminWhatsApp.tsx`
-Cada template recebe seu próprio link via novo placeholder `LINK_TAB`:
+### 4. Aviso no painel admin (sugestão UX)
+Em `src/pages/admin/AdminApiSync.tsx` mostrar um banner amarelo informando que a sincronização automática está pausada e como reativar. Evita que outro admin clique em "Buscar" achando que está quebrado.
 
-| Template          | tab param   |
-|-------------------|-------------|
-| Geral do Dia      | (nenhum, raiz) |
-| ⚽ Jogos          | `schedule`  |
-| 🍿 Entretenimento | `highlights`|
-| 🔴 Ao Vivo        | `live`      |
-| 🆕 Novidades (novo) | `novidades` |
-
-Ajustar `MessageCard` para receber `tab` e usar `buildDeepLink(siteUrl, tab)`. Também atualizar `buildDayText` (Hoje/Amanhã) para apontar para `?tab=schedule`.
-
-### 5. Botões "Compartilhar no WhatsApp" em cada seção pública (sugestão UX)
-Adicionar botão pequeno (ícone `Share2`) no header de:
-- `LiveNowHero` → compartilha `?tab=live`
-- `DailyGamesSection`/`ScheduleTab` → `?tab=schedule`
-- `HighlightsTab` → `?tab=highlights`
-- `NovidadesCard` → `?tab=novidades`
-
-Cada botão abre `https://wa.me/?text=<texto curto>%20<deepLink>` — útil para o admin compartilhar do próprio site sem ir até o painel.
-
-## Sugestões adicionais (opcionais)
-- **Open Graph dinâmico**: como é SPA, o preview do WhatsApp sempre mostra metadados de `index.html`. Para previews diferentes por aba seria preciso SSR/edge function — deixar para depois.
-- **UTM tracking**: anexar `&utm_source=whatsapp&utm_campaign=status` para medir cliques no Analytics.
-- **Encurtador**: integrar com Bitly/short.io futuramente para links mais limpos no status.
+## Sugestões adicionais
+- **Filtro por canal no parser manual**: já que os canais agora vêm 100% do parser de WhatsApp, vale validar no `ProgramacaoTexto` se cada jogo tem ao menos 1 canal antes de inserir, alertando o admin.
+- **Quando reativar a API**: enriquecer `sync-thesportsdb` para *só inserir o jogo se vier com canal BR válido* (descartar resto). Hoje insere mesmo sem canal — daí o problema.
+- **Whitelist canais BR**: já existe em `BR_BRAND_PATTERNS`. Quando reativar, fazer o `INSERT` ser condicional a `channels.length > 0`.
 
 ## Arquivos a alterar
-- `src/pages/Index.tsx` — leitura de `?tab=` + scroll
-- `src/components/public/LiveNowHero.tsx` — `id="live"` + botão share
-- `src/components/public/NovidadesCard.tsx` — `id="novidades"` + botão share
-- `src/components/public/HighlightsTab.tsx` — botão share
-- `src/components/public/ScheduleTab.tsx` (ou `DailyGamesSection`) — botão share
-- `src/lib/utils.ts` — helper `buildDeepLink`
-- `src/pages/admin/AdminWhatsApp.tsx` — templates com links específicos + novo card "Novidades"
-- `src/pages/admin/__tests__/AdminWhatsApp.test.tsx` — atualizar asserts dos links
+- `src/hooks/useDailyGames.ts` — adicionar flag `MANUAL_ONLY` e filtro `.eq("source","manual")`.
+- `src/pages/admin/AdminApiSync.tsx` — banner de status "API pausada".
+- SQL via insert tool: pausar 4 cron jobs + DELETE jogos não-manuais.

@@ -23,17 +23,23 @@ export interface DailyGame {
   created_at: string;
 }
 
+// TEMPORÁRIO: enquanto canais de transmissão da API não estão confiáveis,
+// só exibimos jogos inseridos manualmente (que sempre vêm com canais BR).
+// Para reativar API, trocar MANUAL_ONLY para false.
+const MANUAL_ONLY = true;
+
 export const useDailyGames = (date: string) =>
   useQuery({
-    queryKey: ["daily_games", date],
+    queryKey: ["daily_games", date, MANUAL_ONLY ? "manual" : "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("daily_games")
         .select("*")
         .eq("date", date)
         .eq("active", true)
-        .eq("archived", false)
-        .order("game_time", { ascending: true });
+        .eq("archived", false);
+      if (MANUAL_ONLY) q = q.eq("source", "manual");
+      const { data, error } = await q.order("game_time", { ascending: true });
       if (error) throw error;
       return data as DailyGame[];
     },
@@ -43,13 +49,11 @@ export const useDailyGames = (date: string) =>
 
 export const useAllDailyGames = (date: string) =>
   useQuery({
-    queryKey: ["daily_games", "all", date],
+    queryKey: ["daily_games", "all", date, MANUAL_ONLY ? "manual" : "any"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("daily_games")
-        .select("*")
-        .eq("date", date)
-        .order("game_time", { ascending: true });
+      let q = supabase.from("daily_games").select("*").eq("date", date);
+      if (MANUAL_ONLY) q = q.eq("source", "manual");
+      const { data, error } = await q.order("game_time", { ascending: true });
       if (error) throw error;
 
       // Auto-cleanup: detect and remove duplicates, keeping oldest

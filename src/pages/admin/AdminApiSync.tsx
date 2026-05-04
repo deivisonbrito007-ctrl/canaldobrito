@@ -86,6 +86,10 @@ const AdminApiSync = () => {
 
   return (
     <div className="space-y-4 max-w-3xl">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-200 leading-relaxed">
+        <strong className="block text-amber-300 mb-1">⚠️ Sincronização automática pausada</strong>
+        Os jogos vindos das APIs (TheSportsDB / API-Football) estão temporariamente desligados porque os canais de transmissão BR não vinham confiáveis. A agenda pública mostra apenas jogos inseridos manualmente. Você ainda pode clicar em <em>Buscar</em> abaixo para testes — mas eles ficarão ocultos do site até reativarmos.
+      </div>
       <div className="glass-panel rounded-xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
           <Download className="h-4 w-4 text-emerald-400" />
