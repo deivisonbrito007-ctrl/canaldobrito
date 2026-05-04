@@ -234,7 +234,10 @@ Deno.serve(async (req) => {
         const existing = existingMap.get(matchKey(row.date, row.home_team, row.away_team, row.game_time));
         if (existing) {
           const existingChannels: string[] = Array.isArray(existing.channels) ? existing.channels : [];
-          const merged = Array.from(new Set([...existingChannels, ...row.channels]));
+          // Se manual: preserva canais manuais e adiciona BR novos. Se thesportsdb: substitui pelos BR atuais.
+          const merged = existing.source === "manual"
+            ? Array.from(new Set([...existingChannels, ...row.channels]))
+            : row.channels;
           const { error } = await supabase.from("daily_games").update({
             competition: row.competition,
             competition_detail: row.competition_detail,
