@@ -9,6 +9,9 @@ import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
+import { buildDeepLink } from "@/lib/utils";
+
+type DeepTab = "live" | "schedule" | "highlights" | "novidades" | "home";
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -26,8 +29,9 @@ const CopyButton = ({ text, label }: { text: string; label: string }) => {
   );
 };
 
-const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string }; siteUrl: string }) => {
-  const finalText = template.text.replace("LINK_PLACEHOLDER", siteUrl);
+const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
+  const link = buildDeepLink(siteUrl, template.tab);
+  const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
   const handleSendWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(finalText)}`, "_blank");
@@ -35,7 +39,14 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
 
   return (
     <div className="glass-panel rounded-xl p-4 space-y-3">
-      <span className="text-sm font-bold text-foreground">{template.label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-bold text-foreground">{template.label}</span>
+        {template.tab && template.tab !== "home" && (
+          <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
+            ?tab={template.tab}
+          </span>
+        )}
+      </div>
       <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
         {finalText}
       </pre>
