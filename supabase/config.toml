@@ -9,3 +9,9 @@ verify_jwt = false
 
 [functions.send-push-notifications]
 verify_jwt = false
+
+[functions.fetch-games]
+verify_jwt = false
+
+[functions.update-live-games]
+verify_jwt = false
