@@ -1,71 +1,69 @@
-## Decisão: usar TheSportsDB como API multi-esportes
+# Deep-links para compartilhar abas no WhatsApp
 
-Você tem razão — **não faz sentido** ativar BallDontLie + PandaScore + múltiplas chaves do API-Sports quando o **TheSportsDB Premium ($9/mês = "Pro Single")** já entrega tudo numa única API com **uma única chave**.
+## Problema atual
+Em `AdminWhatsApp.tsx` todos os 4 templates ("Geral", "Jogos", "Entretenimento", "Ao Vivo") usam o mesmo `siteUrl` (raiz). O app é SPA com tabs internas (`home`, `highlights`, `schedule`) controladas por `useState` em `src/pages/Index.tsx` — não existe URL distinta por aba. Resultado: ao clicar no link do status, o usuário sempre cai na Home, nunca direto na seção citada.
 
-### Por que TheSportsDB resolve
+## Solução
+Criar **deep-links via query string** que, ao carregar, abrem a aba correta e rolam até a seção. Depois usar esses links nos templates do WhatsApp e em botões "Compartilhar" diretamente nas seções públicas.
 
-| Esporte pedido | Coberto por TheSportsDB? |
-|---|---|
-| NBA, Tênis, Basquete, F1, MMA, Vôlei, Natação, Golfe, Beisebol, NFL | Sim — endpoint único `eventsday.php?d=YYYY-MM-DD&s=<Sport>` |
-| Top 5 Europa, Champions, Eliminatórias | Sim — `eventsday.php?d=...&l=<idLiga>` ou `s=Soccer` |
-| Canais de TV por evento | Sim — `lookuptv.php?id=<idEvent>` (bônus enorme: a parser manual hoje precisa do canal digitado à mão) |
-| Livescores ao vivo | Sim — `livescore.php?s=<Sport>` (V2, premium) |
+### 1. Suporte a deep-link em `src/pages/Index.tsx`
+No `useEffect` de inicialização, ler `?tab=` (e opcional `?section=`) da URL e:
+- mapear para `home | highlights | schedule | live | novidades`
+- chamar `handleTabChange` com a aba correta (`live` e `novidades` → aba `home`)
+- após render, fazer `scrollIntoView` no anchor correspondente (`#live`, `#novidades`)
+- limpar a query (`history.replaceState`) para não “grudar” no histórico
 
-**Conclusão**: mantemos **API-Football** apenas para futebol (já está rodando) **OU** migramos tudo para TheSportsDB. Recomendo **migrar tudo para TheSportsDB** — uma fonte só, mais simples, e ainda traz os canais de TV automaticamente.
+Mapeamento:
+| Param            | Aba destino | Scroll para |
+|------------------|-------------|-------------|
+| `tab=schedule`   | schedule    | topo        |
+| `tab=highlights` | highlights  | topo        |
+| `tab=live`       | home        | `#live`     |
+| `tab=novidades`  | home        | `#novidades`|
 
----
+### 2. Adicionar `id` âncora nas seções
+- `LiveNowHero` (ou wrapper em `Index.tsx`): `<section id="live">`
+- `NovidadesCard`: `<section id="novidades">`
 
-### Pergunta antes de detalhar a implementação
+### 3. Helper `buildDeepLink(tab)` em `src/lib/utils.ts`
+```ts
+export const buildDeepLink = (base: string, tab?: string) =>
+  tab ? `${base.replace(/\/$/, '')}/?tab=${tab}` : base;
+```
 
-Preciso saber **uma coisa** antes de escrever os edge functions:
+### 4. Atualizar `src/pages/admin/AdminWhatsApp.tsx`
+Cada template recebe seu próprio link via novo placeholder `LINK_TAB`:
 
-**Estratégia de fontes:**
-- **A) Só TheSportsDB** (recomendado): remove a dependência da API-Football. Uma chave só, 14 esportes, canais de TV automáticos. Apago `fetch-games`/`update-live-games` antigos e crio novos baseados em TheSportsDB.
-- **B) Híbrido**: mantém API-Football para futebol (já testado, status ao vivo confiável) e usa TheSportsDB **só** para os outros 13 esportes. Mais código, duas chaves, mas isola riscos.
-- **C) Só adicionar TheSportsDB para os 13 esportes não-futebol** sem mexer no que já existe. Igual ao B, mas sem refatorar o que está funcionando.
+| Template          | tab param   |
+|-------------------|-------------|
+| Geral do Dia      | (nenhum, raiz) |
+| ⚽ Jogos          | `schedule`  |
+| 🍿 Entretenimento | `highlights`|
+| 🔴 Ao Vivo        | `live`      |
+| 🆕 Novidades (novo) | `novidades` |
 
----
+Ajustar `MessageCard` para receber `tab` e usar `buildDeepLink(siteUrl, tab)`. Também atualizar `buildDayText` (Hoje/Amanhã) para apontar para `?tab=schedule`.
 
-### O que preciso de você antes de implementar
+### 5. Botões "Compartilhar no WhatsApp" em cada seção pública (sugestão UX)
+Adicionar botão pequeno (ícone `Share2`) no header de:
+- `LiveNowHero` → compartilha `?tab=live`
+- `DailyGamesSection`/`ScheduleTab` → `?tab=schedule`
+- `HighlightsTab` → `?tab=highlights`
+- `NovidadesCard` → `?tab=novidades`
 
-1. **Confirmar a estratégia (A, B ou C).**
-2. **Adicionar a chave premium do TheSportsDB** como secret `THESPORTSDB_KEY` (quando você confirmar a estratégia, eu disparo o `add_secret` — não precisa colar aqui no chat).
+Cada botão abre `https://wa.me/?text=<texto curto>%20<deepLink>` — útil para o admin compartilhar do próprio site sem ir até o painel.
 
----
+## Sugestões adicionais (opcionais)
+- **Open Graph dinâmico**: como é SPA, o preview do WhatsApp sempre mostra metadados de `index.html`. Para previews diferentes por aba seria preciso SSR/edge function — deixar para depois.
+- **UTM tracking**: anexar `&utm_source=whatsapp&utm_campaign=status` para medir cliques no Analytics.
+- **Encurtador**: integrar com Bitly/short.io futuramente para links mais limpos no status.
 
-### Resumo da implementação (após confirmação)
-
-Independentemente da escolha, o trabalho será:
-
-1. **Edge function nova** `sync-thesportsdb`:
-   - Para cada esporte configurado (`Basketball`, `Tennis`, `Motorsport`, `Fighting`, `Volleyball`, `Swimming`, `Golf`, `Baseball`, `American Football`, `Soccer` se for opção A), chama `eventsday.php?d=<hoje>&s=<sport>`.
-   - Mapeia `dateEvent` + `strTime` (UTC) para `game_time` em `America/Sao_Paulo`.
-   - Insere em `daily_games` com `source='thesportsdb'`, `external_id=idEvent`, `sport_type=<nosso enum>`.
-   - Chama `lookuptv.php?id=<idEvent>` apenas para eventos sem canal (preenche `channels` automaticamente).
-   - Dedup pela mesma unique constraint `external_id` que já existe.
-
-2. **Edge function** `update-live-thesportsdb` (a cada 5 min via cron):
-   - Chama `livescore.php?s=<sport>` (V2 premium).
-   - Atualiza `is_live`, `status_short`, `elapsed_minutes` por `external_id`.
-
-3. **Migration**:
-   - Adicionar `'thesportsdb'` como source válido (já é text livre, sem alteração de schema necessária).
-   - Cron jobs: `sync-thesportsdb` 1×/dia 06:00 BRT + `update-live-thesportsdb` a cada 5 min.
-
-4. **Painel admin** `/admin/api-sync`:
-   - Nova seção "Sync TheSportsDB" com botões por esporte e seletor de data.
-   - Mantém a seção API-Football (se opção B/C) ou substitui (opção A).
-
-5. **Mapeamento de esportes TheSportsDB → enum local**:
-   - `Soccer`→`football`, `Basketball`→`basketball`, `Tennis`→`tennis`, `Motorsport`→`f1`, `Fighting`→`mma`, `Volleyball`→`volleyball`, `Baseball`→`baseball`, `American Football`→`nfl`, `Golf`→`golf`, `Swimming`→`swimming`.
-
-### Detalhes técnicos
-
-- **Rate limit Premium**: ~100 req/min — folgadíssimo (10 esportes/dia + 288 livescores = ~300 req/dia).
-- **Timezone**: TheSportsDB retorna `dateEvent` (data) + `strTime` (HH:MM:SS UTC). Convertemos no edge function com `Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' })` — mesma lógica já usada em `fetch-games`.
-- **Canais TV**: `lookuptv.php` retorna array `tvevent` com `strChannel`. Mapeamos esses para o array `channels` do `daily_games`.
-- **Sem novos schemas**: `daily_games` já tem `source`, `external_id`, `sport_type` — basta inserir com valores novos.
-
----
-
-**Me diga A, B ou C, e se já posso disparar o `add_secret` para `THESPORTSDB_KEY`.**
+## Arquivos a alterar
+- `src/pages/Index.tsx` — leitura de `?tab=` + scroll
+- `src/components/public/LiveNowHero.tsx` — `id="live"` + botão share
+- `src/components/public/NovidadesCard.tsx` — `id="novidades"` + botão share
+- `src/components/public/HighlightsTab.tsx` — botão share
+- `src/components/public/ScheduleTab.tsx` (ou `DailyGamesSection`) — botão share
+- `src/lib/utils.ts` — helper `buildDeepLink`
+- `src/pages/admin/AdminWhatsApp.tsx` — templates com links específicos + novo card "Novidades"
+- `src/pages/admin/__tests__/AdminWhatsApp.test.tsx` — atualizar asserts dos links
