@@ -105,6 +105,9 @@ const AdminApiSync = () => {
         <p className="text-[10px] text-muted-foreground/70">
           Brasileirão A/B, Copa do Brasil, Libertadores, Sul-Americana, Carioca, Paulistão.
         </p>
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-[10px] text-amber-200/90 leading-relaxed">
+          ⚠️ <strong>Plano gratuito da API-Football</strong> só tem dados das temporadas <strong>2021–2023</strong>. Para 2024+ é preciso assinar um plano pago em api-football.com. Use uma data de teste em 2023 para validar a integração.
+        </div>
       </div>
 
       <div className="glass-panel rounded-xl p-4 space-y-3">
