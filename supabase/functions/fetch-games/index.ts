@@ -91,6 +91,14 @@ Deno.serve(async (req) => {
         continue;
       }
       const json = await r.json();
+      // API-Football retorna 200 mesmo em erros de plano/cota — checa json.errors
+      if (json.errors && (Array.isArray(json.errors) ? json.errors.length : Object.keys(json.errors).length)) {
+        const msg = Array.isArray(json.errors)
+          ? json.errors.join("; ")
+          : Object.entries(json.errors).map(([k, v]) => `${k}: ${v}`).join("; ");
+        errors.push(`league ${leagueId}: ${msg}`);
+        continue;
+      }
       if (Array.isArray(json.response)) allFixtures.push(...json.response);
     }
 
