@@ -94,12 +94,14 @@ export type Database = {
           created_at: string
           date: string
           elapsed_minutes: number | null
+          external_id: string | null
           game_time: string
           home_team: string
           id: string
           is_live: boolean
           is_womens: boolean
           publish_at: string | null
+          source: string
           sport_type: string
           status_short: string
         }
@@ -113,12 +115,14 @@ export type Database = {
           created_at?: string
           date?: string
           elapsed_minutes?: number | null
+          external_id?: string | null
           game_time: string
           home_team: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
           publish_at?: string | null
+          source?: string
           sport_type?: string
           status_short?: string
         }
@@ -132,12 +136,14 @@ export type Database = {
           created_at?: string
           date?: string
           elapsed_minutes?: number | null
+          external_id?: string | null
           game_time?: string
           home_team?: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
           publish_at?: string | null
+          source?: string
           sport_type?: string
           status_short?: string
         }

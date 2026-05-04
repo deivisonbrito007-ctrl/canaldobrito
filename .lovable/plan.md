@@ -1,46 +1,81 @@
-## Causa raiz do erro de hoje (28/04)
+## Objetivo
 
-Os logs do Postgres mostram **3 falhas seguidas** com:
+Integrar a **API-Football** (chave `API_FOOTBALL_KEY` já configurada no Lovable Cloud) para popular automaticamente os jogos de futebol em `daily_games`, **complementando** o parser manual de WhatsApp — que continua sendo a fonte para os outros 13 esportes.
 
+## Como vai funcionar
+
+```text
+                          ┌──────────────────────────┐
+   API-Football  ───────► │ edge: fetch-games        │ ──► daily_games
+   (futebol BR)           │  (1x/dia, 06:00 BRT)     │     (sport_type='football',
+                          └──────────────────────────┘      source='api-football')
+
+                          ┌──────────────────────────┐
+   API-Football  ───────► │ edge: update-live-games  │ ──► UPDATE is_live,
+   (live status)          │  (a cada 5 min)          │     status_short,
+                          └──────────────────────────┘     elapsed_minutes
+
+   WhatsApp paste ──────► ProgramacaoTexto (parser) ──► daily_games
+                                                        (13 esportes restantes)
 ```
-duplicate key value violates unique constraint "uq_daily_games_match"
-SQLSTATE 23505
-```
 
-A tabela `daily_games` tem um índice único em `(date, lower(home_team), lower(away_team), game_time)`. O hook `useInsertDailyGames` hoje só checa duplicatas **contra o banco** (`fetchExistingGameKeys`), mas **não verifica duplicatas dentro do próprio lote** que está sendo inserido. Resultado: quando o texto colado tem o mesmo jogo listado duas vezes (ex.: aparece em duas seções, ou o parser captura linhas repetidas), o INSERT em massa do PostgREST aborta tudo com 23505 e o usuário vê só "Erro ao publicar" sem entender o motivo.
+Dedup é feito pela chave existente `gameKey` (home+away+horário+data) — então se o admin colar manualmente um jogo que a API já trouxe, será ignorado.
 
-Confirmei também que **a tabela está vazia** para 28/04 agora — ou seja, nada foi inserido nas 3 tentativas. O erro abortou a transação inteira.
+## Mudanças no banco
 
-## O que vou corrigir
+1. Coluna nova em `daily_games`:
+   - `source text not null default 'manual'` — valores: `'manual'` (parser WhatsApp) ou `'api-football'`.
+   - `external_id text` — id do fixture na API-Football, para updates idempotentes.
+   - Índice único parcial: `(external_id) where external_id is not null`.
+2. Habilitar extensões `pg_cron` e `pg_net`.
+3. Cron jobs (criados via insert SQL com a anon key, não como migration):
+   - `fetch-games-daily` — todo dia às 09:00 UTC (06:00 BRT).
+   - `update-live-games` — a cada 5 minutos.
 
-### 1. `src/hooks/useDailyGames.ts` — `useInsertDailyGames`
-- Antes de checar contra o banco, **deduplicar o array `games` por `gameKey()` dentro do próprio lote** (mantém a primeira ocorrência).
-- Tratar explicitamente o erro `23505`: em vez de jogar exceção genérica, identificar quais linhas conflitam (consultar quais chaves já existem após o erro) e mostrar um toast claro: `"X jogo(s) já existiam e foram ignorados, Y inseridos"`.
-- Como rede de segurança extra: usar `.upsert(..., { onConflict: 'date,home_team,away_team,game_time', ignoreDuplicates: true })` se viável — porém o índice é em `lower(trim(...))`, que `onConflict` do PostgREST não suporta. Então a estratégia continua sendo dedup no cliente + tratamento gracioso do 23505.
+## Edge Functions novas
 
-### 2. `src/components/admin/ProgramacaoTexto.tsx`
-- No `handleProcess`, após gerar `games` do parser, marcar com badge **"duplicado no texto"** quando `gameKey()` aparece mais de uma vez no próprio texto colado, e auto-desmarcar as cópias subsequentes (mantém a primeira selecionada).
-- Mostrar toast amarelo: `"N duplicata(s) interna(s) detectada(s) no texto colado"`.
+### `supabase/functions/fetch-games/index.ts`
+- Lê `API_FOOTBALL_KEY` do env.
+- Busca fixtures do dia em ligas brasileiras configuráveis (Brasileirão Série A/B, Copa do Brasil, Libertadores, Sul-Americana — IDs no topo do arquivo, fáceis de editar).
+- Mapeia para o schema `daily_games`: `home_team`, `away_team`, `game_time` (convertido para America/Sao_Paulo), `competition`, `channels` (vazio — admin completa), `sport_type='football'`, `source='api-football'`, `external_id=fixture.id`.
+- UPSERT por `external_id` para evitar duplicatas em re-execuções.
+- Aceita `?date=YYYY-MM-DD` para rodar manualmente; default = hoje em BRT.
+- `verify_jwt = false` (chamada por cron) + valida um header `x-cron-secret` opcional.
 
-### 3. Mensagem de erro amigável
-- Capturar `error.code === '23505'` no `executePublish` e mostrar: *"Alguns jogos já existem com data/horário/times idênticos. Eles foram ignorados."* em vez de mensagem técnica.
+### `supabase/functions/update-live-games/index.ts`
+- Busca apenas fixtures `live=all` da API-Football.
+- Para cada um com `external_id` correspondente em `daily_games`, atualiza `is_live`, `status_short` (`1H`/`HT`/`2H`/`FT`…), `elapsed_minutes`.
+- Sem inserts — só updates.
 
-## Por que isso evita reincidência
+### Reuso do tipo existente
+Nada muda em `useDailyGames`/`gameUtils` — os jogos novos aparecem naturalmente nas seções (`LiveEventsSection`, `DailyGamesSection`, hero, etc) porque `sport_type='football'` já é tratado.
 
-- **Dedup intra-lote**: mata a causa imediata (mesmo lote com chave repetida).
-- **Dedup visual no preview**: o admin vê antes de clicar publicar.
-- **Tratamento de 23505**: mesmo se uma corrida acontecer (ex: dois admins publicando ao mesmo tempo), o usuário recebe feedback claro em vez de erro cru.
+## Painel admin
 
-## Validação
+Nova aba **"Sync API"** em `/admin` (`src/pages/admin/AdminApiSync.tsx`):
+- Botão "Buscar jogos de hoje" e "Buscar de uma data" → chama `fetch-games` via `supabase.functions.invoke`.
+- Botão "Atualizar status ao vivo agora" → chama `update-live-games`.
+- Mostra resultado (quantos inseridos, atualizados, ignorados).
+- Lista as últimas execuções (lendo `daily_games` filtrado por `source='api-football'`).
+- Toggle por liga (quais IDs sincronizar) — salvo em `settings` com chave `api_football_leagues`.
 
-- Rodar `bunx vitest run src/hooks/__tests__/useDailyGames.test.ts` e `src/components/admin/__tests__/ProgramacaoTexto.test.tsx` (já existem).
-- Adicionar caso de teste novo: `useInsertDailyGames` recebendo array com 2 jogos idênticos → insere 1, reporta 1 skipped.
-- `bunx tsc --noEmit` deve continuar 0 erros.
+## Como o GitHub entra nisso
 
-## Arquivos alterados
+Não é preciso "comando" `npx supabase`: a Lovable faz commit+deploy automático. Após aprovar o plano:
+1. Edge functions deployam sozinhas no save.
+2. Migration de coluna+extensões roda via tool de migration (com sua aprovação).
+3. Cron jobs são inseridos via SQL (também com aprovação).
+4. O commit aparece no GitHub conectado em segundos. Para confirmar, abra `/admin/diagnostico-github` ou veja o repositório.
 
-- `src/hooks/useDailyGames.ts` (dedup intra-lote + handler 23505)
-- `src/components/admin/ProgramacaoTexto.tsx` (badge "duplicado no texto" + toast melhorado)
-- `src/hooks/__tests__/useDailyGames.test.ts` (novo caso)
+## Detalhes técnicos
 
-Sem mudanças de schema, sem migrations.
+- **Time zone**: API-Football aceita `timezone=America/Sao_Paulo` no query string — uso isso, sem conversões manuais.
+- **Rate limit**: plano gratuito = 100 req/dia. Fetch diário (1 req) + live a cada 5 min entre 12h–02h BRT (≈170 req) **estoura o limite grátis**. Mitigação: live só roda se `(SELECT count(*) FROM daily_games WHERE date = today AND sport_type='football') > 0` E dentro da janela 12h–02h BRT, e só atualiza fixtures cujo horário já passou. Se ainda estourar, ajustamos para 10 min.
+- **Validação de input**: ambas as functions validam `?date` com Zod (`YYYY-MM-DD`).
+- **CORS**: padrão Lovable.
+- **Sem segredos novos**: `API_FOOTBALL_KEY` já existe.
+
+## Fora de escopo
+
+- PandaScore e BallDontLie (outros secrets já configurados): não tocamos agora — quando quiser cobrir e-sports/NBA via API, abrimos plano separado.
+- Substituir o parser de WhatsApp: continua sendo a fonte para os 13 esportes não-futebol.
