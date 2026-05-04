@@ -122,19 +122,30 @@ Deno.serve(async (req) => {
     // FILTRO ESTRITO: apenas canais transmitidos no Brasil (strCountry === "Brazil")
     // OU nomes de canais conhecidos como brasileiros/globais disponíveis no Brasil.
     const tvByEvent = new Map<string, string[]>();
-    // Heurística: nomes de canais que sabidamente operam no Brasil mesmo quando a API marca outro país
-    const BR_CHANNEL_HINTS = [
-      "globo", "sportv", "sporttv", "premiere", "band", "espn brasil", "espn br",
-      "tnt sports brasil", "tnt brasil", "cazé", "caze", "cazétv", "cazetv",
-      "nsports", "n sports", "disney+", "disney plus", "max", "hbo max",
-      "amazon prime video brasil", "prime video brasil", "paramount+ brasil",
-      "apple tv", "youtube", "twitch", "x sports", "rede tv", "sbt", "record",
-      "f1 tv", "ufc fight pass", "nba league pass",
+    // Heurística estrita: marcas globais sabidamente disponíveis no Brasil.
+    // Usa regex com word-boundary para evitar falsos positivos (ex: "max" casando "BeIn Sports Max").
+    const BR_BRAND_PATTERNS: RegExp[] = [
+      /\bglobo\b/i, /\bsportv\b/i, /\bsporttv\b/i, /\bpremiere\b/i,
+      /\bband\b/i, /\bbandsports\b/i,
+      /\bespn\s*(brasil|br)\b/i,
+      /\btnt\s*(sports\s*)?(brasil|br)\b/i,
+      /\bcaz[eé](\s*tv)?\b/i,
+      /\bnsports\b/i, /\bn\s*sports\b/i,
+      /\bdisney\s*(\+|plus)\s*(brasil|br)?\b/i,
+      /\bhbo\s*max\s*(brasil|br)?\b/i,
+      /\bprime\s*video\s*brasil\b/i,
+      /\bparamount\s*\+?\s*(brasil|br)\b/i,
+      /\bapple\s*tv\s*\+?\s*(brasil|br)?\b/i,
+      /\bcanal\s*goat\b/i, /\bgoat\b/i,
+      /\bf1\s*tv\s*(pro)?\b/i,
+      /\bufc\s*fight\s*pass\b/i,
+      /\bnba\s*league\s*pass\b/i,
+      /\brede\s*tv\b/i, /\bsbt\b/i, /\brecord\b/i,
+      /\bcanal\s*do\s*brito\b/i,
     ];
     const isBrazilChannel = (country: string, channel: string) => {
       if ((country || "").trim().toLowerCase() === "brazil") return true;
-      const c = (channel || "").toLowerCase();
-      return BR_CHANNEL_HINTS.some((h) => c.includes(h));
+      return BR_BRAND_PATTERNS.some((re) => re.test(channel));
     };
 
     if (fetchTV) {
