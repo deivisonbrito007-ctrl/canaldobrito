@@ -119,16 +119,41 @@ Deno.serve(async (req) => {
     })();
 
     // Pré-busca TODA a programação de TV do dia em uma única chamada (eventstv.php).
-    // Indexa por idEvent → array de canais (priorizando Brasil e canais internacionais conhecidos).
+    // FILTRO ESTRITO: apenas canais transmitidos no Brasil (strCountry === "Brazil")
+    // OU nomes de canais conhecidos como brasileiros/globais disponíveis no Brasil.
     const tvByEvent = new Map<string, string[]>();
+    // Heurística estrita: marcas globais sabidamente disponíveis no Brasil.
+    // Usa regex com word-boundary para evitar falsos positivos (ex: "max" casando "BeIn Sports Max").
+    const BR_BRAND_PATTERNS: RegExp[] = [
+      /\bglobo\b/i, /\bsportv\b/i, /\bsporttv\b/i, /\bpremiere\b/i,
+      /\bband\b/i, /\bbandsports\b/i,
+      /\bespn\s*(brasil|br)\b/i,
+      /\btnt\s*(sports\s*)?(brasil|br)\b/i,
+      /\bcaz[eé](\s*tv)?\b/i,
+      /\bnsports\b/i, /\bn\s*sports\b/i,
+      /\bdisney\s*(\+|plus)\s*(brasil|br)?\b/i,
+      /\bhbo\s*max\s*(brasil|br)?\b/i,
+      /\bprime\s*video\s*brasil\b/i,
+      /\bparamount\s*\+?\s*(brasil|br)\b/i,
+      /\bapple\s*tv\s*\+?\s*(brasil|br)?\b/i,
+      /\bcanal\s*goat\b/i, /\bgoat\b/i,
+      /\bf1\s*tv\s*(pro)?\b/i,
+      /\bufc\s*fight\s*pass\b/i,
+      /\bnba\s*league\s*pass\b/i,
+      /\brede\s*tv\b/i, /\bsbt\b/i, /\brecord\b/i,
+      /\bcanal\s*do\s*brito\b/i,
+    ];
+    const isBrazilChannel = (country: string, channel: string) => {
+      if ((country || "").trim().toLowerCase() === "brazil") return true;
+      return BR_BRAND_PATTERNS.some((re) => re.test(channel));
+    };
+
     if (fetchTV) {
-      const PRIORITY_COUNTRIES = new Set(["Brazil", "United States", "United Kingdom", "International", "Worldwide"]);
       for (const d of candidateDates) {
         try {
           const tvR = await fetch(`${base}/eventstv.php?d=${d}`);
           if (!tvR.ok) { errors.push(`tv@${d}: HTTP ${tvR.status}`); continue; }
           const tvJ = await tvR.json();
-          // API às vezes retorna 'tvevent', às vezes 'tvevents' — aceita ambos
           const list: any[] = Array.isArray(tvJ?.tvevents) ? tvJ.tvevents
             : Array.isArray(tvJ?.tvevent) ? tvJ.tvevent : [];
           for (const t of list) {
@@ -136,13 +161,12 @@ Deno.serve(async (req) => {
             if (!id) continue;
             const ch = (t.strChannel || "").trim();
             if (!ch) continue;
+            // ⚠️ Só aceita canais do Brasil (ou marcas globais conhecidas no BR)
+            if (!isBrazilChannel(t.strCountry || "", ch)) continue;
             if (!tvByEvent.has(id)) tvByEvent.set(id, []);
             const arr = tvByEvent.get(id)!;
-            // adiciona se ainda não existe; canais brasileiros vão pro topo
             if (!arr.some((x) => x.toLowerCase() === ch.toLowerCase())) {
-              if ((t.strCountry || "") === "Brazil") arr.unshift(ch);
-              else if (PRIORITY_COUNTRIES.has(t.strCountry || "")) arr.push(ch);
-              else arr.push(ch);
+              arr.push(ch);
             }
           }
         } catch (e) { errors.push(`tv@${d}: ${(e as Error).message}`); }
@@ -221,7 +245,10 @@ Deno.serve(async (req) => {
         const existing = existingMap.get(matchKey(row.date, row.home_team, row.away_team, row.game_time));
         if (existing) {
           const existingChannels: string[] = Array.isArray(existing.channels) ? existing.channels : [];
-          const merged = Array.from(new Set([...existingChannels, ...row.channels]));
+          // Se manual: preserva canais manuais e adiciona BR novos. Se thesportsdb: substitui pelos BR atuais.
+          const merged = existing.source === "manual"
+            ? Array.from(new Set([...existingChannels, ...row.channels]))
+            : row.channels;
           const { error } = await supabase.from("daily_games").update({
             competition: row.competition,
             competition_detail: row.competition_detail,
