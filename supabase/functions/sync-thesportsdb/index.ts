@@ -118,6 +118,37 @@ Deno.serve(async (req) => {
       return [...out];
     })();
 
+    // Pré-busca TODA a programação de TV do dia em uma única chamada (eventstv.php).
+    // Indexa por idEvent → array de canais (priorizando Brasil e canais internacionais conhecidos).
+    const tvByEvent = new Map<string, string[]>();
+    if (fetchTV) {
+      const PRIORITY_COUNTRIES = new Set(["Brazil", "United States", "United Kingdom", "International", "Worldwide"]);
+      for (const d of candidateDates) {
+        try {
+          const tvR = await fetch(`${base}/eventstv.php?d=${d}`);
+          if (!tvR.ok) { errors.push(`tv@${d}: HTTP ${tvR.status}`); continue; }
+          const tvJ = await tvR.json();
+          // API às vezes retorna 'tvevent', às vezes 'tvevents' — aceita ambos
+          const list: any[] = Array.isArray(tvJ?.tvevents) ? tvJ.tvevents
+            : Array.isArray(tvJ?.tvevent) ? tvJ.tvevent : [];
+          for (const t of list) {
+            const id = String(t.idEvent || "");
+            if (!id) continue;
+            const ch = (t.strChannel || "").trim();
+            if (!ch) continue;
+            if (!tvByEvent.has(id)) tvByEvent.set(id, []);
+            const arr = tvByEvent.get(id)!;
+            // adiciona se ainda não existe; canais brasileiros vão pro topo
+            if (!arr.some((x) => x.toLowerCase() === ch.toLowerCase())) {
+              if ((t.strCountry || "") === "Brazil") arr.unshift(ch);
+              else if (PRIORITY_COUNTRIES.has(t.strCountry || "")) arr.push(ch);
+              else arr.push(ch);
+            }
+          }
+        } catch (e) { errors.push(`tv@${d}: ${(e as Error).message}`); }
+      }
+    }
+
     for (const sport of sports) {
       let countForSport = 0;
       const rawEvents: any[] = [];
@@ -139,21 +170,9 @@ Deno.serve(async (req) => {
         const competition = ev.strLeague || sport;
         const competitionDetail = ev.strSeason ? `${ev.strSeason}${ev.intRound ? ` • R${ev.intRound}` : ""}` : (ev.intRound ? `R${ev.intRound}` : null);
 
-        let channels: string[] = [];
-        if (fetchTV && ev.idEvent) {
-          try {
-            const tvR = await fetch(`${base}/lookuptv.php?id=${ev.idEvent}`);
-            if (tvR.ok) {
-              const tvJ = await tvR.json();
-              const list = Array.isArray(tvJ?.tvevent) ? tvJ.tvevent : [];
-              const seen = new Set<string>();
-              for (const t of list) {
-                const ch = (t.strChannel || "").trim();
-                if (ch && !seen.has(ch.toLowerCase())) { seen.add(ch.toLowerCase()); channels.push(ch); }
-              }
-            }
-          } catch (_) { /* ignora erro TV */ }
-        }
+        // Pega canais do índice pré-construído + limita a 6 para não poluir
+        const channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
+
 
         allRows.push({
           date: brt.date,
