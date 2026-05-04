@@ -75,6 +75,36 @@ const Index = () => {
     return () => window.removeEventListener("nav-tab-change", handler);
   }, [handleTabChange]);
 
+  // Deep-link support: read ?tab= param to open the right tab/section on load.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (!tab) return;
+
+    let anchor: string | null = null;
+    if (tab === "schedule" || tab === "highlights") {
+      handleTabChange(tab);
+    } else if (tab === "live") {
+      handleTabChange("home");
+      anchor = "live";
+    } else if (tab === "novidades") {
+      handleTabChange("home");
+      anchor = "novidades";
+    }
+
+    // Clean URL so reloads/back nav don't repeat the jump
+    const cleanUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, "", cleanUrl);
+
+    if (anchor) {
+      setTimeout(() => {
+        const el = document.getElementById(anchor!);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 350);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const renderContent = () => {
     if (activeTab === "highlights") {
       return (
@@ -94,9 +124,13 @@ const Index = () => {
       <div className="space-y-5 min-h-[80vh]">
         <Hero />
         <CategoryIconsCarousel />
-        <LiveNowHero />
+        <div id="live" className="scroll-mt-20">
+          <LiveNowHero />
+        </div>
         <Suspense fallback={<BelowFoldSkeleton />}>
-          <LazyNovidadesCard />
+          <div id="novidades" className="scroll-mt-20">
+            <LazyNovidadesCard />
+          </div>
           <LazyPromoStrip />
           <LazyBannerSections />
         </Suspense>
