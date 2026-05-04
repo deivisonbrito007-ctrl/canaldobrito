@@ -139,17 +139,26 @@ const AdminWhatsApp = () => {
         {
           id: "jogos",
           label: "⚽ Jogos",
+          tab: "schedule" as DeepTab,
           text: `⚽ *Jogos de Hoje Atualizados*\n\n📅 ${fDate}\n\nVeja horários, canais e destaques do dia.\n\n👉 LINK_PLACEHOLDER`,
         },
         {
           id: "entretenimento",
           label: "🍿 Entretenimento",
+          tab: "highlights" as DeepTab,
           text: `🍿 *Assista Hoje*\n\nFilmes, séries, novidades e lançamentos do dia em um só lugar.\n\n👉 LINK_PLACEHOLDER`,
         },
         {
           id: "aovivo",
           label: "🔴 Ao Vivo",
+          tab: "live" as DeepTab,
           text: `🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 LINK_PLACEHOLDER`,
+        },
+        {
+          id: "novidades",
+          label: "🆕 Novidades",
+          tab: "novidades" as DeepTab,
+          text: `🆕 *Novidades da Semana*\n\nFilmes, séries e lançamentos recém-adicionados.\n\n👉 LINK_PLACEHOLDER`,
         },
       ],
     };
