@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS daily_games_external_id_unique ON public.daily_games (external_id) WHERE external_id IS NOT NULL;

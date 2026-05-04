@@ -44,7 +44,12 @@ const AdminApiSync = () => {
       const res = await callFn("fetch-games", { date });
       setLastResult(res);
       if (res.error) toast.error(res.error);
-      else toast.success(`${res.upserted} jogo(s) sincronizados (${res.fixtures} fixtures)`);
+      else if (res.upserted > 0) toast.success(`${res.upserted} jogo(s) sincronizados`);
+      else if (res.errors?.length) {
+        toast.error(`API retornou erro: ${res.errors[0]}`, { duration: 8000 });
+      } else {
+        toast.warning(`Nenhum jogo encontrado para ${date} nas ligas configuradas`);
+      }
       qc.invalidateQueries({ queryKey: ["daily_games"] });
       refetch();
     } catch (e: any) {
@@ -100,6 +105,9 @@ const AdminApiSync = () => {
         <p className="text-[10px] text-muted-foreground/70">
           Brasileirão A/B, Copa do Brasil, Libertadores, Sul-Americana, Carioca, Paulistão.
         </p>
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-[10px] text-amber-200/90 leading-relaxed">
+          ⚠️ <strong>Plano gratuito da API-Football</strong> só permite consultar os <strong>últimos 2-3 dias</strong> (geralmente hoje, ontem e amanhã). Para datas futuras ou históricas é necessário plano pago em api-football.com. Use uma data próxima de hoje para testar.
+        </div>
       </div>
 
       <div className="glass-panel rounded-xl p-4 space-y-3">
