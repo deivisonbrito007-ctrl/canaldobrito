@@ -46,28 +46,30 @@ export const LiveEventsSection = () => {
           return (
             <div
               key={event.id}
-              className="rounded-[14px] overflow-hidden bg-surface-2 border border-border transition-all duration-200 hover:border-amber-500/30 hover:-translate-y-0.5"
+              className="rounded-[14px] overflow-hidden bg-surface-2 border border-border transition-all duration-300 hover:border-amber-500/40 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(245,158,11,0.18)] group"
             >
-              <div className="h-[2.5px] bg-gradient-to-r from-amber-500/80 to-transparent" />
+              <div className="relative h-[2.5px] overflow-hidden bg-gradient-to-r from-amber-500/80 via-orange-500/60 to-transparent">
+                <div className="absolute inset-0 -translate-x-full animate-shimmer-sweep bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+              </div>
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate font-body">
                     {emoji} {event.competition}
                     {event.competition_detail && ` · ${event.competition_detail}`}
                   </p>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
                     <span className="relative flex h-2 w-2">
                       <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 animate-pulse-live" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                     </span>
-                    <span className="text-[9px] font-bold text-amber-500 tabular-nums font-body">
-                      {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+                    <span className="text-[9px] font-extrabold text-amber-500 tabular-nums font-body">
+                      {elapsed !== null ? `${elapsed}'` : "LIVE"}
                     </span>
                   </div>
                 </div>
 
                 <div className="text-center space-y-0.5">
-                  <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+                  <p className="text-[13px] font-extrabold text-foreground leading-tight font-body line-clamp-2">
                     {event.home_team}
                     {event.away_team && event.away_team !== event.home_team && ` — ${event.away_team}`}
                   </p>
@@ -79,11 +81,22 @@ export const LiveEventsSection = () => {
                 </div>
               </div>
 
-              <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border">
+              <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border bg-muted/20">
                 <span className="text-[9px] text-muted-foreground font-body tabular-nums">
                   {event.game_time?.slice(0, 5)}
                 </span>
-                {channel && <ChannelBadge name={channel} />}
+                {event.channels && event.channels.length > 0 && (
+                  <div className="flex gap-1 items-center justify-end">
+                    {event.channels.slice(0, 2).map((ch) => (
+                      <ChannelBadge key={ch} name={ch} size="sm" />
+                    ))}
+                    {event.channels.length > 2 && (
+                      <span className="text-[9px] text-muted-foreground/60 font-bold">
+                        +{event.channels.length - 2}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );

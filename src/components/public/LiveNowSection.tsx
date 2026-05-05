@@ -74,9 +74,11 @@ export const LiveNowSection = () => {
                 transition={{ delay: idx * 0.06, duration: 0.3 }}
                 className="min-w-[280px] w-[75vw] max-w-[340px] shrink-0 snap-start"
               >
-                <div className="rounded-2xl bg-card border border-destructive/20 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.15)]">
-                  {/* Accent bar */}
-                  <div className="h-1 bg-gradient-to-r from-destructive via-destructive/60 to-transparent" />
+                <div className="rounded-2xl bg-card border border-destructive/30 overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_12px_32px_hsl(0,84%,60%,0.25)] hover:border-destructive/50 group">
+                  {/* Accent bar with shimmer */}
+                  <div className="relative h-1 overflow-hidden bg-gradient-to-r from-destructive via-destructive/60 to-transparent">
+                    <div className="absolute inset-0 -translate-x-full animate-shimmer-sweep bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                  </div>
 
                   <div className="p-3.5 space-y-2.5 relative">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-destructive/5 rounded-full blur-2xl" />
@@ -87,13 +89,13 @@ export const LiveNowSection = () => {
                         {emoji} {game.competition}
                         {game.competition_detail && ` · ${game.competition_detail}`}
                       </p>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="inline-flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-full bg-destructive/15 border border-destructive/30">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-60" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
                         </span>
-                        <span className="text-[10px] font-bold text-destructive tabular-nums font-body">
-                          {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+                        <span className="text-[10px] font-extrabold text-destructive tabular-nums font-body">
+                          {elapsed !== null ? `${elapsed}'` : "LIVE"}
                         </span>
                       </div>
                     </div>
@@ -101,7 +103,7 @@ export const LiveNowSection = () => {
                     {/* Teams */}
                     {(isF1 || isNonAdversarial(sportType) || !game.away_team) ? (
                       <div className="text-center space-y-0.5">
-                        <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+                        <p className="text-[13px] font-extrabold text-foreground leading-tight font-body line-clamp-2">
                           {game.home_team}
                           {game.away_team && game.away_team !== game.home_team && ` — ${game.away_team}`}
                         </p>
@@ -116,56 +118,58 @@ export const LiveNowSection = () => {
                       const separator = sportType === 'tennis' || sportType === 'mma' ? 'VS' : 'X';
                       return isLongNames ? (
                         <div className="space-y-1 text-center">
-                          <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+                          <p className="text-[13px] font-extrabold text-foreground leading-tight font-body line-clamp-2">
                             {game.home_team}
                           </p>
                           <div className="flex justify-center">
-                            <div className="px-2 py-0.5 rounded-lg bg-destructive/15 border border-destructive/25">
+                            <div className="px-2 py-0.5 rounded-lg bg-gradient-to-br from-destructive/25 to-destructive/10 border border-destructive/30">
                               <span className="text-[10px] font-extrabold text-destructive font-body">{separator}</span>
                             </div>
                           </div>
-                          <p className="text-[13px] font-bold text-foreground leading-tight font-body line-clamp-2">
+                          <p className="text-[13px] font-extrabold text-foreground leading-tight font-body line-clamp-2">
                             {game.away_team}
                           </p>
                         </div>
                       ) : (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <p className="text-[13px] font-bold text-foreground flex-1 text-left leading-tight font-body line-clamp-2">
+                            <p className="text-[13px] font-extrabold text-foreground flex-1 text-left leading-tight font-body line-clamp-2">
                               {game.home_team}
                             </p>
-                            <div className="shrink-0 px-2 py-1 rounded-lg bg-destructive/15 border border-destructive/25">
+                            <div className="shrink-0 px-2 py-1 rounded-lg bg-gradient-to-br from-destructive/25 to-destructive/10 border border-destructive/30">
                               <span className="text-[11px] font-extrabold text-destructive font-body">{separator}</span>
                             </div>
-                            <p className="text-[13px] font-bold text-foreground flex-1 text-right leading-tight font-body line-clamp-2">
+                            <p className="text-[13px] font-extrabold text-foreground flex-1 text-right leading-tight font-body line-clamp-2">
                               {game.away_team}
                             </p>
                           </div>
                         </div>
                       );
                     })()}
+                  </div>
 
-                    {/* Time + Channels */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1 text-muted-foreground/60">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-[10px] font-medium tabular-nums font-body">
-                          {game.game_time?.slice(0, 5)}
-                        </span>
-                      </div>
-                      {game.channels && game.channels.length > 0 ? (
-                        <div className="flex gap-1 flex-wrap justify-end">
-                          {game.channels.slice(0, 2).map((ch) => (
-                            <ChannelBadge key={ch} name={ch} />
-                          ))}
-                          {game.channels.length > 2 && (
-                            <span className="text-[9px] text-muted-foreground/50 self-center">+{game.channels.length - 2}</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">Sem transmissão</span>
-                      )}
+                  {/* Footer: Time + Channels */}
+                  <div className="px-3.5 py-2 flex items-center justify-between gap-2 bg-muted/20 border-t border-border/30">
+                    <div className="flex items-center gap-1 text-muted-foreground/70">
+                      <Clock className="h-3 w-3" />
+                      <span className="text-[10px] font-medium tabular-nums font-body">
+                        {game.game_time?.slice(0, 5)}
+                      </span>
                     </div>
+                    {game.channels && game.channels.length > 0 ? (
+                      <div className="flex gap-1 flex-wrap justify-end">
+                        {game.channels.slice(0, 3).map((ch) => (
+                          <ChannelBadge key={ch} name={ch} size="sm" />
+                        ))}
+                        {game.channels.length > 3 && (
+                          <span className="text-[9px] text-muted-foreground/60 self-center font-bold">
+                            +{game.channels.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">Sem transmissão</span>
+                    )}
                   </div>
                 </div>
               </motion.div>
