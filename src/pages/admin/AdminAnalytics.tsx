@@ -110,8 +110,71 @@ function fmtRange(from: Date, to: Date): string {
   return `${format(from, "dd/MM", { locale: ptBR })} – ${format(to, "dd/MM", { locale: ptBR })}`;
 }
 
+interface RemoteEvent {
+  event: string;
+  user_id: string | null;
+  session_id: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  tab: string | null;
+  surface: string | null;
+  props: Record<string, unknown> | null;
+  created_at: string;
+}
+
+interface FunnelRow {
+  campaign: string;
+  shares: number;
+  landings: number;
+  tabViews: number;
+  uniqueLanders: number;
+  ctr: number;
+  conversion: number;
+}
+
+function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
+  const map = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
+  const ensure = (c: string) => {
+    if (!map.has(c)) map.set(c, { shares: 0, landings: 0, tabViews: 0, landers: new Set() });
+    return map.get(c)!;
+  };
+
+  for (const ev of remote) {
+    const campaign = ev.utm_campaign || (ev.event === "link_share" ? null : "(direct)");
+    if (ev.event === "link_share") {
+      const tabSlug = (ev.props?.tab_slug as string) || (ev.tab as string) || null;
+      const inferred = ev.utm_campaign || (tabSlug ? `share-${tabSlug}` : null);
+      if (!inferred) continue;
+      ensure(inferred).shares += 1;
+    } else if (ev.event === "landing_with_utm" && campaign) {
+      const row = ensure(campaign);
+      row.landings += 1;
+      if (ev.user_id) row.landers.add(ev.user_id);
+    } else if (ev.event === "tab_view" && campaign && campaign !== "(direct)") {
+      ensure(campaign).tabViews += 1;
+    }
+  }
+
+  const rows: FunnelRow[] = [];
+  for (const [campaign, v] of map) {
+    rows.push({
+      campaign,
+      shares: v.shares,
+      landings: v.landings,
+      tabViews: v.tabViews,
+      uniqueLanders: v.landers.size,
+      ctr: v.shares > 0 ? (v.uniqueLanders > 0 ? v.uniqueLanders : v.landings) / v.shares : 0,
+      conversion: v.landings > 0 ? v.tabViews / v.landings : 0,
+    });
+  }
+  return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
+}
+
 export default function AdminAnalytics() {
   const [events, setEvents] = useState<LoggedEvent[]>([]);
+  const [remote, setRemote] = useState<RemoteEvent[]>([]);
+  const [loadingRemote, setLoadingRemote] = useState(false);
+
   const refresh = () => setEvents(readEventsLog());
   useEffect(() => { refresh(); }, []);
 
@@ -134,6 +197,54 @@ export default function AdminAnalytics() {
       setFromB(startOfDay(new Date(from.getTime() - days * 86400000)));
     }
   };
+
+  // Fetch remote events for the union of both periods
+  useEffect(() => {
+    let cancelled = false;
+    const lo = compareOn ? Math.min(fromA.getTime(), fromB.getTime()) : fromA.getTime();
+    const hi = compareOn ? Math.max(toA.getTime(), toB.getTime()) : toA.getTime();
+    setLoadingRemote(true);
+    (async () => {
+      try {
+        const { data, error } = await (supabase as unknown as {
+          from: (t: string) => {
+            select: (s: string) => {
+              gte: (c: string, v: string) => {
+                lte: (c: string, v: string) => {
+                  order: (c: string, o: { ascending: boolean }) => {
+                    limit: (n: number) => Promise<{ data: RemoteEvent[] | null; error: unknown }>;
+                  };
+                };
+              };
+            };
+          };
+        })
+          .from("analytics_events")
+          .select("event,user_id,session_id,utm_campaign,utm_content,tab,surface,props,created_at")
+          .gte("created_at", new Date(lo).toISOString())
+          .lte("created_at", new Date(hi).toISOString())
+          .order("created_at", { ascending: false })
+          .limit(5000);
+        if (!cancelled && !error && data) setRemote(data);
+      } finally {
+        if (!cancelled) setLoadingRemote(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [fromA, toA, fromB, toB, compareOn]);
+
+  const inWindow = (ts: number, from: Date, to: Date) => ts >= from.getTime() && ts <= to.getTime();
+  const remoteA = useMemo(
+    () => remote.filter((e) => inWindow(new Date(e.created_at).getTime(), fromA, toA)),
+    [remote, fromA, toA]
+  );
+  const remoteB = useMemo(
+    () => (compareOn ? remote.filter((e) => inWindow(new Date(e.created_at).getTime(), fromB, toB)) : []),
+    [remote, fromB, toB, compareOn]
+  );
+
+  const funnelA = useMemo(() => computeFunnel(remoteA), [remoteA]);
+  const funnelB = useMemo(() => computeFunnel(remoteB), [remoteB]);
 
   const aggA = useMemo(() => aggregate(events, fromA.getTime(), toA.getTime()), [events, fromA, toA]);
   const aggB = useMemo(
