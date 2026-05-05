@@ -118,13 +118,6 @@ const Index = () => {
   }, [activeTab]);
 
   const renderContent = () => {
-    if (activeTab === "highlights") {
-      return (
-        <Suspense fallback={<HighlightsFallback />}>
-          <HighlightsTab />
-        </Suspense>
-      );
-    }
     if (activeTab === "schedule") {
       return (
         <Suspense fallback={<ScheduleFallback />}>
