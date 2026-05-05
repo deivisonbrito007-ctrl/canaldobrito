@@ -160,8 +160,12 @@ Deno.serve(async (req) => {
       return BR_BRAND_PATTERNS.some((re) => re.test(channel));
     };
 
+    // Estatísticas por data: total de eventos com TV e canais BR encontrados
+    const tvStatsByDate: Record<string, { events_with_tv: Set<string>; br_channels: number; events_with_br: Set<string> }> = {};
+
     if (fetchTV) {
       for (const d of candidateDates) {
+        tvStatsByDate[d] = { events_with_tv: new Set(), br_channels: 0, events_with_br: new Set() };
         try {
           const tvR = await fetch(`${base}/eventstv.php?d=${d}`);
           if (!tvR.ok) { errors.push(`tv@${d}: HTTP ${tvR.status}`); continue; }
@@ -169,26 +173,32 @@ Deno.serve(async (req) => {
           const list: any[] = Array.isArray(tvJ?.tvevents) ? tvJ.tvevents
             : Array.isArray(tvJ?.tvevent) ? tvJ.tvevent : [];
 
-          console.log(`[DEBUG] Data ${d}: ${list.length} eventos com TV`);
-
           for (const t of list) {
             const id = String(t.idEvent || "");
             if (!id) continue;
+            tvStatsByDate[d].events_with_tv.add(id);
             const ch = (t.strChannel || "").trim();
             if (!ch) continue;
-            // ⚠️ Só aceita canais do Brasil (ou marcas globais conhecidas no BR)
             const isBR = isBrazilChannel(t.strCountry || "", ch);
-            console.log(`[DEBUG] Canal: "${ch}" | País: "${t.strCountry}" | É BR? ${isBR}`);
             if (!isBR) continue;
+            tvStatsByDate[d].br_channels++;
+            tvStatsByDate[d].events_with_br.add(id);
             if (!tvByEvent.has(id)) tvByEvent.set(id, []);
             const arr = tvByEvent.get(id)!;
             if (!arr.some((x) => x.toLowerCase() === ch.toLowerCase())) {
               arr.push(ch);
             }
           }
+          console.log(`[DEBUG] Data ${d}: ${tvStatsByDate[d].events_with_tv.size} eventos com TV, ${tvStatsByDate[d].br_channels} canais BR`);
         } catch (e) { errors.push(`tv@${d}: ${(e as Error).message}`); }
       }
       console.log(`[DEBUG] Total de eventos com canais BR: ${tvByEvent.size}`);
+    }
+
+    // Serializa stats (Set → number) para audit log
+    const tvStats: Record<string, { events_with_tv: number; br_channels: number; events_with_br: number }> = {};
+    for (const [d, s] of Object.entries(tvStatsByDate)) {
+      tvStats[d] = { events_with_tv: s.events_with_tv.size, br_channels: s.br_channels, events_with_br: s.events_with_br.size };
     }
 
     for (const sport of sports) {
@@ -301,6 +311,8 @@ Deno.serve(async (req) => {
           errors: errors.slice(0, 10),
           triggered_by: req.headers.get("x-cron-secret") ? "cron" : "manual",
           user_agent: req.headers.get("user-agent")?.slice(0, 120) || null,
+          tv_stats_by_date: tvStats,
+          candidate_dates: candidateDates,
         },
       });
     } catch (logErr) {
@@ -308,7 +320,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors,
+      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
