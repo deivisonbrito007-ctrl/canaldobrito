@@ -103,7 +103,8 @@ const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(({
       </div>
     </motion.div>
   );
-};
+});
+MovieCard.displayName = "MovieCard";
 
 export const WeeklyMoviesSection = () => {
   const { data: movies, isLoading } = useActiveMovies();
