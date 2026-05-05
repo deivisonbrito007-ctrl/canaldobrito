@@ -252,6 +252,54 @@ function computeDaily(
     });
 }
 
+interface TabFunnelRow {
+  tab: string;
+  shares: number;
+  landings: number;
+  uniqueLanders: number;
+  tabViews: number;
+  ctr: number;
+  conversion: number;
+}
+
+function computeFunnelByTab(remote: RemoteEvent[]): TabFunnelRow[] {
+  const map = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
+  const ensure = (t: string) => {
+    if (!map.has(t)) map.set(t, { shares: 0, landings: 0, tabViews: 0, landers: new Set() });
+    return map.get(t)!;
+  };
+  for (const ev of remote) {
+    if (ev.event === "link_share") {
+      const tab = (ev.props?.tab_slug as string) || ev.tab || (ev.props?.tab as string) || null;
+      if (!tab) continue;
+      ensure(tab).shares += 1;
+    } else if (ev.event === "landing_with_utm") {
+      const tab = (ev.props?.tab_slug as string) || (ev.props?.landing_tab as string) || ev.tab || null;
+      if (!tab) continue;
+      const row = ensure(tab);
+      row.landings += 1;
+      if (ev.user_id) row.landers.add(ev.user_id);
+    } else if (ev.event === "tab_view") {
+      const tab = ev.tab || (ev.props?.tab as string) || null;
+      if (!tab) continue;
+      ensure(tab).tabViews += 1;
+    }
+  }
+  const rows: TabFunnelRow[] = [];
+  for (const [tab, v] of map) {
+    rows.push({
+      tab,
+      shares: v.shares,
+      landings: v.landings,
+      uniqueLanders: v.landers.size,
+      tabViews: v.tabViews,
+      ctr: v.shares > 0 ? ((v.landers.size > 0 ? v.landers.size : v.landings) / v.shares) * 100 : 0,
+      conversion: v.landings > 0 ? (v.tabViews / v.landings) * 100 : 0,
+    });
+  }
+  return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
+}
+
 
 export default function AdminAnalytics() {
   const [events, setEvents] = useState<LoggedEvent[]>([]);
