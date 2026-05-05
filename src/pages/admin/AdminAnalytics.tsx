@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { BarChart3, RefreshCw, Trash2, Users, MousePointerClick, CalendarIcon, GitCompareArrows, ArrowUp, ArrowDown, Minus, Send, Target, MousePointer2 } from "lucide-react";
+import { BarChart3, RefreshCw, Trash2, Users, MousePointerClick, CalendarIcon, GitCompareArrows, ArrowUp, ArrowDown, Minus, Send, Target, MousePointer2, TrendingUp } from "lucide-react";
 import { readEventsLog, clearEventsLog, type LoggedEvent } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine } from "recharts";
 
 interface CampaignRow {
   campaign: string;
@@ -171,6 +172,87 @@ function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
   return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
 }
 
+interface DailyPoint {
+  day: string;
+  label: string;
+  shares: number;
+  landings: number;
+  uniqueLanders: number;
+  tabViews: number;
+  ctr: number | null;
+  conversion: number | null;
+}
+
+// Format a Date as YYYY-MM-DD in America/Sao_Paulo (UTC-3, no DST)
+function spDayKey(d: Date): string {
+  const sp = new Date(d.getTime() - 3 * 3600 * 1000);
+  return sp.toISOString().slice(0, 10);
+}
+
+function computeDaily(
+  remote: RemoteEvent[],
+  from: Date,
+  to: Date,
+  campaign: string | null,
+): DailyPoint[] {
+  const buckets = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
+  const ensure = (k: string) => {
+    if (!buckets.has(k)) buckets.set(k, { shares: 0, landings: 0, tabViews: 0, landers: new Set() });
+    return buckets.get(k)!;
+  };
+
+  // Pre-fill all days in window so the chart shows continuous x-axis
+  const startKey = spDayKey(from);
+  const endKey = spDayKey(to);
+  const cursor = new Date(from);
+  cursor.setHours(12, 0, 0, 0);
+  let safety = 0;
+  while (safety++ < 400) {
+    const k = spDayKey(cursor);
+    ensure(k);
+    if (k >= endKey) break;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  ensure(startKey);
+
+  for (const ev of remote) {
+    const created = new Date(ev.created_at);
+    const key = spDayKey(created);
+    const bucket = ensure(key);
+    if (ev.event === "link_share") {
+      const tabSlug = (ev.props?.tab_slug as string) || (ev.tab as string) || null;
+      const inferred = ev.utm_campaign || (tabSlug ? `share-${tabSlug}` : null);
+      if (!inferred) continue;
+      if (campaign && inferred !== campaign) continue;
+      bucket.shares += 1;
+    } else if (ev.event === "landing_with_utm") {
+      if (campaign && ev.utm_campaign !== campaign) continue;
+      bucket.landings += 1;
+      if (ev.user_id) bucket.landers.add(ev.user_id);
+    } else if (ev.event === "tab_view" && ev.utm_campaign) {
+      if (campaign && ev.utm_campaign !== campaign) continue;
+      bucket.tabViews += 1;
+    }
+  }
+
+  return Array.from(buckets.entries())
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([day, v]) => {
+      const [y, m, d] = day.split("-");
+      return {
+        day,
+        label: `${d}/${m}`,
+        shares: v.shares,
+        landings: v.landings,
+        uniqueLanders: v.landers.size,
+        tabViews: v.tabViews,
+        ctr: v.shares > 0 ? ((v.landers.size > 0 ? v.landers.size : v.landings) / v.shares) * 100 : null,
+        conversion: v.landings > 0 ? (v.tabViews / v.landings) * 100 : null,
+      };
+    });
+}
+
+
 export default function AdminAnalytics() {
   const [events, setEvents] = useState<LoggedEvent[]>([]);
   const [remote, setRemote] = useState<RemoteEvent[]>([]);
@@ -246,6 +328,40 @@ export default function AdminAnalytics() {
 
   const funnelA = useMemo(() => computeFunnel(remoteA), [remoteA]);
   const funnelB = useMemo(() => computeFunnel(remoteB), [remoteB]);
+
+  const [selectedCampaign, setSelectedCampaign] = useState<string>("__all__");
+  const campaignOptions = useMemo(() => {
+    const set = new Set<string>();
+    funnelA.forEach((r) => set.add(r.campaign));
+    funnelB.forEach((r) => set.add(r.campaign));
+    return Array.from(set).sort();
+  }, [funnelA, funnelB]);
+  const dailyCampaign = selectedCampaign === "__all__" ? null : selectedCampaign;
+  const dailyA = useMemo(
+    () => computeDaily(remoteA, fromA, toA, dailyCampaign),
+    [remoteA, fromA, toA, dailyCampaign],
+  );
+  const dailyB = useMemo(
+    () => (compareOn ? computeDaily(remoteB, fromB, toB, dailyCampaign) : []),
+    [remoteB, fromB, toB, compareOn, dailyCampaign],
+  );
+  const dailyChart = useMemo(() => {
+    return dailyA.map((p, i) => ({
+      label: p.label,
+      ctrA: p.ctr,
+      convA: p.conversion,
+      ctrB: dailyB[i]?.ctr ?? null,
+      convB: dailyB[i]?.conversion ?? null,
+      sharesA: p.shares,
+      landingsA: p.landings,
+      tabViewsA: p.tabViews,
+      sharesB: dailyB[i]?.shares ?? 0,
+    }));
+  }, [dailyA, dailyB]);
+  const shareDays = useMemo(
+    () => dailyA.filter((p) => p.shares > 0).map((p) => p.label),
+    [dailyA],
+  );
 
   const aggA = useMemo(() => aggregate(events, fromA.getTime(), toA.getTime()), [events, fromA, toA]);
   const aggB = useMemo(
@@ -370,7 +486,123 @@ export default function AdminAnalytics() {
         )}
       </Card>
 
+      {/* Daily CTR & Conversion trend chart */}
+      <Card className="p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-xl tracking-wide text-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" /> Tendência diária
+          </h2>
+          <select
+            value={selectedCampaign}
+            onChange={(e) => setSelectedCampaign(e.target.value)}
+            className="bg-surface border border-border rounded-md text-xs font-body text-foreground px-3 py-2 min-h-[40px] focus:outline-none focus:border-primary/50"
+          >
+            <option value="__all__">Todas as campanhas</option>
+            {campaignOptions.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <p className="text-[10px] text-muted-foreground font-body">
+          CTR (landings ÷ shares) e Conversão (tab_views ÷ landings) por dia. Linhas verticais marcam dias em que houve compartilhamento.
+        </p>
+        {dailyChart.every((p) => p.ctrA === null && p.convA === null) ? (
+          <p className="text-xs text-muted-foreground italic font-body py-8 text-center">
+            Sem dados suficientes na janela. Compartilhe um link e aguarde landings.
+          </p>
+        ) : (
+          <div className="h-56 w-full -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyChart} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={10} tickMargin={6} />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={10}
+                  tickFormatter={(v) => `${v}%`}
+                  domain={[0, (dataMax: number) => Math.max(100, Math.ceil(dataMax / 25) * 25)]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 11,
+                  }}
+                  formatter={(value: number | null, name: string) => [
+                    value === null ? "—" : `${value.toFixed(1)}%`,
+                    name,
+                  ]}
+                  labelFormatter={(label, payload) => {
+                    const p = payload?.[0]?.payload as typeof dailyChart[number] | undefined;
+                    if (!p) return label;
+                    return `${label} · ${p.sharesA} shares · ${p.landingsA} landings · ${p.tabViewsA} views`;
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 10 }} iconType="line" />
+                {shareDays.map((day) => (
+                  <ReferenceLine
+                    key={day}
+                    x={day}
+                    stroke="hsl(var(--primary))"
+                    strokeDasharray="2 4"
+                    strokeOpacity={0.4}
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="ctrA"
+                  name="CTR"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="convA"
+                  name="Conversão"
+                  stroke="hsl(var(--accent))"
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+                {compareOn && (
+                  <Line
+                    type="monotone"
+                    dataKey="ctrB"
+                    name="CTR (B)"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+                {compareOn && (
+                  <Line
+                    type="monotone"
+                    dataKey="convB"
+                    name="Conversão (B)"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={1.5}
+                    strokeDasharray="2 2"
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Card>
+
       {/* Campaigns */}
+
       <Card className="p-4 space-y-3">
         <h2 className="font-display text-xl tracking-wide text-foreground">
           Por <span className="text-primary">utm_campaign</span>
