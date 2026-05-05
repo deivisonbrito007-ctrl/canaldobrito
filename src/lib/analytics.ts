@@ -104,7 +104,7 @@ export function clearEventsLog(): void {
 async function persistToSupabase(event: string, enriched: Record<string, unknown>): Promise<void> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
-    await supabase.from("analytics_events").insert({
+    await (supabase.from("analytics_events") as unknown as { insert: (row: Record<string, unknown>) => Promise<unknown> }).insert({
       event,
       user_id: String(enriched.user_id ?? ""),
       session_id: String(enriched.session_id ?? ""),
