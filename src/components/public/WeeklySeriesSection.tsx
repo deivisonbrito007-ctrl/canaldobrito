@@ -103,7 +103,8 @@ const SeriesCard = forwardRef<HTMLDivElement, SeriesCardProps>(({
       </div>
     </motion.div>
   );
-};
+});
+SeriesCard.displayName = "SeriesCard";
 
 export const WeeklySeriesSection = () => {
   const { data: series, isLoading } = useActiveSeries();
