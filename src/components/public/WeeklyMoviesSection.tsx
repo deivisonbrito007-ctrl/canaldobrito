@@ -142,9 +142,27 @@ export const WeeklyMoviesSection = () => {
             item={item}
             index={idx}
             hasTrailer={trailerMap.get(item.tmdb_id) === true}
-            onSelect={() => setSelected(item)}
+            onSelect={() => {
+              trackContentClick({
+                surface: "weekly-movies",
+                content_type: "movie",
+                content_id: item.tmdb_id ?? item.id,
+                content_title: item.title,
+                position: idx,
+                action: "open",
+              });
+              setSelected(item);
+            }}
             onPlayTrailer={(e) => {
               e.stopPropagation();
+              trackContentClick({
+                surface: "weekly-movies",
+                content_type: "movie",
+                content_id: item.tmdb_id ?? item.id,
+                content_title: item.title,
+                position: idx,
+                action: "trailer",
+              });
               setTrailerItem(item);
             }}
           />
