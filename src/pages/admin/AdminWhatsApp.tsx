@@ -369,7 +369,7 @@ const AdminWhatsApp = () => {
                         {emoji} {label}
                       </span>
                       <span className="text-[9px] font-mono opacity-60 bg-background/40 rounded px-1.5 py-0.5">
-                        ?tab={tab}
+                        /{TAB_SLUGS[tab]}
                       </span>
                     </div>
                     <p className="text-sm font-bold text-foreground leading-tight mt-1 truncate">
