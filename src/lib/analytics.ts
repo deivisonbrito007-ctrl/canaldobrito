@@ -100,6 +100,26 @@ export function clearEventsLog(): void {
   try { localStorage.removeItem(EVENTS_LOG_KEY); } catch { /* noop */ }
 }
 
+/** Best-effort persistence to Supabase analytics_events table (fire-and-forget). */
+async function persistToSupabase(event: string, enriched: Record<string, unknown>): Promise<void> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.from("analytics_events").insert({
+      event,
+      user_id: String(enriched.user_id ?? ""),
+      session_id: String(enriched.session_id ?? ""),
+      utm_source: (enriched.utm_source as string) ?? null,
+      utm_medium: (enriched.utm_medium as string) ?? null,
+      utm_campaign: (enriched.utm_campaign as string) ?? null,
+      utm_content: (enriched.utm_content as string) ?? null,
+      utm_term: (enriched.utm_term as string) ?? null,
+      tab: (enriched.tab as string) ?? (enriched.landing_tab as string) ?? null,
+      surface: (enriched.surface as string) ?? null,
+      props: enriched,
+    });
+  } catch { /* noop — never block UX on analytics */ }
+}
+
 /** Best-effort dispatch to whichever analytics provider is present. */
 export function track(eventName: string, props: Record<string, unknown> = {}): void {
   const enriched = {
@@ -109,6 +129,7 @@ export function track(eventName: string, props: Record<string, unknown> = {}): v
   };
 
   appendToEventsLog({ ts: Date.now(), event: eventName, props: enriched });
+  void persistToSupabase(eventName, enriched);
 
   try {
     window.dispatchEvent(new CustomEvent("analytics:track", { detail: { event: eventName, props: enriched } }));
