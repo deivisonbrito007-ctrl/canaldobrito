@@ -20,12 +20,7 @@ const AdminNovidades = lazy(() => import("./pages/admin/AdminNovidades"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
-const AdminApiSync = lazy(() => import("./pages/admin/AdminApiSync"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
-const AdminSyncStats = lazy(() => import("./pages/admin/AdminSyncStats"));
-const AdminCanais = lazy(() => import("./pages/admin/AdminCanais"));
-const AdminCanaisWhitelist = lazy(() => import("./pages/admin/AdminCanaisWhitelist"));
-const AdminLigas = lazy(() => import("./pages/admin/AdminLigas"));
 
 const queryClient = new QueryClient();
 
@@ -50,13 +45,14 @@ const App = () => (
                 <Route path="novidades" element={<AdminNovidades />} />
                 <Route path="whatsapp" element={<AdminWhatsApp />} />
                 <Route path="diagnostico-github" element={<AdminGitHubDiagnostico />} />
-                <Route path="api-sync" element={<AdminApiSync />} />
                 <Route path="auditoria" element={<AdminAudit />} />
-                <Route path="sync-stats" element={<AdminSyncStats />} />
-                <Route path="canais" element={<AdminCanais />} />
-                <Route path="canais-whitelist" element={<AdminCanaisWhitelist />} />
-                <Route path="ligas" element={<AdminLigas />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
+                {/* Redirects de rotas antigas removidas */}
+                <Route path="api-sync" element={<Navigate to="/admin/whatsapp" replace />} />
+                <Route path="sync-stats" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="canais" element={<Navigate to="/admin/whatsapp" replace />} />
+                <Route path="canais-whitelist" element={<Navigate to="/admin/whatsapp" replace />} />
+                <Route path="ligas" element={<Navigate to="/admin/whatsapp" replace />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

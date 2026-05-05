@@ -3,15 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { gameKey } from "@/lib/dedup";
 import { toast } from "sonner";
 
-// Lê a flag de pausa da API do cache de settings (preenchido por useSettings).
-// Default: pausado (true) por segurança até admin reativar.
-function useApiSyncPaused(): boolean {
-  const qc = useQueryClient();
-  const settings = qc.getQueryData<Record<string, string>>(["settings"]);
-  if (!settings) return true;
-  return settings.api_sync_paused !== "false";
-}
-
 export interface DailyGame {
   id: string;
   date: string;
@@ -32,22 +23,20 @@ export interface DailyGame {
   created_at: string;
 }
 
-// Filtro `manual only` agora controlado dinamicamente pelo setting `api_sync_paused`.
-// Quando pausado, esconde jogos vindos da API. Admin pode alternar em /admin → API.
+// Sistema 100% manual: somente jogos inseridos via WhatsApp parser são exibidos.
 
 export const useDailyGames = (date: string) => {
-  const manualOnly = useApiSyncPaused();
   return useQuery({
-    queryKey: ["daily_games", date, manualOnly ? "manual" : "all"],
+    queryKey: ["daily_games", date, "manual"],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("daily_games")
         .select("*")
         .eq("date", date)
         .eq("active", true)
-        .eq("archived", false);
-      if (manualOnly) q = q.eq("source", "manual");
-      const { data, error } = await q.order("game_time", { ascending: true });
+        .eq("archived", false)
+        .eq("source", "manual")
+        .order("game_time", { ascending: true });
       if (error) throw error;
       return data as DailyGame[];
     },
@@ -57,13 +46,15 @@ export const useDailyGames = (date: string) => {
 };
 
 export const useAllDailyGames = (date: string) => {
-  const manualOnly = useApiSyncPaused();
   return useQuery({
-    queryKey: ["daily_games", "all", date, manualOnly ? "manual" : "any"],
+    queryKey: ["daily_games", "all", date, "manual"],
     queryFn: async () => {
-      let q = supabase.from("daily_games").select("*").eq("date", date);
-      if (manualOnly) q = q.eq("source", "manual");
-      const { data, error } = await q.order("game_time", { ascending: true });
+      const { data, error } = await supabase
+        .from("daily_games")
+        .select("*")
+        .eq("date", date)
+        .eq("source", "manual")
+        .order("game_time", { ascending: true });
       if (error) throw error;
 
       // Auto-cleanup: detect and remove duplicates, keeping oldest
