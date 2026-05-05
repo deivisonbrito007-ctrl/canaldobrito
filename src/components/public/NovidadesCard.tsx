@@ -4,6 +4,7 @@ import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
+import { trackContentClick } from "@/lib/analytics";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ImageOff, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
