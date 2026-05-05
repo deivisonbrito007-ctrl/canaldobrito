@@ -102,8 +102,26 @@ export const NovidadesPage = () => {
     setSelected(item);
   };
 
+  // Atalho "/" abre a busca
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (searchOpen) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  const isEmptyAll = !isLoading && stats.all === 0 && weeklyCount === 0;
+
   return (
-    <div className="space-y-5 min-h-[80vh] pt-2 pb-2 animate-fade-up">
+    <div className="space-y-5 min-h-[80vh] pt-2 animate-fade-up" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
       {/* Hero header */}
       <div className="px-4 pt-4 pb-2 space-y-4">
         <div className="flex items-center justify-between gap-3">
