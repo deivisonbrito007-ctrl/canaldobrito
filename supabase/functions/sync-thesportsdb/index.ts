@@ -147,11 +147,38 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Carrega overrides persistentes (admin pode editar via UI, sem redeploy).
+    type Override = { competition_pattern: string; match_type: string; sport_type: string | null; channels: string[]; priority: number };
+    const { data: overridesData } = await supabase
+      .from("broadcast_overrides")
+      .select("competition_pattern, match_type, sport_type, channels, priority")
+      .eq("active", true)
+      .order("priority", { ascending: false });
+    const overrides: Override[] = (overridesData || []) as Override[];
+
+    const lookupOverride = (competition: string, sportType: string): string[] => {
+      if (!competition) return [];
+      const compLower = competition.toLowerCase();
+      for (const o of overrides) {
+        if (o.sport_type && o.sport_type !== sportType) continue;
+        const pat = (o.competition_pattern || "").toLowerCase();
+        if (!pat) continue;
+        let matched = false;
+        if (o.match_type === "exact") matched = compLower === pat;
+        else if (o.match_type === "regex") {
+          try { matched = new RegExp(o.competition_pattern, "i").test(competition); } catch { matched = false; }
+        } else matched = compLower.includes(pat);
+        if (matched && o.channels?.length) return [...o.channels];
+      }
+      return [];
+    };
+
     const base = `https://www.thesportsdb.com/api/v1/json/${apiKey}`;
     const allRows: any[] = [];
     const errors: string[] = [];
     const perSport: Record<string, number> = {};
     const fallbackHits: Record<string, number> = {};
+    const overrideHits: Record<string, number> = {};
     const noChannelByCompetition: Record<string, number> = {};
 
     // Para a data alvo (já em BRT), precisamos consultar dateEvent UTC equivalente.
