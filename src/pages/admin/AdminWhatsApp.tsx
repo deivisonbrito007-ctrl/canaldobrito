@@ -11,9 +11,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
-import { buildDeepLink } from "@/lib/utils";
+import { buildDeepLink, type PublicTab } from "@/lib/utils";
 
-type DeepTab = "live" | "schedule" | "highlights" | "novidades" | "home";
+type DeepTab = PublicTab;
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
@@ -43,7 +43,7 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
     <div className="glass-panel rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-bold text-foreground">{template.label}</span>
-        {template.tab && template.tab !== "home" && (
+        {template.tab && (
           <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
             ?tab={template.tab}
           </span>
@@ -298,7 +298,54 @@ const AdminWhatsApp = () => {
         </div>
       </div>
 
-      {/* Today preview */}
+      {/* Quick Tab Links */}
+      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <Link2 className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-sm font-bold text-foreground">Links rápidos por aba</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Compartilhe um link que abre o portal direto na aba escolhida — ideal para o status do WhatsApp.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {([
+            { tab: "live" as DeepTab, label: "🔴 Ao Vivo", msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇" },
+            { tab: "novidades" as DeepTab, label: "🆕 Novidades", msg: "🆕 Novidades da semana — confira os lançamentos 👇" },
+            { tab: "highlights" as DeepTab, label: "⭐ Sugestões", msg: "⭐ Sugestões de filmes e séries pra hoje 👇" },
+            { tab: "schedule" as DeepTab, label: "📅 Programação", msg: "📅 Programação completa de hoje no portal 👇" },
+          ]).map(({ tab, label, msg }) => {
+            const link = buildDeepLink(siteUrl, tab);
+            const text = `${msg}\n\n${link}`;
+            return (
+              <div key={tab} className="rounded-lg border border-border/30 bg-background/40 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-foreground">{label}</span>
+                  <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
+                    ?tab={tab}
+                  </span>
+                </div>
+                <code className="block text-[10px] text-muted-foreground bg-background/60 rounded px-2 py-1.5 truncate">
+                  {link}
+                </code>
+                <div className="flex gap-2">
+                  <CopyButton text={link} label="Link" />
+                  <Button
+                    size="sm"
+                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")}
+                    className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Status
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="admin-stagger-4">
         <DayPreviewCard
           title="Hoje"
