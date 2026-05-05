@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { BarChart3, RefreshCw, Trash2, Users, MousePointerClick, CalendarIcon, GitCompareArrows, ArrowUp, ArrowDown, Minus, Send, Target, MousePointer2 } from "lucide-react";
+import { BarChart3, RefreshCw, Trash2, Users, MousePointerClick, CalendarIcon, GitCompareArrows, ArrowUp, ArrowDown, Minus, Send, Target, MousePointer2, TrendingUp } from "lucide-react";
 import { readEventsLog, clearEventsLog, type LoggedEvent } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine } from "recharts";
 
 interface CampaignRow {
   campaign: string;
