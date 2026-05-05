@@ -4,6 +4,7 @@ import { ContentDetailSheet } from "./ContentDetailSheet";
 import { TrailerModal } from "./TrailerModal";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
+import { trackContentClick } from "@/lib/analytics";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ImageOff, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -153,6 +154,14 @@ export const NovidadesCard = () => {
     if (didSwipe.current) return;
     const clickedItem = items?.[safeIndex];
     if (!clickedItem) return;
+    trackContentClick({
+      surface: "novidades",
+      content_type: clickedItem.content_type ?? "news",
+      content_id: clickedItem.tmdb_id ?? clickedItem.id,
+      content_title: clickedItem.title,
+      position: safeIndex,
+      action: "open",
+    });
     setSelectedItem(clickedItem);
     setSheetOpen(true);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -169,6 +178,14 @@ export const NovidadesCard = () => {
     e.stopPropagation();
     const clickedItem = items?.[safeIndex];
     if (!clickedItem?.tmdb_id) return;
+    trackContentClick({
+      surface: "novidades",
+      content_type: clickedItem.content_type ?? "news",
+      content_id: clickedItem.tmdb_id,
+      content_title: clickedItem.title,
+      position: safeIndex,
+      action: "trailer",
+    });
     setTrailerItem(clickedItem);
     if (timerRef.current) clearInterval(timerRef.current);
   };

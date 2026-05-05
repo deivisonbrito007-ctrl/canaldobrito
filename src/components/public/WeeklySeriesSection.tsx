@@ -6,6 +6,7 @@ import { TrailerModal } from "./TrailerModal";
 import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
+import { trackContentClick } from "@/lib/analytics";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 
@@ -143,9 +144,27 @@ export const WeeklySeriesSection = () => {
             item={item}
             index={idx}
             hasTrailer={trailerMap.get(item.tmdb_id) === true}
-            onSelect={() => setSelected(item)}
+            onSelect={() => {
+              trackContentClick({
+                surface: "weekly-series",
+                content_type: "series",
+                content_id: item.tmdb_id ?? item.id,
+                content_title: item.title,
+                position: idx,
+                action: "open",
+              });
+              setSelected(item);
+            }}
             onPlayTrailer={(e) => {
               e.stopPropagation();
+              trackContentClick({
+                surface: "weekly-series",
+                content_type: "series",
+                content_id: item.tmdb_id ?? item.id,
+                content_title: item.title,
+                position: idx,
+                action: "trailer",
+              });
               setTrailerItem(item);
             }}
           />
