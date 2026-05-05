@@ -51,6 +51,7 @@ const App = () => (
                 <Route path="api-sync" element={<AdminApiSync />} />
                 <Route path="auditoria" element={<AdminAudit />} />
                 <Route path="sync-stats" element={<AdminSyncStats />} />
+                <Route path="canais" element={<AdminCanais />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
               </Route>
               <Route path="*" element={<NotFound />} />
