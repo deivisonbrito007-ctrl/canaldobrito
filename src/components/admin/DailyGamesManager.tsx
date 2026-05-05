@@ -405,8 +405,8 @@ const AddGameForm = ({
       </div>
       <Input value={channels} onChange={(e) => setChannels(e.target.value)} placeholder="Canais (vírgula)" className="h-8 text-xs" />
       <div className="flex gap-2">
-        <Button size="sm" onClick={handleAdd} className="h-7 text-xs bg-emerald-600">
-          <Plus className="h-3 w-3 mr-1" /> Adicionar
+        <Button size="sm" onClick={handleAdd} disabled={insertGames.isPending} className="h-7 text-xs bg-emerald-600">
+          <Plus className="h-3 w-3 mr-1" /> {insertGames.isPending ? "Adicionando..." : "Adicionar"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onClose} className="h-7 text-xs">
           Cancelar
