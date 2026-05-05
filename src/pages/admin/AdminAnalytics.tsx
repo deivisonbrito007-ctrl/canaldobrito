@@ -329,6 +329,40 @@ export default function AdminAnalytics() {
   const funnelA = useMemo(() => computeFunnel(remoteA), [remoteA]);
   const funnelB = useMemo(() => computeFunnel(remoteB), [remoteB]);
 
+  const [selectedCampaign, setSelectedCampaign] = useState<string>("__all__");
+  const campaignOptions = useMemo(() => {
+    const set = new Set<string>();
+    funnelA.forEach((r) => set.add(r.campaign));
+    funnelB.forEach((r) => set.add(r.campaign));
+    return Array.from(set).sort();
+  }, [funnelA, funnelB]);
+  const dailyCampaign = selectedCampaign === "__all__" ? null : selectedCampaign;
+  const dailyA = useMemo(
+    () => computeDaily(remoteA, fromA, toA, dailyCampaign),
+    [remoteA, fromA, toA, dailyCampaign],
+  );
+  const dailyB = useMemo(
+    () => (compareOn ? computeDaily(remoteB, fromB, toB, dailyCampaign) : []),
+    [remoteB, fromB, toB, compareOn, dailyCampaign],
+  );
+  const dailyChart = useMemo(() => {
+    return dailyA.map((p, i) => ({
+      label: p.label,
+      ctrA: p.ctr,
+      convA: p.conversion,
+      ctrB: dailyB[i]?.ctr ?? null,
+      convB: dailyB[i]?.conversion ?? null,
+      sharesA: p.shares,
+      landingsA: p.landings,
+      tabViewsA: p.tabViews,
+      sharesB: dailyB[i]?.shares ?? 0,
+    }));
+  }, [dailyA, dailyB]);
+  const shareDays = useMemo(
+    () => dailyA.filter((p) => p.shares > 0).map((p) => p.label),
+    [dailyA],
+  );
+
   const aggA = useMemo(() => aggregate(events, fromA.getTime(), toA.getTime()), [events, fromA, toA]);
   const aggB = useMemo(
     () => (compareOn ? aggregate(events, fromB.getTime(), toB.getTime()) : null),
