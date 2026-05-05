@@ -352,8 +352,19 @@ Deno.serve(async (req) => {
       tvStats[d] = { events_with_tv: s.events_with_tv.size, br_channels: s.br_channels, events_with_br: s.events_with_br.size };
     }
 
+    // Coleta todos os eventos válidos primeiro (para fazer lookup TV por evento em batch)
+    type PreparedEvent = {
+      ev: any;
+      sportType: string;
+      home: string;
+      away: string;
+      competition: string;
+      competitionDetail: string | null;
+      brt: { date: string; time: string };
+    };
+    const prepared: PreparedEvent[] = [];
+
     for (const sport of sports) {
-      let countForSport = 0;
       const rawEvents: any[] = [];
       for (const d of candidateDates) {
         const apiUrl = `${base}/eventsday.php?d=${d}&s=${encodeURIComponent(sport)}`;
@@ -366,61 +377,102 @@ Deno.serve(async (req) => {
       for (const ev of rawEvents) {
         const brt = toBRT(ev.dateEvent, ev.strTime ?? ev.strTimestamp ?? null);
         if (!brt || brt.date !== dateParam) continue;
-
         const sportType = SPORT_MAP[sport] || "football";
         const home = ev.strHomeTeam || ev.strEvent || "TBD";
         const away = ev.strAwayTeam || "—";
         const competition = ev.strLeague || sport;
         const competitionDetail = ev.strSeason ? `${ev.strSeason}${ev.intRound ? ` • R${ev.intRound}` : ""}` : (ev.intRound ? `R${ev.intRound}` : null);
 
-        // Allowlist: filtra ligas irrelevantes para o público brasileiro
         if (!isLeagueAllowed(competition, sportType)) {
           skippedByAllowlist[competition] = (skippedByAllowlist[competition] || 0) + 1;
           continue;
         }
-
-        // 1) Canais vindos do eventstv.php (canal específico, confiável)
-        let channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
-        let usedOverride = false;
-
-        // 2) Override persistente (broadcast_overrides). Sem fallback hardcoded.
-        if (channels.length === 0) {
-          const ov = lookupOverride(competition, sportType);
-          if (ov.length > 0) {
-            channels = ov;
-            usedOverride = true;
-          }
-        }
-
-        if (usedOverride) {
-          overrideHits[competition] = (overrideHits[competition] || 0) + 1;
-        } else if (channels.length === 0) {
-          noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
-        }
-
-        // Mantém o evento na programação mesmo sem canal confirmado.
-        // O canal só é exibido quando vier confirmado (eventstv.php BR ou fallback validado).
-        allRows.push({
-          date: brt.date,
-          home_team: home,
-          away_team: away,
-          competition,
-          competition_detail: competitionDetail,
-          game_time: brt.time,
-          channels,
-          is_live: false,
-          is_womens: false,
-          active: true,
-          archived: false,
-          status_short: "NS",
-          elapsed_minutes: null,
-          sport_type: sportType,
-          source: "thesportsdb",
-          external_id: `tsdb:${ev.idEvent}`,
-        });
-        countForSport++;
+        prepared.push({ ev, sportType, home, away, competition, competitionDetail, brt });
+        perSport[sport] = (perSport[sport] || 0) + 1;
       }
-      perSport[sport] = countForSport;
+    }
+
+    // Lookup por evento (lookuptv.php?id=) — em paralelo, lotes de 10.
+    // Só busca para eventos que NÃO têm canal no feed diário.
+    const lookupTvCache = new Map<string, string[]>();
+    const needsLookup = prepared.filter((p) => {
+      const id = String(p.ev.idEvent);
+      return !tvByEvent.has(id) || (tvByEvent.get(id) || []).length === 0;
+    });
+    let lookupHits = 0;
+    const LOOKUP_BATCH = 10;
+    for (let i = 0; i < needsLookup.length; i += LOOKUP_BATCH) {
+      const slice = needsLookup.slice(i, i + LOOKUP_BATCH);
+      await Promise.all(slice.map(async (p) => {
+        const id = String(p.ev.idEvent);
+        try {
+          const r = await fetch(`${base}/lookuptv.php?id=${id}`);
+          if (!r.ok) return;
+          const j = await r.json();
+          const list: any[] = Array.isArray(j?.tvevents) ? j.tvevents : Array.isArray(j?.tvevent) ? j.tvevent : [];
+          const found: string[] = [];
+          for (const t of list) {
+            const ch = (t.strChannel || "").trim();
+            if (!ch) continue;
+            if (!isBrazilChannel(t.strCountry || "", ch)) continue;
+            const norm = normalizeChannel(ch);
+            if (!found.some((x) => x.toLowerCase() === norm.toLowerCase())) found.push(norm);
+          }
+          if (found.length) {
+            lookupTvCache.set(id, found);
+            lookupHits++;
+          }
+        } catch (_) { /* noop */ }
+      }));
+    }
+    console.log(`[DEBUG] Lookup por evento: ${lookupHits}/${needsLookup.length} eventos com canal`);
+
+    // Monta as linhas finais aplicando origem dos canais
+    for (const p of prepared) {
+      const id = String(p.ev.idEvent);
+      let channels: string[] = [];
+      let source: "feed" | "lookup" | "override-match" | "override-competition" | "none" = "none";
+
+      const feed = tvByEvent.get(id) || [];
+      const lookup = lookupTvCache.get(id) || [];
+      const ov = lookupOverride(p.competition, p.sportType, p.home, p.away, p.brt.date);
+
+      if (ov.scope === "match") {
+        channels = ov.channels;
+        source = "override-match";
+      } else if (feed.length > 0 || lookup.length > 0) {
+        channels = Array.from(new Set([...feed, ...lookup])).slice(0, 6);
+        source = feed.length > 0 ? "feed" : "lookup";
+      } else if (ov.scope === "competition") {
+        channels = ov.channels;
+        source = "override-competition";
+      }
+
+      if (source === "override-match" || source === "override-competition") {
+        overrideHits[p.competition] = (overrideHits[p.competition] || 0) + 1;
+      } else if (channels.length === 0) {
+        noChannelByCompetition[p.competition] = (noChannelByCompetition[p.competition] || 0) + 1;
+      }
+
+      allRows.push({
+        date: p.brt.date,
+        home_team: p.home,
+        away_team: p.away,
+        competition: p.competition,
+        competition_detail: p.competitionDetail,
+        game_time: p.brt.time,
+        channels,
+        channels_source: { source, feed_count: feed.length, lookup_count: lookup.length, override_scope: ov.scope },
+        is_live: false,
+        is_womens: false,
+        active: true,
+        archived: false,
+        status_short: "NS",
+        elapsed_minutes: null,
+        sport_type: p.sportType,
+        source: "thesportsdb",
+        external_id: `tsdb:${p.ev.idEvent}`,
+      });
     }
 
     // Pré-busca TODAS as linhas existentes da data alvo numa única query, indexa em memória.
