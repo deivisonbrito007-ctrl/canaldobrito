@@ -292,34 +292,48 @@ export const LivePageContent = () => {
     [liveGames, filter]
   );
 
+  const hasLive = liveGames.length > 0;
+
   return (
-    <div className="space-y-4 min-h-[80vh] pb-4">
+    <div className="space-y-4 min-h-[80vh] pb-[calc(1rem+env(safe-area-inset-bottom))]">
       {/* ─── Hero Header ─── */}
       <section className="px-3 pt-4 animate-fade-up">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-destructive/10 via-card to-card border border-destructive/30">
-          {/* Pulsing glow border */}
-          <div className="absolute inset-0 rounded-2xl border border-destructive/40 animate-pulse pointer-events-none" />
+          {/* Pulsing glow border (respects prefers-reduced-motion) */}
+          <div className="absolute inset-0 rounded-2xl border border-destructive/40 motion-safe:animate-pulse pointer-events-none" />
           {/* Background glow blob */}
           <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-destructive/10 blur-3xl pointer-events-none" />
 
-          <div className="relative p-4 space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1.5 min-w-0">
+          <div className="relative p-3 sm:p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 border border-destructive/40 px-2.5 py-1">
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-ping opacity-70" />
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-destructive motion-safe:animate-ping opacity-70" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
                   </span>
                   <span className="text-[10px] uppercase font-extrabold tracking-wider text-destructive font-body">
                     Ao Vivo
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground font-body leading-none tracking-tight">
-                  {liveGames.length}{" "}
-                  <span className="text-base font-bold text-muted-foreground">
-                    {liveGames.length === 1 ? "jogo agora" : "jogos agora"}
-                  </span>
-                </h1>
+                {hasLive ? (
+                  <h1
+                    className="text-xl sm:text-3xl font-extrabold text-foreground font-body leading-none tracking-tight"
+                    aria-live="polite"
+                  >
+                    {liveGames.length}{" "}
+                    <span className="text-sm sm:text-base font-bold text-muted-foreground">
+                      {liveGames.length === 1 ? "jogo agora" : "jogos agora"}
+                    </span>
+                  </h1>
+                ) : (
+                  <p
+                    className="text-[11px] sm:text-xs text-muted-foreground font-body"
+                    aria-live="polite"
+                  >
+                    Sem jogos ao vivo no momento
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col items-end shrink-0 gap-1">
@@ -339,7 +353,7 @@ export const LivePageContent = () => {
                       aria-live="polite"
                     >
                       <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-primary animate-ping opacity-70" />
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-primary motion-safe:animate-ping opacity-70" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
                       </span>
                       <span className="text-[9px] font-bold uppercase tracking-wider text-primary font-body">
@@ -351,45 +365,49 @@ export const LivePageContent = () => {
               </div>
             </div>
 
-            {/* Filter pills (also act as stats) */}
-            <div
-              data-horizontal-scroll
-              className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1"
-              role="tablist"
-              aria-label="Filtrar por esporte"
-            >
-              {FILTERS.map((f) => {
-                const count = stats[f.id];
-                const active = filter === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => setFilter(f.id)}
-                    role="tab"
-                    aria-selected={active}
-                    aria-label={`${f.label} (${count} ao vivo)`}
-                    className={cn(
-                      "shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all duration-200 min-h-[40px]",
-                      "text-[11px] font-bold font-body",
-                      active
-                        ? "bg-destructive text-destructive-foreground border-destructive shadow-[0_0_12px_hsl(0,84%,60%,0.4)]"
-                        : "bg-card/60 text-foreground/80 border-border/60 hover:border-destructive/30 hover:text-foreground"
-                    )}
-                  >
-                    <span>{f.emoji}</span>
-                    <span>{f.label}</span>
-                    <span
-                      className={cn(
-                        "tabular-nums px-1.5 py-0.5 rounded-md text-[9px] font-extrabold",
-                        active ? "bg-destructive-foreground/20 text-destructive-foreground" : "bg-muted/50 text-muted-foreground"
-                      )}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Filter pills — only show when there are live games */}
+            {hasLive && (
+              <div className="relative -mx-1">
+                <div
+                  data-horizontal-scroll
+                  className="flex gap-1.5 overflow-x-auto scrollbar-hide px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
+                  role="tablist"
+                  aria-label="Filtrar por esporte"
+                >
+                  {FILTERS.filter((f) => f.id === "all" || stats[f.id] > 0).map((f) => {
+                    const count = stats[f.id];
+                    const active = filter === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setFilter(f.id)}
+                        role="tab"
+                        aria-selected={active}
+                        aria-label={`${f.label} (${count} ao vivo)`}
+                        className={cn(
+                          "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 min-h-[40px]",
+                          "text-[11px] font-bold font-body",
+                          active
+                            ? "bg-destructive text-destructive-foreground border-destructive shadow-[0_0_12px_hsl(0,84%,60%,0.4)]"
+                            : "bg-card/60 text-foreground/80 border-border/60 hover:border-destructive/30 hover:text-foreground"
+                        )}
+                      >
+                        <span>{f.emoji}</span>
+                        <span>{f.label}</span>
+                        <span
+                          className={cn(
+                            "tabular-nums px-1.5 py-0.5 rounded-md text-[9px] font-extrabold",
+                            active ? "bg-destructive-foreground/20 text-destructive-foreground" : "bg-muted/50 text-muted-foreground"
+                          )}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
