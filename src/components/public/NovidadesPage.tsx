@@ -37,11 +37,21 @@ const PosterSkeletonGrid = () => (
   </div>
 );
 
+type SortId = "recent" | "rating" | "title" | "year";
+
+const SORT_OPTIONS: { id: SortId; label: string }[] = [
+  { id: "recent", label: "Mais recentes" },
+  { id: "rating", label: "Melhor avaliados" },
+  { id: "title", label: "A–Z" },
+  { id: "year", label: "Ano" },
+];
+
 export const NovidadesPage = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
   const { data: weeklyMovies } = useActiveMovies();
   const { data: weeklySeries } = useActiveSeries();
   const [filter, setFilter] = useState<FilterId>("all");
+  const [sort, setSort] = useState<SortId>("recent");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selected, setSelected] = useState<NewsRelease | null>(null);
@@ -65,11 +75,19 @@ export const NovidadesPage = () => {
   }, [all]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return all;
-    if (filter === "movie") return all.filter((i) => i.content_type === "movie");
-    if (filter === "series") return all.filter((i) => i.content_type === "series" || i.content_type === "tv");
-    return all.filter((i) => i.badge_type === filter);
-  }, [all, filter]);
+    let list: NewsRelease[];
+    if (filter === "all") list = all;
+    else if (filter === "movie") list = all.filter((i) => i.content_type === "movie");
+    else if (filter === "series") list = all.filter((i) => i.content_type === "series" || i.content_type === "tv");
+    else list = all.filter((i) => i.badge_type === filter);
+
+    const sorted = [...list];
+    if (sort === "rating") sorted.sort((a, b) => (Number(b.rating ?? 0)) - (Number(a.rating ?? 0)));
+    else if (sort === "title") sorted.sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
+    else if (sort === "year") sorted.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+    // "recent": rely on the original order from useActiveNewsReleases (created_at desc)
+    return sorted;
+  }, [all, filter, sort]);
 
   const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "Todos";
 
@@ -141,20 +159,33 @@ export const NovidadesPage = () => {
       {/* Grid / Lista — só aparece quando há filtro ativo (evita repetir o carrossel acima) */}
       {filter !== "all" && (
         <div className="space-y-3">
-          <div className="px-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
+          <div className="px-4 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body min-w-0 truncate">
               {filterLabel}
               <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
             </h2>
-            <button
-              type="button"
-              onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
-              aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
-            >
-              {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
-              {viewMode === "grid" ? "Lista" : "Grade"}
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="sr-only" htmlFor="novidades-sort">Ordenar</label>
+              <select
+                id="novidades-sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortId)}
+                className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-muted-foreground font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[36px]"
+                aria-label="Ordenar resultados"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
+                aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
+              >
+                {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {isLoading ? (

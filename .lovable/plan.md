@@ -1,41 +1,78 @@
-# Plano: Restaurar carrossel destacado de Novidades no topo
+## Contexto
 
-Trazer de volta o **NovidadesCard** original (carrossel grande com auto-rotate, badges e trailer) para o topo da aba "Filmes e Séries", substituindo o `FeaturedCarousel` minimalista atual.
+Boa parte da estrutura proposta no prompt **já existe** na página `NovidadesPage.tsx`:
 
-## 1. NovidadesPage.tsx
+- Hero header com título, contador e botão de busca
+- Filtros rápidos horizontais (`FilterChip`) com snap + scroll
+- Carrossel de destaques (`NovidadesCard`) — auto-rotate + trailer
+- Sugestões da Semana (`WeeklyMoviesSection` / `WeeklySeriesSection`)
+- Grid/Lista (`ContentCard`, `ContentListItem`) com toggle
+- Busca (`SearchModal`)
+- Badges (`BadgePill`) com gradientes
+- Skeleton shimmer + lazy loading
 
-### Imports
-- Remover `FeaturedCarousel`.
-- Adicionar `import { NovidadesCard } from "@/components/public/NovidadesCard"`.
+Existe inclusive um `FeaturedCarousel.tsx` (versão "rica" com backdrop grande, dots e ações) que **não está em uso** — foi substituído pelo `NovidadesCard` por decisão anterior.
 
-### Curadoria do hero
-O `NovidadesCard` já consome `useActiveNewsReleases` internamente — passa a renderizar **todos os news_releases ativos** com auto-rotação. Como ele é o destaque oficial, **manter no topo sem deduplicação manual** (o `NovidadesCard` lida com sua própria curadoria via `display_order` e `badge_type`).
+Portanto o plano foca apenas nos **gaps reais** entre o spec e o que já está no ar, evitando refazer o que funciona.
 
-### Filtro adicional
-- Adicionar filtro **"🎞️ Novas Temporadas"** (`nova_temporada`) ao array `FILTERS` e ao `stats`. Já existe `getBadgeLabel("nova_temporada")` no NovidadesCard.
+## O que será feito
 
-### Estrutura final da página
+### 1. Carrossel de destaques mais rico (opcional/aditivo)
+- **Manter** o `NovidadesCard` como hero principal (decisão já registrada em memória).
+- **Não** voltar a usar `FeaturedCarousel` agora — evita conflito visual com NovidadesCard. Será removido do projeto se confirmado que não há mais uso.
 
-```text
-[Hero header + filtros]
-       │
-[NovidadesCard]   ← carrossel destacado original (auto-rotate)
-       │
-[Destaques da Semana]   ← WeeklyMovies + WeeklySeries (filter=all)
-       │
-[Explorar todos]   ← Grid/Lista com TODOS os news_releases filtrados
-```
+### 2. Melhorias no `ContentCard` (grid)
+- Adicionar overlay de hover com botão "Ver Detalhes" (atualmente só escala).
+- Garantir badge de tipo (Filme/Série) no canto, além do badge de status.
+- Manter rating com estrela amarela já existente.
 
-### Dedup
-Como o NovidadesCard já mostra todos os items, manter o grid **sem dedup** quando `filter === "all"` para o usuário ainda conseguir explorar e filtrar a lista completa abaixo. Renomear cabeçalho para **"Catálogo"** (em vez de "Explorar") deixando claro que é a lista navegável completa.
+### 3. Melhorias no `ContentListItem` (lista)
+- Adicionar `ChevronRight` à direita para indicar ação.
+- Mostrar `BadgePill` size `xs` ao lado do tipo + ano.
+- Garantir line-clamp 2 no overview.
 
-### Quando o filtro está ativo
-- Esconder o `NovidadesCard` (ele não aceita filtros) e mostrar apenas o grid filtrado + título do filtro.
-- Esconder seções da Semana (mantém comportamento atual).
+### 4. Ordenação na grade/lista
+- Adicionar `<select>` simples acima da grid quando houver filtro ativo:
+  - Mais Recentes (padrão, por `created_at`)
+  - Melhor Avaliados (`rating` desc)
+  - A–Z (`title`)
+  - Ano (`year` desc)
+- Estado local; sem persistir.
 
-## 2. Limpeza
+### 5. Prefetch de imagens vizinhas no carrossel
+- No `NovidadesCard`, adicionar `link rel=preload as=image` para o item anterior e próximo do índice atual, dentro de `useEffect`.
 
-- Componente `src/components/public/novidades/FeaturedCarousel.tsx` fica órfão. Manter o arquivo (não deletar) caso o usuário queira voltar à versão minimalista no futuro.
+### 6. Polimento dos `BadgePill`
+- Conferir glow/shadow nos tamanhos `xs` e `sm` (atualmente só `md` tem glow forte).
+- Padronizar `nova_temporada` com emoji 🎞️ (já usado no filtro) ou manter 📺 — alinhar com o filtro chip.
 
-## Arquivos tocados
-- `src/components/public/NovidadesPage.tsx` (editar)
+### 7. SEO / título da aba
+- Já atualizado em mensagem anterior (mantido).
+
+## O que NÃO entra (justificativa)
+
+- **Página dedicada `/s/novidades`**: a UX atual usa abas dentro de `Index.tsx` (memória `home-page-layout`). Criar rota separada quebraria o padrão.
+- **Infinite scroll**: volume atual de itens é pequeno (curadoria manual). Paginação não traz ganho.
+- **Favoritos / Compartilhar por item**: feature nova, fora do escopo deste prompt visual.
+- **Auto-play 5s no carrossel**: já existe no `NovidadesCard`.
+- **Voltar a usar `FeaturedCarousel`**: o usuário já pediu explicitamente para manter o `NovidadesCard` como hero.
+
+## Arquivos afetados
+
+- `src/components/public/novidades/ContentCard.tsx` — overlay hover + badge tipo
+- `src/components/public/novidades/ContentListItem.tsx` — chevron + badge
+- `src/components/public/novidades/BadgePill.tsx` — glow nos tamanhos menores
+- `src/components/public/NovidadesPage.tsx` — adicionar `<select>` de ordenação e aplicar sort
+- `src/components/public/NovidadesCard.tsx` — prefetch das imagens vizinhas
+- (cleanup) remover `src/components/public/novidades/FeaturedCarousel.tsx` se sem referências
+
+## Resultado esperado
+
+A aba **Filmes e Séries** ganha:
+- Cards mais informativos no grid (overlay de ação + badge tipo)
+- Lista com chevron e badge de status
+- Ordenação rápida quando o usuário filtra
+- Carrossel ainda mais fluido (prefetch de imagens)
+- Badges visualmente consistentes em todos os tamanhos
+
+Sem quebrar a estrutura de abas atual nem a hierarquia visual já validada.

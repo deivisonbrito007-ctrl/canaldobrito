@@ -16,8 +16,11 @@ export const ContentCard = ({ item, onSelect }: ContentCardProps) => (
     className="group text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-xl"
   >
     <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-2 border border-border mb-2 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:border-primary/30">
-      <div className="absolute top-2 left-2 z-10">
+      <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1">
         <BadgePill type={item.badge_type} size="xs" />
+        {(item.content_type === "movie" || item.content_type === "series" || item.content_type === "tv") && (
+          <BadgePill type={item.content_type} size="xs" />
+        )}
       </div>
       {item.rating != null && item.rating > 0 && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
