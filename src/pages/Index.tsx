@@ -196,6 +196,9 @@ const Index = () => {
 
       <PublicFooter />
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <Suspense fallback={null}>
+        <LazyAnalyticsDebugOverlay />
+      </Suspense>
     </div>
   );
 };
