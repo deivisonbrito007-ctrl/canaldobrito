@@ -486,7 +486,123 @@ export default function AdminAnalytics() {
         )}
       </Card>
 
+      {/* Daily CTR & Conversion trend chart */}
+      <Card className="p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-xl tracking-wide text-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" /> Tendência diária
+          </h2>
+          <select
+            value={selectedCampaign}
+            onChange={(e) => setSelectedCampaign(e.target.value)}
+            className="bg-surface border border-border rounded-md text-xs font-body text-foreground px-3 py-2 min-h-[40px] focus:outline-none focus:border-primary/50"
+          >
+            <option value="__all__">Todas as campanhas</option>
+            {campaignOptions.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <p className="text-[10px] text-muted-foreground font-body">
+          CTR (landings ÷ shares) e Conversão (tab_views ÷ landings) por dia. Linhas verticais marcam dias em que houve compartilhamento.
+        </p>
+        {dailyChart.every((p) => p.ctrA === null && p.convA === null) ? (
+          <p className="text-xs text-muted-foreground italic font-body py-8 text-center">
+            Sem dados suficientes na janela. Compartilhe um link e aguarde landings.
+          </p>
+        ) : (
+          <div className="h-56 w-full -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyChart} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={10} tickMargin={6} />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={10}
+                  tickFormatter={(v) => `${v}%`}
+                  domain={[0, (dataMax: number) => Math.max(100, Math.ceil(dataMax / 25) * 25)]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 11,
+                  }}
+                  formatter={(value: number | null, name: string) => [
+                    value === null ? "—" : `${value.toFixed(1)}%`,
+                    name,
+                  ]}
+                  labelFormatter={(label, payload) => {
+                    const p = payload?.[0]?.payload as typeof dailyChart[number] | undefined;
+                    if (!p) return label;
+                    return `${label} · ${p.sharesA} shares · ${p.landingsA} landings · ${p.tabViewsA} views`;
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 10 }} iconType="line" />
+                {shareDays.map((day) => (
+                  <ReferenceLine
+                    key={day}
+                    x={day}
+                    stroke="hsl(var(--primary))"
+                    strokeDasharray="2 4"
+                    strokeOpacity={0.4}
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="ctrA"
+                  name="CTR"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="convA"
+                  name="Conversão"
+                  stroke="hsl(var(--accent))"
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+                {compareOn && (
+                  <Line
+                    type="monotone"
+                    dataKey="ctrB"
+                    name="CTR (B)"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+                {compareOn && (
+                  <Line
+                    type="monotone"
+                    dataKey="convB"
+                    name="Conversão (B)"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={1.5}
+                    strokeDasharray="2 2"
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Card>
+
       {/* Campaigns */}
+
       <Card className="p-4 space-y-3">
         <h2 className="font-display text-xl tracking-wide text-foreground">
           Por <span className="text-primary">utm_campaign</span>
