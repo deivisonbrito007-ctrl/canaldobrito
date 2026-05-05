@@ -97,6 +97,7 @@ export const useAllDailyGames = (date: string) => {
     },
     refetchInterval: 60_000,
   });
+};
 
 /**
  * Insert daily games with automatic dedup:
