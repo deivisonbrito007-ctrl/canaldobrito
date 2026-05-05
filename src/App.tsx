@@ -24,6 +24,7 @@ const AdminApiSync = lazy(() => import("./pages/admin/AdminApiSync"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminSyncStats = lazy(() => import("./pages/admin/AdminSyncStats"));
 const AdminCanais = lazy(() => import("./pages/admin/AdminCanais"));
+const AdminLigas = lazy(() => import("./pages/admin/AdminLigas"));
 
 const queryClient = new QueryClient();
 
