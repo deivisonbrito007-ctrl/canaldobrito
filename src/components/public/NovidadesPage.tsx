@@ -138,49 +138,51 @@ export const NovidadesPage = () => {
         </div>
       )}
 
-      {/* Grid / Lista */}
-      <div className="space-y-3">
-        <div className="px-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
-            {filter === "all" ? "Catálogo" : filterLabel}
-            <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
-          </h2>
-          <button
-            type="button"
-            onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
-            aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
-          >
-            {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
-            {viewMode === "grid" ? "Lista" : "Grade"}
-          </button>
-        </div>
+      {/* Grid / Lista — só aparece quando há filtro ativo (evita repetir o carrossel acima) */}
+      {filter !== "all" && (
+        <div className="space-y-3">
+          <div className="px-4 flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
+              {filterLabel}
+              <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
+              aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
+            >
+              {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+              {viewMode === "grid" ? "Lista" : "Grade"}
+            </button>
+          </div>
 
-        {isLoading ? (
-          <PosterSkeletonGrid />
-        ) : filtered.length === 0 ? (
-          <div className="px-4">
-            <div className="rounded-2xl border border-border bg-surface-2 p-8 text-center space-y-2">
-              <p className="text-sm font-bold text-foreground font-body">Nada por aqui ainda</p>
-              <p className="text-xs text-muted-foreground font-body">
-                Tente outro filtro ou volte mais tarde para conferir as novidades.
-              </p>
+          {isLoading ? (
+            <PosterSkeletonGrid />
+          ) : filtered.length === 0 ? (
+            <div className="px-4">
+              <div className="rounded-2xl border border-border bg-surface-2 p-8 text-center space-y-2">
+                <p className="text-sm font-bold text-foreground font-body">Nada por aqui ainda</p>
+                <p className="text-xs text-muted-foreground font-body">
+                  Tente outro filtro ou volte mais tarde para conferir as novidades.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
-            {filtered.map((item) => (
-              <ContentCard key={item.id} item={item} onSelect={handleSelect} />
-            ))}
-          </div>
-        ) : (
-          <div className="px-4 space-y-2">
-            {filtered.map((item) => (
-              <ContentListItem key={item.id} item={item} onSelect={handleSelect} />
-            ))}
-          </div>
-        )}
-      </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
+              {filtered.map((item) => (
+                <ContentCard key={item.id} item={item} onSelect={handleSelect} />
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 space-y-2">
+              {filtered.map((item) => (
+                <ContentListItem key={item.id} item={item} onSelect={handleSelect} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <SearchModal
         open={searchOpen}
