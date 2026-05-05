@@ -107,29 +107,92 @@ Deno.serve(async (req) => {
     );
 
     // Carrega overrides persistentes (admin pode editar via UI, sem redeploy).
-    type Override = { competition_pattern: string; match_type: string; sport_type: string | null; channels: string[]; priority: number };
+    type Override = {
+      competition_pattern: string;
+      match_type: string;
+      sport_type: string | null;
+      channels: string[];
+      priority: number;
+      home_team_pattern: string | null;
+      away_team_pattern: string | null;
+      event_date: string | null;
+    };
     const { data: overridesData } = await supabase
       .from("broadcast_overrides")
-      .select("competition_pattern, match_type, sport_type, channels, priority")
+      .select("competition_pattern, match_type, sport_type, channels, priority, home_team_pattern, away_team_pattern, event_date")
       .eq("active", true)
       .order("priority", { ascending: false });
     const overrides: Override[] = (overridesData || []) as Override[];
 
-    const lookupOverride = (competition: string, sportType: string): string[] => {
-      if (!competition) return [];
-      const compLower = competition.toLowerCase();
+    const matchPattern = (value: string, pattern: string, type: string): boolean => {
+      if (!pattern || !value) return false;
+      const v = value.toLowerCase();
+      const p = pattern.toLowerCase();
+      if (type === "exact") return v === p;
+      if (type === "regex") { try { return new RegExp(pattern, "i").test(value); } catch { return false; } }
+      return v.includes(p);
+    };
+
+    // Retorna { channels, scope } onde scope = 'match' (substitui) | 'competition' (complementa) | null
+    const lookupOverride = (
+      competition: string,
+      sportType: string,
+      home: string,
+      away: string,
+      date: string,
+    ): { channels: string[]; scope: "match" | "competition" | null } => {
+      // 1) Match-specific overrides primeiro (home+away [+ data])
       for (const o of overrides) {
         if (o.sport_type && o.sport_type !== sportType) continue;
-        const pat = (o.competition_pattern || "").toLowerCase();
-        if (!pat) continue;
-        let matched = false;
-        if (o.match_type === "exact") matched = compLower === pat;
-        else if (o.match_type === "regex") {
-          try { matched = new RegExp(o.competition_pattern, "i").test(competition); } catch { matched = false; }
-        } else matched = compLower.includes(pat);
-        if (matched && o.channels?.length) return [...o.channels];
+        if (!o.home_team_pattern && !o.away_team_pattern) continue;
+        if (o.event_date && o.event_date !== date) continue;
+        const homeOk = o.home_team_pattern ? matchPattern(home, o.home_team_pattern, o.match_type) : true;
+        const awayOk = o.away_team_pattern ? matchPattern(away, o.away_team_pattern, o.match_type) : true;
+        if (homeOk && awayOk && o.channels?.length) {
+          return { channels: [...o.channels], scope: "match" };
+        }
       }
-      return [];
+      // 2) Competition-level overrides
+      for (const o of overrides) {
+        if (o.sport_type && o.sport_type !== sportType) continue;
+        if (o.home_team_pattern || o.away_team_pattern) continue;
+        if (matchPattern(competition, o.competition_pattern, o.match_type) && o.channels?.length) {
+          return { channels: [...o.channels], scope: "competition" };
+        }
+      }
+      return { channels: [], scope: null };
+    };
+
+    // Carrega whitelist global de canais (admin pode adicionar marcas globais válidas no BR)
+    type ChannelWL = { channel_pattern: string; match_type: string; country: string | null };
+    const { data: wlData } = await supabase
+      .from("channel_whitelist")
+      .select("channel_pattern, match_type, country")
+      .eq("active", true);
+    const channelWhitelist: ChannelWL[] = (wlData || []) as ChannelWL[];
+
+    const isChannelWhitelisted = (channel: string): boolean => {
+      if (!channel) return false;
+      return channelWhitelist.some((w) => matchPattern(channel, w.channel_pattern, w.match_type));
+    };
+
+    // Normalização de nomes de canais (variações comuns → forma canônica BR)
+    const normalizeChannel = (raw: string): string => {
+      const c = raw.trim();
+      const map: Array<[RegExp, string]> = [
+        [/^hbo\s*max(\s*br)?$/i, "Max"],
+        [/^max\s*br$/i, "Max"],
+        [/^disney\s*plus$/i, "Disney+"],
+        [/^star\s*plus$/i, "Star+"],
+        [/^paramount\s*plus$/i, "Paramount+"],
+        [/^apple\s*tv\s*plus$/i, "Apple TV+"],
+        [/^espn\s*brasil$/i, "ESPN"],
+        [/^fox\s*sports\s*brasil$/i, "Fox Sports"],
+        [/^tnt\s*sports\s*brasil$/i, "TNT Sports"],
+        [/^dazn\s*brasil$/i, "DAZN"],
+      ];
+      for (const [re, val] of map) if (re.test(c)) return val;
+      return c;
     };
 
     // Carrega allowlist de ligas (filtro de competições relevantes para o público BR).
