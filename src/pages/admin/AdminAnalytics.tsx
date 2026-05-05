@@ -157,13 +157,14 @@ function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
 
   const rows: FunnelRow[] = [];
   for (const [campaign, v] of map) {
+    const uniqueLanders = v.landers.size;
     rows.push({
       campaign,
       shares: v.shares,
       landings: v.landings,
       tabViews: v.tabViews,
-      uniqueLanders: v.landers.size,
-      ctr: v.shares > 0 ? (v.uniqueLanders > 0 ? v.uniqueLanders : v.landings) / v.shares : 0,
+      uniqueLanders,
+      ctr: v.shares > 0 ? (uniqueLanders > 0 ? uniqueLanders : v.landings) / v.shares : 0,
       conversion: v.landings > 0 ? v.tabViews / v.landings : 0,
     });
   }
