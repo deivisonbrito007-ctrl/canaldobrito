@@ -109,9 +109,53 @@ const AdminApiSync = () => {
 
   return (
     <div className="space-y-4 max-w-3xl">
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-200 leading-relaxed">
-        <strong className="block text-amber-300 mb-1">⚠️ Sincronização automática pausada</strong>
-        Os jogos vindos das APIs (TheSportsDB / API-Football) estão temporariamente desligados porque os canais de transmissão BR não vinham confiáveis. A agenda pública mostra apenas jogos inseridos manualmente. Você ainda pode clicar em <em>Buscar</em> abaixo para testes — mas eles ficarão ocultos do site até reativarmos.
+      <div className={`rounded-xl border p-4 space-y-3 ${
+        isPaused
+          ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+      }`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="text-[11px] leading-relaxed flex-1">
+            <strong className={`block mb-1 ${isPaused ? "text-amber-300" : "text-emerald-300"}`}>
+              {isPaused ? "⚠️ Sincronização automática pausada" : "✅ Sincronização automática ativa"}
+            </strong>
+            {isPaused
+              ? "Os jogos das APIs (TheSportsDB / API-Football) estão desligados. A agenda pública mostra só inserções manuais. Cliques em \"Buscar\" abaixo gravam dados, mas ficam ocultos do site."
+              : "As APIs estão rodando. Cron diário sincroniza eventos e o livescore atualiza a cada 5 min. Jogos da API aparecem publicamente."}
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant={isPaused ? "default" : "outline"}
+                disabled={toggling}
+                className="min-h-[40px] shrink-0"
+              >
+                {toggling ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                  isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                <span className="ml-1.5">{isPaused ? "Reativar" : "Pausar"}</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {isPaused ? "Reativar sincronização da API?" : "Pausar sincronização da API?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {isPaused
+                    ? "Isso vai ligar os 4 cron jobs e voltar a exibir publicamente jogos vindos das APIs (incluindo eventos sem canal de transmissão BR confiável). Tem certeza?"
+                    : "Isso vai desligar os 4 cron jobs (sync diário e livescore) e ocultar publicamente todos os jogos da API. Apenas inserções manuais continuarão visíveis. Confirma?"}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleToggleSync(!isPaused)}>
+                  {isPaused ? "Sim, reativar" : "Sim, pausar"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
       <div className="glass-panel rounded-xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
