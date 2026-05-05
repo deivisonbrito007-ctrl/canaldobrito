@@ -336,6 +336,7 @@ const AdminWhatsApp = () => {
               title: "Ao Vivo agora",
               description: "Veja em tempo real o que está rolando no portal.",
               msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇",
+              suggestions: ["resultado", "tabela", "destaque", "noticia"],
             },
             {
               tab: "novidades" as DeepTab,
@@ -346,6 +347,7 @@ const AdminWhatsApp = () => {
               title: "Novidades da semana",
               description: "Filmes, séries e lançamentos recém-adicionados.",
               msg: "🆕 Novidades da semana — confira os lançamentos 👇",
+              suggestions: ["lancamentos", "trailer", "estreia", "banner"],
             },
             {
               tab: "highlights" as DeepTab,
@@ -356,6 +358,7 @@ const AdminWhatsApp = () => {
               title: "Sugestões pra hoje",
               description: "Indicações selecionadas de filmes e séries.",
               msg: "⭐ Sugestões de filmes e séries pra hoje 👇",
+              suggestions: ["filmes", "series", "destaque-semana", "indicacao"],
             },
             {
               tab: "schedule" as DeepTab,
@@ -366,9 +369,11 @@ const AdminWhatsApp = () => {
               title: "Programação de hoje",
               description: "Horários, canais e jogos do dia, organizados.",
               msg: "📅 Programação completa de hoje no portal 👇",
+              suggestions: ["jogos-hoje", "amanha", "destaque", "canais"],
             },
-          ]).map(({ tab, label, emoji, Icon, accent, title, description, msg }) => {
-            const link = buildDeepLink(siteUrl, tab, { utm: withUtm });
+          ]).map(({ tab, label, emoji, Icon, accent, title, description, msg, suggestions }) => {
+            const content = contentByTab[tab] ?? "";
+            const link = buildDeepLink(siteUrl, tab, { utm: withUtm, content: content || undefined });
             const text = `${msg}\n\n${link}`;
             let host = siteUrl;
             try { host = new URL(link).host; } catch { /* noop */ }
