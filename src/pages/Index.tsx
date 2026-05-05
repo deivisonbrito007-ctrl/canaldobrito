@@ -57,8 +57,11 @@ const Index = () => {
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const handleTabChange = useCallback((tabId: string) => {
-    // Backwards-compat: legacy "home" maps to "live"
-    const next = (tabId === "home" ? "live" : tabId) as TabId;
+    // Backwards-compat: legacy "home" → live; legacy "highlights"/"sugestoes" → novidades
+    let normalized = tabId;
+    if (normalized === "home") normalized = "live";
+    if (normalized === "highlights" || normalized === "sugestoes" || normalized === "destaques") normalized = "novidades";
+    const next = normalized as TabId;
     if (!TAB_ORDER.includes(next)) return;
     setActiveTab((prev) => {
       const prevIdx = TAB_ORDER.indexOf(prev);
