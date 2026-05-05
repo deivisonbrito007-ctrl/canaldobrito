@@ -12,8 +12,29 @@ export function cn(...inputs: ClassValue[]) {
  */
 export type PublicTab = "live" | "novidades" | "highlights" | "schedule";
 
+/** Pretty path slugs used in shared URLs (WhatsApp Status, etc.). */
+export const TAB_SLUGS: Record<PublicTab, string> = {
+  live: "ao-vivo",
+  novidades: "novidades",
+  highlights: "sugestoes",
+  schedule: "programacao",
+};
+
+/** Reverse lookup: slug → tab id. Includes legacy aliases. */
+export const SLUG_TO_TAB: Record<string, PublicTab> = {
+  "ao-vivo": "live",
+  "novidades": "novidades",
+  "sugestoes": "highlights",
+  "destaques": "highlights", // legacy
+  "programacao": "schedule",
+  "home": "live", // legacy
+  "live": "live",
+  "highlights": "highlights",
+  "schedule": "schedule",
+};
+
 export function buildDeepLink(base: string, tab?: PublicTab): string {
   const cleanBase = base.replace(/\/$/, "");
   if (!tab) return cleanBase || base;
-  return `${cleanBase}/?tab=${tab}`;
+  return `${cleanBase}/${TAB_SLUGS[tab]}`;
 }

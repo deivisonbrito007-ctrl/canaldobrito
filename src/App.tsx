@@ -34,6 +34,11 @@ const App = () => (
           <Suspense fallback={null}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/ao-vivo" element={<Index />} />
+              <Route path="/novidades" element={<Index />} />
+              <Route path="/sugestoes" element={<Index />} />
+              <Route path="/destaques" element={<Index />} />
+              <Route path="/programacao" element={<Index />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin" element={<AdminLayout />}>

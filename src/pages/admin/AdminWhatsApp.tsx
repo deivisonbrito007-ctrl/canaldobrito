@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
-import { buildDeepLink, type PublicTab } from "@/lib/utils";
+import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 
 type DeepTab = PublicTab;
 
@@ -369,7 +369,7 @@ const AdminWhatsApp = () => {
                         {emoji} {label}
                       </span>
                       <span className="text-[9px] font-mono opacity-60 bg-background/40 rounded px-1.5 py-0.5">
-                        ?tab={tab}
+                        /{TAB_SLUGS[tab]}
                       </span>
                     </div>
                     <p className="text-sm font-bold text-foreground leading-tight mt-1 truncate">
