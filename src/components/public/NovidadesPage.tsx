@@ -5,21 +5,22 @@ import { useActiveMovies } from "@/hooks/useMovies";
 import { useActiveSeries } from "@/hooks/useSeries";
 import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
 import { FilterChip } from "@/components/public/novidades/FilterChip";
-import { FeaturedCarousel } from "@/components/public/novidades/FeaturedCarousel";
 import { ContentCard } from "@/components/public/novidades/ContentCard";
 import { ContentListItem } from "@/components/public/novidades/ContentListItem";
 import { SearchModal } from "@/components/public/novidades/SearchModal";
+import { NovidadesCard } from "@/components/public/NovidadesCard";
 import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
 import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 import { trackContentClick } from "@/lib/analytics";
 
-type FilterId = "all" | "movie" | "series" | "lancamento" | "estreia" | "exclusivo";
+type FilterId = "all" | "movie" | "series" | "lancamento" | "nova_temporada" | "estreia" | "exclusivo";
 
 const FILTERS: { id: FilterId; icon: string; label: string }[] = [
   { id: "all", icon: "✨", label: "Todos" },
   { id: "movie", icon: "🎬", label: "Filmes" },
   { id: "series", icon: "📺", label: "Séries" },
   { id: "lancamento", icon: "🆕", label: "Lançamentos" },
+  { id: "nova_temporada", icon: "🎞️", label: "Novas Temporadas" },
   { id: "estreia", icon: "⭐", label: "Estreias" },
   { id: "exclusivo", icon: "👑", label: "Exclusivos" },
 ];
