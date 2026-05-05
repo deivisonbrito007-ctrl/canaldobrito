@@ -279,7 +279,7 @@ const AdminWhatsApp = () => {
   const { data: todayGames } = useAllDailyGames(todayStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
-  const [withUtm, setWithUtm] = useState(true);
+  // (UTM toggle removed — short links /s/<slug> always include tracking)
   
 
   const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
