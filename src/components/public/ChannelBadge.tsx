@@ -169,7 +169,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
           className
         )}
       >
-        <ChannelIcon domain={config.domain} emoji={config.emoji} size={size} alt={`${name} logo`} />
+        <ChannelIcon localLogo={config.localLogo} domain={config.domain} emoji={config.emoji} size={size} alt={`${name} logo`} />
         {displayName}
       </span>
     );
