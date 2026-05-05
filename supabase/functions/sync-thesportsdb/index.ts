@@ -119,46 +119,64 @@ Deno.serve(async (req) => {
     })();
 
     // Pré-busca TODA a programação de TV do dia em uma única chamada (eventstv.php).
-    // FILTRO ESTRITO: apenas canais transmitidos no Brasil (strCountry === "Brazil")
-    // OU nomes de canais conhecidos como brasileiros/globais disponíveis no Brasil.
+    // FILTRO ESTRITO em 3 camadas para aceitar SÓ canais que passam no Brasil:
+    //   1) BLOCK_COUNTRIES: rejeita strCountry de países estrangeiros
+    //   2) FOREIGN_REGION_RE: rejeita nomes com sufixo de país (ex: "ESPN Argentina")
+    //   3) BR_BRAND_PATTERNS: whitelist refinada de marcas BR (sem genéricos demais)
     const tvByEvent = new Map<string, string[]>();
-    // Heurística estrita: marcas globais sabidamente disponíveis no Brasil.
-    // Usa regex com word-boundary para evitar falsos positivos (ex: "max" casando "BeIn Sports Max").
+
+    const BLOCK_COUNTRIES = new Set([
+      "argentina","mexico","méxico","peru","perú","colombia","chile","uruguay","paraguay","bolivia",
+      "ecuador","venezuela","nicaragua","costa rica","panama","panamá","guatemala",
+      "honduras","el salvador","dominican republic","cuba","puerto rico",
+      "portugal","spain","españa","france","germany","italy","united kingdom","uk","england",
+      "netherlands","holland","belgium","switzerland","austria","poland","russia",
+      "united states","usa","canada","australia","new zealand",
+      "japan","china","south korea","india","indonesia","thailand","vietnam",
+      "south africa","nigeria","egypt","saudi arabia","qatar","israel","turkey","greece",
+    ]);
+
+    const FOREIGN_REGION_RE = /\b(argentina|mexico|m[eé]xico|peru|per[uú]|colombia|chile|uruguay|paraguay|bolivia|ecuador|venezuela|nicaragua|costa\s*rica|panam[aá]?|guatemala|honduras|salvador|dominican|cuba|puerto\s*rico|portugal|portuguese|spain|espa[nñ]a|spanish|france|french|germany|deutschland|german|italy|italia|italian|uk|united\s*kingdom|england|english|britain|british|netherlands|holland|dutch|belgium|belgique|belgian|switzerland|swiss|austria|austrian|poland|polish|russia|rusia|russian|usa|united\s*states|estados\s*unidos|american|canada|canad[aá]|canadian|australia|australian|new\s*zealand|nz|japan|jap[aã]o|japanese|china|chinese|korea|coreia|korean|india|indian|indonesia|thailand|vietnam|africa|south\s*africa|nigeria|nigerian|egypt|saudi|emirates|qatar|israel|turkey|t[uü]rkiye|turkish|greece|gr[eé]cia|greek|romania|hungary|croatia|serbia|ukraine|sweden|norway|finland|denmark|ireland|scotland|wales)\b/i;
+
+    // Whitelist refinada (sem regex genéricas como /espn/, /sport tv/, /goat/, /space/)
     const BR_BRAND_PATTERNS: RegExp[] = [
       // TV aberta BR
       /\bglobo\b/i, /\btv\s*globo\b/i, /\bband(eirantes)?\b/i, /\bsbt\b/i,
       /\brecord(\s*tv)?\b/i, /\brede\s*tv\b/i, /\bcultura\b/i,
-      // TV fechada / esportes BR
-      /\bsport\s*tv\b/i, /\bsportv\b/i, /\bsporttv\b/i,
-      /\bpremiere\b/i, /\bcombate\b/i, /\bbandsports\b/i, /\bband\s*sports\b/i,
-      /\bespn\b/i, /\bfox\s*sports\s*(brasil|br)\b/i,
-      /\btnt\s*(sports)?\b/i, /\bspace\b/i,
-      /\bnsports\b/i, /\bn\s*sports\b/i,
+      // Esportes BR
+      /\bsportv\b/i, /\bsporttv\s*br\b/i,
+      /\bpremiere\s*(fc)?\b/i, /\bcombate\b/i, /\bbandsports\b/i, /\bband\s*sports\b/i,
+      /\bespn\s*(brasil|br)\b/i, /\bespn\s*\d?\s*(brasil|br)\b/i,
+      /\bfox\s*sports\s*(brasil|br)\b/i,
+      /\btnt\s*sports\s*(brasil|br)?\b/i,
+      /\bnsports\b/i,
       // Streaming disponível no BR
-      /\bglobo\s*play\b/i, /\bglobo\.play\b/i,
+      /\bglobo\s*play\b/i,
       /\bdisney\s*(\+|plus)\b/i, /\bstar\s*(\+|plus)\b/i,
       /\bhbo\s*max\b/i, /\bmax\s*(brasil|br)\b/i,
       /\bprime\s*video\b/i, /\bamazon\s*prime\b/i,
       /\bparamount\s*\+?\b/i, /\bapple\s*tv\s*\+?\b/i,
       /\bnetflix\b/i,
       // YouTube / criadores BR
-      /\bcaz[eé](\s*tv)?\b/i, /\bcanal\s*goat\b/i, /\bgoat\b/i,
+      /\bcaz[eé](\s*tv)?\b/i, /\bcanal\s*goat\b/i,
       /\bnosso\s*futebol\b/i, /\bdesimpedidos\b/i, /\bft\s*futebol\b/i,
       /\bcanal\s*do\s*brito\b/i,
-      // Liga / federação passes globais (vendidos no BR)
+      // Passes oficialmente vendidos no BR
       /\bf1\s*tv\s*(pro|access)?\b/i,
       /\bufc\s*fight\s*pass\b/i,
-      /\bnba\s*league\s*pass\b/i,
-      /\bnfl\s*(game\s*pass|\+)\b/i,
-      /\bnhl\s*(tv|\+)\b/i,
-      /\bmlb\s*\.?\s*tv\b/i,
-      /\batp\s*tour\b/i, /\btennis\s*tv\b/i,
       /\bdazn\s*(brasil|br)\b/i,
     ];
+
     const isBrazilChannel = (country: string, channel: string) => {
-      if ((country || "").trim().toLowerCase() === "brazil") return true;
-      return BR_BRAND_PATTERNS.some((re) => re.test(channel));
+      const c = (country || "").trim().toLowerCase();
+      const ch = (channel || "").trim();
+      if (!ch) return false;
+      if (BLOCK_COUNTRIES.has(c)) return false;
+      if (FOREIGN_REGION_RE.test(ch)) return false;
+      if (c === "brazil") return true;
+      return BR_BRAND_PATTERNS.some((re) => re.test(ch));
     };
+
 
     // Estatísticas por data: total de eventos com TV e canais BR encontrados
     const tvStatsByDate: Record<string, { events_with_tv: Set<string>; br_channels: number; events_with_br: Set<string> }> = {};

@@ -1,52 +1,38 @@
-# Desativar jogos da API (manter só inserções manuais)
+## Diagnóstico
 
-## Situação
-Hoje a tabela `daily_games` tem 3 origens (`source`):
-- `manual`: 956 jogos — 955 com canais ✅
-- `thesportsdb`: 187 jogos — só 17 com canais ❌
-- `api-football`: 1 jogo — sem canal ❌
+Inspecionei `daily_games` e `audit_logs`. O sync **está rodando OK** (214 jogos hoje, 27 com canais), mas a heurística atual em `sync-thesportsdb/index.ts` aceita **falsos positivos massivos**:
 
-Há 3 cron jobs ativos no Postgres puxando das APIs:
-- `sync-daily-games-morning` (08:00) — API-Football
-- `update-live-games-5min` (a cada 5 min)
-- `sync-thesportsdb-daily` (09:00) — TheSportsDB
-- `update-live-thesportsdb` (a cada 5 min)
+- `Sport TV 1/2/3` = **SporTV de Portugal**, regex `\bsport\s*tv\b` confunde com SporTV BR
+- `ESPN Argentina / Mexico / Peru / Nicaragua / Netherlands` = ESPN regional, não passa no BR (regex `\bespn\b` aceita qualquer um)
+- `TNT Mexico / TNT Brasil` misturados — só o `TNT Brasil` deveria passar
+- `MLB.tv / NBA League Pass / NHL+ / NFL+` = passes pagos sem versão localizada BR
 
-## Solução (desativação reversível)
+Também notei: dos 187 jogos sem canal, a maioria é nicho regional (KBO coreano, NPB japonês, ligas chinesas) que o TheSportsDB não tem mesmo TV BR. Isso é esperado — não passa no Brasil.
 
-### 1. Filtrar UI pública: só `source='manual'`
-Em `src/hooks/useDailyGames.ts`, adicionar flag `MANUAL_ONLY = true` que aplica `.eq("source", "manual")` em `useDailyGames` e `useAllDailyGames`. Isso esconde imediatamente todos os jogos sem canal vindos da API, sem precisar deletar nada. Para reativar no futuro, basta trocar `MANUAL_ONLY` para `false`.
+## Correção
 
-Vantagem: rápido, reversível, não perde histórico.
+Reescrever a heurística em `supabase/functions/sync-thesportsdb/index.ts` (linhas 121-161) com 3 camadas:
 
-### 2. Pausar cron jobs das APIs
-Via insert tool (não migration — contém credenciais por instância):
-```sql
-UPDATE cron.job SET active = false
-WHERE jobname IN (
-  'sync-daily-games-morning',
-  'update-live-games-5min',
-  'sync-thesportsdb-daily',
-  'update-live-thesportsdb'
-);
-```
-Para reativar: `UPDATE cron.job SET active = true WHERE jobname IN (...)`.
-
-### 3. Limpar lixo já gravado (opcional, recomendado)
-Apagar os 188 jogos sem origem manual para o admin não ver mais ruído na aba de gerenciamento:
-```sql
-DELETE FROM daily_games WHERE source <> 'manual';
-```
-
-### 4. Aviso no painel admin (sugestão UX)
-Em `src/pages/admin/AdminApiSync.tsx` mostrar um banner amarelo informando que a sincronização automática está pausada e como reativar. Evita que outro admin clique em "Buscar" achando que está quebrado.
+1. **Blocklist de países**: rejeitar `strCountry` ∈ {Argentina, Mexico, Portugal, USA, Netherlands, etc.} mesmo que o nome do canal pareça BR.
+2. **Blocklist de sufixos no nome**: regex `FOREIGN_REGION_RE` rejeita qualquer canal que contenha `argentina|mexico|peru|portugal|netherlands|...` no nome (pega `ESPN Argentina`, `TNT Mexico`, `Sport TV 1` se vier `strCountry=Portugal`).
+3. **Whitelist BR refinada**: 
+   - `\bsportv\b` (sem espaço) em vez de `\bsport\s*tv\b` 
+   - `\bespn\s*(brasil|br)\b` em vez de `\bespn\b`
+   - `\btnt\s*sports\s*(brasil|br)?\b` (precisa "sports", elimina "TNT Mexico")
+   - Remover `\bgoat\b`, `\bspace\b`, `\bn\s*sports\b` (genéricos demais)
+   - Remover MLB.tv/NBA League Pass/NHL+/NFL+ (não têm distribuição BR oficial garantida)
+4. Manter aceitar `strCountry === "Brazil"` automaticamente.
 
 ## Sugestões adicionais
-- **Filtro por canal no parser manual**: já que os canais agora vêm 100% do parser de WhatsApp, vale validar no `ProgramacaoTexto` se cada jogo tem ao menos 1 canal antes de inserir, alertando o admin.
-- **Quando reativar a API**: enriquecer `sync-thesportsdb` para *só inserir o jogo se vier com canal BR válido* (descartar resto). Hoje insere mesmo sem canal — daí o problema.
-- **Whitelist canais BR**: já existe em `BR_BRAND_PATTERNS`. Quando reativar, fazer o `INSERT` ser condicional a `channels.length > 0`.
 
-## Arquivos a alterar
-- `src/hooks/useDailyGames.ts` — adicionar flag `MANUAL_ONLY` e filtro `.eq("source","manual")`.
-- `src/pages/admin/AdminApiSync.tsx` — banner de status "API pausada".
-- SQL via insert tool: pausar 4 cron jobs + DELETE jogos não-manuais.
+- **Fallback BROADCAST_FALLBACK por liga**: para Brasileirão/Libertadores/NBA/NFL/F1/UFC, hardcodar canais conhecidos (ex: Libertadores → "Paramount+, SBT, ESPN Brasil") quando o `eventstv.php` não trouxer canal BR. Cobre 80% dos jogos populares mesmo sem dado da API.
+- **Limpeza retroativa**: rodar `UPDATE daily_games SET channels = '{}' WHERE source='thesportsdb' AND channels && ARRAY['Sport TV 1','Sport TV 2','Sport TV 3','ESPN Argentina','ESPN 2 Peru','TNT Mexico','MLB.tv',...]` para remover lixo já gravado, depois disparar o sync manual de novo.
+- **Tela Sync Stats**: adicionar lista das marcas de canal mais frequentes (top 20) por execução, ajuda a calibrar a regex.
+
+## Arquivos
+
+- `supabase/functions/sync-thesportsdb/index.ts` (linhas 121-161): nova função `isBrazilChannel` com BLOCK_COUNTRIES + FOREIGN_REGION_RE + whitelist refinada.
+- (Opcional) Migration de limpeza dos canais incorretos já gravados.
+- (Opcional) `AdminSyncStats.tsx`: top de marcas de canal.
+
+Quer que eu implemente os 3 itens (filtro + limpeza + top marcas) ou só o filtro?
