@@ -338,8 +338,7 @@ const AdminWhatsApp = () => {
         <div className="flex flex-col gap-2">
           {([
             { tab: "live" as DeepTab, label: "Ao Vivo", emoji: "🔴", msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇" },
-            { tab: "novidades" as DeepTab, label: "Novidades", emoji: "🆕", msg: "🆕 Novidades da semana — confira os lançamentos 👇" },
-            { tab: "highlights" as DeepTab, label: "Sugestões", emoji: "⭐", msg: "⭐ Sugestões de filmes e séries pra hoje 👇" },
+            { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
             const link = buildDeepLink(siteUrl, tab, { short: true });
