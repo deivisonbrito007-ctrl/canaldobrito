@@ -39,7 +39,8 @@ const BelowFoldSkeleton = () => (
   </div>
 );
 
-const TAB_ORDER = ["home", "highlights", "schedule"] as const;
+const TAB_ORDER = ["live", "novidades", "highlights", "schedule"] as const;
+type TabId = typeof TAB_ORDER[number];
 
 const slideVariants = {
   enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
@@ -49,16 +50,19 @@ const slideVariants = {
 
 const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState<TabId>("live");
   const [direction, setDirection] = useState(0);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const handleTabChange = useCallback((tabId: string) => {
+    // Backwards-compat: legacy "home" maps to "live"
+    const next = (tabId === "home" ? "live" : tabId) as TabId;
+    if (!TAB_ORDER.includes(next)) return;
     setActiveTab((prev) => {
-      const prevIdx = TAB_ORDER.indexOf(prev as typeof TAB_ORDER[number]);
-      const nextIdx = TAB_ORDER.indexOf(tabId as typeof TAB_ORDER[number]);
+      const prevIdx = TAB_ORDER.indexOf(prev);
+      const nextIdx = TAB_ORDER.indexOf(next);
       setDirection(nextIdx >= prevIdx ? 1 : -1);
-      return tabId;
+      return next;
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -66,41 +70,21 @@ const Index = () => {
   // Listen for nav-tab-change events from other components
   useEffect(() => {
     const handler = (e: Event) => {
-      const tabId = (e as CustomEvent).detail;
-      if (TAB_ORDER.includes(tabId)) {
-        handleTabChange(tabId);
-      }
+      const tabId = (e as CustomEvent).detail as string;
+      handleTabChange(tabId);
     };
     window.addEventListener("nav-tab-change", handler);
     return () => window.removeEventListener("nav-tab-change", handler);
   }, [handleTabChange]);
 
-  // Deep-link support: read ?tab= param to open the right tab/section on load.
+  // Deep-link support: read ?tab= param to open the right tab on load.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (!tab) return;
-
-    let anchor: string | null = null;
-    if (tab === "schedule" || tab === "highlights") {
+    if (tab) {
       handleTabChange(tab);
-    } else if (tab === "live") {
-      handleTabChange("home");
-      anchor = "live";
-    } else if (tab === "novidades") {
-      handleTabChange("home");
-      anchor = "novidades";
-    }
-
-    // Clean URL so reloads/back nav don't repeat the jump
-    const cleanUrl = window.location.pathname + window.location.hash;
-    window.history.replaceState({}, "", cleanUrl);
-
-    if (anchor) {
-      setTimeout(() => {
-        const el = document.getElementById(anchor!);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 350);
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, "", cleanUrl);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -120,6 +104,17 @@ const Index = () => {
         </Suspense>
       );
     }
+    if (activeTab === "novidades") {
+      return (
+        <div className="space-y-5 min-h-[80vh] pt-4">
+          <Suspense fallback={<BelowFoldSkeleton />}>
+            <LazyNovidadesCard />
+            <LazyBannerSections />
+          </Suspense>
+        </div>
+      );
+    }
+    // live (default)
     return (
       <div className="space-y-5 min-h-[80vh]">
         <Hero />
@@ -128,11 +123,7 @@ const Index = () => {
           <LiveNowHero />
         </div>
         <Suspense fallback={<BelowFoldSkeleton />}>
-          <div id="novidades" className="scroll-mt-20">
-            <LazyNovidadesCard />
-          </div>
           <LazyPromoStrip />
-          <LazyBannerSections />
         </Suspense>
       </div>
     );
