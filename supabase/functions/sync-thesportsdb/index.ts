@@ -308,12 +308,17 @@ Deno.serve(async (req) => {
         const competition = ev.strLeague || sport;
         const competitionDetail = ev.strSeason ? `${ev.strSeason}${ev.intRound ? ` • R${ev.intRound}` : ""}` : (ev.intRound ? `R${ev.intRound}` : null);
 
-        // 1) Canais reais vindos do eventstv.php (já filtrados por isBrazilChannel)
+        // Allowlist: filtra ligas irrelevantes para o público brasileiro
+        if (!isLeagueAllowed(competition, sportType)) {
+          skippedByAllowlist[competition] = (skippedByAllowlist[competition] || 0) + 1;
+          continue;
+        }
+
+        // 1) Canais vindos do eventstv.php (canal específico, confiável)
         let channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
-        let usedFallback = false;
         let usedOverride = false;
 
-        // 2) Override persistente (tabela broadcast_overrides, editável pelo admin)
+        // 2) Override persistente (broadcast_overrides). Sem fallback hardcoded.
         if (channels.length === 0) {
           const ov = lookupOverride(competition, sportType);
           if (ov.length > 0) {
@@ -322,19 +327,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        // 3) Fallback hardcoded (regex genéricas) — só se não houver override
-        if (channels.length === 0) {
-          const fb = lookupBroadcastFallback(competition, sportType);
-          if (fb.length > 0) {
-            channels = fb;
-            usedFallback = true;
-          }
-        }
-
         if (usedOverride) {
           overrideHits[competition] = (overrideHits[competition] || 0) + 1;
-        } else if (usedFallback) {
-          fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
         } else if (channels.length === 0) {
           noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
         }
