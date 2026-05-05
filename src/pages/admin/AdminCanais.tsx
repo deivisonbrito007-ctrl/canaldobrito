@@ -19,6 +19,9 @@ type Override = {
   priority: number;
   active: boolean;
   notes: string | null;
+  home_team_pattern: string | null;
+  away_team_pattern: string | null;
+  event_date: string | null;
 };
 
 const SPORTS = ["", "football", "basketball", "baseball", "ice-hockey", "american-football", "motorsport", "fighting", "tennis", "volleyball", "cycling", "golf"];
@@ -31,6 +34,9 @@ const empty = (): Partial<Override> => ({
   priority: 100,
   active: true,
   notes: "",
+  home_team_pattern: "",
+  away_team_pattern: "",
+  event_date: null,
 });
 
 const AdminCanais = () => {
@@ -67,6 +73,9 @@ const AdminCanais = () => {
       priority: draft.priority ?? 100,
       active: draft.active ?? true,
       notes: draft.notes || null,
+      home_team_pattern: draft.home_team_pattern?.trim() || null,
+      away_team_pattern: draft.away_team_pattern?.trim() || null,
+      event_date: draft.event_date || null,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -160,6 +169,30 @@ const AdminCanais = () => {
               onChange={(e) => setDraftChannels(e.target.value)}
             />
           </div>
+          <div>
+            <Label className="text-xs">Time da casa (opcional, override por partida)</Label>
+            <Input
+              placeholder="ex.: Palmeiras"
+              value={draft.home_team_pattern || ""}
+              onChange={(e) => setDraft({ ...draft, home_team_pattern: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Time visitante (opcional)</Label>
+            <Input
+              placeholder="ex.: Flamengo"
+              value={draft.away_team_pattern || ""}
+              onChange={(e) => setDraft({ ...draft, away_team_pattern: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Data específica (opcional)</Label>
+            <Input
+              type="date"
+              value={draft.event_date || ""}
+              onChange={(e) => setDraft({ ...draft, event_date: e.target.value || null })}
+            />
+          </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Notas (opcional)</Label>
             <Input
@@ -185,7 +218,13 @@ const AdminCanais = () => {
               <Badge variant={r.active ? "default" : "secondary"}>{r.match_type}</Badge>
               {r.sport_type && <Badge variant="outline">{r.sport_type}</Badge>}
               <Badge variant="outline">prio {r.priority}</Badge>
-              <code className="text-sm font-mono flex-1">{r.competition_pattern}</code>
+              {(r.home_team_pattern || r.away_team_pattern) && (
+                <Badge variant="default" className="bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40">
+                  partida: {r.home_team_pattern || "*"} vs {r.away_team_pattern || "*"}
+                  {r.event_date ? ` (${r.event_date})` : ""}
+                </Badge>
+              )}
+              <code className="text-sm font-mono flex-1">{r.competition_pattern || "—"}</code>
               <Switch
                 checked={r.active}
                 onCheckedChange={(v) => updateRow(r.id, { active: v })}

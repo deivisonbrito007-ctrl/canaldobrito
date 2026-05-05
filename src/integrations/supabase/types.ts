@@ -80,9 +80,12 @@ export type Database = {
       broadcast_overrides: {
         Row: {
           active: boolean
+          away_team_pattern: string | null
           channels: string[]
           competition_pattern: string
           created_at: string
+          event_date: string | null
+          home_team_pattern: string | null
           id: string
           match_type: string
           notes: string | null
@@ -92,9 +95,12 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          away_team_pattern?: string | null
           channels?: string[]
           competition_pattern: string
           created_at?: string
+          event_date?: string | null
+          home_team_pattern?: string | null
           id?: string
           match_type?: string
           notes?: string | null
@@ -104,14 +110,50 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          away_team_pattern?: string | null
           channels?: string[]
           competition_pattern?: string
           created_at?: string
+          event_date?: string | null
+          home_team_pattern?: string | null
           id?: string
           match_type?: string
           notes?: string | null
           priority?: number
           sport_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      channel_whitelist: {
+        Row: {
+          active: boolean
+          channel_pattern: string
+          country: string | null
+          created_at: string
+          id: string
+          match_type: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          channel_pattern: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          match_type?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          channel_pattern?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          match_type?: string
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -155,6 +197,7 @@ export type Database = {
           archived: boolean
           away_team: string
           channels: string[] | null
+          channels_source: Json | null
           competition: string
           competition_detail: string | null
           created_at: string
@@ -176,6 +219,7 @@ export type Database = {
           archived?: boolean
           away_team: string
           channels?: string[] | null
+          channels_source?: Json | null
           competition?: string
           competition_detail?: string | null
           created_at?: string
@@ -197,6 +241,7 @@ export type Database = {
           archived?: boolean
           away_team?: string
           channels?: string[] | null
+          channels_source?: Json | null
           competition?: string
           competition_detail?: string | null
           created_at?: string
