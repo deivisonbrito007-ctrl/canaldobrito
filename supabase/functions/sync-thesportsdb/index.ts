@@ -156,6 +156,8 @@ Deno.serve(async (req) => {
     const allRows: any[] = [];
     const errors: string[] = [];
     const perSport: Record<string, number> = {};
+    const fallbackHits: Record<string, number> = {};
+    const noChannelByCompetition: Record<string, number> = {};
 
     // Para a data alvo (já em BRT), precisamos consultar dateEvent UTC equivalente.
     // TheSportsDB indexa por dateEvent (UTC). Para garantir cobertura, consultamos dateParam e dateParam-1d e dateParam+1d, e filtramos depois pela data BRT real.
