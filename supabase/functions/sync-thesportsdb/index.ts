@@ -278,11 +278,47 @@ Deno.serve(async (req) => {
       for (const r of results) { if (r === "ok") upserted++; else skipped++; }
     }
 
+    // Audit log: registra a execução do sync
+    try {
+      await supabase.from("audit_logs").insert({
+        action: "api_sync_run",
+        entity: "daily_games",
+        actor_id: null,
+        payload: {
+          source: "thesportsdb",
+          date: dateParam,
+          sports: sports.length,
+          perSport,
+          upserted,
+          skipped,
+          errors_count: errors.length,
+          errors: errors.slice(0, 10),
+          triggered_by: req.headers.get("x-cron-secret") ? "cron" : "manual",
+          user_agent: req.headers.get("user-agent")?.slice(0, 120) || null,
+        },
+      });
+    } catch (logErr) {
+      console.error("[sync-thesportsdb] audit log failed:", logErr);
+    }
+
     return new Response(JSON.stringify({
       ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
+    // Audit log: registra falha do sync
+    try {
+      const supabaseErr = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await supabaseErr.from("audit_logs").insert({
+        action: "api_sync_failed",
+        entity: "daily_games",
+        actor_id: null,
+        payload: { source: "thesportsdb", error: (e as Error).message },
+      });
+    } catch (_) { /* noop */ }
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
