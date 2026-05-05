@@ -22,6 +22,7 @@ const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 const AdminApiSync = lazy(() => import("./pages/admin/AdminApiSync"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
+const AdminSyncStats = lazy(() => import("./pages/admin/AdminSyncStats"));
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="diagnostico-github" element={<AdminGitHubDiagnostico />} />
                 <Route path="api-sync" element={<AdminApiSync />} />
                 <Route path="auditoria" element={<AdminAudit />} />
+                <Route path="sync-stats" element={<AdminSyncStats />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
               </Route>
               <Route path="*" element={<NotFound />} />
