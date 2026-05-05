@@ -6,6 +6,7 @@ import { TrailerModal } from "./TrailerModal";
 import { PosterRowSkeleton, SectionHeaderSkeleton } from "./ContentSkeletons";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
+import { trackContentClick } from "@/lib/analytics";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 
