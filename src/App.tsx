@@ -52,6 +52,7 @@ const App = () => (
                 <Route path="whatsapp" element={<AdminWhatsApp />} />
                 <Route path="diagnostico-github" element={<AdminGitHubDiagnostico />} />
                 <Route path="auditoria" element={<AdminAudit />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
                 {/* Redirects de rotas antigas removidas */}
                 <Route path="api-sync" element={<Navigate to="/admin/whatsapp" replace />} />
