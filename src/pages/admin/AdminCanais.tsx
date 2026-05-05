@@ -19,6 +19,9 @@ type Override = {
   priority: number;
   active: boolean;
   notes: string | null;
+  home_team_pattern: string | null;
+  away_team_pattern: string | null;
+  event_date: string | null;
 };
 
 const SPORTS = ["", "football", "basketball", "baseball", "ice-hockey", "american-football", "motorsport", "fighting", "tennis", "volleyball", "cycling", "golf"];
@@ -31,6 +34,9 @@ const empty = (): Partial<Override> => ({
   priority: 100,
   active: true,
   notes: "",
+  home_team_pattern: "",
+  away_team_pattern: "",
+  event_date: null,
 });
 
 const AdminCanais = () => {
