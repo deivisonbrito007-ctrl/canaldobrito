@@ -253,6 +253,7 @@ function computeDaily(
 }
 
 
+export default function AdminAnalytics() {
   const [events, setEvents] = useState<LoggedEvent[]>([]);
   const [remote, setRemote] = useState<RemoteEvent[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
