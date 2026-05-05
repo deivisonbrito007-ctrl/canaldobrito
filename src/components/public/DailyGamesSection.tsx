@@ -283,7 +283,7 @@ const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: num
           )}
 
           {/* Channels */}
-          {game.channels && game.channels.length > 0 && (
+          {game.channels && game.channels.length > 0 ? (
             <div className="flex gap-1 flex-wrap">
               {game.channels.slice(0, 3).map((ch, i) => (
                 <ChannelBadge key={i} name={ch} />
@@ -292,6 +292,10 @@ const GameCard = ({ game, index, onPushReminder }: { game: DailyGame; index: num
                 <span className="text-[10px] text-muted-foreground/50 self-center">+{game.channels.length - 3}</span>
               )}
             </div>
+          ) : (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60 px-2 py-0.5 rounded border border-border/40 bg-muted/20 self-start">
+              Sem transmissão confirmada
+            </span>
           )}
         </div>
       </div>
