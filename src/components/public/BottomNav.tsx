@@ -1,4 +1,5 @@
 import { Radio, Sparkles, Star, CalendarDays } from "lucide-react";
+import { useTabBadges } from "@/hooks/useTabBadges";
 
 interface BottomNavProps {
   activeTab: string;
@@ -10,9 +11,11 @@ const navItems = [
   { id: "novidades", label: "Novidades", icon: Sparkles },
   { id: "highlights", label: "Sugestões", icon: Star },
   { id: "schedule", label: "Programação", icon: CalendarDays },
-];
+] as const;
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
+  const { data: badges } = useTabBadges();
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50"
@@ -26,6 +29,8 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          const showBadge = !isActive && badges?.[item.id as keyof typeof badges];
+          const isLive = item.id === "live" && showBadge;
 
           return (
             <button
@@ -37,12 +42,30 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
               {isActive && (
                 <div className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-primary" />
               )}
-              <Icon
-                className={`h-[22px] w-[22px] transition-colors duration-200 ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-                strokeWidth={isActive ? 2.5 : 1.6}
-              />
+              <div className="relative">
+                <Icon
+                  className={`h-[22px] w-[22px] transition-colors duration-200 ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                  strokeWidth={isActive ? 2.5 : 1.6}
+                />
+                {showBadge && (
+                  isLive ? (
+                    <span
+                      className="absolute -top-0.5 -right-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-background"
+                      style={{ boxShadow: "0 0 6px hsl(0 80% 60%)" }}
+                      aria-label="Ao vivo agora"
+                    />
+                  ) : (
+                    <span
+                      className="absolute -top-1.5 -right-2 text-[8px] font-bold leading-none px-1 py-[2px] rounded-full bg-primary text-primary-foreground ring-2 ring-background tracking-wide"
+                      aria-label="Conteúdo novo"
+                    >
+                      NOVO
+                    </span>
+                  )
+                )}
+              </div>
               <span
                 className={`text-[10px] font-semibold transition-colors duration-200 font-body ${
                   isActive ? "text-primary" : "text-muted-foreground"
