@@ -651,6 +651,71 @@ export default function AdminAnalytics() {
         )}
       </Card>
 
+      {/* Funil por aba */}
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-xl tracking-wide text-foreground">
+            Funil por <span className="text-primary">aba</span>
+          </h2>
+          {compareOn && (
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-body">
+              A vs B
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-body">
+          Qual aba converte melhor após o share. CTR = landings ÷ shares · Conv. = tab_views ÷ landings.
+        </p>
+        {tabFunnelA.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic font-body">
+            Sem dados por aba ainda no período.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-body">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b border-border">
+                  <th className="py-2 pr-3">Aba</th>
+                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
+                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
+                  <th className="py-2 px-3 text-right">CTR</th>
+                  <th className="py-2 px-3 text-right">Tab views</th>
+                  <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tabFunnelA.map((r) => {
+                  const b = tabFunnelB.find((x) => x.tab === r.tab);
+                  const maxViews = Math.max(...tabFunnelA.map((x) => x.tabViews), 1);
+                  const pct = (r.tabViews / maxViews) * 100;
+                  return (
+                    <tr key={r.tab} className="border-b border-border/30">
+                      <td className="py-2 pr-3">
+                        <div className="font-mono text-[11px] text-foreground">{r.tab}</div>
+                        <div className="h-1 mt-1 rounded-full bg-surface overflow-hidden max-w-[120px]">
+                          <div className="h-full bg-primary/60 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums text-primary font-bold">
+                        {r.ctr.toFixed(0)}%
+                        {compareOn && <Delta a={Math.round(r.ctr)} b={Math.round(b?.ctr ?? 0)} />}
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.tabViews}{compareOn && <Delta a={r.tabViews} b={b?.tabViews ?? 0} />}</td>
+                      <td className="py-2 pl-3 text-right tabular-nums text-primary font-bold">
+                        {r.conversion.toFixed(0)}%
+                        {compareOn && <Delta a={Math.round(r.conversion)} b={Math.round(b?.conversion ?? 0)} />}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* Campaigns */}
 
       <Card className="p-4 space-y-3">
