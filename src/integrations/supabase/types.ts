@@ -77,6 +77,45 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_overrides: {
+        Row: {
+          active: boolean
+          channels: string[]
+          competition_pattern: string
+          created_at: string
+          id: string
+          match_type: string
+          notes: string | null
+          priority: number
+          sport_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          channels?: string[]
+          competition_pattern: string
+          created_at?: string
+          id?: string
+          match_type?: string
+          notes?: string | null
+          priority?: number
+          sport_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          channels?: string[]
+          competition_pattern?: string
+          created_at?: string
+          id?: string
+          match_type?: string
+          notes?: string | null
+          priority?: number
+          sport_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_banner: {
         Row: {
           active: boolean

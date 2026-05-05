@@ -147,11 +147,38 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Carrega overrides persistentes (admin pode editar via UI, sem redeploy).
+    type Override = { competition_pattern: string; match_type: string; sport_type: string | null; channels: string[]; priority: number };
+    const { data: overridesData } = await supabase
+      .from("broadcast_overrides")
+      .select("competition_pattern, match_type, sport_type, channels, priority")
+      .eq("active", true)
+      .order("priority", { ascending: false });
+    const overrides: Override[] = (overridesData || []) as Override[];
+
+    const lookupOverride = (competition: string, sportType: string): string[] => {
+      if (!competition) return [];
+      const compLower = competition.toLowerCase();
+      for (const o of overrides) {
+        if (o.sport_type && o.sport_type !== sportType) continue;
+        const pat = (o.competition_pattern || "").toLowerCase();
+        if (!pat) continue;
+        let matched = false;
+        if (o.match_type === "exact") matched = compLower === pat;
+        else if (o.match_type === "regex") {
+          try { matched = new RegExp(o.competition_pattern, "i").test(competition); } catch { matched = false; }
+        } else matched = compLower.includes(pat);
+        if (matched && o.channels?.length) return [...o.channels];
+      }
+      return [];
+    };
+
     const base = `https://www.thesportsdb.com/api/v1/json/${apiKey}`;
     const allRows: any[] = [];
     const errors: string[] = [];
     const perSport: Record<string, number> = {};
     const fallbackHits: Record<string, number> = {};
+    const overrideHits: Record<string, number> = {};
     const noChannelByCompetition: Record<string, number> = {};
 
     // Para a data alvo (já em BRT), precisamos consultar dateEvent UTC equivalente.
@@ -298,8 +325,18 @@ Deno.serve(async (req) => {
         // 1) Canais reais vindos do eventstv.php (já filtrados por isBrazilChannel)
         let channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
         let usedFallback = false;
+        let usedOverride = false;
 
-        // 2) Fallback por competição quando a TheSportsDB não trouxer canal BR
+        // 2) Override persistente (tabela broadcast_overrides, editável pelo admin)
+        if (channels.length === 0) {
+          const ov = lookupOverride(competition, sportType);
+          if (ov.length > 0) {
+            channels = ov;
+            usedOverride = true;
+          }
+        }
+
+        // 3) Fallback hardcoded (regex genéricas) — só se não houver override
         if (channels.length === 0) {
           const fb = lookupBroadcastFallback(competition, sportType);
           if (fb.length > 0) {
@@ -308,7 +345,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (usedFallback) {
+        if (usedOverride) {
+          overrideHits[competition] = (overrideHits[competition] || 0) + 1;
+        } else if (usedFallback) {
           fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
         } else if (channels.length === 0) {
           noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
@@ -404,6 +443,7 @@ Deno.serve(async (req) => {
           tv_stats_by_date: tvStats,
           candidate_dates: candidateDates,
           fallback_hits: fallbackHits,
+          override_hits: overrideHits,
           no_channel_by_competition: noChannelByCompetition,
         },
       });
@@ -412,7 +452,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, fallbackHits, noChannelByCompetition,
+      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, fallbackHits, overrideHits, noChannelByCompetition,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
