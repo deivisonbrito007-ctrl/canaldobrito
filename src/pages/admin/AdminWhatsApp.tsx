@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
-import { buildDeepLink, type PublicTab } from "@/lib/utils";
+import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 
 type DeepTab = PublicTab;
 
