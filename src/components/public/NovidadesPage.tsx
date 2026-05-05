@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Grid, List, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Grid, List, Search, Sparkles } from "lucide-react";
 import { useActiveNewsReleases, type NewsRelease } from "@/hooks/useNewsReleases";
 import { useActiveMovies } from "@/hooks/useMovies";
 import { useActiveSeries } from "@/hooks/useSeries";
