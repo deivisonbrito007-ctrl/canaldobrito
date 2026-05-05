@@ -43,6 +43,6 @@ describe("WeeklySeriesSection", () => {
     const { getByText } = render(<WeeklySeriesSection />, { wrapper });
     expect(getByText("Test Series")).toBeInTheDocument();
     expect(getByText("9.0")).toBeInTheDocument();
-    expect(getByText("Séries (1)")).toBeInTheDocument();
+    expect(getByText("Sugestões de Séries (1)")).toBeInTheDocument();
   });
 });
