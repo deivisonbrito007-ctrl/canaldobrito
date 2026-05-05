@@ -318,6 +318,58 @@ export default function AdminAnalytics() {
         <StatCard icon={Users} label="Sessões" value={aggA.totals.sessions} compare={aggB?.totals.sessions} />
       </div>
 
+      {/* Funil WhatsApp: shares → landings → tab_views (CTR & conversão) */}
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-xl tracking-wide text-foreground">
+            Funil <span className="text-primary">WhatsApp</span>
+          </h2>
+          {loadingRemote && <span className="text-[10px] text-muted-foreground font-body">carregando…</span>}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-body">
+          CTR = landings únicos ÷ shares · Conversão = tab_views ÷ landings
+        </p>
+        {funnelA.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic font-body">
+            Sem shares/landings registrados ainda. Compartilhe um link rápido em /admin/whatsapp para começar.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-body">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b border-border">
+                  <th className="py-2 pr-3">Campaign</th>
+                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
+                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
+                  <th className="py-2 px-3 text-right">CTR</th>
+                  <th className="py-2 px-3 text-right">Tab views</th>
+                  <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {funnelA.map((r) => {
+                  const b = funnelB.find((x) => x.campaign === r.campaign);
+                  return (
+                    <tr key={r.campaign} className="border-b border-border/30">
+                      <td className="py-2 pr-3 font-mono text-[11px] text-foreground">{r.campaign}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums text-primary font-bold">
+                        {(r.ctr * 100).toFixed(1)}%
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.tabViews}</td>
+                      <td className="py-2 pl-3 text-right tabular-nums text-primary font-bold">
+                        {(r.conversion * 100).toFixed(0)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* Campaigns */}
       <Card className="p-4 space-y-3">
         <h2 className="font-display text-xl tracking-wide text-foreground">
