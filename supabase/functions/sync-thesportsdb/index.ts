@@ -240,9 +240,24 @@ Deno.serve(async (req) => {
         const competition = ev.strLeague || sport;
         const competitionDetail = ev.strSeason ? `${ev.strSeason}${ev.intRound ? ` • R${ev.intRound}` : ""}` : (ev.intRound ? `R${ev.intRound}` : null);
 
-        // Pega canais do índice pré-construído + limita a 6 para não poluir
-        const channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
+        // 1) Canais reais vindos do eventstv.php (já filtrados por isBrazilChannel)
+        let channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
+        let usedFallback = false;
 
+        // 2) Fallback por competição quando a TheSportsDB não trouxer canal BR
+        if (channels.length === 0) {
+          const fb = lookupBroadcastFallback(competition, sportType);
+          if (fb.length > 0) {
+            channels = fb;
+            usedFallback = true;
+          }
+        }
+
+        if (usedFallback) {
+          fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
+        } else if (channels.length === 0) {
+          noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
+        }
 
         allRows.push({
           date: brt.date,
