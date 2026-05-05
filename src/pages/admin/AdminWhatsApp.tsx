@@ -64,7 +64,11 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
         {finalText}
       </pre>
       <div className="flex gap-2">
-        <CopyButton text={finalText} label="Copiar" />
+        <CopyButton
+          text={finalText}
+          label="Copiar"
+          onAfterCopy={() => trackShare({ ...shareMeta, action: "copy" })}
+        />
         <Button size="sm" onClick={handleSendWhatsApp} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
           <MessageCircle className="h-3.5 w-3.5" />
           Enviar
