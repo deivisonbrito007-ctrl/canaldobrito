@@ -1,83 +1,58 @@
-## Gráfico diário de CTR e Conversão
+## Breakdown de CTR/Conversão por aba (tab)
 
-Adicionar um gráfico de linha (recharts, já instalado) no `AdminAnalytics` mostrando **CTR** e **Conversão** por dia para a janela do Período A — e, quando "Comparar" estiver ligado, sobrepor as séries do Período B em cinza para identificar visualmente picos e quedas após cada campanha.
+Adicionar um novo card no `AdminAnalytics` mostrando o funil **por aba** (Ao Vivo, Programação, Filmes, Séries, Novidades, Sugestões, esportes específicos), respondendo "qual aba converte melhor após o share?".
 
-### O que entra na tela
+### Onde
 
-Logo abaixo do card **Funil WhatsApp** (entre as linhas 371-373 do arquivo atual), um novo card "Tendência diária":
+Logo abaixo do card "Tendência diária" (e antes de "Por utm_campaign"), em `src/pages/admin/AdminAnalytics.tsx`.
 
-- **Eixo X**: dias do período (formato `dd/MM`)
-- **Eixo Y esquerdo**: percentuais 0–100% (CTR e Conversão)
-- **Linhas**:
-  - `CTR (A)` — cor primária (`hsl(var(--primary))`), traço sólido
-  - `Conversão (A)` — cor accent secundária, traço sólido
-  - `CTR (B)` e `Conversão (B)` — cinza tracejado (só quando comparação ligada)
-- **Tooltip**: mostra dia, CTR%, Conversão% e os números brutos (shares, landings, tab_views) daquele dia
-- **Filtro de campanha**: dropdown opcional "Todas as campanhas" / cada `utm_campaign` específica, para isolar um único funil
-- **ReferenceLine** vertical pontilhada nos dias em que houve `link_share` (mostra "quando você divulgou"), facilitando ver picos pós-campanha
-
-```text
-CTR/Conv % │
-        100│
-         75│  ╱╲ CTR
-         50│ ╱  ╲___╱╲
-         25│╱       ╲╱ Conv
-          0└────────────────── dia
-            12  13  14  15  16
-                 ↑      ↑
-                share  share
-```
-
-### Lógica nova (mesmo arquivo)
+### Lógica nova
 
 ```ts
-type DailyPoint = {
-  day: string;       // 'YYYY-MM-DD'
-  label: string;     // 'dd/MM'
+interface TabFunnelRow {
+  tab: string;
   shares: number;
   landings: number;
   uniqueLanders: number;
   tabViews: number;
-  ctr: number | null;        // null quando shares=0 (gap na linha)
-  conversion: number | null; // null quando landings=0
-};
+  ctr: number;        // landings ÷ shares
+  conversion: number; // tab_views ÷ landings
+}
 
-function computeDaily(
-  remote: RemoteEvent[],
-  from: Date,
-  to: Date,
-  campaign?: string | null,
-): DailyPoint[] { /* agrupa por YYYY-MM-DD em America/Sao_Paulo, mesma regra do computeFunnel */ }
+function computeFunnelByTab(remote: RemoteEvent[]): TabFunnelRow[] {
+  // shares     → chave: ev.props.tab_slug ?? ev.tab
+  // landings   → chave: ev.props.tab_slug ?? ev.props.landing_tab ?? ev.tab
+  // tab_views  → chave: ev.tab
+}
 ```
 
-- Reaproveita a mesma classificação de eventos do `computeFunnel` (link_share → shares; landing_with_utm → landings/uniqueLanders; tab_view com utm_campaign → tabViews).
-- Usa `null` em dias sem denominador para o recharts criar lacuna em vez de cair a 0% (evita falsos vales).
-- Datas alinhadas ao timezone `America/Sao_Paulo` (regra core do projeto).
+Reaproveita o mesmo modelo de eventos já usado por `computeFunnel`, só troca a dimensão de agrupamento de `utm_campaign` para `tab`. Isso casa naturalmente porque no `analytics.ts` o `tab_slug` já é gravado em `link_share`, `landing_with_utm` e os `tab_view` rotulam a aba.
 
-### Marcadores de campanha
+### UI do card
 
-Para cada dia que teve ≥1 `link_share`, renderiza uma `ReferenceLine` vertical com label discreto (ícone `Send` em opacidade baixa). Isso responde diretamente "o que aconteceu depois que eu mandei o link?".
+Tabela compacta (mesmo padrão visual do funil de campanha):
 
-### Filtro de campanha
+| Aba | Shares | Landings | CTR | Tab views | Conv. |
+|---|---|---|---|---|---|
+| programacao | 12 | 38 | 316% | 92 | 242% |
+| filmes | 8 | 19 | 237% | 41 | 215% |
 
-Select simples (componente `<select>` nativo estilizado, mantendo padrão minimalista do painel) acima do gráfico:
-- "Todas as campanhas" (default) — soma global
-- Lista de campanhas presentes em `funnelA` (ordenadas por shares+landings)
+- Ordenado por `shares + landings` desc
+- CTR e Conversão em verde primário
+- Quando "Comparar" estiver ligado, mostra delta vs período B usando o mesmo componente `<Delta>` já existente
+- Linha de barra horizontal sutil sob cada aba (proporção de tab_views) reaproveitando o estilo do card "Por tab_view" já presente, para leitura rápida
 
-Quando uma campanha é selecionada, `computeDaily` é chamado filtrando `ev.utm_campaign === campaign` (e shares só para `share-<slug>` correspondente).
+### Mobile
 
-### Mobile-first
+- `overflow-x-auto` na tabela
+- Texto `text-xs` e `font-mono` em valores numéricos
+- Touch targets não aplicáveis (read-only)
 
-- Altura fixa do gráfico: `h-56` (~224px), confortável em telas 320–430px
-- Touch targets ≥44px no select e nos atalhos do tooltip
-- Sem animação pesada (respeita `prefers-reduced-motion`: passar `isAnimationActive={false}` quando aplicável)
-
-### Arquivo único alterado
+### Arquivo único
 
 - `src/pages/admin/AdminAnalytics.tsx`
-  - Adicionar import do `recharts` (`ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine`) e ícone `TrendingUp`
-  - Adicionar `computeDaily` perto do `computeFunnel`
-  - Adicionar estado `selectedCampaign`
-  - Renderizar novo `<Card>` "Tendência diária" entre o card de Funil e o card "Por utm_campaign"
+  - Adicionar `interface TabFunnelRow` e `computeFunnelByTab` perto de `computeFunnel` (após linha 253)
+  - Adicionar `tabFunnelA` e `tabFunnelB` via `useMemo`
+  - Renderizar novo `<Card>` "Funil por aba" entre o card "Tendência diária" e "Por utm_campaign"
 
-Sem mudanças de schema, sem novas dependências, sem alterações em `analytics.ts`.
+Sem mudanças de schema, sem novas dependências.

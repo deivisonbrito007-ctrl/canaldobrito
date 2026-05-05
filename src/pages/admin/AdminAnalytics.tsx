@@ -252,6 +252,54 @@ function computeDaily(
     });
 }
 
+interface TabFunnelRow {
+  tab: string;
+  shares: number;
+  landings: number;
+  uniqueLanders: number;
+  tabViews: number;
+  ctr: number;
+  conversion: number;
+}
+
+function computeFunnelByTab(remote: RemoteEvent[]): TabFunnelRow[] {
+  const map = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
+  const ensure = (t: string) => {
+    if (!map.has(t)) map.set(t, { shares: 0, landings: 0, tabViews: 0, landers: new Set() });
+    return map.get(t)!;
+  };
+  for (const ev of remote) {
+    if (ev.event === "link_share") {
+      const tab = (ev.props?.tab_slug as string) || ev.tab || (ev.props?.tab as string) || null;
+      if (!tab) continue;
+      ensure(tab).shares += 1;
+    } else if (ev.event === "landing_with_utm") {
+      const tab = (ev.props?.tab_slug as string) || (ev.props?.landing_tab as string) || ev.tab || null;
+      if (!tab) continue;
+      const row = ensure(tab);
+      row.landings += 1;
+      if (ev.user_id) row.landers.add(ev.user_id);
+    } else if (ev.event === "tab_view") {
+      const tab = ev.tab || (ev.props?.tab as string) || null;
+      if (!tab) continue;
+      ensure(tab).tabViews += 1;
+    }
+  }
+  const rows: TabFunnelRow[] = [];
+  for (const [tab, v] of map) {
+    rows.push({
+      tab,
+      shares: v.shares,
+      landings: v.landings,
+      uniqueLanders: v.landers.size,
+      tabViews: v.tabViews,
+      ctr: v.shares > 0 ? ((v.landers.size > 0 ? v.landers.size : v.landings) / v.shares) * 100 : 0,
+      conversion: v.landings > 0 ? (v.tabViews / v.landings) * 100 : 0,
+    });
+  }
+  return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
+}
+
 
 export default function AdminAnalytics() {
   const [events, setEvents] = useState<LoggedEvent[]>([]);
@@ -362,6 +410,8 @@ export default function AdminAnalytics() {
     () => dailyA.filter((p) => p.shares > 0).map((p) => p.label),
     [dailyA],
   );
+  const tabFunnelA = useMemo(() => computeFunnelByTab(remoteA), [remoteA]);
+  const tabFunnelB = useMemo(() => computeFunnelByTab(remoteB), [remoteB]);
 
   const aggA = useMemo(() => aggregate(events, fromA.getTime(), toA.getTime()), [events, fromA, toA]);
   const aggB = useMemo(
@@ -597,6 +647,71 @@ export default function AdminAnalytics() {
                 )}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        )}
+      </Card>
+
+      {/* Funil por aba */}
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-xl tracking-wide text-foreground">
+            Funil por <span className="text-primary">aba</span>
+          </h2>
+          {compareOn && (
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-body">
+              A vs B
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-body">
+          Qual aba converte melhor após o share. CTR = landings ÷ shares · Conv. = tab_views ÷ landings.
+        </p>
+        {tabFunnelA.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic font-body">
+            Sem dados por aba ainda no período.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-body">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b border-border">
+                  <th className="py-2 pr-3">Aba</th>
+                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
+                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
+                  <th className="py-2 px-3 text-right">CTR</th>
+                  <th className="py-2 px-3 text-right">Tab views</th>
+                  <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tabFunnelA.map((r) => {
+                  const b = tabFunnelB.find((x) => x.tab === r.tab);
+                  const maxViews = Math.max(...tabFunnelA.map((x) => x.tabViews), 1);
+                  const pct = (r.tabViews / maxViews) * 100;
+                  return (
+                    <tr key={r.tab} className="border-b border-border/30">
+                      <td className="py-2 pr-3">
+                        <div className="font-mono text-[11px] text-foreground">{r.tab}</div>
+                        <div className="h-1 mt-1 rounded-full bg-surface overflow-hidden max-w-[120px]">
+                          <div className="h-full bg-primary/60 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums text-primary font-bold">
+                        {r.ctr.toFixed(0)}%
+                        {compareOn && <Delta a={Math.round(r.ctr)} b={Math.round(b?.ctr ?? 0)} />}
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.tabViews}{compareOn && <Delta a={r.tabViews} b={b?.tabViews ?? 0} />}</td>
+                      <td className="py-2 pl-3 text-right tabular-nums text-primary font-bold">
+                        {r.conversion.toFixed(0)}%
+                        {compareOn && <Delta a={Math.round(r.conversion)} b={Math.round(b?.conversion ?? 0)} />}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </Card>
