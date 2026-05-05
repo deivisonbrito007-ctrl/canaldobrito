@@ -1,77 +1,84 @@
-## Links curtos por aba (sem cauda de UTM)
+## Aba "Ao Vivo" — visual premium
 
-Hoje o link copiado fica longo e feio:
-```
-https://canaldobrito.site/ao-vivo?utm_source=whatsapp&utm_medium=status&utm_campaign=share-ao-vivo
-```
+Modernizar `ChannelBadge`, `LiveNowSection`, `LiveFeedSection` e `LiveEventsSection` com gradientes, glows, animações e melhor hierarquia. Sem mudanças de banco/lógica — apenas visual e ergonomia.
 
-A proposta é deixar **apenas o nome da aba no path**, mantendo rastreio:
-```
-https://canaldobrito.site/s/ao-vivo
-https://canaldobrito.site/s/programacao
-https://canaldobrito.site/s/novidades
-https://canaldobrito.site/s/sugestoes
-```
+### 1. `ChannelBadge.tsx` — refazer
 
-A rota `/s/<slug>` é um **redirecionador interno** que injeta os UTMs em memória, dispara `landing_with_utm` e em seguida navega para `/<slug>` limpa. O usuário vê uma URL bonita, e o Analytics continua medindo CTR/Conversão exatamente como hoje.
+- Estender `ChannelConfig` com `gradient` (Tailwind `from-… to-…`) e `glow` (`shadow-[0_0_…]`).
+- Tamanhos: prop nova `size?: "sm" | "md" | "lg"` (default `md`).
+  ```ts
+  const SIZE_CLASSES = {
+    sm: "text-[9px] px-1.5 py-0.5 gap-0.5 rounded-md",
+    md: "text-[10px] px-2 py-1 gap-1 rounded-lg",
+    lg: "text-[11px] px-2.5 py-1.5 gap-1.5 rounded-lg",
+  };
+  ```
+- Hover: `transition-all duration-200 hover:scale-105 hover:brightness-110`.
+- Aplicar `bg-gradient-to-r ${gradient}` + `glow` por canal.
+- Adicionar canais novos: **YouTube** (vermelho, short `YT`), **DAZN** (amarelo).
+- Mapa de cores conforme tabela do prompt (ESPN, SporTV, Premiere, Disney+, CazéTV, TNT, Prime, Max, Band, Record, GOAT, ge tv, Space, YouTube, DAZN).
+- Canal do Brito mantém logo PNG, ganha glow âmbar mais forte e gradiente tri-cor (vermelho→laranja→âmbar).
 
-### Por que essa abordagem
+### 2. `LiveNowSection.tsx` (carrossel)
 
-- Nenhuma dependência externa (sem encurtador de terceiros)
-- Mantém o domínio `canaldobrito.site` (confiança no WhatsApp)
-- Não quebra nada: a rota `/<slug>` antiga continua funcionando (alguém clicar num link antigo ainda cai certo)
-- Rastreio igual ao atual: o `landing_with_utm` é disparado com `utm_source=whatsapp`, `utm_medium=status`, `utm_campaign=share-<slug>` — só que vindo da rota `/s/<slug>` em vez do query string
+- Card: `border-destructive/30`, hover `-translate-y-1.5` + `shadow-[0_12px_32px_hsl(0,84%,60%,0.25)]` + `hover:border-destructive/50`, `group`.
+- Barra de acento: gradiente já existe — adicionar `relative overflow-hidden` e camada interna `animate-shimmer` (linear-gradient transparente → branco/15% → transparente).
+- Badge LIVE: envolver em `div` com `bg-destructive/15 border border-destructive/30 rounded-full px-2 py-0.5` para dar contêiner.
+- Separador VS/X: `bg-gradient-to-br from-destructive/25 to-destructive/10 border-destructive/30`, texto `font-extrabold`.
+- Times: `font-extrabold` (já é `font-bold`).
+- Canais: mostrar até **3** (era 2) via `slice(0, 3)`, contador `+N` quando exceder, `size="sm"` em mobile.
+- Footer com `bg-muted/20` envolvendo time + canais.
 
-### O que muda no código
+### 3. `LiveFeedSection.tsx` (grid)
 
-**1) Nova rota `/s/:slug` em `src/App.tsx`** (ou onde estão as rotas)
-- Componente `ShareRedirect` que:
-  - Lê `slug`, valida via `SLUG_TO_TAB`
-  - Salva attribution sintética em `sessionStorage` (mesma forma do `captureLandingAttribution`) com `utm_source=whatsapp`, `utm_medium=status`, `utm_campaign=share-<slug>`
-  - Dispara `track("landing_with_utm", …)` antes do redirect
-  - `<Navigate to="/<slug>" replace />` para deixar a URL final limpa
-- Slug inválido → `<Navigate to="/" replace />`
+- Card: `hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.2)] hover:border-destructive/40`.
+- Barra de acento: adicionar shimmer overlay igual ao LiveNow.
+- Badge LIVE com contêiner arredondado (mesmo padrão do LiveNow).
+- Separador VS com gradiente sutil `bg-gradient-to-br from-destructive/15 to-destructive/5` em vez de `bg-surface`.
+- Permitir até 2 canais visíveis + contador (hoje mostra só 1).
+- Footer com `bg-muted/20`.
 
-**2) `buildDeepLink` (em `src/lib/utils.ts`) ganha modo "short"**
-```ts
-export function buildDeepLink(base, tab, opts = {}) {
-  // novo: opts.short === true → retorna `${base}/s/${TAB_SLUGS[tab]}`
-  // sem query string, sem UTMs visíveis
+### 4. `LiveEventsSection.tsx` (F1, MMA, surf)
+
+- Mesmas melhorias do LiveFeed mas com **tema âmbar**:
+  - Acento: `from-amber-500/80 via-orange-500/60 to-transparent` + shimmer.
+  - Badge LIVE: contêiner `bg-amber-500/15 border-amber-500/30`.
+  - Hover: `hover:border-amber-500/40 hover:shadow-[0_8px_24px_rgba(245,158,11,0.18)]`.
+
+### 5. CSS — `src/index.css`
+
+Adicionar utilitário (perto da `@keyframes shimmer` existente, que é para skeleton):
+```css
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer-sweep { animation: none; }
 }
 ```
-Comportamento atual com `opts.utm` continua funcionando (compatibilidade), mas o painel passa a usar `short: true` por padrão.
+(Nome diferente do `shimmer` existente para não conflitar com skeleton.)
 
-**3) `src/pages/admin/AdminWhatsApp.tsx`**
-- Onde hoje chama `buildDeepLink(siteUrl, tab, { utm: withUtm })`, troca para `buildDeepLink(siteUrl, tab, { short: true })`
-- Remove o toggle "UTM" (não faz mais sentido — o rastreio é embutido na rota `/s/`)
-- Mantém `trackShare(...)` como está, agora com `utm_campaign: \`share-${slug}\`` sempre (consistência)
-- Para o link "raiz" do site (`siteUrl` sem aba), também oferece versão curta usando `/s/home`
+### Mobile-first
 
-**4) Mensagens do MessageCard e do "Programação do dia"**
-- Os links embutidos em texto (`👉 https://...`) usam o mesmo `buildDeepLink(..., { short: true })` — visualmente bem mais leve no WhatsApp Status.
+- Em telas <640px: badges usam `size="sm"` automaticamente quando passado `size="md"` em mobile (ou simplesmente fixar `size="sm"` nas seções via `useIsMobile`).
+- Hierarquia: máx. 3 canais visíveis no LiveNow / 2 no LiveFeed.
+- Touch targets ≥44px nos cards permanecem (já são).
 
-### Visual antes / depois
+### Acessibilidade
 
-```
-ANTES: 🔴 AO VIVO no Canal do Brito
-       https://canaldobrito.site/ao-vivo?utm_source=whatsapp&utm_medium=status&utm_campaign=share-ao-vivo
-
-DEPOIS: 🔴 AO VIVO no Canal do Brito
-        https://canaldobrito.site/s/ao-vivo
-```
-
-### Compatibilidade & rastreio
-
-- Links antigos com `?utm_*` continuam funcionando (capture já existente)
-- Novo formato `/s/<slug>` produz exatamente os mesmos eventos no Analytics (CTR/Conversão sem regressão nas métricas históricas)
-- `utm_content` (cards específicos) continua sendo possível como `?c=<id>` opcional na rota curta — fica para uma evolução futura, não bloqueia esta entrega
+- Manter `prefers-reduced-motion`: shimmer e pulse desativados (já tratado globalmente; reforçar para `.animate-shimmer-sweep`).
+- Contraste AA: textos `text-*-300` sobre `bg-*-600/25` passam.
 
 ### Arquivos editados
 
-- `src/lib/utils.ts` — `buildDeepLink` com `opts.short`
-- `src/App.tsx` (ou arquivo de rotas) — nova rota `/s/:slug`
-- novo `src/pages/ShareRedirect.tsx` — captura attribution e redireciona
-- `src/pages/admin/AdminWhatsApp.tsx` — usa modo curto, remove toggle UTM
-- (opcional) `src/lib/analytics.ts` — pequena helper `captureSyntheticAttribution(slug)` para reaproveitar a lógica de gravação em sessionStorage
+- `src/components/public/ChannelBadge.tsx` — gradientes, glows, prop `size`, novos canais
+- `src/components/public/LiveNowSection.tsx` — shimmer no acento, contêiner LIVE, separador melhor, +1 canal
+- `src/components/public/LiveFeedSection.tsx` — mesmo tratamento + footer com bg
+- `src/components/public/LiveEventsSection.tsx` — tema âmbar consistente
+- `src/index.css` — keyframe `shimmer-sweep`
 
-Sem migrações de banco, sem novas dependências.
+Sem novas dependências, sem mudanças no schema do banco, sem alteração de lógica de negócio.

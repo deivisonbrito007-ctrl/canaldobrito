@@ -364,6 +364,17 @@
     animation: shimmer 1.8s ease-in-out infinite;
   }
 
+  @keyframes shimmer-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .animate-shimmer-sweep {
+    animation: shimmer-sweep 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shimmer-sweep { animation: none; }
+  }
+
   @media (max-width: 640px) {
     .glass-card {
       backdrop-filter: blur(12px);
