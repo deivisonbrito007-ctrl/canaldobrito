@@ -280,7 +280,7 @@ const AdminWhatsApp = () => {
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
   const [withUtm, setWithUtm] = useState(true);
-  const [contentByTab, setContentByTab] = useState<Record<string, string>>({});
+  
 
   const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
   const todayValidation = useMemo(() => validateDay(todayGames ?? []), [todayGames]);
