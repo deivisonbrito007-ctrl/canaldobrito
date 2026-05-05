@@ -12,15 +12,17 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
 import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
+import { trackShare, type ShareProps } from "@/lib/analytics";
 
 type DeepTab = PublicTab;
 
-const CopyButton = ({ text, label }: { text: string; label: string }) => {
+const CopyButton = ({ text, label, onAfterCopy }: { text: string; label: string; onAfterCopy?: () => void }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     toast.success("Copiado!");
+    onAfterCopy?.();
     setTimeout(() => setCopied(false), 2000);
   };
   return (
@@ -29,6 +31,11 @@ const CopyButton = ({ text, label }: { text: string; label: string }) => {
       {copied ? "Copiado" : label}
     </Button>
   );
+};
+
+const openWhatsApp = (text: string, share: ShareProps) => {
+  trackShare(share);
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
 };
 
 const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
