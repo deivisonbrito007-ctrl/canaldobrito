@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Image, Film, Clapperboard, Settings, ExternalLink, Sparkles, ChevronRight, User, MessageCircle, Github, Radio, ScrollText, BarChart3, Tv, ListFilter } from "lucide-react";
+import { LogOut, LayoutDashboard, Image, Film, Clapperboard, Settings, ExternalLink, Sparkles, ChevronRight, User, MessageCircle, Github, Radio, ScrollText, BarChart3, Tv, ListFilter, Globe } from "lucide-react";
 import logo from "@/assets/canal_do_brito_logo.png";
 
 const adminTabs = [
