@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Image, Film, Clapperboard, Settings, ExternalLink, Sparkles, ChevronRight, User, MessageCircle, Github, Radio, ScrollText, BarChart3, Tv, ListFilter, Globe } from "lucide-react";
+import { LogOut, LayoutDashboard, Image, Film, Clapperboard, Settings, ExternalLink, Sparkles, ChevronRight, MessageCircle, Github, ScrollText } from "lucide-react";
 import logo from "@/assets/canal_do_brito_logo.png";
 
 const adminTabs = [
@@ -11,12 +11,7 @@ const adminTabs = [
   { value: "series", label: "Séries", icon: Clapperboard, path: "/admin/series", color: "text-purple-400", activeBg: "bg-purple-500/[0.08]", activeBorder: "border-b-purple-400" },
   { value: "novidades", label: "Novidades", icon: Sparkles, path: "/admin/novidades", color: "text-amber-400", activeBg: "bg-amber-500/[0.08]", activeBorder: "border-b-amber-400" },
   { value: "whatsapp", label: "WhatsApp", icon: MessageCircle, path: "/admin/whatsapp", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400" },
-  { value: "api-sync", label: "API Sync", icon: Radio, path: "/admin/api-sync", color: "text-rose-400", activeBg: "bg-rose-500/[0.08]", activeBorder: "border-b-rose-400" },
   { value: "auditoria", label: "Auditoria", icon: ScrollText, path: "/admin/auditoria", color: "text-orange-400", activeBg: "bg-orange-500/[0.08]", activeBorder: "border-b-orange-400" },
-  { value: "sync-stats", label: "Sync Stats", icon: BarChart3, path: "/admin/sync-stats", color: "text-cyan-400", activeBg: "bg-cyan-500/[0.08]", activeBorder: "border-b-cyan-400" },
-  { value: "canais", label: "Canais", icon: Tv, path: "/admin/canais", color: "text-fuchsia-400", activeBg: "bg-fuchsia-500/[0.08]", activeBorder: "border-b-fuchsia-400" },
-  { value: "canais-whitelist", label: "Whitelist", icon: Globe, path: "/admin/canais-whitelist", color: "text-cyan-400", activeBg: "bg-cyan-500/[0.08]", activeBorder: "border-b-cyan-400" },
-  { value: "ligas", label: "Ligas", icon: ListFilter, path: "/admin/ligas", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400" },
   { value: "diagnostico-github", label: "GitHub", icon: Github, path: "/admin/diagnostico-github", color: "text-sky-400", activeBg: "bg-sky-500/[0.08]", activeBorder: "border-b-sky-400" },
   { value: "configuracoes", label: "Config", icon: Settings, path: "/admin/configuracoes", color: "text-muted-foreground", activeBg: "bg-white/[0.06]", activeBorder: "border-b-muted-foreground" },
 ];

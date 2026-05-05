@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ScrollText, Trash2, Pause, Play, ShieldAlert, RefreshCw, Radio, AlertTriangle } from "lucide-react";
+import { ScrollText, Trash2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 
 type AuditRow = {
@@ -13,24 +13,13 @@ type AuditRow = {
 };
 
 const ACTION_META: Record<string, { label: string; icon: any; cls: string }> = {
-  delete_api: { label: "Jogo da API removido", icon: Trash2, cls: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
   delete_manual: { label: "Jogo manual removido", icon: Trash2, cls: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
-  api_sync_paused: { label: "Sincronização pausada (filtro MANUAL_ONLY ativo)", icon: Pause, cls: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
-  api_sync_resumed: { label: "Sincronização reativada", icon: Play, cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
-  api_sync_run: { label: "Sync da API executado", icon: RefreshCw, cls: "text-sky-300 bg-sky-500/10 border-sky-500/30" },
-  api_live_update_run: { label: "Atualização AO VIVO executada", icon: Radio, cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
-  api_sync_failed: { label: "Falha no sync da API", icon: AlertTriangle, cls: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
+  delete_api: { label: "Jogo (legado API) removido", icon: Trash2, cls: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
 };
 
 const FILTERS = [
   { value: "all", label: "Tudo" },
-  { value: "api_sync_run", label: "Execuções sync" },
-  { value: "api_live_update_run", label: "Updates ao vivo" },
-  { value: "delete_api", label: "Removidos da API" },
   { value: "delete_manual", label: "Removidos manuais" },
-  { value: "api_sync_paused", label: "Pausas" },
-  { value: "api_sync_resumed", label: "Reativações" },
-  { value: "api_sync_failed", label: "Falhas" },
 ] as const;
 
 const AdminAudit = () => {
@@ -132,7 +121,7 @@ const AdminAudit = () => {
                   </p>
                 )}
                 <p className="text-[9px] text-muted-foreground/60 font-mono truncate">
-                  actor: {row.actor_id?.slice(0, 8) || "—"} {row.payload?.external_id ? `• ext: ${row.payload.external_id}` : ""}
+                  actor: {row.actor_id?.slice(0, 8) || "—"}
                 </p>
               </div>
             );

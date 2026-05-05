@@ -77,87 +77,6 @@ export type Database = {
         }
         Relationships: []
       }
-      broadcast_overrides: {
-        Row: {
-          active: boolean
-          away_team_pattern: string | null
-          channels: string[]
-          competition_pattern: string
-          created_at: string
-          event_date: string | null
-          home_team_pattern: string | null
-          id: string
-          match_type: string
-          notes: string | null
-          priority: number
-          sport_type: string | null
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          away_team_pattern?: string | null
-          channels?: string[]
-          competition_pattern: string
-          created_at?: string
-          event_date?: string | null
-          home_team_pattern?: string | null
-          id?: string
-          match_type?: string
-          notes?: string | null
-          priority?: number
-          sport_type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          away_team_pattern?: string | null
-          channels?: string[]
-          competition_pattern?: string
-          created_at?: string
-          event_date?: string | null
-          home_team_pattern?: string | null
-          id?: string
-          match_type?: string
-          notes?: string | null
-          priority?: number
-          sport_type?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      channel_whitelist: {
-        Row: {
-          active: boolean
-          channel_pattern: string
-          country: string | null
-          created_at: string
-          id: string
-          match_type: string
-          notes: string | null
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          channel_pattern: string
-          country?: string | null
-          created_at?: string
-          id?: string
-          match_type?: string
-          notes?: string | null
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          channel_pattern?: string
-          country?: string | null
-          created_at?: string
-          id?: string
-          match_type?: string
-          notes?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       daily_banner: {
         Row: {
           active: boolean
@@ -197,13 +116,11 @@ export type Database = {
           archived: boolean
           away_team: string
           channels: string[] | null
-          channels_source: Json | null
           competition: string
           competition_detail: string | null
           created_at: string
           date: string
           elapsed_minutes: number | null
-          external_id: string | null
           game_time: string
           home_team: string
           id: string
@@ -219,13 +136,11 @@ export type Database = {
           archived?: boolean
           away_team: string
           channels?: string[] | null
-          channels_source?: Json | null
           competition?: string
           competition_detail?: string | null
           created_at?: string
           date?: string
           elapsed_minutes?: number | null
-          external_id?: string | null
           game_time: string
           home_team: string
           id?: string
@@ -241,13 +156,11 @@ export type Database = {
           archived?: boolean
           away_team?: string
           channels?: string[] | null
-          channels_source?: Json | null
           competition?: string
           competition_detail?: string | null
           created_at?: string
           date?: string
           elapsed_minutes?: number | null
-          external_id?: string | null
           game_time?: string
           home_team?: string
           id?: string
@@ -389,42 +302,6 @@ export type Database = {
           home_team?: string
           id?: string
           time?: string
-        }
-        Relationships: []
-      }
-      league_allowlist: {
-        Row: {
-          active: boolean
-          competition_pattern: string
-          created_at: string
-          id: string
-          match_type: string
-          notes: string | null
-          priority: number
-          sport_type: string | null
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          competition_pattern: string
-          created_at?: string
-          id?: string
-          match_type?: string
-          notes?: string | null
-          priority?: number
-          sport_type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          competition_pattern?: string
-          created_at?: string
-          id?: string
-          match_type?: string
-          notes?: string | null
-          priority?: number
-          sport_type?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -584,7 +461,6 @@ export type Database = {
         Args: { _endpoint: string; _game_id: string }
         Returns: undefined
       }
-      set_api_sync_paused: { Args: { _paused: boolean }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"
