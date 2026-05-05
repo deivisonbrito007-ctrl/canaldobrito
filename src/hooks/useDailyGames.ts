@@ -86,7 +86,8 @@ export const useAllDailyGames = (date: string) => {
 
       return rows;
     },
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 };
 

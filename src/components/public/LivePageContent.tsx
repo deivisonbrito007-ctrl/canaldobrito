@@ -226,7 +226,23 @@ const EmptyLive = () => (
 export const LivePageContent = () => {
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
-  const { data: games, isLoading } = useAllDailyGames(today);
+  const { data: games, isLoading, isFetching, dataUpdatedAt } = useAllDailyGames(today);
+  const [justUpdated, setJustUpdated] = useState(false);
+  const prevUpdatedRef = useState({ t: 0 })[0];
+
+  useEffect(() => {
+    if (!dataUpdatedAt) return;
+    if (prevUpdatedRef.t === 0) {
+      prevUpdatedRef.t = dataUpdatedAt;
+      return;
+    }
+    if (dataUpdatedAt > prevUpdatedRef.t) {
+      prevUpdatedRef.t = dataUpdatedAt;
+      setJustUpdated(true);
+      const id = setTimeout(() => setJustUpdated(false), 2200);
+      return () => clearTimeout(id);
+    }
+  }, [dataUpdatedAt, prevUpdatedRef]);
   const [filter, setFilter] = useState<FilterId>("all");
 
   const all = useMemo(
@@ -305,11 +321,32 @@ export const LivePageContent = () => {
                 </h1>
               </div>
 
-              <div className="flex flex-col items-end shrink-0">
+              <div className="flex flex-col items-end shrink-0 gap-1">
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-body">
                   Brasília
                 </span>
                 <LiveClock />
+                <AnimatePresence>
+                  {(justUpdated || isFetching) && (
+                    <motion.div
+                      key={isFetching ? "fetching" : "updated"}
+                      initial={{ opacity: 0, y: -4, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                      transition={{ duration: 0.2 }}
+                      className="inline-flex items-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2 py-0.5"
+                      aria-live="polite"
+                    >
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-primary animate-ping opacity-70" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-primary font-body">
+                        {isFetching ? "Atualizando" : "Atualizado"}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
