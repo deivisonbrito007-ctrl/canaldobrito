@@ -1,15 +1,15 @@
 import React, { useRef, useCallback } from "react";
 
 const categories = [
-  { emoji: "🔥", label: "Em Alta", action: { tab: "highlights" } },
+  { emoji: "🔥", label: "Em Alta", action: { tab: "novidades" } },
   { emoji: "⚽", label: "Futebol", action: { tab: "schedule" } },
   { emoji: "🏀", label: "Basquete", action: { tab: "schedule" } },
   { emoji: "🥊", label: "UFC/MMA", action: { tab: "schedule" } },
-  { emoji: "🎬", label: "Filmes", action: { tab: "highlights" } },
-  { emoji: "📺", label: "Séries", action: { tab: "highlights" } },
+  { emoji: "🎬", label: "Filmes", action: { tab: "novidades" } },
+  { emoji: "📺", label: "Séries", action: { tab: "novidades" } },
   { emoji: "🏅", label: "Esportes", action: { tab: "schedule" } },
   { emoji: "🎾", label: "Tênis", action: { tab: "schedule" } },
-  { emoji: "🏆", label: "Destaques", action: { tab: "highlights" } },
+  { emoji: "🏆", label: "Destaques", action: { tab: "novidades" } },
 ];
 
 const carouselItems = [...categories, ...categories, ...categories];

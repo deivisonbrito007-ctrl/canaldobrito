@@ -505,7 +505,7 @@ export const DailyGamesSection = () => {
           <p className="text-xs text-muted-foreground/40">Confira os destaques da semana enquanto isso</p>
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "highlights" }))}
+            onClick={() => window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "novidades" }))}
             className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/15 transition-all duration-200 min-h-[44px]"
             aria-label="Ir para a aba Destaques"
           >
