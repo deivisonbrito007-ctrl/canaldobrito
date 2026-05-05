@@ -39,7 +39,7 @@ const openWhatsApp = (text: string, share: ShareProps) => {
 };
 
 const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
-  const link = buildDeepLink(siteUrl, template.tab);
+  const link = buildDeepLink(siteUrl, template.tab, { short: true });
   const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
   const shareMeta: ShareProps = {
