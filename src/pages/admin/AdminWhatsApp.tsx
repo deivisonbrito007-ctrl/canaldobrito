@@ -12,15 +12,17 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
 import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
+import { trackShare, type ShareProps } from "@/lib/analytics";
 
 type DeepTab = PublicTab;
 
-const CopyButton = ({ text, label }: { text: string; label: string }) => {
+const CopyButton = ({ text, label, onAfterCopy }: { text: string; label: string; onAfterCopy?: () => void }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     toast.success("Copiado!");
+    onAfterCopy?.();
     setTimeout(() => setCopied(false), 2000);
   };
   return (
@@ -31,13 +33,22 @@ const CopyButton = ({ text, label }: { text: string; label: string }) => {
   );
 };
 
+const openWhatsApp = (text: string, share: ShareProps) => {
+  trackShare(share);
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+};
+
 const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
   const link = buildDeepLink(siteUrl, template.tab);
   const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
-  const handleSendWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(finalText)}`, "_blank");
+  const shareMeta: ShareProps = {
+    surface: "admin-whatsapp-template",
+    tab: template.tab ?? null,
+    utm_campaign: template.tab ? `share-${TAB_SLUGS[template.tab]}` : null,
+    action: "open",
   };
+  const handleSendWhatsApp = () => openWhatsApp(finalText, shareMeta);
 
   return (
     <div className="glass-panel rounded-xl p-4 space-y-3">
@@ -53,7 +64,11 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
         {finalText}
       </pre>
       <div className="flex gap-2">
-        <CopyButton text={finalText} label="Copiar" />
+        <CopyButton
+          text={finalText}
+          label="Copiar"
+          onAfterCopy={() => trackShare({ ...shareMeta, action: "copy" })}
+        />
         <Button size="sm" onClick={handleSendWhatsApp} className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]">
           <MessageCircle className="h-3.5 w-3.5" />
           Enviar
@@ -217,10 +232,14 @@ const DayPreviewCard = ({
 
       {text && (
         <div className="flex gap-2">
-          <CopyButton text={text} label="Copiar" />
+          <CopyButton
+            text={text}
+            label="Copiar"
+            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-day", tab: "schedule", utm_campaign: "share-programacao", action: "copy" })}
+          />
           <Button
             size="sm"
-            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")}
+            onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-day", tab: "schedule", utm_campaign: "share-programacao", action: "open" })}
             className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
           >
             <MessageCircle className="h-3.5 w-3.5" />
@@ -450,10 +469,26 @@ const AdminWhatsApp = () => {
                     {link}
                   </code>
                   <div className="flex gap-2">
-                    <CopyButton text={link} label="Link" />
+                    <CopyButton
+                      text={link}
+                      label="Link"
+                      onAfterCopy={() => trackShare({
+                        surface: "admin-whatsapp-quick",
+                        tab,
+                        utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
+                        utm_content: content || null,
+                        action: "copy",
+                      })}
+                    />
                     <Button
                       size="sm"
-                      onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")}
+                      onClick={() => openWhatsApp(text, {
+                        surface: "admin-whatsapp-quick",
+                        tab,
+                        utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
+                        utm_content: content || null,
+                        action: "open",
+                      })}
                       className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
@@ -506,11 +541,15 @@ const AdminWhatsApp = () => {
           </pre>
         )}
         <div className="flex gap-2">
-          <CopyButton text={customFinal || siteUrl} label="Copiar" />
+          <CopyButton
+            text={customFinal || siteUrl}
+            label="Copiar"
+            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-custom", tab: null, action: "copy" })}
+          />
           <Button
             size="sm"
             disabled={!customMsg.trim()}
-            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(customFinal)}`, "_blank")}
+            onClick={() => openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: null, action: "open" })}
             className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
           >
             <MessageCircle className="h-3.5 w-3.5" />

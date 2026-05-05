@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { BarChart3, RefreshCw, Trash2, Users, MousePointerClick, CalendarIcon, GitCompareArrows, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { BarChart3, RefreshCw, Trash2, Users, MousePointerClick, CalendarIcon, GitCompareArrows, ArrowUp, ArrowDown, Minus, Send, Target, MousePointer2 } from "lucide-react";
 import { readEventsLog, clearEventsLog, type LoggedEvent } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -109,8 +110,72 @@ function fmtRange(from: Date, to: Date): string {
   return `${format(from, "dd/MM", { locale: ptBR })} – ${format(to, "dd/MM", { locale: ptBR })}`;
 }
 
+interface RemoteEvent {
+  event: string;
+  user_id: string | null;
+  session_id: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  tab: string | null;
+  surface: string | null;
+  props: Record<string, unknown> | null;
+  created_at: string;
+}
+
+interface FunnelRow {
+  campaign: string;
+  shares: number;
+  landings: number;
+  tabViews: number;
+  uniqueLanders: number;
+  ctr: number;
+  conversion: number;
+}
+
+function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
+  const map = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
+  const ensure = (c: string) => {
+    if (!map.has(c)) map.set(c, { shares: 0, landings: 0, tabViews: 0, landers: new Set() });
+    return map.get(c)!;
+  };
+
+  for (const ev of remote) {
+    const campaign = ev.utm_campaign || (ev.event === "link_share" ? null : "(direct)");
+    if (ev.event === "link_share") {
+      const tabSlug = (ev.props?.tab_slug as string) || (ev.tab as string) || null;
+      const inferred = ev.utm_campaign || (tabSlug ? `share-${tabSlug}` : null);
+      if (!inferred) continue;
+      ensure(inferred).shares += 1;
+    } else if (ev.event === "landing_with_utm" && campaign) {
+      const row = ensure(campaign);
+      row.landings += 1;
+      if (ev.user_id) row.landers.add(ev.user_id);
+    } else if (ev.event === "tab_view" && campaign && campaign !== "(direct)") {
+      ensure(campaign).tabViews += 1;
+    }
+  }
+
+  const rows: FunnelRow[] = [];
+  for (const [campaign, v] of map) {
+    const uniqueLanders = v.landers.size;
+    rows.push({
+      campaign,
+      shares: v.shares,
+      landings: v.landings,
+      tabViews: v.tabViews,
+      uniqueLanders,
+      ctr: v.shares > 0 ? (uniqueLanders > 0 ? uniqueLanders : v.landings) / v.shares : 0,
+      conversion: v.landings > 0 ? v.tabViews / v.landings : 0,
+    });
+  }
+  return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
+}
+
 export default function AdminAnalytics() {
   const [events, setEvents] = useState<LoggedEvent[]>([]);
+  const [remote, setRemote] = useState<RemoteEvent[]>([]);
+  const [loadingRemote, setLoadingRemote] = useState(false);
+
   const refresh = () => setEvents(readEventsLog());
   useEffect(() => { refresh(); }, []);
 
@@ -133,6 +198,54 @@ export default function AdminAnalytics() {
       setFromB(startOfDay(new Date(from.getTime() - days * 86400000)));
     }
   };
+
+  // Fetch remote events for the union of both periods
+  useEffect(() => {
+    let cancelled = false;
+    const lo = compareOn ? Math.min(fromA.getTime(), fromB.getTime()) : fromA.getTime();
+    const hi = compareOn ? Math.max(toA.getTime(), toB.getTime()) : toA.getTime();
+    setLoadingRemote(true);
+    (async () => {
+      try {
+        const { data, error } = await (supabase as unknown as {
+          from: (t: string) => {
+            select: (s: string) => {
+              gte: (c: string, v: string) => {
+                lte: (c: string, v: string) => {
+                  order: (c: string, o: { ascending: boolean }) => {
+                    limit: (n: number) => Promise<{ data: RemoteEvent[] | null; error: unknown }>;
+                  };
+                };
+              };
+            };
+          };
+        })
+          .from("analytics_events")
+          .select("event,user_id,session_id,utm_campaign,utm_content,tab,surface,props,created_at")
+          .gte("created_at", new Date(lo).toISOString())
+          .lte("created_at", new Date(hi).toISOString())
+          .order("created_at", { ascending: false })
+          .limit(5000);
+        if (!cancelled && !error && data) setRemote(data);
+      } finally {
+        if (!cancelled) setLoadingRemote(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [fromA, toA, fromB, toB, compareOn]);
+
+  const inWindow = (ts: number, from: Date, to: Date) => ts >= from.getTime() && ts <= to.getTime();
+  const remoteA = useMemo(
+    () => remote.filter((e) => inWindow(new Date(e.created_at).getTime(), fromA, toA)),
+    [remote, fromA, toA]
+  );
+  const remoteB = useMemo(
+    () => (compareOn ? remote.filter((e) => inWindow(new Date(e.created_at).getTime(), fromB, toB)) : []),
+    [remote, fromB, toB, compareOn]
+  );
+
+  const funnelA = useMemo(() => computeFunnel(remoteA), [remoteA]);
+  const funnelB = useMemo(() => computeFunnel(remoteB), [remoteB]);
 
   const aggA = useMemo(() => aggregate(events, fromA.getTime(), toA.getTime()), [events, fromA, toA]);
   const aggB = useMemo(
@@ -204,6 +317,58 @@ export default function AdminAnalytics() {
         <StatCard icon={Users} label="Visitantes únicos" value={aggA.totals.visitors} compare={aggB?.totals.visitors} />
         <StatCard icon={Users} label="Sessões" value={aggA.totals.sessions} compare={aggB?.totals.sessions} />
       </div>
+
+      {/* Funil WhatsApp: shares → landings → tab_views (CTR & conversão) */}
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-xl tracking-wide text-foreground">
+            Funil <span className="text-primary">WhatsApp</span>
+          </h2>
+          {loadingRemote && <span className="text-[10px] text-muted-foreground font-body">carregando…</span>}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-body">
+          CTR = landings únicos ÷ shares · Conversão = tab_views ÷ landings
+        </p>
+        {funnelA.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic font-body">
+            Sem shares/landings registrados ainda. Compartilhe um link rápido em /admin/whatsapp para começar.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-body">
+              <thead>
+                <tr className="text-left text-muted-foreground border-b border-border">
+                  <th className="py-2 pr-3">Campaign</th>
+                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
+                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
+                  <th className="py-2 px-3 text-right">CTR</th>
+                  <th className="py-2 px-3 text-right">Tab views</th>
+                  <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {funnelA.map((r) => {
+                  const b = funnelB.find((x) => x.campaign === r.campaign);
+                  return (
+                    <tr key={r.campaign} className="border-b border-border/30">
+                      <td className="py-2 pr-3 font-mono text-[11px] text-foreground">{r.campaign}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}</td>
+                      <td className="py-2 px-3 text-right tabular-nums text-primary font-bold">
+                        {(r.ctr * 100).toFixed(1)}%
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">{r.tabViews}</td>
+                      <td className="py-2 pl-3 text-right tabular-nums text-primary font-bold">
+                        {(r.conversion * 100).toFixed(0)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       {/* Campaigns */}
       <Card className="p-4 space-y-3">

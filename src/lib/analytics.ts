@@ -100,6 +100,26 @@ export function clearEventsLog(): void {
   try { localStorage.removeItem(EVENTS_LOG_KEY); } catch { /* noop */ }
 }
 
+/** Best-effort persistence to Supabase analytics_events table (fire-and-forget). */
+async function persistToSupabase(event: string, enriched: Record<string, unknown>): Promise<void> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await (supabase.from("analytics_events") as unknown as { insert: (row: Record<string, unknown>) => Promise<unknown> }).insert({
+      event,
+      user_id: String(enriched.user_id ?? ""),
+      session_id: String(enriched.session_id ?? ""),
+      utm_source: (enriched.utm_source as string) ?? null,
+      utm_medium: (enriched.utm_medium as string) ?? null,
+      utm_campaign: (enriched.utm_campaign as string) ?? null,
+      utm_content: (enriched.utm_content as string) ?? null,
+      utm_term: (enriched.utm_term as string) ?? null,
+      tab: (enriched.tab as string) ?? (enriched.landing_tab as string) ?? null,
+      surface: (enriched.surface as string) ?? null,
+      props: enriched,
+    });
+  } catch { /* noop — never block UX on analytics */ }
+}
+
 /** Best-effort dispatch to whichever analytics provider is present. */
 export function track(eventName: string, props: Record<string, unknown> = {}): void {
   const enriched = {
@@ -109,6 +129,7 @@ export function track(eventName: string, props: Record<string, unknown> = {}): v
   };
 
   appendToEventsLog({ ts: Date.now(), event: eventName, props: enriched });
+  void persistToSupabase(eventName, enriched);
 
   try {
     window.dispatchEvent(new CustomEvent("analytics:track", { detail: { event: eventName, props: enriched } }));
@@ -213,5 +234,30 @@ export function trackContentClick(props: ContentClickProps): void {
     utm_content: attribution.utm_content ?? null,
     landing_tab: attribution.tab ?? null,
     from_share: attribution.utm_campaign?.startsWith("share-") ?? false,
+  });
+}
+
+export interface ShareProps {
+  /** Where in the admin the share happened. */
+  surface: "admin-whatsapp-quick" | "admin-whatsapp-day" | "admin-whatsapp-template" | "admin-whatsapp-custom";
+  /** Tab targeted by the shared link, if any. */
+  tab?: PublicTab | null;
+  /** utm_campaign that was embedded in the shared link, if any. */
+  utm_campaign?: string | null;
+  /** utm_content that was embedded in the shared link, if any. */
+  utm_content?: string | null;
+  /** "copy" (clipboard) or "open" (wa.me opened). */
+  action: "copy" | "open";
+}
+
+/**
+ * Track when an admin copies or opens a WhatsApp link.
+ * These events become the "shares" denominator of the click-through funnel:
+ *   shares  → landing_with_utm  → tab_view (CTR & conversion).
+ */
+export function trackShare(props: ShareProps): void {
+  track("link_share", {
+    ...props,
+    tab_slug: props.tab ? TAB_SLUGS[props.tab] : null,
   });
 }
