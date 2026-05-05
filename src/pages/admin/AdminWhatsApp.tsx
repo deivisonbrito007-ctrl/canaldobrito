@@ -541,11 +541,15 @@ const AdminWhatsApp = () => {
           </pre>
         )}
         <div className="flex gap-2">
-          <CopyButton text={customFinal || siteUrl} label="Copiar" />
+          <CopyButton
+            text={customFinal || siteUrl}
+            label="Copiar"
+            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-custom", tab: null, action: "copy" })}
+          />
           <Button
             size="sm"
             disabled={!customMsg.trim()}
-            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(customFinal)}`, "_blank")}
+            onClick={() => openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: null, action: "open" })}
             className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
           >
             <MessageCircle className="h-3.5 w-3.5" />
