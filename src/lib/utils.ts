@@ -10,26 +10,28 @@ export function cn(...inputs: ClassValue[]) {
  * Used for sharing on WhatsApp Status so the recipient lands directly
  * on the right view (e.g. ao vivo, programação, destaques, novidades).
  */
-export type PublicTab = "live" | "novidades" | "highlights" | "schedule";
+export type PublicTab = "live" | "novidades" | "schedule";
 
 /** Pretty path slugs used in shared URLs (WhatsApp Status, etc.). */
 export const TAB_SLUGS: Record<PublicTab, string> = {
   live: "ao-vivo",
-  novidades: "novidades",
-  highlights: "sugestoes",
+  novidades: "filmes-e-series",
   schedule: "programacao",
 };
 
 /** Reverse lookup: slug → tab id. Includes legacy aliases. */
 export const SLUG_TO_TAB: Record<string, PublicTab> = {
   "ao-vivo": "live",
-  "novidades": "novidades",
-  "sugestoes": "highlights",
-  "destaques": "highlights", // legacy
-  "programacao": "schedule",
-  "home": "live", // legacy
   "live": "live",
-  "highlights": "highlights",
+  "home": "live", // legacy
+  "filmes-e-series": "novidades",
+  "filmes": "novidades",
+  "series": "novidades",
+  "novidades": "novidades",
+  "sugestoes": "novidades", // legacy
+  "destaques": "novidades", // legacy
+  "highlights": "novidades", // legacy
+  "programacao": "schedule",
   "schedule": "schedule",
 };
 
