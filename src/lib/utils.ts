@@ -33,8 +33,23 @@ export const SLUG_TO_TAB: Record<string, PublicTab> = {
   "schedule": "schedule",
 };
 
-export function buildDeepLink(base: string, tab?: PublicTab): string {
+export interface DeepLinkOptions {
+  /** When true, append UTM params for analytics tracking */
+  utm?: boolean;
+  source?: string;   // utm_source — default: "whatsapp"
+  medium?: string;   // utm_medium — default: "status"
+  campaign?: string; // utm_campaign — default: "share-<slug>"
+}
+
+export function buildDeepLink(base: string, tab?: PublicTab, opts: DeepLinkOptions = {}): string {
   const cleanBase = base.replace(/\/$/, "");
-  if (!tab) return cleanBase || base;
-  return `${cleanBase}/${TAB_SLUGS[tab]}`;
+  const path = tab ? `${cleanBase}/${TAB_SLUGS[tab]}` : (cleanBase || base);
+  if (!opts.utm) return path;
+
+  const params = new URLSearchParams({
+    utm_source: opts.source ?? "whatsapp",
+    utm_medium: opts.medium ?? "status",
+    utm_campaign: opts.campaign ?? `share-${tab ? TAB_SLUGS[tab] : "home"}`,
+  });
+  return `${path}?${params.toString()}`;
 }
