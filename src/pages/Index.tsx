@@ -145,10 +145,9 @@ const Index = () => {
     // live (default)
     return (
       <div className="space-y-5 min-h-[80vh]">
-        <Hero />
         <CategoryIconsCarousel />
         <div id="live" className="scroll-mt-20">
-          <LiveNowHero />
+          <LivePageContent />
         </div>
         <Suspense fallback={<BelowFoldSkeleton />}>
           <LazyPromoStrip />
