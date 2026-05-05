@@ -129,7 +129,7 @@ function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): str
     }
   }
 
-  lines.push(`👉 ${buildDeepLink(siteUrl, "schedule")}`);
+  lines.push(`👉 ${buildDeepLink(siteUrl, "schedule", { short: true })}`);
   return lines.join("\n").trim();
 }
 
