@@ -300,10 +300,11 @@ Deno.serve(async (req) => {
       const c = (country || "").trim().toLowerCase();
       const ch = (channel || "").trim();
       if (!ch) return false;
+      // Whitelist global tem prioridade — aceita marcas oficiais válidas no BR mesmo como "World"
+      if (isChannelWhitelisted(ch)) return true;
       if (BLOCK_COUNTRIES.has(c)) return false;
       if (FOREIGN_REGION_RE.test(ch)) return false;
       if (c === "brazil") return true;
-      // Aceita marcas globais com transmissão BR mesmo sem strCountry=Brazil
       if (GLOBAL_BR_BROADCASTERS.test(ch)) return true;
       return BR_BRAND_PATTERNS.some((re) => re.test(ch));
     };
