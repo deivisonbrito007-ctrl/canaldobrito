@@ -1,4 +1,4 @@
-import { Home, Star, CalendarDays } from "lucide-react";
+import { Radio, Sparkles, Star, CalendarDays } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -6,8 +6,9 @@ interface BottomNavProps {
 }
 
 const navItems = [
-  { id: "home", label: "Início", icon: Home },
-  { id: "highlights", label: "Destaques", icon: Star },
+  { id: "live", label: "Ao Vivo", icon: Radio },
+  { id: "novidades", label: "Novidades", icon: Sparkles },
+  { id: "highlights", label: "Sugestões", icon: Star },
   { id: "schedule", label: "Programação", icon: CalendarDays },
 ];
 
@@ -21,7 +22,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
         paddingBottom: "env(safe-area-inset-bottom, 6px)",
       }}
     >
-      <div className="flex items-end justify-around px-2 pt-1.5 pb-1.5">
+      <div className="flex items-end justify-around px-1 pt-1.5 pb-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -31,7 +32,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
               key={item.id}
               onClick={() => onTabChange(item.id)}
               aria-label={item.label}
-              className="relative flex flex-col items-center gap-0.5 py-1.5 px-4 min-h-[44px] min-w-[44px]"
+              className="relative flex flex-col items-center gap-0.5 py-1.5 px-2 min-h-[44px] min-w-[44px]"
             >
               {isActive && (
                 <div className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-primary" />
