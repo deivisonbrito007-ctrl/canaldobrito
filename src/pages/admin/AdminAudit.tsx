@@ -102,13 +102,29 @@ const AdminAudit = () => {
                   </span>
                   <span className="text-[10px] text-muted-foreground">{ts}</span>
                 </div>
-                {row.entity === "daily_games" && (
+                {row.entity === "daily_games" && p.home_team && (
                   <p className="text-xs text-foreground truncate">
                     {p.home_team} {p.away_team && p.away_team !== "—" && `× ${p.away_team}`}
                     <span className="text-muted-foreground">
                       {" "}• {p.date} {p.game_time?.slice(0, 5)} • {p.sport_type} • src: {p.source}
                     </span>
                   </p>
+                )}
+                {row.action === "api_sync_run" && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {p.date} • {p.sports} esportes • <span className="text-emerald-300">{p.upserted} upsert</span> • <span className="text-amber-300">{p.skipped} skip</span>
+                    {p.errors_count > 0 && <span className="text-rose-300"> • {p.errors_count} erros</span>}
+                    {p.triggered_by && <span> • via {p.triggered_by}</span>}
+                  </p>
+                )}
+                {row.action === "api_live_update_run" && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {p.todaysGames} jogos • {p.updated} atualizados • {p.live_count} ao vivo • {p.finished} finalizados
+                    {p.triggered_by && <span> • via {p.triggered_by}</span>}
+                  </p>
+                )}
+                {row.action === "api_sync_failed" && (
+                  <p className="text-[11px] text-rose-300 truncate">{p.error}</p>
                 )}
                 {row.entity === "settings" && (
                   <p className="text-[11px] text-muted-foreground">
