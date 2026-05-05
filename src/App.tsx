@@ -41,6 +41,7 @@ const App = () => (
               <Route path="/sugestoes" element={<Index />} />
               <Route path="/destaques" element={<Index />} />
               <Route path="/programacao" element={<Index />} />
+              <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin" element={<AdminLayout />}>
