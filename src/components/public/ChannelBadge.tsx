@@ -89,23 +89,26 @@ interface ChannelBadgeProps {
   className?: string;
 }
 
-/** Tries the official favicon via DuckDuckGo Icons; falls back to emoji on error */
+/** Priority chain: localLogo → Google Favicons → DuckDuckGo → emoji */
 const ChannelIcon = ({
+  localLogo,
   domain,
   emoji,
   size,
   alt,
-}: { domain?: string; emoji: string; size: BadgeSize; alt: string }) => {
-  const [stage, setStage] = useState<0 | 1 | 2>(0); // 0: google, 1: ddg, 2: emoji
+}: { localLogo?: string; domain?: string; emoji: string; size: BadgeSize; alt: string }) => {
+  // 0: local, 1: google, 2: ddg, 3: emoji
+  const [stage, setStage] = useState<0 | 1 | 2 | 3>(localLogo ? 0 : 1);
 
-  if (!domain || stage === 2) {
+  if (stage === 3 || (!localLogo && !domain)) {
     return <span className="leading-none">{emoji}</span>;
   }
 
-  const src =
-    stage === 0
-      ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-      : `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  let src = "";
+  if (stage === 0 && localLogo) src = localLogo;
+  else if (stage === 1 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  else if (stage === 2 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  else return <span className="leading-none">{emoji}</span>;
 
   return (
     <img
@@ -113,7 +116,12 @@ const ChannelIcon = ({
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setStage((s) => (s === 0 ? 1 : 2))}
+      onError={() => setStage((s) => {
+        // Skip stages that have no source available
+        let next = (s + 1) as 0 | 1 | 2 | 3;
+        if (next === 1 && !domain) next = 3;
+        return next;
+      })}
       className={cn("rounded-sm object-contain shrink-0", ICON_SIZE[size])}
     />
   );
