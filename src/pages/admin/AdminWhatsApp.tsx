@@ -261,6 +261,7 @@ const AdminWhatsApp = () => {
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
   const [withUtm, setWithUtm] = useState(true);
+  const [contentByTab, setContentByTab] = useState<Record<string, string>>({});
 
   const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
   const todayValidation = useMemo(() => validateDay(todayGames ?? []), [todayGames]);
@@ -335,6 +336,7 @@ const AdminWhatsApp = () => {
               title: "Ao Vivo agora",
               description: "Veja em tempo real o que está rolando no portal.",
               msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇",
+              suggestions: ["resultado", "tabela", "destaque", "noticia"],
             },
             {
               tab: "novidades" as DeepTab,
@@ -345,6 +347,7 @@ const AdminWhatsApp = () => {
               title: "Novidades da semana",
               description: "Filmes, séries e lançamentos recém-adicionados.",
               msg: "🆕 Novidades da semana — confira os lançamentos 👇",
+              suggestions: ["lancamentos", "trailer", "estreia", "banner"],
             },
             {
               tab: "highlights" as DeepTab,
@@ -355,6 +358,7 @@ const AdminWhatsApp = () => {
               title: "Sugestões pra hoje",
               description: "Indicações selecionadas de filmes e séries.",
               msg: "⭐ Sugestões de filmes e séries pra hoje 👇",
+              suggestions: ["filmes", "series", "destaque-semana", "indicacao"],
             },
             {
               tab: "schedule" as DeepTab,
@@ -365,9 +369,11 @@ const AdminWhatsApp = () => {
               title: "Programação de hoje",
               description: "Horários, canais e jogos do dia, organizados.",
               msg: "📅 Programação completa de hoje no portal 👇",
+              suggestions: ["jogos-hoje", "amanha", "destaque", "canais"],
             },
-          ]).map(({ tab, label, emoji, Icon, accent, title, description, msg }) => {
-            const link = buildDeepLink(siteUrl, tab, { utm: withUtm });
+          ]).map(({ tab, label, emoji, Icon, accent, title, description, msg, suggestions }) => {
+            const content = contentByTab[tab] ?? "";
+            const link = buildDeepLink(siteUrl, tab, { utm: withUtm, content: content || undefined });
             const text = `${msg}\n\n${link}`;
             let host = siteUrl;
             try { host = new URL(link).host; } catch { /* noop */ }
@@ -401,6 +407,45 @@ const AdminWhatsApp = () => {
                 </div>
 
                 <div className="p-3 space-y-2">
+                  {withUtm && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-muted-foreground flex items-center justify-between">
+                        <span>utm_content (opcional)</span>
+                        {content && (
+                          <button
+                            type="button"
+                            onClick={() => setContentByTab((s) => ({ ...s, [tab]: "" }))}
+                            className="text-[9px] text-muted-foreground/70 hover:text-foreground"
+                          >
+                            limpar
+                          </button>
+                        )}
+                      </label>
+                      <input
+                        type="text"
+                        value={content}
+                        onChange={(e) => setContentByTab((s) => ({ ...s, [tab]: e.target.value }))}
+                        placeholder={`ex.: ${suggestions[0]}`}
+                        className="w-full text-[11px] bg-background/60 border border-border/30 rounded px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      />
+                      <div className="flex flex-wrap gap-1">
+                        {suggestions.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setContentByTab((st) => ({ ...st, [tab]: s }))}
+                            className={`text-[9px] px-2 py-0.5 rounded-full border transition-colors ${
+                              content === s
+                                ? "border-primary/60 bg-primary/15 text-primary"
+                                : "border-border/30 bg-background/40 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <code className="block text-[10px] text-muted-foreground bg-background/60 rounded px-2 py-1.5 truncate">
                     {link}
                   </code>
