@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Grid, List, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Grid, List, Search, Sparkles } from "lucide-react";
 import { useActiveNewsReleases, type NewsRelease } from "@/hooks/useNewsReleases";
 import { useActiveMovies } from "@/hooks/useMovies";
 import { useActiveSeries } from "@/hooks/useSeries";
@@ -102,8 +102,26 @@ export const NovidadesPage = () => {
     setSelected(item);
   };
 
+  // Atalho "/" abre a busca
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (searchOpen) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  const isEmptyAll = !isLoading && stats.all === 0 && weeklyCount === 0;
+
   return (
-    <div className="space-y-5 min-h-[80vh] pt-2 pb-2 animate-fade-up">
+    <div className="space-y-5 min-h-[80vh] pt-2 animate-fade-up" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
       {/* Hero header */}
       <div className="px-4 pt-4 pb-2 space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -153,6 +171,26 @@ export const NovidadesPage = () => {
             </div>
           )}
           <WeeklySeriesSection />
+        </div>
+      )}
+
+      {/* Empty state global */}
+      {showWeekly && isEmptyAll && (
+        <div className="px-4">
+          <div className="rounded-2xl border border-border bg-surface-2 p-10 text-center space-y-3">
+            <Sparkles className="w-10 h-10 text-primary/60 mx-auto" />
+            <p className="text-base font-bold text-foreground font-body">Em breve novos títulos</p>
+            <p className="text-xs text-muted-foreground font-body max-w-xs mx-auto">
+              Estamos preparando novidades. Volte logo ou use a busca para procurar um título específico.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 text-primary text-sm font-semibold font-body hover:bg-primary/20 transition-colors min-h-[44px]"
+            >
+              <Search className="w-4 h-4" /> Buscar conteúdo
+            </button>
+          </div>
         </div>
       )}
 
