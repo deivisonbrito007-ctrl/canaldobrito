@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Copy, Check, MessageCircle, Link2, FileText, AlertTriangle,
-  CheckCircle2, Tv,
+  CheckCircle2, Tv, Radio, Sparkles, Star, CalendarDays, ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
