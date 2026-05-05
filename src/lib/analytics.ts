@@ -72,18 +72,24 @@ export function readUtmsFromUrl(search = window.location.search): UtmParams {
 
 /** Best-effort dispatch to whichever analytics provider is present. */
 export function track(eventName: string, props: Record<string, unknown> = {}): void {
+  const enriched = {
+    user_id: getAnonymousId(),
+    session_id: getSessionId(),
+    ...props,
+  };
+
   try {
-    window.dispatchEvent(new CustomEvent("analytics:track", { detail: { event: eventName, props } }));
+    window.dispatchEvent(new CustomEvent("analytics:track", { detail: { event: eventName, props: enriched } }));
   } catch { /* noop */ }
 
-  try { window.gtag?.("event", eventName, props); } catch { /* noop */ }
-  try { window.dataLayer?.push({ event: eventName, ...props }); } catch { /* noop */ }
-  try { window.plausible?.(eventName, { props }); } catch { /* noop */ }
-  try { window.posthog?.capture(eventName, props); } catch { /* noop */ }
+  try { window.gtag?.("event", eventName, enriched); } catch { /* noop */ }
+  try { window.dataLayer?.push({ event: eventName, ...enriched }); } catch { /* noop */ }
+  try { window.plausible?.(eventName, { props: enriched }); } catch { /* noop */ }
+  try { window.posthog?.capture(eventName, enriched); } catch { /* noop */ }
 
   if (import.meta.env.DEV) {
      
-    console.debug("[analytics]", eventName, props);
+    console.debug("[analytics]", eventName, enriched);
   }
 }
 
