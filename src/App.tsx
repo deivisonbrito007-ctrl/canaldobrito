@@ -54,6 +54,7 @@ const App = () => (
                 <Route path="auditoria" element={<AdminAudit />} />
                 <Route path="sync-stats" element={<AdminSyncStats />} />
                 <Route path="canais" element={<AdminCanais />} />
+                <Route path="canais-whitelist" element={<AdminCanaisWhitelist />} />
                 <Route path="ligas" element={<AdminLigas />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
               </Route>
