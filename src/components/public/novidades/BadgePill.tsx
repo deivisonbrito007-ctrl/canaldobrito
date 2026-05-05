@@ -8,7 +8,7 @@ const BADGE_CONFIG: Record<string, { emoji: string; label: string; gradient: str
     glow: "shadow-[0_0_12px_rgba(34,197,94,0.2)]",
   },
   nova_temporada: {
-    emoji: "📺", label: "Nova Temporada",
+    emoji: "🎞️", label: "Nova Temporada",
     gradient: "from-blue-600/30 to-blue-700/20",
     text: "text-blue-300", border: "border-blue-500/40",
     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]",
