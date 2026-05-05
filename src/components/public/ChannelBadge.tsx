@@ -9,18 +9,20 @@ type ChannelConfig = {
   gradient: string;
   glow: string;
   short?: string;
-  /** Domain used to fetch the official favicon via DuckDuckGo Icons CDN */
+  /** Domain used to fetch the official favicon via Google/DuckDuckGo CDN */
   domain?: string;
+  /** Local SVG/PNG path under /public — priority over CDN favicons */
+  localLogo?: string;
 };
 
 const CHANNEL_MAP: Record<string, ChannelConfig> = {
-  espn:         { emoji: "📺", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]",  domain: "espn.com" },
+  espn:         { emoji: "📺", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]",  domain: "espn.com", localLogo: "/channels/espn.svg" },
   sportv:       { emoji: "⚽", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-600/30 to-emerald-700/20", glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", domain: "sportv.globo.com" },
   globo:        { emoji: "🌐", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-300/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", domain: "globo.com" },
   premiere:     { emoji: "⭐", text: "text-yellow-300",  border: "border-yellow-500/40",  gradient: "from-yellow-500/30 to-amber-600/20",    glow: "shadow-[0_0_14px_rgba(234,179,8,0.25)]", domain: "premiere.globo.com" },
   "disney+":    { emoji: "✨", text: "text-blue-300",    border: "border-blue-600/40",    gradient: "from-blue-700/35 to-indigo-800/25",     glow: "shadow-[0_0_12px_rgba(29,78,216,0.2)]",  domain: "disneyplus.com" },
-  cazétv:       { emoji: "🎮", text: "text-lime-300",    border: "border-lime-500/40",    gradient: "from-lime-500/30 to-green-600/20",      glow: "shadow-[0_0_12px_rgba(132,204,22,0.2)]", short: "Cazé", domain: "cazetv.com.br" },
-  cazetv:       { emoji: "🎮", text: "text-lime-300",    border: "border-lime-500/40",    gradient: "from-lime-500/30 to-green-600/20",      glow: "shadow-[0_0_12px_rgba(132,204,22,0.2)]", short: "Cazé", domain: "cazetv.com.br" },
+  cazétv:       { emoji: "🎮", text: "text-lime-300",    border: "border-lime-500/40",    gradient: "from-lime-500/30 to-green-600/20",      glow: "shadow-[0_0_12px_rgba(132,204,22,0.2)]", short: "Cazé", domain: "cazetv.com.br", localLogo: "/channels/cazetv.svg" },
+  cazetv:       { emoji: "🎮", text: "text-lime-300",    border: "border-lime-500/40",    gradient: "from-lime-500/30 to-green-600/20",      glow: "shadow-[0_0_12px_rgba(132,204,22,0.2)]", short: "Cazé", domain: "cazetv.com.br", localLogo: "/channels/cazetv.svg" },
   tnt:          { emoji: "💥", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-600/30 to-cyan-700/20",       glow: "shadow-[0_0_12px_rgba(37,99,235,0.2)]",  domain: "tntsports.com.br" },
   "prime video":{ emoji: "▶️", text: "text-sky-300",     border: "border-sky-500/40",     gradient: "from-sky-500/30 to-blue-600/20",        glow: "shadow-[0_0_12px_rgba(14,165,233,0.2)]", short: "Prime", domain: "primevideo.com" },
   paramount:    { emoji: "⛰️", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-600/30 to-indigo-700/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "Param+", domain: "paramountplus.com" },
@@ -36,11 +38,11 @@ const CHANNEL_MAP: Record<string, ChannelConfig> = {
   "hbo max":    { emoji: "🎬", text: "text-purple-300",  border: "border-purple-500/40",  gradient: "from-purple-700/30 to-violet-800/20",   glow: "shadow-[0_0_12px_rgba(147,51,234,0.2)]", short: "HBO", domain: "max.com" },
   record:       { emoji: "📺", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-500/30 to-indigo-600/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", domain: "recordtv.r7.com" },
   sbt:          { emoji: "📺", text: "text-pink-300",    border: "border-pink-500/40",    gradient: "from-pink-500/30 to-fuchsia-600/20",    glow: "shadow-[0_0_12px_rgba(236,72,153,0.2)]", domain: "sbt.com.br" },
-  "canal goat": { emoji: "🐐", text: "text-amber-300",   border: "border-amber-500/40",   gradient: "from-amber-500/30 to-orange-600/20",    glow: "shadow-[0_0_12px_rgba(245,158,11,0.2)]", short: "GOAT", domain: "canalgoat.com" },
+  "canal goat": { emoji: "🐐", text: "text-amber-300",   border: "border-amber-500/40",   gradient: "from-amber-500/30 to-orange-600/20",    glow: "shadow-[0_0_12px_rgba(245,158,11,0.2)]", short: "GOAT", domain: "canalgoat.com", localLogo: "/channels/goat.svg" },
   "ge tv":      { emoji: "📱", text: "text-orange-300",  border: "border-orange-500/40",  gradient: "from-orange-500/30 to-amber-600/20",    glow: "shadow-[0_0_12px_rgba(249,115,22,0.2)]", short: "ge", domain: "ge.globo.com" },
   space:        { emoji: "🚀", text: "text-indigo-300",  border: "border-indigo-500/40",  gradient: "from-indigo-500/30 to-purple-600/20",   glow: "shadow-[0_0_12px_rgba(99,102,241,0.2)]", domain: "tntsports.com.br" },
   "esporte na band": { emoji: "📡", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-500/30 to-teal-600/20", glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", short: "Band YT", domain: "band.uol.com.br" },
-  youtube:      { emoji: "▶️", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]", short: "YT", domain: "youtube.com" },
+  youtube:      { emoji: "▶️", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]", short: "YT", domain: "youtube.com", localLogo: "/channels/youtube.svg" },
   dazn:         { emoji: "🥊", text: "text-yellow-300",  border: "border-yellow-500/40",  gradient: "from-yellow-500/30 to-amber-600/20",    glow: "shadow-[0_0_12px_rgba(234,179,8,0.2)]", domain: "dazn.com" },
   nsports:      { emoji: "🏆", text: "text-cyan-300",    border: "border-cyan-500/40",    gradient: "from-cyan-500/30 to-sky-600/20",        glow: "shadow-[0_0_12px_rgba(6,182,212,0.2)]", domain: "nsports.com.br" },
 };
@@ -87,23 +89,26 @@ interface ChannelBadgeProps {
   className?: string;
 }
 
-/** Tries the official favicon via DuckDuckGo Icons; falls back to emoji on error */
+/** Priority chain: localLogo → Google Favicons → DuckDuckGo → emoji */
 const ChannelIcon = ({
+  localLogo,
   domain,
   emoji,
   size,
   alt,
-}: { domain?: string; emoji: string; size: BadgeSize; alt: string }) => {
-  const [stage, setStage] = useState<0 | 1 | 2>(0); // 0: google, 1: ddg, 2: emoji
+}: { localLogo?: string; domain?: string; emoji: string; size: BadgeSize; alt: string }) => {
+  // 0: local, 1: google, 2: ddg, 3: emoji
+  const [stage, setStage] = useState<0 | 1 | 2 | 3>(localLogo ? 0 : 1);
 
-  if (!domain || stage === 2) {
+  if (stage === 3 || (!localLogo && !domain)) {
     return <span className="leading-none">{emoji}</span>;
   }
 
-  const src =
-    stage === 0
-      ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-      : `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  let src = "";
+  if (stage === 0 && localLogo) src = localLogo;
+  else if (stage === 1 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  else if (stage === 2 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  else return <span className="leading-none">{emoji}</span>;
 
   return (
     <img
@@ -111,7 +116,12 @@ const ChannelIcon = ({
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setStage((s) => (s === 0 ? 1 : 2))}
+      onError={() => setStage((s) => {
+        // Skip stages that have no source available
+        let next = (s + 1) as 0 | 1 | 2 | 3;
+        if (next === 1 && !domain) next = 3;
+        return next;
+      })}
       className={cn("rounded-sm object-contain shrink-0", ICON_SIZE[size])}
     />
   );
@@ -159,7 +169,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
           className
         )}
       >
-        <ChannelIcon domain={config.domain} emoji={config.emoji} size={size} alt={`${name} logo`} />
+        <ChannelIcon localLogo={config.localLogo} domain={config.domain} emoji={config.emoji} size={size} alt={`${name} logo`} />
         {displayName}
       </span>
     );
