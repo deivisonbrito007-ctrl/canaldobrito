@@ -37,11 +37,21 @@ const PosterSkeletonGrid = () => (
   </div>
 );
 
+type SortId = "recent" | "rating" | "title" | "year";
+
+const SORT_OPTIONS: { id: SortId; label: string }[] = [
+  { id: "recent", label: "Mais recentes" },
+  { id: "rating", label: "Melhor avaliados" },
+  { id: "title", label: "A–Z" },
+  { id: "year", label: "Ano" },
+];
+
 export const NovidadesPage = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
   const { data: weeklyMovies } = useActiveMovies();
   const { data: weeklySeries } = useActiveSeries();
   const [filter, setFilter] = useState<FilterId>("all");
+  const [sort, setSort] = useState<SortId>("recent");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selected, setSelected] = useState<NewsRelease | null>(null);
