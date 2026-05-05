@@ -13,9 +13,9 @@ import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/an
 
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
-const LazyNovidadesCard = lazy(() => import("@/components/public/NovidadesCard").then(m => ({ default: m.NovidadesCard })));
+const LazyNovidadesPage = lazy(() => import("@/components/public/NovidadesPage").then(m => ({ default: m.NovidadesPage })));
 const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
-const LazyBannerSections = lazy(() => import("@/components/public/BannerSections").then(m => ({ default: m.BannerSections })));
+
 const LazyAnalyticsDebugOverlay = lazy(() => import("@/components/public/AnalyticsDebugOverlay"));
 
 const HighlightsFallback = () => (
@@ -134,12 +134,9 @@ const Index = () => {
     }
     if (activeTab === "novidades") {
       return (
-        <div className="space-y-5 min-h-[80vh] pt-4">
-          <Suspense fallback={<BelowFoldSkeleton />}>
-            <LazyNovidadesCard />
-            <LazyBannerSections />
-          </Suspense>
-        </div>
+        <Suspense fallback={<BelowFoldSkeleton />}>
+          <LazyNovidadesPage />
+        </Suspense>
       );
     }
     // live (default)
