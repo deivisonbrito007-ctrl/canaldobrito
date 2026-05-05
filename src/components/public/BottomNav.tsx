@@ -1,4 +1,4 @@
-import { Radio, Sparkles, Star, CalendarDays } from "lucide-react";
+import { Radio, Clapperboard, CalendarDays } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -7,8 +7,7 @@ interface BottomNavProps {
 
 const navItems = [
   { id: "live", label: "Ao Vivo", icon: Radio },
-  { id: "novidades", label: "Novidades", icon: Sparkles },
-  { id: "highlights", label: "Sugestões", icon: Star },
+  { id: "novidades", label: "Filmes e Séries", icon: Clapperboard },
   { id: "schedule", label: "Programação", icon: CalendarDays },
 ];
 
@@ -44,7 +43,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                 strokeWidth={isActive ? 2.5 : 1.6}
               />
               <span
-                className={`text-[10px] font-semibold transition-colors duration-200 font-body ${
+                className={`text-[10px] font-semibold transition-colors duration-200 font-body whitespace-nowrap ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
