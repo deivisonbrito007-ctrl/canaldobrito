@@ -169,6 +169,30 @@ const AdminCanais = () => {
               onChange={(e) => setDraftChannels(e.target.value)}
             />
           </div>
+          <div>
+            <Label className="text-xs">Time da casa (opcional, override por partida)</Label>
+            <Input
+              placeholder="ex.: Palmeiras"
+              value={draft.home_team_pattern || ""}
+              onChange={(e) => setDraft({ ...draft, home_team_pattern: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Time visitante (opcional)</Label>
+            <Input
+              placeholder="ex.: Flamengo"
+              value={draft.away_team_pattern || ""}
+              onChange={(e) => setDraft({ ...draft, away_team_pattern: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Data específica (opcional)</Label>
+            <Input
+              type="date"
+              value={draft.event_date || ""}
+              onChange={(e) => setDraft({ ...draft, event_date: e.target.value || null })}
+            />
+          </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Notas (opcional)</Label>
             <Input
