@@ -73,6 +73,57 @@ function toBRT(dateEvent: string, strTime: string | null): { date: string; time:
   return { date, time };
 }
 
+// Fallback de canais por competição (regex). Aplicado quando eventstv.php não traz canal BR.
+const BROADCAST_FALLBACK: Array<{ match: RegExp; channels: string[] }> = [
+  // Futebol nacional
+  { match: /\bbrasileir(ã|a)o|s[eé]rie\s*a\s*brasil|campeonato\s*brasileiro\b/i, channels: ["Globo", "SporTV", "Premiere"] },
+  { match: /\bs[eé]rie\s*b\s*brasil\b/i, channels: ["SporTV", "Premiere"] },
+  { match: /\bcopa\s*do\s*brasil\b/i, channels: ["Globo", "SporTV", "Premiere", "Amazon Prime"] },
+  { match: /\b(paulist[ãa]o|carioca|mineiro|ga[uú]cho|paranaense|baiano|pernambucano)\b/i, channels: ["Record", "Cazé TV", "Nosso Futebol"] },
+  // Sul-americano
+  { match: /\b(libertadores|copa\s*libertadores)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
+  { match: /\bsul-?americana\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
+  // Europeu
+  { match: /\b(uefa\s*champions\s*league|champions\s*league)\b/i, channels: ["TNT Sports Brasil", "HBO Max", "SBT"] },
+  { match: /\b(uefa\s*europa\s*league|europa\s*league)\b/i, channels: ["Cazé TV", "Star+"] },
+  { match: /\b(uefa\s*conference|conference\s*league)\b/i, channels: ["Cazé TV"] },
+  { match: /\bpremier\s*league\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(la\s*liga|laliga)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(serie\s*a|calcio)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\bbundesliga\b/i, channels: ["OneFootball", "Cazé TV"] },
+  { match: /\bligue\s*1\b/i, channels: ["Cazé TV", "Xsports"] },
+  // Seleções
+  { match: /\b(copa\s*do\s*mundo|world\s*cup|fifa)\b/i, channels: ["Globo", "SporTV", "Cazé TV"] },
+  { match: /\b(eurocopa|euro\s*\d{4}|uefa\s*euro)\b/i, channels: ["SporTV", "Cazé TV"] },
+  { match: /\b(copa\s*am[eé]rica|conmebol)\b/i, channels: ["SporTV", "Globo"] },
+  // Basquete
+  { match: /\bnba\b/i, channels: ["ESPN Brasil", "Disney+", "NBA League Pass BR"] },
+  { match: /\b(nbb|liga\s*nacional\s*de\s*basquete)\b/i, channels: ["BandSports", "DAZN Brasil"] },
+  // Futebol americano
+  { match: /\bnfl\b/i, channels: ["ESPN Brasil", "Disney+", "DAZN Brasil"] },
+  // Hockey / Beisebol
+  { match: /\bnhl\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\bmlb|major\s*league\s*baseball\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  // F1 / Motor
+  { match: /\b(formula\s*1|f1|fia\s*formula)\b/i, channels: ["Band", "F1 TV Pro"] },
+  { match: /\bmoto\s*gp\b/i, channels: ["DAZN Brasil"] },
+  { match: /\bstock\s*car\b/i, channels: ["Band", "BandSports"] },
+  // Lutas
+  { match: /\bufc\b/i, channels: ["Combate", "UFC Fight Pass"] },
+  { match: /\b(boxing|boxe)\b/i, channels: ["DAZN Brasil"] },
+  // Tênis / Vôlei
+  { match: /\b(atp|wta|grand\s*slam|roland\s*garros|wimbledon|us\s*open|australian\s*open)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(superliga|cbv|vol[eê]i)\b/i, channels: ["SporTV", "Globo"] },
+];
+
+const lookupBroadcastFallback = (competition: string): string[] => {
+  if (!competition) return [];
+  for (const { match, channels } of BROADCAST_FALLBACK) {
+    if (match.test(competition)) return [...channels];
+  }
+  return [];
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
