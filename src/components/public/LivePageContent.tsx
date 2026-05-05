@@ -201,16 +201,16 @@ const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: n
 
 /* ── Empty State ── */
 const EmptyLive = () => (
-  <div className="mx-3 rounded-2xl bg-card border border-border/60 p-6 sm:p-8 text-center space-y-4">
-    <div className="mx-auto w-14 h-14 rounded-2xl bg-muted/40 border border-border/50 flex items-center justify-center">
-      <Radio className="h-6 w-6 text-muted-foreground" />
+  <div className="mx-3 rounded-2xl bg-card border border-border/60 p-4 text-center space-y-3">
+    <div className="mx-auto w-11 h-11 rounded-2xl bg-muted/40 border border-border/50 flex items-center justify-center">
+      <Radio className="h-5 w-5 text-muted-foreground" />
     </div>
-    <div className="space-y-1.5">
-      <h3 className="text-base font-extrabold text-foreground font-body">
+    <div className="space-y-1">
+      <h3 className="text-sm font-extrabold text-foreground font-body">
         Nenhum jogo ao vivo agora
       </h3>
-      <p className="text-xs text-muted-foreground font-body max-w-xs mx-auto leading-relaxed">
-        Confira a programação completa para ver os próximos eventos do dia.
+      <p className="text-[11px] text-muted-foreground font-body leading-relaxed">
+        Veja a programação para os próximos eventos.
       </p>
     </div>
     <button
