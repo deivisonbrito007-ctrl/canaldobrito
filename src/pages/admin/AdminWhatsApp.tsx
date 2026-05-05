@@ -42,9 +42,13 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
   const link = buildDeepLink(siteUrl, template.tab);
   const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
-  const handleSendWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(finalText)}`, "_blank");
+  const shareMeta: ShareProps = {
+    surface: "admin-whatsapp-template",
+    tab: template.tab ?? null,
+    utm_campaign: template.tab ? `share-${TAB_SLUGS[template.tab]}` : null,
+    action: "open",
   };
+  const handleSendWhatsApp = () => openWhatsApp(finalText, shareMeta);
 
   return (
     <div className="glass-panel rounded-xl p-4 space-y-3">
