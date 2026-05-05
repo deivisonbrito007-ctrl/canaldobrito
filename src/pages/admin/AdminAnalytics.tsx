@@ -410,6 +410,8 @@ export default function AdminAnalytics() {
     () => dailyA.filter((p) => p.shares > 0).map((p) => p.label),
     [dailyA],
   );
+  const tabFunnelA = useMemo(() => computeFunnelByTab(remoteA), [remoteA]);
+  const tabFunnelB = useMemo(() => computeFunnelByTab(remoteB), [remoteB]);
 
   const aggA = useMemo(() => aggregate(events, fromA.getTime(), toA.getTime()), [events, fromA, toA]);
   const aggB = useMemo(
