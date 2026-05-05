@@ -22,6 +22,7 @@ const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/sugestoes" element={<Index />} />
               <Route path="/destaques" element={<Index />} />
               <Route path="/programacao" element={<Index />} />
+              <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin" element={<AdminLayout />}>

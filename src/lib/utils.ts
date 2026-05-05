@@ -36,6 +36,8 @@ export const SLUG_TO_TAB: Record<string, PublicTab> = {
 export interface DeepLinkOptions {
   /** When true, append UTM params for analytics tracking */
   utm?: boolean;
+  /** When true, return a clean short link via /s/<slug> (preferred for sharing). */
+  short?: boolean;
   source?: string;   // utm_source — default: "whatsapp"
   medium?: string;   // utm_medium — default: "status"
   campaign?: string; // utm_campaign — default: "share-<slug>"
@@ -54,6 +56,13 @@ export function slugifyUtm(text: string): string {
 
 export function buildDeepLink(base: string, tab?: PublicTab, opts: DeepLinkOptions = {}): string {
   const cleanBase = base.replace(/\/$/, "");
+
+  // Preferred sharing format: /s/<slug> — short, clean, analytics handled by ShareRedirect
+  if (opts.short) {
+    const slug = tab ? TAB_SLUGS[tab] : "home";
+    return `${cleanBase}/s/${slug}`;
+  }
+
   const path = tab ? `${cleanBase}/${TAB_SLUGS[tab]}` : (cleanBase || base);
   if (!opts.utm && !opts.content) return path;
 

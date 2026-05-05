@@ -39,7 +39,7 @@ const openWhatsApp = (text: string, share: ShareProps) => {
 };
 
 const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
-  const link = buildDeepLink(siteUrl, template.tab);
+  const link = buildDeepLink(siteUrl, template.tab, { short: true });
   const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
   const shareMeta: ShareProps = {
@@ -129,7 +129,7 @@ function buildDayText(games: DailyGame[], dateStr: string, siteUrl: string): str
     }
   }
 
-  lines.push(`👉 ${buildDeepLink(siteUrl, "schedule")}`);
+  lines.push(`👉 ${buildDeepLink(siteUrl, "schedule", { short: true })}`);
   return lines.join("\n").trim();
 }
 
@@ -279,7 +279,7 @@ const AdminWhatsApp = () => {
   const { data: todayGames } = useAllDailyGames(todayStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
-  const [withUtm, setWithUtm] = useState(true);
+  // (UTM toggle removed — short links /s/<slug> always include tracking)
   
 
   const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
@@ -328,18 +328,12 @@ const AdminWhatsApp = () => {
             </div>
             <span className="text-sm font-bold text-foreground truncate">Links rápidos por aba</span>
           </div>
-          <label
-            className="flex items-center gap-1.5 cursor-pointer shrink-0"
-            title="Adiciona utm_source=whatsapp e utm_campaign=share-<aba> para rastreio no Analytics"
+          <span
+            className="text-[10px] font-bold text-primary uppercase tracking-wider shrink-0"
+            title="Links curtos /s/<aba> com rastreio embutido"
           >
-            <input
-              type="checkbox"
-              checked={withUtm}
-              onChange={(e) => setWithUtm(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">UTM</span>
-          </label>
+            ● rastreado
+          </span>
         </div>
         <div className="flex flex-col gap-2">
           {([
@@ -348,7 +342,7 @@ const AdminWhatsApp = () => {
             { tab: "highlights" as DeepTab, label: "Sugestões", emoji: "⭐", msg: "⭐ Sugestões de filmes e séries pra hoje 👇" },
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
-            const link = buildDeepLink(siteUrl, tab, { utm: withUtm });
+            const link = buildDeepLink(siteUrl, tab, { short: true });
             const text = `${msg}\n\n${link}`;
             return (
               <div
@@ -357,7 +351,6 @@ const AdminWhatsApp = () => {
               >
                 <span className="text-sm font-bold text-foreground truncate flex-1 min-w-0" title={link}>
                   <span aria-hidden>{emoji}</span> {label}
-                  {withUtm && <span className="ml-1.5 text-primary text-[10px] align-middle" aria-label="rastreado">●</span>}
                 </span>
                 <CopyButton
                   text={link}
@@ -365,7 +358,7 @@ const AdminWhatsApp = () => {
                   onAfterCopy={() => trackShare({
                     surface: "admin-whatsapp-quick",
                     tab,
-                    utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
+                    utm_campaign: `share-${TAB_SLUGS[tab]}`,
                     action: "copy",
                   })}
                 />
@@ -374,7 +367,7 @@ const AdminWhatsApp = () => {
                   onClick={() => openWhatsApp(text, {
                     surface: "admin-whatsapp-quick",
                     tab,
-                    utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
+                    utm_campaign: `share-${TAB_SLUGS[tab]}`,
                     action: "open",
                   })}
                   className="gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[36px] px-3"
