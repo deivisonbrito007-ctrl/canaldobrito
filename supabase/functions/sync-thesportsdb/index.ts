@@ -168,13 +168,18 @@ Deno.serve(async (req) => {
           const tvJ = await tvR.json();
           const list: any[] = Array.isArray(tvJ?.tvevents) ? tvJ.tvevents
             : Array.isArray(tvJ?.tvevent) ? tvJ.tvevent : [];
+
+          console.log(`[DEBUG] Data ${d}: ${list.length} eventos com TV`);
+
           for (const t of list) {
             const id = String(t.idEvent || "");
             if (!id) continue;
             const ch = (t.strChannel || "").trim();
             if (!ch) continue;
             // ⚠️ Só aceita canais do Brasil (ou marcas globais conhecidas no BR)
-            if (!isBrazilChannel(t.strCountry || "", ch)) continue;
+            const isBR = isBrazilChannel(t.strCountry || "", ch);
+            console.log(`[DEBUG] Canal: "${ch}" | País: "${t.strCountry}" | É BR? ${isBR}`);
+            if (!isBR) continue;
             if (!tvByEvent.has(id)) tvByEvent.set(id, []);
             const arr = tvByEvent.get(id)!;
             if (!arr.some((x) => x.toLowerCase() === ch.toLowerCase())) {
@@ -183,6 +188,7 @@ Deno.serve(async (req) => {
           }
         } catch (e) { errors.push(`tv@${d}: ${(e as Error).message}`); }
       }
+      console.log(`[DEBUG] Total de eventos com canais BR: ${tvByEvent.size}`);
     }
 
     for (const sport of sports) {
