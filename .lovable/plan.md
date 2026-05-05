@@ -1,41 +1,73 @@
-## Reverter "Links rápidos por aba" para layout compacto
+## Endurecer RLS da tabela `analytics_events`
 
-Voltar a seção `Quick Tab Links` (em `src/pages/admin/AdminWhatsApp.tsx`, linhas ~322-503) para o formato anterior — apenas o nome de cada aba, sem o card grande estilo preview do WhatsApp, sem campo `utm_content` exposto e sem a URL longa visível.
+### Situação atual
 
-### Como ficará cada item
-
-Um chip/linha compacta por aba (Ao Vivo, Novidades, Sugestões, Programação) com:
-- Ícone + emoji + nome da aba (ex.: `🔴 Ao Vivo`)
-- Dois botões pequenos: `Copiar` e `Status` (WhatsApp)
-
-Sem mostrar a URL completa, sem mostrar host, sem campo de utm_content, sem sugestões de chips.
-
-```text
-┌─────────────────────────────────────────┐
-│ 🔴 Ao Vivo            [Copiar] [Status] │
-│ 🆕 Novidades          [Copiar] [Status] │
-│ ⭐ Sugestões          [Copiar] [Status] │
-│ 📅 Programação        [Copiar] [Status] │
-└─────────────────────────────────────────┘
+```
+SELECT  → authenticated + has_role(admin)   ✅ já restrito a admins
+INSERT  → public, WITH CHECK (true)         ⚠️ qualquer um insere qualquer coisa
+UPDATE  → bloqueado                         ✅
+DELETE  → bloqueado                         ✅
 ```
 
-Mantém:
-- Toggle "Adicionar UTM" (mais discreto, no topo da seção)
-- `trackShare` em copy/open com `utm_campaign: share-<aba>` (rastreio do funil continua funcionando)
-- `buildDeepLink` com `?tab=…` e UTMs
+A leitura no painel já é só admin (ok). O ponto fraco é o INSERT totalmente aberto: qualquer pessoa com a anon key consegue gravar eventos arbitrários (qualquer `event`, `surface`, `user_id`, payloads gigantes, etc.), o que polui as métricas e pode inflar custo/storage.
 
-Remove:
-- Bloco de preview com gradiente, ícone grande, host, título e descrição
-- Input `utm_content` + chips de sugestão (continua possível usar via URL manual; se você quiser manter `utm_content` salvo por aba, posso deixar escondido em "avançado" — diga se quer)
-- Exibição da URL completa (`<code>{link}</code>`)
+Não dá para exigir login no INSERT (visitantes anônimos precisam emitir `landing_with_utm` / `tab_view`), então a estratégia é **manter o INSERT público, porém com validação rígida via `WITH CHECK`** + limites de tamanho.
 
-### Sugestões opcionais (digo e você escolhe ao aprovar)
+### Migração SQL
 
-1. Mostrar um pequeno tooltip/`title` no botão `Copiar` com a URL final, para conferência sem poluir a UI.
-2. Substituir os 2 botões por um único botão dividido (split): clique copia, ícone WhatsApp ao lado abre o status.
-3. Manter o toggle UTM, mas escondê-lo atrás de um link "opções" para a seção ficar ainda mais limpa.
-4. Adicionar um indicador minúsculo (•) ao lado do nome da aba quando UTM estiver ativo, para deixar claro que o link copiado é rastreado.
+```sql
+-- 1) Substituir a policy de INSERT por uma versão validada
+DROP POLICY "Anyone can insert analytics_events" ON public.analytics_events;
 
-### Arquivos alterados
+CREATE POLICY "Public can insert validated analytics_events"
+ON public.analytics_events
+FOR INSERT
+TO public
+WITH CHECK (
+  -- Whitelist de eventos que o frontend realmente emite
+  event IN (
+    'landing_with_utm',
+    'tab_view',
+    'link_share',
+    'link_share_copy',
+    'link_share_open'
+  )
+  -- Limites de tamanho para evitar abuso/poluição
+  AND char_length(event)              <= 64
+  AND (surface       IS NULL OR char_length(surface)       <= 64)
+  AND (tab           IS NULL OR char_length(tab)           <= 32)
+  AND (utm_source    IS NULL OR char_length(utm_source)    <= 64)
+  AND (utm_medium    IS NULL OR char_length(utm_medium)    <= 64)
+  AND (utm_campaign  IS NULL OR char_length(utm_campaign)  <= 128)
+  AND (utm_content   IS NULL OR char_length(utm_content)   <= 128)
+  AND (utm_term      IS NULL OR char_length(utm_term)      <= 128)
+  AND (user_id       IS NULL OR char_length(user_id)       <= 64)
+  AND (session_id    IS NULL OR char_length(session_id)    <= 64)
+  -- Limita tamanho do JSON props (≈ 4 KB)
+  AND pg_column_size(props) <= 4096
+);
 
-- `src/pages/admin/AdminWhatsApp.tsx` — substituir o JSX do bloco "Quick Tab Links" (~linhas 322-503) pela versão compacta. Sem mudanças em analytics, deep links ou backend.
+-- 2) Reforçar a policy de SELECT para deixar explícito (já está ok, recriada por clareza)
+DROP POLICY "Admins can read analytics_events" ON public.analytics_events;
+
+CREATE POLICY "Only admins can read analytics_events"
+ON public.analytics_events
+FOR SELECT
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin'::public.app_role));
+```
+
+UPDATE/DELETE permanecem sem policy → continuam bloqueados para todos os roles não-service (admin do painel pode usar a UI; service role bypassa RLS para manutenção).
+
+### Pontos verificados no frontend
+
+- `src/lib/analytics.ts` emite os eventos `landing_with_utm`, `tab_view` e `link_share` (via `trackShare`) — todos cobertos pela whitelist.
+- O painel `AdminAnalytics` lê `analytics_events` autenticado como admin → cai na nova policy de SELECT sem mudança.
+
+### Sem mudanças de código no app
+
+A migração é puramente SQL. Nenhum arquivo TS/TSX precisa ser editado.
+
+### Observação de segurança
+
+- Insert público é uma escolha consciente para rastreio anônimo. A whitelist + limites mitigam abuso, mas não impedem totalmente um atacante de scriptar eventos válidos. Se você quiser ir além no futuro, posso (a) mover o INSERT para uma edge function pública com rate-limit por IP, ou (b) usar Turnstile/reCAPTCHA antes de gravar. Diga se quer planejar isso.
