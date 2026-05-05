@@ -103,10 +103,10 @@ export const NovidadesPage = () => {
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-1 min-w-0">
             <h1 className="font-display text-3xl text-foreground tracking-wide leading-none">
-              NOVIDADES <span className="text-primary">🎬</span>
+              FILMES E SÉRIES <span className="text-primary">🎬</span>
             </h1>
             <p className="text-xs text-muted-foreground font-body">
-              {isLoading ? "Carregando..." : `${stats.all} ${stats.all === 1 ? "título disponível" : "títulos disponíveis"}`}
+              {isLoading ? "Carregando..." : `${stats.all + (showWeekly ? weeklyCount : 0)} ${(stats.all + (showWeekly ? weeklyCount : 0)) === 1 ? "título disponível" : "títulos disponíveis"}`}
             </p>
           </div>
           <button
