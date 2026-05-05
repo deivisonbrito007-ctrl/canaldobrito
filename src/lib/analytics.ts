@@ -107,3 +107,39 @@ export function getStoredAttribution(): (UtmParams & { tab?: PublicTab | null })
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
+
+export interface ContentClickProps {
+  /** Section/component the card lives in (e.g. "weekly-movies", "novidades"). */
+  surface: string;
+  /** Content kind: movie, series, news, game, banner, etc. */
+  content_type: string;
+  /** Stable id of the content (db id, tmdb id, slug...). */
+  content_id?: string | number | null;
+  /** Human-readable title for debugging. */
+  content_title?: string | null;
+  /** Position in the row/list (0-indexed). */
+  position?: number | null;
+  /** Action — "open" (default), "trailer", "external". */
+  action?: "open" | "trailer" | "external";
+}
+
+/**
+ * Fire a `content_card_click` event ONLY when the current session arrived via
+ * a UTM link. Correlates the click back to the originating utm_campaign /
+ * utm_content so we can see which shared link drove which card open.
+ */
+export function trackContentClick(props: ContentClickProps): void {
+  const attribution = getStoredAttribution();
+  if (!attribution?.utm_campaign && !attribution?.utm_source) return;
+
+  track("content_card_click", {
+    ...props,
+    action: props.action ?? "open",
+    utm_source: attribution.utm_source ?? null,
+    utm_medium: attribution.utm_medium ?? null,
+    utm_campaign: attribution.utm_campaign ?? null,
+    utm_content: attribution.utm_content ?? null,
+    landing_tab: attribution.tab ?? null,
+    from_share: attribution.utm_campaign?.startsWith("share-") ?? false,
+  });
+}
