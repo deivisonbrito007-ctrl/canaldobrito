@@ -3,9 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
-import { Hero } from "@/components/public/Hero";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
-import { LiveNowHero } from "@/components/public/LiveNowHero";
+import { LivePageContent } from "@/components/public/LivePageContent";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
@@ -146,10 +145,9 @@ const Index = () => {
     // live (default)
     return (
       <div className="space-y-5 min-h-[80vh]">
-        <Hero />
         <CategoryIconsCarousel />
         <div id="live" className="scroll-mt-20">
-          <LiveNowHero />
+          <LivePageContent />
         </div>
         <Suspense fallback={<BelowFoldSkeleton />}>
           <LazyPromoStrip />
