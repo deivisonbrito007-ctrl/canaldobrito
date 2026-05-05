@@ -58,31 +58,18 @@ export const NovidadesPage = () => {
       movie: all.filter(isMovie).length,
       series: all.filter(isSeries).length,
       lancamento: all.filter((i) => i.badge_type === "lancamento").length,
+      nova_temporada: all.filter((i) => i.badge_type === "nova_temporada").length,
       estreia: all.filter((i) => i.badge_type === "estreia").length,
       exclusivo: all.filter((i) => i.badge_type === "exclusivo").length,
     } as Record<FilterId, number>;
   }, [all]);
 
-  const baseFiltered = useMemo(() => {
+  const filtered = useMemo(() => {
     if (filter === "all") return all;
     if (filter === "movie") return all.filter((i) => i.content_type === "movie");
     if (filter === "series") return all.filter((i) => i.content_type === "series" || i.content_type === "tv");
     return all.filter((i) => i.badge_type === filter);
   }, [all, filter]);
-
-  // Featured is curated: only items with strong badges. Falls back to empty (hidden).
-  const featured = useMemo(() => {
-    const HERO_BADGES = new Set(["lancamento", "estreia", "exclusivo"]);
-    const pool = baseFiltered.filter((i) => HERO_BADGES.has(i.badge_type));
-    return pool.slice(0, Math.min(5, pool.length));
-  }, [baseFiltered]);
-
-  // Grid excludes items already in the featured carousel to remove redundancy.
-  const filtered = useMemo(() => {
-    if (featured.length === 0) return baseFiltered;
-    const heroIds = new Set(featured.map((i) => i.id));
-    return baseFiltered.filter((i) => !heroIds.has(i.id));
-  }, [baseFiltered, featured]);
 
   const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "Todos";
 
