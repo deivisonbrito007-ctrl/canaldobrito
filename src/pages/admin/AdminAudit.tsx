@@ -121,7 +121,7 @@ const AdminAudit = () => {
                   </p>
                 )}
                 <p className="text-[9px] text-muted-foreground/60 font-mono truncate">
-                  actor: {row.actor_id?.slice(0, 8) || "—"} {row.payload?.external_id ? `• ext: ${row.payload.external_id}` : ""}
+                  actor: {row.actor_id?.slice(0, 8) || "—"}
                 </p>
               </div>
             );
