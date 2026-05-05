@@ -159,20 +159,33 @@ export const NovidadesPage = () => {
       {/* Grid / Lista — só aparece quando há filtro ativo (evita repetir o carrossel acima) */}
       {filter !== "all" && (
         <div className="space-y-3">
-          <div className="px-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
+          <div className="px-4 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body min-w-0 truncate">
               {filterLabel}
               <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
             </h2>
-            <button
-              type="button"
-              onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
-              aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
-            >
-              {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
-              {viewMode === "grid" ? "Lista" : "Grade"}
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="sr-only" htmlFor="novidades-sort">Ordenar</label>
+              <select
+                id="novidades-sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortId)}
+                className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-muted-foreground font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[36px]"
+                aria-label="Ordenar resultados"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
+                aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
+              >
+                {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
