@@ -232,10 +232,14 @@ const DayPreviewCard = ({
 
       {text && (
         <div className="flex gap-2">
-          <CopyButton text={text} label="Copiar" />
+          <CopyButton
+            text={text}
+            label="Copiar"
+            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-day", tab: "schedule", utm_campaign: "share-programacao", action: "copy" })}
+          />
           <Button
             size="sm"
-            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")}
+            onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-day", tab: "schedule", utm_campaign: "share-programacao", action: "open" })}
             className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
           >
             <MessageCircle className="h-3.5 w-3.5" />
