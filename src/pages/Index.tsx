@@ -7,25 +7,15 @@ import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel
 import { LivePageContent } from "@/components/public/LivePageContent";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
-import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
+import { SectionHeaderSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
 import { SLUG_TO_TAB } from "@/lib/utils";
 import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/analytics";
 
-const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
 const LazyNovidadesPage = lazy(() => import("@/components/public/NovidadesPage").then(m => ({ default: m.NovidadesPage })));
 const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
 
 const LazyAnalyticsDebugOverlay = lazy(() => import("@/components/public/AnalyticsDebugOverlay"));
-
-const HighlightsFallback = () => (
-  <div className="pt-5 pb-3 space-y-6">
-    <div className="px-4"><SectionHeaderSkeleton /></div>
-    <PosterRowSkeleton />
-    <div className="px-4"><SectionHeaderSkeleton /></div>
-    <PosterRowSkeleton />
-  </div>
-);
 
 const ScheduleFallback = () => (
   <div className="px-4 pt-5 pb-3 space-y-5">
