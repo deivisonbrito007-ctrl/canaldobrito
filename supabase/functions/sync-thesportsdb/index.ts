@@ -308,8 +308,12 @@ Deno.serve(async (req) => {
 
         if (usedFallback) {
           fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
-        } else if (channels.length === 0) {
+        }
+
+        // Filtro final: só publicar eventos com transmissão confirmada no Brasil
+        if (channels.length === 0) {
           noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
+          continue;
         }
 
         allRows.push({
