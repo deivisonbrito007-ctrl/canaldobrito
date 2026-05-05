@@ -122,14 +122,8 @@ export const NovidadesPage = () => {
         </div>
       </div>
 
-      {/* Carrossel Em Destaque (curadoria: lançamento/estreia/exclusivo) */}
-      {isLoading ? (
-        <div className="px-4">
-          <div className="h-[420px] rounded-2xl skeleton-shimmer" />
-        </div>
-      ) : featured.length > 0 ? (
-        <FeaturedCarousel items={featured} onSelect={handleSelect} />
-      ) : null}
+      {/* Carrossel destacado (auto-rotate, badges, trailer) — apenas com filtro Todos */}
+      {showWeekly && <NovidadesCard />}
 
       {/* Destaques da Semana (apenas quando filtro = Todos) */}
       {showWeekly && (
