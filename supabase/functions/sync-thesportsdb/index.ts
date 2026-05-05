@@ -74,50 +74,40 @@ function toBRT(dateEvent: string, strTime: string | null): { date: string; time:
 }
 
 // Bloqueia fallback genérico em ligas estrangeiras sem transmissão no Brasil.
-const FOREIGN_LEAGUE_BLOCKLIST = /\b(ethiopian|eritrean|egyptian|moroccan|tunisian|algerian|sudanese|libyan|nigerian|ghanaian|ivorian|senegalese|south\s*african|kenyan|ugandan|tanzanian|zambian|zimbabwean|angolan|mozambican|cameroon(ian)?|gabonese|congolese|dr\s*congo|ivory\s*coast|eswatini|swazi|mauritani(an|a)|burkinab[eé]|malian|guinean|togolese|beninese|liberian|sierra\s*leon|namibian|botswana|lesotho|seychelles|comoros|djiboutian|somali|rwandan|burundian|chadian|nigerien|sao\s*tom[eé]|cape\s*verde|gambia|equatorial\s*guinea|central\s*african|saudi|emirat(es|i)|qatari|kuwaiti|bahrain(i)?|omani|jordanian|lebanese|syrian|iraqi|iranian|israeli|palestinian|yemen(i)?|azerbaijani|armenian|georgian|kazakh|uzbek|turkmen|kyrgyz|tajik|afghan|pakistan(i)?|indian|bangladesh(i)?|sri\s*lanka(n)?|nepalese|bhutanese|maldivian|myanmar|burmese|thai|vietnamese|cambodian|laotian|malaysian|singapore(an)?|indonesian|filipino|philippine|chinese|hong\s*kong|taiwan(ese)?|mongolian|korean|j[2-3]\s*league|albanian|bosnian|bulgarian|croatian|cypriot|czech|estonian|finnish|hungarian|icelandic|irish|kosovo|latvian|lithuanian|luxembourg(ish)?|macedonian|maltese|moldovan|montenegrin|polish|romanian|serbian|slovakian|slovenian|swedish|swiss|ukrainian|welsh|scottish|northern\s*irish|austrian|belarusian|belgian|danish|greek|norwegian|russian|turkish|chilean|peruvian|colombian|venezuelan|ecuadorian|bolivian|paraguayan|uruguayan|panamanian|costa\s*rican|salvadoran|guatemalan|honduran|nicaraguan|jamaican|haitian|dominican|cuban|trinidad|barbadian|new\s*zealand|a-?league|fijian|samoan|usl|nasl)\b/i;
+// Inclui adjetivos (ethiopian) E nomes-país (ethiopia) para cobrir variações da API.
+const FOREIGN_LEAGUE_BLOCKLIST = /\b(ethiopia(n)?|eritrea(n)?|egypt(ian)?|morocc(o|an)|tunisia(n)?|algeria(n)?|sudan(ese)?|libya(n)?|nigeria(n)?|ghana(ian)?|ivory\s*coast|ivorian|senegal(ese)?|south\s*africa(n)?|kenya(n)?|uganda(n)?|tanzania(n)?|zambia(n)?|zimbabwe(an)?|angola(n)?|mozambique|mozambican|cameroon(ian)?|gabon(ese)?|congo(lese)?|dr\s*congo|eswatini|swazi|mauritani(an|a)|burkina\s*faso|burkinab[eé]|mali(an)?|guinea(n)?|togo(lese)?|benin(ese)?|liberia(n)?|sierra\s*leone?|namibia(n)?|botswana|lesotho|seychelles|comoros|djibouti(an)?|somali(a)?|rwanda(n)?|burundi(an)?|chad(ian)?|niger(ien)?|sao\s*tom[eé]|cape\s*verde|gambia(n)?|equatorial\s*guinea|central\s*african|saudi(\s*arabia)?|emirat(es|i)|uae|qatar(i)?|kuwait(i)?|bahrain(i)?|oman(i)?|jordan(ian)?|lebanon|lebanese|syria(n)?|iraq(i)?|iran(ian)?|israel(i)?|palestin(e|ian)|yemen(i)?|azerbaijan(i)?|armenia(n)?|georgia(n)?|kazakh(stan)?|uzbek(istan)?|turkmen(istan)?|kyrgyz(stan)?|tajik(istan)?|afghan(istan)?|pakistan(i)?|india(n)?|bangladesh(i)?|sri\s*lanka(n)?|nepal(ese)?|bhutan(ese)?|maldiv(es|ian)|myanmar|burm(a|ese)|thai(land)?|vietnam(ese)?|cambodia(n)?|laos|laotian|malaysia(n)?|singapore(an)?|indonesia(n)?|filipino|philippine(s)?|china|chinese|hong\s*kong|taiwan(ese)?|mongolia(n)?|korea(n)?|japan(ese)?\s*j[2-3]|j[2-3]\s*league|albania(n)?|bosnia(n)?|bulgaria(n)?|croatia(n)?|cypriot|cyprus|czech(ia)?|estonia(n)?|finn(ish|land)|hungary|hungarian|iceland(ic)?|ireland|irish|kosovo|latvia(n)?|lithuania(n)?|luxembourg(ish)?|macedonia(n)?|malta|maltese|moldova(n)?|montenegr(o|in)|poland|polish|romania(n)?|serbia(n)?|slovak(ia(n)?)?|sloven(ia(n)?)?|sweden|swedish|switzerland|swiss|ukraine|ukrainian|wales|welsh|scotland|scottish|northern\s*ireland|northern\s*irish|austria(n)?|belarus(ian)?|belgium|belgian|denmark|danish|greece|greek|norway|norwegian|russia(n)?|turk(ey|ish)|chile(an)?|peru(vian)?|colombia(n)?|venezuela(n)?|ecuador(ian)?|bolivia(n)?|paraguay(an)?|uruguay(an)?|panama(nian)?|costa\s*rica(n)?|el\s*salvador|salvadoran|guatemal(a|an)|hondur(as|an)|nicaragua(n)?|jamaica(n)?|haiti(an)?|dominican|cuba(n)?|trinidad|barbad(os|ian)|cayman|bahamas|guyan(a|ese)|surinam(e)?|new\s*zealand|fiji(an)?|samoa(n)?|tonga(n)?|usl|nasl|j-?league|k-?league|liga\s*mx|mexican\s*liga)\b/i;
 
-// Fallback de canais por competição (regex). Aplicado quando eventstv.php não traz canal BR.
+// Fallback de canais por competição. Usado APENAS para competições onde
+// TODOS os jogos têm transmissão garantida no Brasil (não jogos selecionados).
+// Ligas como NBA/MLB/NHL/NFL transmitem só jogos selecionados → confiar só em eventstv.php.
 const BROADCAST_FALLBACK: Array<{ match: RegExp; channels: string[] }> = [
-  // Futebol nacional brasileiro
+  // Futebol nacional brasileiro (cobertura integral)
   { match: /\bbrasileir(ã|a)o|s[eé]rie\s*a\s*brasil|campeonato\s*brasileiro\b/i, channels: ["Globo", "SporTV", "Premiere"] },
   { match: /\bs[eé]rie\s*b\s*brasil\b/i, channels: ["SporTV", "Premiere"] },
   { match: /\bcopa\s*do\s*brasil\b/i, channels: ["Globo", "SporTV", "Premiere", "Amazon Prime"] },
   { match: /\b(paulist[ãa]o|carioca|mineiro|ga[uú]cho|paranaense|baiano|pernambucano)\b/i, channels: ["Record", "Cazé TV", "Nosso Futebol"] },
-  // Sul-americano
+  // Sul-americano (cobertura integral por Paramount+)
   { match: /\b(libertadores|copa\s*libertadores)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
   { match: /\b(sul-?americana|copa\s*sudamericana)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
-  // Europeu — qualificadores estritos (evita colidir com "Ethiopian Premier League" etc.)
+  // Europeu (cobertura integral)
   { match: /\b(uefa\s*champions\s*league|champions\s*league)\b/i, channels: ["TNT Sports Brasil", "HBO Max", "SBT"] },
   { match: /\b(uefa\s*europa\s*league|europa\s*league)\b/i, channels: ["Cazé TV", "Star+"] },
   { match: /\b(uefa\s*conference|conference\s*league)\b/i, channels: ["Cazé TV"] },
-  { match: /\b(english\s*premier\s*league|premier\s*league\s*england|epl)\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\b(la\s*liga|laliga|spanish\s*la\s*liga|primera\s*divisi[oó]n\s*spain)\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\b(italian\s*serie\s*a|serie\s*a\s*italy|calcio|lega\s*calcio)\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\bbundesliga\b/i, channels: ["OneFootball", "Cazé TV"] },
-  { match: /\b(french\s*ligue\s*1|ligue\s*1\s*france)\b/i, channels: ["Cazé TV", "Xsports"] },
-  { match: /\b(primeira\s*liga|liga\s*portugal)\b/i, channels: ["ESPN Brasil", "Disney+"] },
   // Seleções
   { match: /\b(copa\s*do\s*mundo|fifa\s*world\s*cup|world\s*cup\s*qualif)\b/i, channels: ["Globo", "SporTV", "Cazé TV"] },
   { match: /\b(eurocopa|euro\s*\d{4}|uefa\s*euro)\b/i, channels: ["SporTV", "Cazé TV"] },
   { match: /\b(copa\s*am[eé]rica|conmebol)\b/i, channels: ["SporTV", "Globo"] },
-  // Basquete
-  { match: /\bnba\b/i, channels: ["ESPN Brasil", "Disney+", "NBA League Pass BR"] },
-  { match: /\b(nbb|liga\s*nacional\s*de\s*basquete)\b/i, channels: ["BandSports", "DAZN Brasil"] },
-  // Futebol americano
-  { match: /\bnfl\b/i, channels: ["ESPN Brasil", "Disney+", "DAZN Brasil"] },
-  // Hockey / Beisebol
-  { match: /\bnhl\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\b(mlb|major\s*league\s*baseball)\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  // F1 / Motor
+  // F1 / Motor (cobertura integral)
   { match: /\b(formula\s*1|f1\s*grand\s*prix|fia\s*formula\s*1)\b/i, channels: ["Band", "F1 TV Pro"] },
   { match: /\bmoto\s*gp\b/i, channels: ["DAZN Brasil"] },
   { match: /\bstock\s*car\b/i, channels: ["Band", "BandSports"] },
-  // Lutas
+  // Lutas (eventos pontuais)
   { match: /\bufc\b/i, channels: ["Combate", "UFC Fight Pass"] },
-  // Tênis (apenas Grand Slams têm direitos no Brasil)
-  { match: /\b(roland\s*garros|wimbledon|us\s*open\s*tennis|australian\s*open)\b/i, channels: ["ESPN Brasil", "Disney+"] },
   // Vôlei brasileiro
   { match: /\b(superliga\s*brasil|cbv|vol[eê]i\s*brasil)\b/i, channels: ["SporTV", "Globo"] },
+  // NOTA: NBA/MLB/NHL/NFL/Premier League/La Liga/Serie A/Bundesliga/Ligue 1
+  // foram REMOVIDOS do fallback porque só jogos selecionados são transmitidos no Brasil.
+  // Esses jogos só entram com canal se vierem confirmados via eventstv.php.
 ];
 
 const lookupBroadcastFallback = (competition: string): string[] => {
