@@ -75,11 +75,19 @@ export const NovidadesPage = () => {
   }, [all]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return all;
-    if (filter === "movie") return all.filter((i) => i.content_type === "movie");
-    if (filter === "series") return all.filter((i) => i.content_type === "series" || i.content_type === "tv");
-    return all.filter((i) => i.badge_type === filter);
-  }, [all, filter]);
+    let list: NewsRelease[];
+    if (filter === "all") list = all;
+    else if (filter === "movie") list = all.filter((i) => i.content_type === "movie");
+    else if (filter === "series") list = all.filter((i) => i.content_type === "series" || i.content_type === "tv");
+    else list = all.filter((i) => i.badge_type === filter);
+
+    const sorted = [...list];
+    if (sort === "rating") sorted.sort((a, b) => (Number(b.rating ?? 0)) - (Number(a.rating ?? 0)));
+    else if (sort === "title") sorted.sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
+    else if (sort === "year") sorted.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+    // "recent": rely on the original order from useActiveNewsReleases (created_at desc)
+    return sorted;
+  }, [all, filter, sort]);
 
   const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "Todos";
 
