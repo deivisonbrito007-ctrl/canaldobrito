@@ -10,6 +10,7 @@ import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
 import { SLUG_TO_TAB } from "@/lib/utils";
+import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/analytics";
 
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
@@ -78,22 +79,43 @@ const Index = () => {
     return () => window.removeEventListener("nav-tab-change", handler);
   }, [handleTabChange]);
 
-  // Deep-link support: read pretty path slug or legacy ?tab= param.
+  // Deep-link support + UTM landing attribution.
+  // Runs once on mount: resolves tab from path/query, captures UTMs, then cleans the URL.
   useEffect(() => {
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
     const params = new URLSearchParams(window.location.search);
     const fromQuery = params.get("tab");
     const candidate = path || fromQuery;
+    let landingTab: TabId = "live";
     if (candidate) {
       const mapped = SLUG_TO_TAB[candidate.toLowerCase()];
-      if (mapped) handleTabChange(mapped);
-      if (fromQuery) {
-        const cleanUrl = window.location.pathname + window.location.hash;
-        window.history.replaceState({}, "", cleanUrl);
+      if (mapped) {
+        handleTabChange(mapped);
+        landingTab = mapped as TabId;
       }
+    }
+    // Capture UTMs BEFORE we strip the query, correlating with the resolved tab.
+    captureLandingAttribution(landingTab);
+
+    if (fromQuery || params.has("utm_source") || params.has("utm_campaign") || params.has("utm_content")) {
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, "", cleanUrl);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Emit a tab_view event whenever the active tab changes, attaching last attribution.
+  useEffect(() => {
+    const attribution = getStoredAttribution();
+    track("tab_view", {
+      tab: activeTab,
+      utm_source: attribution?.utm_source ?? null,
+      utm_medium: attribution?.utm_medium ?? null,
+      utm_campaign: attribution?.utm_campaign ?? null,
+      utm_content: attribution?.utm_content ?? null,
+      from_share: attribution?.utm_campaign?.startsWith("share-") ?? false,
+    });
+  }, [activeTab]);
 
   const renderContent = () => {
     if (activeTab === "highlights") {
