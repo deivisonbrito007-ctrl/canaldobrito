@@ -437,6 +437,7 @@ export type Database = {
         Args: { _endpoint: string; _game_id: string }
         Returns: undefined
       }
+      set_api_sync_paused: { Args: { _paused: boolean }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

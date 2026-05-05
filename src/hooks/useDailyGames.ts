@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { gameKey } from "@/lib/dedup";
 import { toast } from "sonner";
 
+// Lê a flag de pausa da API do cache de settings (preenchido por useSettings).
+// Default: pausado (true) por segurança até admin reativar.
+function useApiSyncPaused(): boolean {
+  const qc = useQueryClient();
+  const settings = qc.getQueryData<Record<string, string>>(["settings"]);
+  if (!settings) return true;
+  return settings.api_sync_paused !== "false";
+}
+
 export interface DailyGame {
   id: string;
   date: string;
@@ -23,14 +32,13 @@ export interface DailyGame {
   created_at: string;
 }
 
-// TEMPORÁRIO: enquanto canais de transmissão da API não estão confiáveis,
-// só exibimos jogos inseridos manualmente (que sempre vêm com canais BR).
-// Para reativar API, trocar MANUAL_ONLY para false.
-const MANUAL_ONLY = true;
+// Filtro `manual only` agora controlado dinamicamente pelo setting `api_sync_paused`.
+// Quando pausado, esconde jogos vindos da API. Admin pode alternar em /admin → API.
 
-export const useDailyGames = (date: string) =>
-  useQuery({
-    queryKey: ["daily_games", date, MANUAL_ONLY ? "manual" : "all"],
+export const useDailyGames = (date: string) => {
+  const manualOnly = useApiSyncPaused();
+  return useQuery({
+    queryKey: ["daily_games", date, manualOnly ? "manual" : "all"],
     queryFn: async () => {
       let q = supabase
         .from("daily_games")
@@ -38,7 +46,7 @@ export const useDailyGames = (date: string) =>
         .eq("date", date)
         .eq("active", true)
         .eq("archived", false);
-      if (MANUAL_ONLY) q = q.eq("source", "manual");
+      if (manualOnly) q = q.eq("source", "manual");
       const { data, error } = await q.order("game_time", { ascending: true });
       if (error) throw error;
       return data as DailyGame[];
@@ -46,13 +54,15 @@ export const useDailyGames = (date: string) =>
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
+};
 
-export const useAllDailyGames = (date: string) =>
-  useQuery({
-    queryKey: ["daily_games", "all", date, MANUAL_ONLY ? "manual" : "any"],
+export const useAllDailyGames = (date: string) => {
+  const manualOnly = useApiSyncPaused();
+  return useQuery({
+    queryKey: ["daily_games", "all", date, manualOnly ? "manual" : "any"],
     queryFn: async () => {
       let q = supabase.from("daily_games").select("*").eq("date", date);
-      if (MANUAL_ONLY) q = q.eq("source", "manual");
+      if (manualOnly) q = q.eq("source", "manual");
       const { data, error } = await q.order("game_time", { ascending: true });
       if (error) throw error;
 
@@ -87,6 +97,7 @@ export const useAllDailyGames = (date: string) =>
     },
     refetchInterval: 60_000,
   });
+};
 
 /**
  * Insert daily games with automatic dedup:
