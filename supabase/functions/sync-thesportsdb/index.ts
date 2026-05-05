@@ -325,8 +325,18 @@ Deno.serve(async (req) => {
         // 1) Canais reais vindos do eventstv.php (já filtrados por isBrazilChannel)
         let channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
         let usedFallback = false;
+        let usedOverride = false;
 
-        // 2) Fallback por competição quando a TheSportsDB não trouxer canal BR
+        // 2) Override persistente (tabela broadcast_overrides, editável pelo admin)
+        if (channels.length === 0) {
+          const ov = lookupOverride(competition, sportType);
+          if (ov.length > 0) {
+            channels = ov;
+            usedOverride = true;
+          }
+        }
+
+        // 3) Fallback hardcoded (regex genéricas) — só se não houver override
         if (channels.length === 0) {
           const fb = lookupBroadcastFallback(competition, sportType);
           if (fb.length > 0) {
@@ -335,7 +345,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (usedFallback) {
+        if (usedOverride) {
+          overrideHits[competition] = (overrideHits[competition] || 0) + 1;
+        } else if (usedFallback) {
           fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
         } else if (channels.length === 0) {
           noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
