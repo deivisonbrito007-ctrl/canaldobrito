@@ -134,7 +134,7 @@ export const NovidadesPage = () => {
         </div>
       </div>
 
-      {/* Carrossel Em Destaque */}
+      {/* Carrossel Em Destaque (curadoria: lançamento/estreia/exclusivo) */}
       {isLoading ? (
         <div className="px-4">
           <div className="h-[420px] rounded-2xl skeleton-shimmer" />
@@ -143,11 +143,24 @@ export const NovidadesPage = () => {
         <FeaturedCarousel items={featured} onSelect={handleSelect} />
       ) : null}
 
+      {/* Destaques da Semana (apenas quando filtro = Todos) */}
+      {showWeekly && (
+        <div className="space-y-6">
+          <WeeklyMoviesSection />
+          {(weeklyMovies?.length || 0) > 0 && (weeklySeries?.length || 0) > 0 && (
+            <div className="px-4">
+              <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+            </div>
+          )}
+          <WeeklySeriesSection />
+        </div>
+      )}
+
       {/* Grid / Lista */}
       <div className="space-y-3">
         <div className="px-4 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
-            {filter === "all" ? "Todos os Títulos" : filterLabel}
+            {filter === "all" ? "Explorar" : filterLabel}
             <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
           </h2>
           <button
