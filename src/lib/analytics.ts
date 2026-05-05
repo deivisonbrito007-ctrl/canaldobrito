@@ -70,6 +70,36 @@ export function readUtmsFromUrl(search = window.location.search): UtmParams {
   return out;
 }
 
+const EVENTS_LOG_KEY = "cb:events_log";
+const EVENTS_LOG_MAX = 500;
+
+export interface LoggedEvent {
+  ts: number;
+  event: string;
+  props: Record<string, unknown>;
+}
+
+function appendToEventsLog(entry: LoggedEvent): void {
+  try {
+    const raw = localStorage.getItem(EVENTS_LOG_KEY);
+    const arr: LoggedEvent[] = raw ? JSON.parse(raw) : [];
+    arr.push(entry);
+    if (arr.length > EVENTS_LOG_MAX) arr.splice(0, arr.length - EVENTS_LOG_MAX);
+    localStorage.setItem(EVENTS_LOG_KEY, JSON.stringify(arr));
+  } catch { /* noop */ }
+}
+
+export function readEventsLog(): LoggedEvent[] {
+  try {
+    const raw = localStorage.getItem(EVENTS_LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function clearEventsLog(): void {
+  try { localStorage.removeItem(EVENTS_LOG_KEY); } catch { /* noop */ }
+}
+
 /** Best-effort dispatch to whichever analytics provider is present. */
 export function track(eventName: string, props: Record<string, unknown> = {}): void {
   const enriched = {
@@ -77,6 +107,8 @@ export function track(eventName: string, props: Record<string, unknown> = {}): v
     session_id: getSessionId(),
     ...props,
   };
+
+  appendToEventsLog({ ts: Date.now(), event: eventName, props: enriched });
 
   try {
     window.dispatchEvent(new CustomEvent("analytics:track", { detail: { event: eventName, props: enriched } }));
