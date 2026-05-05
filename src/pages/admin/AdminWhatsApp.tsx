@@ -266,7 +266,7 @@ const AdminWhatsApp = () => {
           text: `📺 *Programação do Dia*\n\n📅 ${dName}, ${fDate}\n\nConfira os jogos, novidades e indicações de hoje no portal da Brito Solutions.\n\n👉 LINK_PLACEHOLDER` },
         { id: "jogos", label: "⚽ Jogos", tab: "schedule" as DeepTab,
           text: `⚽ *Jogos de Hoje Atualizados*\n\n📅 ${fDate}\n\nVeja horários, canais e destaques do dia.\n\n👉 LINK_PLACEHOLDER` },
-        { id: "entretenimento", label: "🍿 Entretenimento", tab: "highlights" as DeepTab,
+        { id: "entretenimento", label: "🍿 Entretenimento", tab: "novidades" as DeepTab,
           text: `🍿 *Assista Hoje*\n\nFilmes, séries, novidades e lançamentos do dia em um só lugar.\n\n👉 LINK_PLACEHOLDER` },
         { id: "aovivo", label: "🔴 Ao Vivo", tab: "live" as DeepTab,
           text: `🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 LINK_PLACEHOLDER` },
