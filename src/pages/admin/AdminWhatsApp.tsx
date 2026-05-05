@@ -310,6 +310,20 @@ const AdminWhatsApp = () => {
         <p className="text-[11px] text-muted-foreground">
           Compartilhe um link que abre o portal direto na aba escolhida — ideal para o status do WhatsApp.
         </p>
+        <label className="flex items-center justify-between gap-2 rounded-lg border border-border/30 bg-background/40 px-3 py-2 cursor-pointer">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-foreground">Adicionar UTM (rastrear no Analytics)</span>
+            <span className="text-[10px] text-muted-foreground">
+              Acrescenta <code className="font-mono">utm_source=whatsapp</code> e <code className="font-mono">utm_campaign=share-&lt;aba&gt;</code>
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={withUtm}
+            onChange={(e) => setWithUtm(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+        </label>
         <div className="grid gap-3 sm:grid-cols-2">
           {([
             {
