@@ -153,7 +153,7 @@ export const LiveNowSection = () => {
                           {game.game_time?.slice(0, 5)}
                         </span>
                       </div>
-                      {game.channels && game.channels.length > 0 && (
+                      {game.channels && game.channels.length > 0 ? (
                         <div className="flex gap-1 flex-wrap justify-end">
                           {game.channels.slice(0, 2).map((ch) => (
                             <ChannelBadge key={ch} name={ch} />
@@ -162,6 +162,8 @@ export const LiveNowSection = () => {
                             <span className="text-[9px] text-muted-foreground/50 self-center">+{game.channels.length - 2}</span>
                           )}
                         </div>
+                      ) : (
+                        <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">Sem transmissão</span>
                       )}
                     </div>
                   </div>
