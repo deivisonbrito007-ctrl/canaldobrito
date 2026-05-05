@@ -4,14 +4,46 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, RefreshCw, Download, Radio, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, Download, Radio, Trash2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { getLocalDateString } from "@/lib/gameUtils";
+import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const SPORTS_OPTIONS = [
   "Soccer", "Basketball", "Tennis", "Motorsport", "Fighting",
   "Volleyball", "Ice Hockey", "Baseball", "American Football", "Golf", "Cycling",
 ];
+
+const AdminApiSync = () => {
+  const qc = useQueryClient();
+  const { data: settings } = useSettings();
+  const isPaused = (settings?.api_sync_paused ?? "true") !== "false";
+  const [toggling, setToggling] = useState(false);
+  const [date, setDate] = useState(getLocalDateString());
+  const [busy, setBusy] = useState<null | "fetch" | "live">(null);
+  const [lastResult, setLastResult] = useState<any>(null);
+  const [selected, setSelected] = useState<string[]>(SPORTS_OPTIONS);
+  const [withTV, setWithTV] = useState(true);
+
+  const handleToggleSync = async (next: boolean) => {
+    setToggling(true);
+    try {
+      const { data, error } = await supabase.rpc("set_api_sync_paused" as any, { _paused: next });
+      if (error) throw error;
+      toast.success(next ? "Sincronização pausada" : "Sincronização reativada");
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      qc.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao alternar sincronização");
+    } finally {
+      setToggling(false);
+    }
+  };
+
 
 const AdminApiSync = () => {
   const qc = useQueryClient();
