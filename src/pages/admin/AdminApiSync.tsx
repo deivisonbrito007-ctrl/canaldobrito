@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, RefreshCw, Download, Radio, Trash2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { getLocalDateString } from "@/lib/gameUtils";
-import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
+import { useSettings } from "@/hooks/useSettings";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
