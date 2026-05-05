@@ -4,18 +4,12 @@ import { useSiteUrl } from "@/hooks/useSiteUrl";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Copy, Check, MessageCircle, Link2, FileText, CopyPlus, AlertTriangle,
-  CheckCircle2, Loader2, Tv,
+  Copy, Check, MessageCircle, Link2, FileText, AlertTriangle,
+  CheckCircle2, Tv,
 } from "lucide-react";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
 import { buildDeepLink } from "@/lib/utils";
 
@@ -238,77 +232,16 @@ const DayPreviewCard = ({
   );
 };
 
-/** Hook: clone all manual games from one date to another */
-function useDuplicateDay() {
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
-
-  const run = async (fromDate: string, toDate: string) => {
-    setBusy(true);
-    try {
-      const { data: src, error: e1 } = await supabase
-        .from("daily_games")
-        .select("*")
-        .eq("date", fromDate)
-        .eq("source", "manual")
-        .eq("archived", false);
-      if (e1) throw e1;
-      if (!src || src.length === 0) {
-        toast.warning("Nenhum jogo na data de origem.");
-        return;
-      }
-
-      const { data: existing } = await supabase
-        .from("daily_games")
-        .select("home_team, away_team, game_time")
-        .eq("date", toDate);
-      const existingKeys = new Set(
-        (existing || []).map((e: any) => `${e.home_team}|${e.away_team}|${e.game_time}`)
-      );
-
-      const rows = src
-        .map((g: any) => {
-          const { id, created_at, ...rest } = g;
-          return { ...rest, date: toDate, is_live: false, status_short: "NS", elapsed_minutes: null };
-        })
-        .filter((g: any) => !existingKeys.has(`${g.home_team}|${g.away_team}|${g.game_time}`));
-
-      if (rows.length === 0) {
-        toast.info("Todos os jogos já existem na data de destino.");
-        return;
-      }
-
-      const { error: e2 } = await supabase.from("daily_games").insert(rows as any);
-      if (e2) throw e2;
-
-      toast.success(`${rows.length} jogo(s) duplicado(s) (${src.length - rows.length} já existiam)`);
-      qc.invalidateQueries({ queryKey: ["daily_games"] });
-    } catch (e: any) {
-      toast.error(e.message ?? "Falha ao duplicar");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { run, busy };
-}
 
 const AdminWhatsApp = () => {
-  const { yesterdayStr, todayStr, tomorrowStr, templates } = useMemo(() => {
+  const { todayStr, templates } = useMemo(() => {
     const now = new Date();
     const tStr = getLocalDateString(now);
-    const spNow = midnightInSaoPaulo(tStr);
-    const tomorrowDate = addDays(spNow, 1);
-    const yesterdayDate = addDays(spNow, -1);
-    const tmStr = getLocalDateString(tomorrowDate);
-    const yStr = getLocalDateString(yesterdayDate);
     const fDate = format(now, "dd/MM/yyyy");
     const dName = format(now, "EEEE", { locale: ptBR });
 
     return {
-      yesterdayStr: yStr,
       todayStr: tStr,
-      tomorrowStr: tmStr,
       templates: [
         { id: "geral", label: "📺 Geral do Dia",
           text: `📺 *Programação do Dia*\n\n📅 ${dName}, ${fDate}\n\nConfira os jogos, novidades e indicações de hoje no portal da Brito Solutions.\n\n👉 LINK_PLACEHOLDER` },
@@ -324,21 +257,12 @@ const AdminWhatsApp = () => {
     };
   }, []);
 
-  const { data: yesterdayGames } = useAllDailyGames(yesterdayStr);
   const { data: todayGames } = useAllDailyGames(todayStr);
-  const { data: tomorrowGames } = useAllDailyGames(tomorrowStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
-  const { run: duplicate, busy: duplicating } = useDuplicateDay();
 
   const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
-  const tomorrowText = useMemo(() => buildDayText(tomorrowGames ?? [], tomorrowStr, siteUrl), [tomorrowGames, tomorrowStr, siteUrl]);
-
   const todayValidation = useMemo(() => validateDay(todayGames ?? []), [todayGames]);
-  const tomorrowValidation = useMemo(() => validateDay(tomorrowGames ?? []), [tomorrowGames]);
-
-  const yesterdayCount = (yesterdayGames ?? []).filter((g) => !g.archived).length;
-  const todayCount = todayValidation.active;
 
   const customFinal = customMsg.trim() ? `${customMsg.trim()}\n\n👉 ${siteUrl}` : "";
   const charCount = customFinal.length;
@@ -354,7 +278,7 @@ const AdminWhatsApp = () => {
           <div>
             <h2 className="text-sm font-bold text-foreground">WhatsApp — Compartilhamento</h2>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Pré-visualize, valide e compartilhe a programação manual do dia.
+              Pré-visualize, valide e compartilhe a programação manual de hoje.
             </p>
           </div>
         </div>
@@ -374,77 +298,14 @@ const AdminWhatsApp = () => {
         </div>
       </div>
 
-      {/* Duplicate day actions */}
-      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
-            <CopyPlus className="h-4 w-4 text-primary" />
-          </div>
-          <span className="text-sm font-bold text-foreground">Duplicar programação</span>
-        </div>
-        <p className="text-[11px] text-muted-foreground">
-          Copia todos os jogos manuais de uma data para outra. Jogos com mesmo time + horário não são duplicados.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={duplicating || yesterdayCount === 0} className="min-h-[44px] gap-2">
-                {duplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CopyPlus className="h-4 w-4" />}
-                Ontem ({yesterdayCount}) → Hoje
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Duplicar jogos de ontem para hoje?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Vai copiar {yesterdayCount} jogo(s) de ontem ({yesterdayStr}) para hoje ({todayStr}). Duplicatas (mesmo time + horário) são ignoradas.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => duplicate(yesterdayStr, todayStr)}>Confirmar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={duplicating || todayCount === 0} className="min-h-[44px] gap-2">
-                {duplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CopyPlus className="h-4 w-4" />}
-                Hoje ({todayCount}) → Amanhã
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Duplicar jogos de hoje para amanhã?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Vai copiar {todayCount} jogo(s) de hoje ({todayStr}) para amanhã ({tomorrowStr}). Duplicatas (mesmo time + horário) são ignoradas.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => duplicate(todayStr, tomorrowStr)}>Confirmar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-
-      {/* Side-by-side preview */}
-      <div className="grid gap-4 lg:grid-cols-2 admin-stagger-4">
+      {/* Today preview */}
+      <div className="admin-stagger-4">
         <DayPreviewCard
           title="Hoje"
           dateStr={todayStr}
           games={todayGames}
           text={todayText}
           validation={todayValidation}
-        />
-        <DayPreviewCard
-          title="Amanhã"
-          dateStr={tomorrowStr}
-          games={tomorrowGames}
-          text={tomorrowText}
-          validation={tomorrowValidation}
         />
       </div>
 
