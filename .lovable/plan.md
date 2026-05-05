@@ -1,58 +1,77 @@
-## Breakdown de CTR/Conversão por aba (tab)
+## Links curtos por aba (sem cauda de UTM)
 
-Adicionar um novo card no `AdminAnalytics` mostrando o funil **por aba** (Ao Vivo, Programação, Filmes, Séries, Novidades, Sugestões, esportes específicos), respondendo "qual aba converte melhor após o share?".
-
-### Onde
-
-Logo abaixo do card "Tendência diária" (e antes de "Por utm_campaign"), em `src/pages/admin/AdminAnalytics.tsx`.
-
-### Lógica nova
-
-```ts
-interface TabFunnelRow {
-  tab: string;
-  shares: number;
-  landings: number;
-  uniqueLanders: number;
-  tabViews: number;
-  ctr: number;        // landings ÷ shares
-  conversion: number; // tab_views ÷ landings
-}
-
-function computeFunnelByTab(remote: RemoteEvent[]): TabFunnelRow[] {
-  // shares     → chave: ev.props.tab_slug ?? ev.tab
-  // landings   → chave: ev.props.tab_slug ?? ev.props.landing_tab ?? ev.tab
-  // tab_views  → chave: ev.tab
-}
+Hoje o link copiado fica longo e feio:
+```
+https://canaldobrito.site/ao-vivo?utm_source=whatsapp&utm_medium=status&utm_campaign=share-ao-vivo
 ```
 
-Reaproveita o mesmo modelo de eventos já usado por `computeFunnel`, só troca a dimensão de agrupamento de `utm_campaign` para `tab`. Isso casa naturalmente porque no `analytics.ts` o `tab_slug` já é gravado em `link_share`, `landing_with_utm` e os `tab_view` rotulam a aba.
+A proposta é deixar **apenas o nome da aba no path**, mantendo rastreio:
+```
+https://canaldobrito.site/s/ao-vivo
+https://canaldobrito.site/s/programacao
+https://canaldobrito.site/s/novidades
+https://canaldobrito.site/s/sugestoes
+```
 
-### UI do card
+A rota `/s/<slug>` é um **redirecionador interno** que injeta os UTMs em memória, dispara `landing_with_utm` e em seguida navega para `/<slug>` limpa. O usuário vê uma URL bonita, e o Analytics continua medindo CTR/Conversão exatamente como hoje.
 
-Tabela compacta (mesmo padrão visual do funil de campanha):
+### Por que essa abordagem
 
-| Aba | Shares | Landings | CTR | Tab views | Conv. |
-|---|---|---|---|---|---|
-| programacao | 12 | 38 | 316% | 92 | 242% |
-| filmes | 8 | 19 | 237% | 41 | 215% |
+- Nenhuma dependência externa (sem encurtador de terceiros)
+- Mantém o domínio `canaldobrito.site` (confiança no WhatsApp)
+- Não quebra nada: a rota `/<slug>` antiga continua funcionando (alguém clicar num link antigo ainda cai certo)
+- Rastreio igual ao atual: o `landing_with_utm` é disparado com `utm_source=whatsapp`, `utm_medium=status`, `utm_campaign=share-<slug>` — só que vindo da rota `/s/<slug>` em vez do query string
 
-- Ordenado por `shares + landings` desc
-- CTR e Conversão em verde primário
-- Quando "Comparar" estiver ligado, mostra delta vs período B usando o mesmo componente `<Delta>` já existente
-- Linha de barra horizontal sutil sob cada aba (proporção de tab_views) reaproveitando o estilo do card "Por tab_view" já presente, para leitura rápida
+### O que muda no código
 
-### Mobile
+**1) Nova rota `/s/:slug` em `src/App.tsx`** (ou onde estão as rotas)
+- Componente `ShareRedirect` que:
+  - Lê `slug`, valida via `SLUG_TO_TAB`
+  - Salva attribution sintética em `sessionStorage` (mesma forma do `captureLandingAttribution`) com `utm_source=whatsapp`, `utm_medium=status`, `utm_campaign=share-<slug>`
+  - Dispara `track("landing_with_utm", …)` antes do redirect
+  - `<Navigate to="/<slug>" replace />` para deixar a URL final limpa
+- Slug inválido → `<Navigate to="/" replace />`
 
-- `overflow-x-auto` na tabela
-- Texto `text-xs` e `font-mono` em valores numéricos
-- Touch targets não aplicáveis (read-only)
+**2) `buildDeepLink` (em `src/lib/utils.ts`) ganha modo "short"**
+```ts
+export function buildDeepLink(base, tab, opts = {}) {
+  // novo: opts.short === true → retorna `${base}/s/${TAB_SLUGS[tab]}`
+  // sem query string, sem UTMs visíveis
+}
+```
+Comportamento atual com `opts.utm` continua funcionando (compatibilidade), mas o painel passa a usar `short: true` por padrão.
 
-### Arquivo único
+**3) `src/pages/admin/AdminWhatsApp.tsx`**
+- Onde hoje chama `buildDeepLink(siteUrl, tab, { utm: withUtm })`, troca para `buildDeepLink(siteUrl, tab, { short: true })`
+- Remove o toggle "UTM" (não faz mais sentido — o rastreio é embutido na rota `/s/`)
+- Mantém `trackShare(...)` como está, agora com `utm_campaign: \`share-${slug}\`` sempre (consistência)
+- Para o link "raiz" do site (`siteUrl` sem aba), também oferece versão curta usando `/s/home`
 
-- `src/pages/admin/AdminAnalytics.tsx`
-  - Adicionar `interface TabFunnelRow` e `computeFunnelByTab` perto de `computeFunnel` (após linha 253)
-  - Adicionar `tabFunnelA` e `tabFunnelB` via `useMemo`
-  - Renderizar novo `<Card>` "Funil por aba" entre o card "Tendência diária" e "Por utm_campaign"
+**4) Mensagens do MessageCard e do "Programação do dia"**
+- Os links embutidos em texto (`👉 https://...`) usam o mesmo `buildDeepLink(..., { short: true })` — visualmente bem mais leve no WhatsApp Status.
 
-Sem mudanças de schema, sem novas dependências.
+### Visual antes / depois
+
+```
+ANTES: 🔴 AO VIVO no Canal do Brito
+       https://canaldobrito.site/ao-vivo?utm_source=whatsapp&utm_medium=status&utm_campaign=share-ao-vivo
+
+DEPOIS: 🔴 AO VIVO no Canal do Brito
+        https://canaldobrito.site/s/ao-vivo
+```
+
+### Compatibilidade & rastreio
+
+- Links antigos com `?utm_*` continuam funcionando (capture já existente)
+- Novo formato `/s/<slug>` produz exatamente os mesmos eventos no Analytics (CTR/Conversão sem regressão nas métricas históricas)
+- `utm_content` (cards específicos) continua sendo possível como `?c=<id>` opcional na rota curta — fica para uma evolução futura, não bloqueia esta entrega
+
+### Arquivos editados
+
+- `src/lib/utils.ts` — `buildDeepLink` com `opts.short`
+- `src/App.tsx` (ou arquivo de rotas) — nova rota `/s/:slug`
+- novo `src/pages/ShareRedirect.tsx` — captura attribution e redireciona
+- `src/pages/admin/AdminWhatsApp.tsx` — usa modo curto, remove toggle UTM
+- (opcional) `src/lib/analytics.ts` — pequena helper `captureSyntheticAttribution(slug)` para reaproveitar a lógica de gravação em sessionStorage
+
+Sem migrações de banco, sem novas dependências.
