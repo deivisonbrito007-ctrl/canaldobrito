@@ -21,6 +21,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 const AdminApiSync = lazy(() => import("./pages/admin/AdminApiSync"));
+const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 
 const queryClient = new QueryClient();
 
