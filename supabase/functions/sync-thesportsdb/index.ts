@@ -73,27 +73,31 @@ function toBRT(dateEvent: string, strTime: string | null): { date: string; time:
   return { date, time };
 }
 
+// Bloqueia fallback genérico em ligas estrangeiras sem transmissão no Brasil.
+const FOREIGN_LEAGUE_BLOCKLIST = /\b(ethiopian|eritrean|egyptian|moroccan|tunisian|algerian|sudanese|libyan|nigerian|ghanaian|ivorian|senegalese|south\s*african|kenyan|ugandan|tanzanian|zambian|zimbabwean|angolan|mozambican|cameroon(ian)?|gabonese|congolese|dr\s*congo|ivory\s*coast|eswatini|swazi|mauritani(an|a)|burkinab[eé]|malian|guinean|togolese|beninese|liberian|sierra\s*leon|namibian|botswana|lesotho|seychelles|comoros|djiboutian|somali|rwandan|burundian|chadian|nigerien|sao\s*tom[eé]|cape\s*verde|gambia|equatorial\s*guinea|central\s*african|saudi|emirat(es|i)|qatari|kuwaiti|bahrain(i)?|omani|jordanian|lebanese|syrian|iraqi|iranian|israeli|palestinian|yemen(i)?|azerbaijani|armenian|georgian|kazakh|uzbek|turkmen|kyrgyz|tajik|afghan|pakistan(i)?|indian|bangladesh(i)?|sri\s*lanka(n)?|nepalese|bhutanese|maldivian|myanmar|burmese|thai|vietnamese|cambodian|laotian|malaysian|singapore(an)?|indonesian|filipino|philippine|chinese|hong\s*kong|taiwan(ese)?|mongolian|korean|j[2-3]\s*league|albanian|bosnian|bulgarian|croatian|cypriot|czech|estonian|finnish|hungarian|icelandic|irish|kosovo|latvian|lithuanian|luxembourg(ish)?|macedonian|maltese|moldovan|montenegrin|polish|romanian|serbian|slovakian|slovenian|swedish|swiss|ukrainian|welsh|scottish|northern\s*irish|austrian|belarusian|belgian|danish|greek|norwegian|russian|turkish|chilean|peruvian|colombian|venezuelan|ecuadorian|bolivian|paraguayan|uruguayan|panamanian|costa\s*rican|salvadoran|guatemalan|honduran|nicaraguan|jamaican|haitian|dominican|cuban|trinidad|barbadian|new\s*zealand|a-?league|fijian|samoan|usl|nasl)\b/i;
+
 // Fallback de canais por competição (regex). Aplicado quando eventstv.php não traz canal BR.
 const BROADCAST_FALLBACK: Array<{ match: RegExp; channels: string[] }> = [
-  // Futebol nacional
+  // Futebol nacional brasileiro
   { match: /\bbrasileir(ã|a)o|s[eé]rie\s*a\s*brasil|campeonato\s*brasileiro\b/i, channels: ["Globo", "SporTV", "Premiere"] },
   { match: /\bs[eé]rie\s*b\s*brasil\b/i, channels: ["SporTV", "Premiere"] },
   { match: /\bcopa\s*do\s*brasil\b/i, channels: ["Globo", "SporTV", "Premiere", "Amazon Prime"] },
   { match: /\b(paulist[ãa]o|carioca|mineiro|ga[uú]cho|paranaense|baiano|pernambucano)\b/i, channels: ["Record", "Cazé TV", "Nosso Futebol"] },
   // Sul-americano
   { match: /\b(libertadores|copa\s*libertadores)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
-  { match: /\bsul-?americana\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
-  // Europeu
+  { match: /\b(sul-?americana|copa\s*sudamericana)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
+  // Europeu — qualificadores estritos (evita colidir com "Ethiopian Premier League" etc.)
   { match: /\b(uefa\s*champions\s*league|champions\s*league)\b/i, channels: ["TNT Sports Brasil", "HBO Max", "SBT"] },
   { match: /\b(uefa\s*europa\s*league|europa\s*league)\b/i, channels: ["Cazé TV", "Star+"] },
   { match: /\b(uefa\s*conference|conference\s*league)\b/i, channels: ["Cazé TV"] },
-  { match: /\bpremier\s*league\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\b(la\s*liga|laliga)\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\b(serie\s*a|calcio)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(english\s*premier\s*league|premier\s*league\s*england|epl)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(la\s*liga|laliga|spanish\s*la\s*liga|primera\s*divisi[oó]n\s*spain)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(italian\s*serie\s*a|serie\s*a\s*italy|calcio|lega\s*calcio)\b/i, channels: ["ESPN Brasil", "Disney+"] },
   { match: /\bbundesliga\b/i, channels: ["OneFootball", "Cazé TV"] },
-  { match: /\bligue\s*1\b/i, channels: ["Cazé TV", "Xsports"] },
+  { match: /\b(french\s*ligue\s*1|ligue\s*1\s*france)\b/i, channels: ["Cazé TV", "Xsports"] },
+  { match: /\b(primeira\s*liga|liga\s*portugal)\b/i, channels: ["ESPN Brasil", "Disney+"] },
   // Seleções
-  { match: /\b(copa\s*do\s*mundo|world\s*cup|fifa)\b/i, channels: ["Globo", "SporTV", "Cazé TV"] },
+  { match: /\b(copa\s*do\s*mundo|fifa\s*world\s*cup|world\s*cup\s*qualif)\b/i, channels: ["Globo", "SporTV", "Cazé TV"] },
   { match: /\b(eurocopa|euro\s*\d{4}|uefa\s*euro)\b/i, channels: ["SporTV", "Cazé TV"] },
   { match: /\b(copa\s*am[eé]rica|conmebol)\b/i, channels: ["SporTV", "Globo"] },
   // Basquete
@@ -103,21 +107,22 @@ const BROADCAST_FALLBACK: Array<{ match: RegExp; channels: string[] }> = [
   { match: /\bnfl\b/i, channels: ["ESPN Brasil", "Disney+", "DAZN Brasil"] },
   // Hockey / Beisebol
   { match: /\bnhl\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\bmlb|major\s*league\s*baseball\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  { match: /\b(mlb|major\s*league\s*baseball)\b/i, channels: ["ESPN Brasil", "Disney+"] },
   // F1 / Motor
-  { match: /\b(formula\s*1|f1|fia\s*formula)\b/i, channels: ["Band", "F1 TV Pro"] },
+  { match: /\b(formula\s*1|f1\s*grand\s*prix|fia\s*formula\s*1)\b/i, channels: ["Band", "F1 TV Pro"] },
   { match: /\bmoto\s*gp\b/i, channels: ["DAZN Brasil"] },
   { match: /\bstock\s*car\b/i, channels: ["Band", "BandSports"] },
   // Lutas
   { match: /\bufc\b/i, channels: ["Combate", "UFC Fight Pass"] },
-  { match: /\b(boxing|boxe)\b/i, channels: ["DAZN Brasil"] },
-  // Tênis / Vôlei
-  { match: /\b(atp|wta|grand\s*slam|roland\s*garros|wimbledon|us\s*open|australian\s*open)\b/i, channels: ["ESPN Brasil", "Disney+"] },
-  { match: /\b(superliga|cbv|vol[eê]i)\b/i, channels: ["SporTV", "Globo"] },
+  // Tênis (apenas Grand Slams têm direitos no Brasil)
+  { match: /\b(roland\s*garros|wimbledon|us\s*open\s*tennis|australian\s*open)\b/i, channels: ["ESPN Brasil", "Disney+"] },
+  // Vôlei brasileiro
+  { match: /\b(superliga\s*brasil|cbv|vol[eê]i\s*brasil)\b/i, channels: ["SporTV", "Globo"] },
 ];
 
 const lookupBroadcastFallback = (competition: string): string[] => {
   if (!competition) return [];
+  if (FOREIGN_LEAGUE_BLOCKLIST.test(competition)) return [];
   for (const { match, channels } of BROADCAST_FALLBACK) {
     if (match.test(competition)) return [...channels];
   }
