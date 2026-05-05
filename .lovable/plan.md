@@ -1,49 +1,36 @@
-## Diagnóstico
+## Entendi a correção
 
-Inspecionei `daily_games` e identifiquei a causa dos **canais repetidos no mesmo horário**:
+Você quer manter **todos os eventos** na programação (mesmo os sem canal confirmado), e apenas **corrigir o canal** quando for o caso. O que fizemos antes apagou jogos demais — é preciso reverter o filtro e ajustar a exibição.
 
-As regex de fallback em `supabase/functions/sync-thesportsdb/index.ts` estão **genéricas demais** e casam com nomes de ligas estrangeiras que **não têm transmissão no Brasil**, espalhando os mesmos canais em dezenas de jogos:
+## O que mudar
 
-| Regex atual | Casa indevidamente | Resultado errado |
-|---|---|---|
-| `\bpremier league\b` | Ethiopian / Singapore / Bahrain / Iraqi / Israeli / Egyptian Premier League | Todos viram "ESPN Brasil + Disney+" |
-| `\bligue 1\b` | DR Congo Ligue 1, Ivory Coast Ligue 1 | Viram "Cazé TV + Xsports" |
-| `\bserie a\b` | Ethiopian Serie A etc. | "ESPN Brasil + Disney+" |
-| `\bf1\b` / `\bfifa\b` / `\bsuperliga\b` | Strings curtas dentro de outros nomes | Falsos positivos |
+### 1. Edge Function `sync-thesportsdb/index.ts`
+Remover o `continue` que descarta eventos sem canal. Voltar a inserir o jogo com `channels: []`. Manter:
+- Filtro 3-camadas para canais reais (eventstv.php → só BR confirmado).
+- Fallback estrito (Brasileirão, Copa do Brasil, Libertadores, Champions, F1, UFC etc. — competições com cobertura integral).
+- Blocklist de ligas estrangeiras só impede o fallback genérico (não bloqueia o evento).
 
-Exemplos reais hoje (05/05): "Ethiopian Premier League", "Iraqi Premier League", "Bahrain Premier League", "Azerbaijani Premier League", "Singapore Premier League" — todos com `["ESPN Brasil", "Disney+"]`.
+Resultado: evento sempre entra na programação; `channels` fica vazio quando não há transmissão BR confirmada.
 
-## Correção
+### 2. UI — exibição quando não houver canal
+Onde hoje mostramos a lista de canais (cards/lista de jogos), adicionar fallback visual:
+- Se `channels.length === 0` → exibir badge cinza **"Sem transmissão na TV"** (ou "Canal não confirmado") em vez de espaço vazio.
+- Se houver canais → exibir normalmente.
 
-**1. Bloquear ligas estrangeiras antes do fallback** — adicionar `FOREIGN_LEAGUE_BLOCKLIST` (regex com ~80 nacionalidades/regiões: ethiopian, iraqi, bahrain, dr congo, ivory coast, azerbaijani, israeli, saudi, qatari, indian, chinese, korean, indonesian, polish, czech, etc.). Se o nome da competição casar, **não aplica fallback**.
+Componentes prováveis a ajustar (a confirmar na implementação): `GameCard`, `LiveGameCard`, `ScheduleList`.
 
-**2. Tornar regex de competições européias estritas** exigindo qualificador:
-- `premier league` → `english premier league | premier league england | epl`
-- `ligue 1` → `french ligue 1 | ligue 1 france`
-- `serie a` → `italian serie a | serie a italy | calcio | lega calcio`
-- `la liga` → `la liga | laliga | spanish la liga`
-- `world cup` → `fifa world cup | copa do mundo`
-- `f1` → `formula 1 | f1 grand prix | fia formula 1`
-- `superliga` → `superliga brasil` (havia colisão com superligas estrangeiras)
-- Tênis: remove `atp/wta` genéricos, mantém só **Grand Slams** (que têm transmissão BR)
-
-**3. Combinar com filtro já existente** — eventos sem canal real (vindo de `eventstv.php`) e sem fallback continuam descartados, conforme já implementado.
-
-**4. Limpeza retroativa do banco** — `DELETE` em `daily_games` onde:
-- `source = 'thesportsdb'` E
-- `competition` casa o blocklist de ligas estrangeiras
-
-Isso remove imediatamente os ~50+ jogos de ligas africanas/asiáticas que ficaram com canais BR falsos.
-
-## Arquivos afetados
-
-- `supabase/functions/sync-thesportsdb/index.ts` — adiciona `FOREIGN_LEAGUE_BLOCKLIST`, refina cada regex de `BROADCAST_FALLBACK`, gate `lookupBroadcastFallback` para retornar `[]` em ligas bloqueadas.
-- Migration de limpeza: `DELETE FROM daily_games WHERE source='thesportsdb' AND competition ~* '<blocklist>'`.
+### 3. Re-sincronizar a data atual
+Após o ajuste, disparar o sync para repopular os jogos que foram apagados na limpeza anterior (NBA, MLB, NHL, Premier League, etc.). Eles voltarão a aparecer:
+- Com canal correto quando a API confirmar.
+- Sem canal (badge "Sem transmissão") quando não confirmar.
 
 ## Sugestões adicionais
 
-- **Painel admin "Sync Stats"**: mostrar top-20 competições do `noChannelByCompetition` e do `fallbackHits`, para você auditar o que entrou/saiu por competição a cada sync.
-- **Tabela `broadcast_overrides` no banco** (futuro): pares `competition_pattern → channels[]` editáveis pelo admin sem redeploy.
-- **Modo "estrito"**: opção de só publicar jogos com canal vindo de `eventstv.php` (ignorando todo fallback) — útil se quiser zero-falso-positivo.
+- **Tabela `broadcast_overrides` no banco** (admin edita pares competição → canais), permitindo cadastrar manualmente "NBA Finals → ESPN" sem redeploy. Resolve o caso jogo-a-jogo de NBA/MLB/NFL.
+- **Botão "Editar canal" no admin de jogos**: 1 clique para corrigir o canal de um jogo específico já sincronizado.
+- **Painel Sync Stats** já mostra `noChannelByCompetition` — usar essa lista pra priorizar overrides.
 
-Quer que eu já implemente as 3 sugestões junto, ou só a correção principal?
+## Arquivos afetados
+- `supabase/functions/sync-thesportsdb/index.ts` — reverter `continue` + reativar contador de "sem canal".
+- 1-2 componentes de card de jogo — exibir badge "Sem transmissão" quando vazio.
+- Re-executar sync manual após deploy.

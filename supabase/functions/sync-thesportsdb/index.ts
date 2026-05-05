@@ -303,14 +303,12 @@ Deno.serve(async (req) => {
 
         if (usedFallback) {
           fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
-        }
-
-        // Filtro final: só publicar eventos com transmissão confirmada no Brasil
-        if (channels.length === 0) {
+        } else if (channels.length === 0) {
           noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
-          continue;
         }
 
+        // Mantém o evento na programação mesmo sem canal confirmado.
+        // O canal só é exibido quando vier confirmado (eventstv.php BR ou fallback validado).
         allRows.push({
           date: brt.date,
           home_team: home,
