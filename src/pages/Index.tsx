@@ -17,6 +17,7 @@ const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
 const LazyNovidadesCard = lazy(() => import("@/components/public/NovidadesCard").then(m => ({ default: m.NovidadesCard })));
 const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
 const LazyBannerSections = lazy(() => import("@/components/public/BannerSections").then(m => ({ default: m.BannerSections })));
+const LazyAnalyticsDebugOverlay = lazy(() => import("@/components/public/AnalyticsDebugOverlay"));
 
 const HighlightsFallback = () => (
   <div className="pt-5 pb-3 space-y-6">
@@ -195,6 +196,9 @@ const Index = () => {
 
       <PublicFooter />
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <Suspense fallback={null}>
+        <LazyAnalyticsDebugOverlay />
+      </Suspense>
     </div>
   );
 };
