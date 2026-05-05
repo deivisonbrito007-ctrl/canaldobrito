@@ -44,6 +44,6 @@ describe("WeeklyMoviesSection", () => {
     const { getByText } = render(<WeeklyMoviesSection />, { wrapper });
     expect(getByText("Test Movie")).toBeInTheDocument();
     expect(getByText("8.5")).toBeInTheDocument();
-    expect(getByText("Filmes (1)")).toBeInTheDocument();
+    expect(getByText("Sugestões de Filmes (1)")).toBeInTheDocument();
   });
 });
