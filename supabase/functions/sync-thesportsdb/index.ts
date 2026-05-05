@@ -443,6 +443,7 @@ Deno.serve(async (req) => {
           tv_stats_by_date: tvStats,
           candidate_dates: candidateDates,
           fallback_hits: fallbackHits,
+          override_hits: overrideHits,
           no_channel_by_competition: noChannelByCompetition,
         },
       });
