@@ -311,6 +311,8 @@ Deno.serve(async (req) => {
           errors: errors.slice(0, 10),
           triggered_by: req.headers.get("x-cron-secret") ? "cron" : "manual",
           user_agent: req.headers.get("user-agent")?.slice(0, 120) || null,
+          tv_stats_by_date: tvStats,
+          candidate_dates: candidateDates,
         },
       });
     } catch (logErr) {
