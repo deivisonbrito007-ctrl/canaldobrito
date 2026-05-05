@@ -333,10 +333,11 @@ Deno.serve(async (req) => {
             if (!isBR) continue;
             tvStatsByDate[d].br_channels++;
             tvStatsByDate[d].events_with_br.add(id);
+            const norm = normalizeChannel(ch);
             if (!tvByEvent.has(id)) tvByEvent.set(id, []);
             const arr = tvByEvent.get(id)!;
-            if (!arr.some((x) => x.toLowerCase() === ch.toLowerCase())) {
-              arr.push(ch);
+            if (!arr.some((x) => x.toLowerCase() === norm.toLowerCase())) {
+              arr.push(norm);
             }
           }
           console.log(`[DEBUG] Data ${d}: ${tvStatsByDate[d].events_with_tv.size} eventos com TV, ${tvStatsByDate[d].br_channels} canais BR`);
