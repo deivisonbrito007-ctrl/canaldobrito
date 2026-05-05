@@ -319,183 +319,70 @@ const AdminWhatsApp = () => {
         </div>
       </div>
 
-      {/* Quick Tab Links */}
+      {/* Quick Tab Links — compact */}
       <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
-            <Link2 className="h-4 w-4 text-primary" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
+              <Link2 className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm font-bold text-foreground truncate">Links rápidos por aba</span>
           </div>
-          <span className="text-sm font-bold text-foreground">Links rápidos por aba</span>
+          <label
+            className="flex items-center gap-1.5 cursor-pointer shrink-0"
+            title="Adiciona utm_source=whatsapp e utm_campaign=share-<aba> para rastreio no Analytics"
+          >
+            <input
+              type="checkbox"
+              checked={withUtm}
+              onChange={(e) => setWithUtm(e.target.checked)}
+              className="h-3.5 w-3.5 accent-primary"
+            />
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">UTM</span>
+          </label>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Compartilhe um link que abre o portal direto na aba escolhida — ideal para o status do WhatsApp.
-        </p>
-        <label className="flex items-center justify-between gap-2 rounded-lg border border-border/30 bg-background/40 px-3 py-2 cursor-pointer">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-foreground">Adicionar UTM (rastrear no Analytics)</span>
-            <span className="text-[10px] text-muted-foreground">
-              Acrescenta <code className="font-mono">utm_source=whatsapp</code> e <code className="font-mono">utm_campaign=share-&lt;aba&gt;</code>
-            </span>
-          </div>
-          <input
-            type="checkbox"
-            checked={withUtm}
-            onChange={(e) => setWithUtm(e.target.checked)}
-            className="h-4 w-4 accent-primary"
-          />
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
           {([
-            {
-              tab: "live" as DeepTab,
-              label: "Ao Vivo",
-              emoji: "🔴",
-              Icon: Radio,
-              accent: "from-rose-500/20 to-rose-500/5 border-rose-500/30 text-rose-300",
-              title: "Ao Vivo agora",
-              description: "Veja em tempo real o que está rolando no portal.",
-              msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇",
-              suggestions: ["resultado", "tabela", "destaque", "noticia"],
-            },
-            {
-              tab: "novidades" as DeepTab,
-              label: "Novidades",
-              emoji: "🆕",
-              Icon: Sparkles,
-              accent: "from-sky-500/20 to-sky-500/5 border-sky-500/30 text-sky-300",
-              title: "Novidades da semana",
-              description: "Filmes, séries e lançamentos recém-adicionados.",
-              msg: "🆕 Novidades da semana — confira os lançamentos 👇",
-              suggestions: ["lancamentos", "trailer", "estreia", "banner"],
-            },
-            {
-              tab: "highlights" as DeepTab,
-              label: "Sugestões",
-              emoji: "⭐",
-              Icon: Star,
-              accent: "from-amber-500/20 to-amber-500/5 border-amber-500/30 text-amber-300",
-              title: "Sugestões pra hoje",
-              description: "Indicações selecionadas de filmes e séries.",
-              msg: "⭐ Sugestões de filmes e séries pra hoje 👇",
-              suggestions: ["filmes", "series", "destaque-semana", "indicacao"],
-            },
-            {
-              tab: "schedule" as DeepTab,
-              label: "Programação",
-              emoji: "📅",
-              Icon: CalendarDays,
-              accent: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-300",
-              title: "Programação de hoje",
-              description: "Horários, canais e jogos do dia, organizados.",
-              msg: "📅 Programação completa de hoje no portal 👇",
-              suggestions: ["jogos-hoje", "amanha", "destaque", "canais"],
-            },
-          ]).map(({ tab, label, emoji, Icon, accent, title, description, msg, suggestions }) => {
-            const content = contentByTab[tab] ?? "";
-            const link = buildDeepLink(siteUrl, tab, { utm: withUtm, content: content || undefined });
+            { tab: "live" as DeepTab, label: "Ao Vivo", emoji: "🔴", msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇" },
+            { tab: "novidades" as DeepTab, label: "Novidades", emoji: "🆕", msg: "🆕 Novidades da semana — confira os lançamentos 👇" },
+            { tab: "highlights" as DeepTab, label: "Sugestões", emoji: "⭐", msg: "⭐ Sugestões de filmes e séries pra hoje 👇" },
+            { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
+          ]).map(({ tab, label, emoji, msg }) => {
+            const link = buildDeepLink(siteUrl, tab, { utm: withUtm });
             const text = `${msg}\n\n${link}`;
-            let host = siteUrl;
-            try { host = new URL(link).host; } catch { /* noop */ }
             return (
-              <div key={tab} className="rounded-xl border border-border/30 bg-background/40 overflow-hidden">
-                {/* WhatsApp-style link preview */}
-                <div className={`relative bg-gradient-to-br ${accent} border-b border-border/30 p-3 flex items-start gap-3`}>
-                  <div className="shrink-0 h-12 w-12 rounded-lg bg-background/60 border border-border/40 flex items-center justify-center">
-                    <Icon className="h-6 w-6" aria-hidden />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wider font-bold opacity-80">
-                        {emoji} {label}
-                      </span>
-                      <span className="text-[9px] font-mono opacity-60 bg-background/40 rounded px-1.5 py-0.5">
-                        /{TAB_SLUGS[tab]}
-                      </span>
-                    </div>
-                    <p className="text-sm font-bold text-foreground leading-tight mt-1 truncate">
-                      {title}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">
-                      {description}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground/80 truncate">
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{host}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 space-y-2">
-                  {withUtm && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-muted-foreground flex items-center justify-between">
-                        <span>utm_content (opcional)</span>
-                        {content && (
-                          <button
-                            type="button"
-                            onClick={() => setContentByTab((s) => ({ ...s, [tab]: "" }))}
-                            className="text-[9px] text-muted-foreground/70 hover:text-foreground"
-                          >
-                            limpar
-                          </button>
-                        )}
-                      </label>
-                      <input
-                        type="text"
-                        value={content}
-                        onChange={(e) => setContentByTab((s) => ({ ...s, [tab]: e.target.value }))}
-                        placeholder={`ex.: ${suggestions[0]}`}
-                        className="w-full text-[11px] bg-background/60 border border-border/30 rounded px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                      />
-                      <div className="flex flex-wrap gap-1">
-                        {suggestions.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => setContentByTab((st) => ({ ...st, [tab]: s }))}
-                            className={`text-[9px] px-2 py-0.5 rounded-full border transition-colors ${
-                              content === s
-                                ? "border-primary/60 bg-primary/15 text-primary"
-                                : "border-border/30 bg-background/40 text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <code className="block text-[10px] text-muted-foreground bg-background/60 rounded px-2 py-1.5 truncate">
-                    {link}
-                  </code>
-                  <div className="flex gap-2">
-                    <CopyButton
-                      text={link}
-                      label="Link"
-                      onAfterCopy={() => trackShare({
-                        surface: "admin-whatsapp-quick",
-                        tab,
-                        utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
-                        utm_content: content || null,
-                        action: "copy",
-                      })}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => openWhatsApp(text, {
-                        surface: "admin-whatsapp-quick",
-                        tab,
-                        utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
-                        utm_content: content || null,
-                        action: "open",
-                      })}
-                      className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[40px]"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      Status
-                    </Button>
-                  </div>
-                </div>
+              <div
+                key={tab}
+                className="flex items-center gap-2 rounded-lg border border-border/30 bg-background/40 px-3 py-2"
+              >
+                <span className="text-sm font-bold text-foreground truncate flex-1 min-w-0" title={link}>
+                  <span aria-hidden>{emoji}</span> {label}
+                  {withUtm && <span className="ml-1.5 text-primary text-[10px] align-middle" aria-label="rastreado">●</span>}
+                </span>
+                <CopyButton
+                  text={link}
+                  label="Copiar"
+                  onAfterCopy={() => trackShare({
+                    surface: "admin-whatsapp-quick",
+                    tab,
+                    utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
+                    action: "copy",
+                  })}
+                />
+                <Button
+                  size="sm"
+                  onClick={() => openWhatsApp(text, {
+                    surface: "admin-whatsapp-quick",
+                    tab,
+                    utm_campaign: withUtm ? `share-${TAB_SLUGS[tab]}` : null,
+                    action: "open",
+                  })}
+                  className="gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[36px] px-3"
+                  aria-label={`Enviar ${label} no WhatsApp`}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Status
+                </Button>
               </div>
             );
           })}
