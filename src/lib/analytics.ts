@@ -236,3 +236,28 @@ export function trackContentClick(props: ContentClickProps): void {
     from_share: attribution.utm_campaign?.startsWith("share-") ?? false,
   });
 }
+
+export interface ShareProps {
+  /** Where in the admin the share happened. */
+  surface: "admin-whatsapp-quick" | "admin-whatsapp-day" | "admin-whatsapp-template" | "admin-whatsapp-custom";
+  /** Tab targeted by the shared link, if any. */
+  tab?: PublicTab | null;
+  /** utm_campaign that was embedded in the shared link, if any. */
+  utm_campaign?: string | null;
+  /** utm_content that was embedded in the shared link, if any. */
+  utm_content?: string | null;
+  /** "copy" (clipboard) or "open" (wa.me opened). */
+  action: "copy" | "open";
+}
+
+/**
+ * Track when an admin copies or opens a WhatsApp link.
+ * These events become the "shares" denominator of the click-through funnel:
+ *   shares  → landing_with_utm  → tab_view (CTR & conversion).
+ */
+export function trackShare(props: ShareProps): void {
+  track("link_share", {
+    ...props,
+    tab_slug: props.tab ? TAB_SLUGS[props.tab] : null,
+  });
+}
