@@ -16,6 +16,40 @@ export interface UtmParams {
 }
 
 const ATTRIBUTION_KEY = "cb:last_attribution";
+const ANON_ID_KEY = "cb:anon_id";
+const SESSION_ID_KEY = "cb:session_id";
+
+/** Get-or-create a persistent anonymous visitor id (localStorage, UUID v4). */
+export function getAnonymousId(): string {
+  try {
+    let id = localStorage.getItem(ANON_ID_KEY);
+    if (!id) {
+      id = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+        ? crypto.randomUUID()
+        : `anon-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(ANON_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return "anon-unavailable";
+  }
+}
+
+/** Per-tab session id — resets when the tab closes. */
+export function getSessionId(): string {
+  try {
+    let id = sessionStorage.getItem(SESSION_ID_KEY);
+    if (!id) {
+      id = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+        ? crypto.randomUUID()
+        : `sess-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem(SESSION_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return "sess-unavailable";
+  }
+}
 
 declare global {
   interface Window {
