@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ScrollText, Trash2, Pause, Play, ShieldAlert } from "lucide-react";
+import { ScrollText, Trash2, Pause, Play, ShieldAlert, RefreshCw, Radio, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 
 type AuditRow = {
@@ -17,14 +17,20 @@ const ACTION_META: Record<string, { label: string; icon: any; cls: string }> = {
   delete_manual: { label: "Jogo manual removido", icon: Trash2, cls: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
   api_sync_paused: { label: "Sincronização pausada (filtro MANUAL_ONLY ativo)", icon: Pause, cls: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
   api_sync_resumed: { label: "Sincronização reativada", icon: Play, cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
+  api_sync_run: { label: "Sync da API executado", icon: RefreshCw, cls: "text-sky-300 bg-sky-500/10 border-sky-500/30" },
+  api_live_update_run: { label: "Atualização AO VIVO executada", icon: Radio, cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
+  api_sync_failed: { label: "Falha no sync da API", icon: AlertTriangle, cls: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
 };
 
 const FILTERS = [
   { value: "all", label: "Tudo" },
+  { value: "api_sync_run", label: "Execuções sync" },
+  { value: "api_live_update_run", label: "Updates ao vivo" },
   { value: "delete_api", label: "Removidos da API" },
   { value: "delete_manual", label: "Removidos manuais" },
   { value: "api_sync_paused", label: "Pausas" },
   { value: "api_sync_resumed", label: "Reativações" },
+  { value: "api_sync_failed", label: "Falhas" },
 ] as const;
 
 const AdminAudit = () => {
@@ -96,13 +102,29 @@ const AdminAudit = () => {
                   </span>
                   <span className="text-[10px] text-muted-foreground">{ts}</span>
                 </div>
-                {row.entity === "daily_games" && (
+                {row.entity === "daily_games" && p.home_team && (
                   <p className="text-xs text-foreground truncate">
                     {p.home_team} {p.away_team && p.away_team !== "—" && `× ${p.away_team}`}
                     <span className="text-muted-foreground">
                       {" "}• {p.date} {p.game_time?.slice(0, 5)} • {p.sport_type} • src: {p.source}
                     </span>
                   </p>
+                )}
+                {row.action === "api_sync_run" && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {p.date} • {p.sports} esportes • <span className="text-emerald-300">{p.upserted} upsert</span> • <span className="text-amber-300">{p.skipped} skip</span>
+                    {p.errors_count > 0 && <span className="text-rose-300"> • {p.errors_count} erros</span>}
+                    {p.triggered_by && <span> • via {p.triggered_by}</span>}
+                  </p>
+                )}
+                {row.action === "api_live_update_run" && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {p.todaysGames} jogos • {p.updated} atualizados • {p.live_count} ao vivo • {p.finished} finalizados
+                    {p.triggered_by && <span> • via {p.triggered_by}</span>}
+                  </p>
+                )}
+                {row.action === "api_sync_failed" && (
+                  <p className="text-[11px] text-rose-300 truncate">{p.error}</p>
                 )}
                 {row.entity === "settings" && (
                   <p className="text-[11px] text-muted-foreground">

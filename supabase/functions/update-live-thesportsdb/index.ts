@@ -87,6 +87,26 @@ Deno.serve(async (req) => {
         .update({ is_live: false }).in("external_id", toFinish).eq("is_live", true);
     }
 
+    try {
+      await supabase.from("audit_logs").insert({
+        action: "api_live_update_run",
+        entity: "daily_games",
+        actor_id: null,
+        payload: {
+          source: "thesportsdb",
+          todaysGames: todays.length,
+          updated,
+          live_count: liveExt.length,
+          finished: toFinish.length,
+          errors_count: errs.length,
+          errors: errs.slice(0, 10),
+          triggered_by: req.headers.get("x-cron-secret") ? "cron" : "manual",
+        },
+      });
+    } catch (logErr) {
+      console.error("[update-live-thesportsdb] audit log failed:", logErr);
+    }
+
     return new Response(JSON.stringify({
       ok: true, todaysGames: todays.length, updated, errors: errs,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
