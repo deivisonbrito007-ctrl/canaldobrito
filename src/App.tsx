@@ -23,6 +23,7 @@ const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagn
 const AdminApiSync = lazy(() => import("./pages/admin/AdminApiSync"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminSyncStats = lazy(() => import("./pages/admin/AdminSyncStats"));
+const AdminCanais = lazy(() => import("./pages/admin/AdminCanais"));
 
 const queryClient = new QueryClient();
 
