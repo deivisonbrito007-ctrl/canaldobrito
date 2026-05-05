@@ -226,6 +226,7 @@ const EmptyLive = () => (
 
 /* ── Main ── */
 export const LivePageContent = () => {
+  useRealtimeDailyGames();
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
   const { data: games, isLoading, isFetching, dataUpdatedAt } = useAllDailyGames(today);
