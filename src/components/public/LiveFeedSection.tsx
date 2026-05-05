@@ -58,21 +58,23 @@ const LiveGameCard = ({ game }: { game: DailyGame }) => {
   const channel = game.channels?.[0];
 
   return (
-    <div className="rounded-[12px] overflow-hidden transition-all duration-200 hover:border-primary/30 hover:-translate-y-0.5 bg-surface-2 border border-border">
-      <div className="h-[2.5px]" style={{ background: accent }} />
+    <div className="rounded-[12px] overflow-hidden transition-all duration-300 hover:border-destructive/40 hover:-translate-y-1 hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.2)] bg-surface-2 border border-border group">
+      <div className="relative h-[2.5px] overflow-hidden" style={{ background: accent }}>
+        <div className="absolute inset-0 -translate-x-full animate-shimmer-sweep bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      </div>
       <div className="p-3 space-y-1.5">
         {/* Top row */}
         <div className="flex items-center justify-between gap-1">
           <p className="text-[9px] font-bold uppercase tracking-wider truncate text-muted-foreground font-body">
             {emoji} {league || cardSport}
           </p>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="inline-flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded-full bg-destructive/15 border border-destructive/30">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-destructive animate-pulse-live" />
               <span className="relative inline-flex rounded-full h-full w-full bg-destructive" />
             </span>
-            <span className="text-[9px] font-bold text-destructive tabular-nums font-body">
-              {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
+            <span className="text-[9px] font-extrabold text-destructive tabular-nums font-body">
+              {elapsed !== null ? `${elapsed}'` : "LIVE"}
             </span>
           </div>
         </div>
@@ -81,15 +83,15 @@ const LiveGameCard = ({ game }: { game: DailyGame }) => {
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-foreground leading-tight font-body truncate">
+              <p className="text-[13px] font-extrabold text-foreground leading-tight font-body truncate">
                 {game.home_team}
               </p>
             </div>
-            <span className="text-[9px] text-muted-foreground font-body shrink-0 px-1 py-0.5 rounded bg-surface border border-border">
+            <span className="text-[9px] font-extrabold text-destructive font-body shrink-0 px-1.5 py-0.5 rounded bg-gradient-to-br from-destructive/15 to-destructive/5 border border-destructive/25">
               VS
             </span>
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[13px] font-bold text-foreground leading-tight font-body truncate">
+              <p className="text-[13px] font-extrabold text-foreground leading-tight font-body truncate">
                 {game.away_team}
               </p>
             </div>
@@ -101,11 +103,22 @@ const LiveGameCard = ({ game }: { game: DailyGame }) => {
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 flex items-center justify-between gap-1 border-t border-border">
+      <div className="px-3 py-2 flex items-center justify-between gap-1 border-t border-border bg-muted/20">
         <span className="text-[9px] text-muted-foreground font-body truncate">
           Começou {game.game_time?.slice(0, 5)}
         </span>
-        {channel && <ChannelBadge name={channel} />}
+        {game.channels && game.channels.length > 0 && (
+          <div className="flex gap-1 items-center justify-end">
+            {game.channels.slice(0, 2).map((ch) => (
+              <ChannelBadge key={ch} name={ch} size="sm" />
+            ))}
+            {game.channels.length > 2 && (
+              <span className="text-[9px] text-muted-foreground/60 font-bold">
+                +{game.channels.length - 2}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
