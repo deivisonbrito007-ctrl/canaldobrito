@@ -41,7 +41,7 @@ const BelowFoldSkeleton = () => (
   </div>
 );
 
-const TAB_ORDER = ["live", "novidades", "highlights", "schedule"] as const;
+const TAB_ORDER = ["live", "novidades", "schedule"] as const;
 type TabId = typeof TAB_ORDER[number];
 
 const slideVariants = {
