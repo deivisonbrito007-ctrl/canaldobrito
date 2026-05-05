@@ -226,7 +226,23 @@ const EmptyLive = () => (
 export const LivePageContent = () => {
   const tick = useLiveTick();
   const today = useMemo(() => getLocalDateString(), [tick]);
-  const { data: games, isLoading } = useAllDailyGames(today);
+  const { data: games, isLoading, isFetching, dataUpdatedAt } = useAllDailyGames(today);
+  const [justUpdated, setJustUpdated] = useState(false);
+  const prevUpdatedRef = useState({ t: 0 })[0];
+
+  useEffect(() => {
+    if (!dataUpdatedAt) return;
+    if (prevUpdatedRef.t === 0) {
+      prevUpdatedRef.t = dataUpdatedAt;
+      return;
+    }
+    if (dataUpdatedAt > prevUpdatedRef.t) {
+      prevUpdatedRef.t = dataUpdatedAt;
+      setJustUpdated(true);
+      const id = setTimeout(() => setJustUpdated(false), 2200);
+      return () => clearTimeout(id);
+    }
+  }, [dataUpdatedAt, prevUpdatedRef]);
   const [filter, setFilter] = useState<FilterId>("all");
 
   const all = useMemo(
