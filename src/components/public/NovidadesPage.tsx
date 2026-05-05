@@ -142,7 +142,7 @@ export const NovidadesPage = () => {
       <div className="space-y-3">
         <div className="px-4 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
-            {filter === "all" ? "Explorar" : filterLabel}
+            {filter === "all" ? "Catálogo" : filterLabel}
             <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
           </h2>
           <button
