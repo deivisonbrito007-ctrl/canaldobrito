@@ -172,7 +172,87 @@ function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
   return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
 }
 
-export default function AdminAnalytics() {
+interface DailyPoint {
+  day: string;
+  label: string;
+  shares: number;
+  landings: number;
+  uniqueLanders: number;
+  tabViews: number;
+  ctr: number | null;
+  conversion: number | null;
+}
+
+// Format a Date as YYYY-MM-DD in America/Sao_Paulo (UTC-3, no DST)
+function spDayKey(d: Date): string {
+  const sp = new Date(d.getTime() - 3 * 3600 * 1000);
+  return sp.toISOString().slice(0, 10);
+}
+
+function computeDaily(
+  remote: RemoteEvent[],
+  from: Date,
+  to: Date,
+  campaign: string | null,
+): DailyPoint[] {
+  const buckets = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
+  const ensure = (k: string) => {
+    if (!buckets.has(k)) buckets.set(k, { shares: 0, landings: 0, tabViews: 0, landers: new Set() });
+    return buckets.get(k)!;
+  };
+
+  // Pre-fill all days in window so the chart shows continuous x-axis
+  const startKey = spDayKey(from);
+  const endKey = spDayKey(to);
+  const cursor = new Date(from);
+  cursor.setHours(12, 0, 0, 0);
+  let safety = 0;
+  while (safety++ < 400) {
+    const k = spDayKey(cursor);
+    ensure(k);
+    if (k >= endKey) break;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  ensure(startKey);
+
+  for (const ev of remote) {
+    const created = new Date(ev.created_at);
+    const key = spDayKey(created);
+    const bucket = ensure(key);
+    if (ev.event === "link_share") {
+      const tabSlug = (ev.props?.tab_slug as string) || (ev.tab as string) || null;
+      const inferred = ev.utm_campaign || (tabSlug ? `share-${tabSlug}` : null);
+      if (!inferred) continue;
+      if (campaign && inferred !== campaign) continue;
+      bucket.shares += 1;
+    } else if (ev.event === "landing_with_utm") {
+      if (campaign && ev.utm_campaign !== campaign) continue;
+      bucket.landings += 1;
+      if (ev.user_id) bucket.landers.add(ev.user_id);
+    } else if (ev.event === "tab_view" && ev.utm_campaign) {
+      if (campaign && ev.utm_campaign !== campaign) continue;
+      bucket.tabViews += 1;
+    }
+  }
+
+  return Array.from(buckets.entries())
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([day, v]) => {
+      const [y, m, d] = day.split("-");
+      return {
+        day,
+        label: `${d}/${m}`,
+        shares: v.shares,
+        landings: v.landings,
+        uniqueLanders: v.landers.size,
+        tabViews: v.tabViews,
+        ctr: v.shares > 0 ? ((v.landers.size > 0 ? v.landers.size : v.landings) / v.shares) * 100 : null,
+        conversion: v.landings > 0 ? (v.tabViews / v.landings) * 100 : null,
+      };
+    });
+}
+
+
   const [events, setEvents] = useState<LoggedEvent[]>([]);
   const [remote, setRemote] = useState<RemoteEvent[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
