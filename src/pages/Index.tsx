@@ -9,6 +9,7 @@ import { LiveNowHero } from "@/components/public/LiveNowHero";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
+import { SLUG_TO_TAB } from "@/lib/utils";
 
 const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
