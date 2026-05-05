@@ -11,9 +11,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getLocalDateString, midnightInSaoPaulo, detectSportType } from "@/lib/gameUtils";
-import { buildDeepLink } from "@/lib/utils";
+import { buildDeepLink, type PublicTab } from "@/lib/utils";
 
-type DeepTab = "live" | "schedule" | "highlights" | "novidades" | "home";
+type DeepTab = PublicTab;
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
