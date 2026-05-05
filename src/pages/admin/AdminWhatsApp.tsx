@@ -43,7 +43,7 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
     <div className="glass-panel rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-bold text-foreground">{template.label}</span>
-        {template.tab && template.tab !== "home" && (
+        {template.tab && (
           <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
             ?tab={template.tab}
           </span>
