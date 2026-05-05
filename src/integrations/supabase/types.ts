@@ -347,6 +347,42 @@ export type Database = {
         }
         Relationships: []
       }
+      league_allowlist: {
+        Row: {
+          active: boolean
+          competition_pattern: string
+          created_at: string
+          id: string
+          match_type: string
+          notes: string | null
+          priority: number
+          sport_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          competition_pattern: string
+          created_at?: string
+          id?: string
+          match_type?: string
+          notes?: string | null
+          priority?: number
+          sport_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          competition_pattern?: string
+          created_at?: string
+          id?: string
+          match_type?: string
+          notes?: string | null
+          priority?: number
+          sport_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       news_releases: {
         Row: {
           active: boolean

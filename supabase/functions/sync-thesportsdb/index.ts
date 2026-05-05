@@ -73,51 +73,10 @@ function toBRT(dateEvent: string, strTime: string | null): { date: string; time:
   return { date, time };
 }
 
-// Bloqueia fallback genérico em ligas estrangeiras sem transmissão no Brasil.
-// Inclui adjetivos (ethiopian) E nomes-país (ethiopia) para cobrir variações da API.
-const FOREIGN_LEAGUE_BLOCKLIST = /\b(ethiopia(n)?|eritrea(n)?|egypt(ian)?|morocc(o|an)|tunisia(n)?|algeria(n)?|sudan(ese)?|libya(n)?|nigeria(n)?|ghana(ian)?|ivory\s*coast|ivorian|senegal(ese)?|south\s*africa(n)?|kenya(n)?|uganda(n)?|tanzania(n)?|zambia(n)?|zimbabwe(an)?|angola(n)?|mozambique|mozambican|cameroon(ian)?|gabon(ese)?|congo(lese)?|dr\s*congo|eswatini|swazi|mauritani(an|a)|burkina\s*faso|burkinab[eé]|mali(an)?|guinea(n)?|togo(lese)?|benin(ese)?|liberia(n)?|sierra\s*leone?|namibia(n)?|botswana|lesotho|seychelles|comoros|djibouti(an)?|somali(a)?|rwanda(n)?|burundi(an)?|chad(ian)?|niger(ien)?|sao\s*tom[eé]|cape\s*verde|gambia(n)?|equatorial\s*guinea|central\s*african|saudi(\s*arabia)?|emirat(es|i)|uae|qatar(i)?|kuwait(i)?|bahrain(i)?|oman(i)?|jordan(ian)?|lebanon|lebanese|syria(n)?|iraq(i)?|iran(ian)?|israel(i)?|palestin(e|ian)|yemen(i)?|azerbaijan(i)?|armenia(n)?|georgia(n)?|kazakh(stan)?|uzbek(istan)?|turkmen(istan)?|kyrgyz(stan)?|tajik(istan)?|afghan(istan)?|pakistan(i)?|india(n)?|bangladesh(i)?|sri\s*lanka(n)?|nepal(ese)?|bhutan(ese)?|maldiv(es|ian)|myanmar|burm(a|ese)|thai(land)?|vietnam(ese)?|cambodia(n)?|laos|laotian|malaysia(n)?|singapore(an)?|indonesia(n)?|filipino|philippine(s)?|china|chinese|hong\s*kong|taiwan(ese)?|mongolia(n)?|korea(n)?|japan(ese)?\s*j[2-3]|j[2-3]\s*league|albania(n)?|bosnia(n)?|bulgaria(n)?|croatia(n)?|cypriot|cyprus|czech(ia)?|estonia(n)?|finn(ish|land)|hungary|hungarian|iceland(ic)?|ireland|irish|kosovo|latvia(n)?|lithuania(n)?|luxembourg(ish)?|macedonia(n)?|malta|maltese|moldova(n)?|montenegr(o|in)|poland|polish|romania(n)?|serbia(n)?|slovak(ia(n)?)?|sloven(ia(n)?)?|sweden|swedish|switzerland|swiss|ukraine|ukrainian|wales|welsh|scotland|scottish|northern\s*ireland|northern\s*irish|austria(n)?|belarus(ian)?|belgium|belgian|denmark|danish|greece|greek|norway|norwegian|russia(n)?|turk(ey|ish)|chile(an)?|peru(vian)?|colombia(n)?|venezuela(n)?|ecuador(ian)?|bolivia(n)?|paraguay(an)?|uruguay(an)?|panama(nian)?|costa\s*rica(n)?|el\s*salvador|salvadoran|guatemal(a|an)|hondur(as|an)|nicaragua(n)?|jamaica(n)?|haiti(an)?|dominican|cuba(n)?|trinidad|barbad(os|ian)|cayman|bahamas|guyan(a|ese)|surinam(e)?|new\s*zealand|fiji(an)?|samoa(n)?|tonga(n)?|usl|nasl|j-?league|k-?league|liga\s*mx|mexican\s*liga)\b/i;
-
-// Fallback de canais por competição. Usado APENAS para competições onde
-// TODOS os jogos têm transmissão garantida no Brasil (não jogos selecionados).
-// Ligas como NBA/MLB/NHL/NFL transmitem só jogos selecionados → confiar só em eventstv.php.
-const BROADCAST_FALLBACK: Array<{ match: RegExp; channels: string[] }> = [
-  // Futebol nacional brasileiro (cobertura integral)
-  { match: /\bbrasileir(ã|a)o|s[eé]rie\s*a\s*brasil|campeonato\s*brasileiro\b/i, channels: ["Globo", "SporTV", "Premiere"] },
-  { match: /\bs[eé]rie\s*b\s*brasil\b/i, channels: ["SporTV", "Premiere"] },
-  { match: /\bcopa\s*do\s*brasil\b/i, channels: ["Globo", "SporTV", "Premiere", "Amazon Prime"] },
-  { match: /\b(paulist[ãa]o|carioca|mineiro|ga[uú]cho|paranaense|baiano|pernambucano)\b/i, channels: ["Record", "Cazé TV", "Nosso Futebol"] },
-  // Sul-americano (cobertura integral por Paramount+)
-  { match: /\b(libertadores|copa\s*libertadores)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
-  { match: /\b(sul-?americana|copa\s*sudamericana)\b/i, channels: ["Paramount+", "ESPN Brasil", "SBT"] },
-  // Europeu (cobertura integral)
-  { match: /\b(uefa\s*champions\s*league|champions\s*league)\b/i, channels: ["TNT Sports Brasil", "HBO Max", "SBT"] },
-  { match: /\b(uefa\s*europa\s*league|europa\s*league)\b/i, channels: ["Cazé TV", "Star+"] },
-  { match: /\b(uefa\s*conference|conference\s*league)\b/i, channels: ["Cazé TV"] },
-  // Seleções
-  { match: /\b(copa\s*do\s*mundo|fifa\s*world\s*cup|world\s*cup\s*qualif)\b/i, channels: ["Globo", "SporTV", "Cazé TV"] },
-  { match: /\b(eurocopa|euro\s*\d{4}|uefa\s*euro)\b/i, channels: ["SporTV", "Cazé TV"] },
-  { match: /\b(copa\s*am[eé]rica|conmebol)\b/i, channels: ["SporTV", "Globo"] },
-  // F1 / Motor (cobertura integral)
-  { match: /\b(formula\s*1|f1\s*grand\s*prix|fia\s*formula\s*1)\b/i, channels: ["Band", "F1 TV Pro"] },
-  { match: /\bmoto\s*gp\b/i, channels: ["DAZN Brasil"] },
-  { match: /\bstock\s*car\b/i, channels: ["Band", "BandSports"] },
-  // Lutas (eventos pontuais)
-  { match: /\bufc\b/i, channels: ["Combate", "UFC Fight Pass"] },
-  // Vôlei brasileiro
-  { match: /\b(superliga\s*brasil|cbv|vol[eê]i\s*brasil)\b/i, channels: ["SporTV", "Globo"] },
-  // NOTA: NBA/MLB/NHL/NFL/Premier League/La Liga/Serie A/Bundesliga/Ligue 1
-  // foram REMOVIDOS do fallback porque só jogos selecionados são transmitidos no Brasil.
-  // Esses jogos só entram com canal se vierem confirmados via eventstv.php.
-];
-
-const lookupBroadcastFallback = (competition: string): string[] => {
-  if (!competition) return [];
-  if (FOREIGN_LEAGUE_BLOCKLIST.test(competition)) return [];
-  for (const { match, channels } of BROADCAST_FALLBACK) {
-    if (match.test(competition)) return [...channels];
-  }
-  return [];
-};
+// Fallback hardcoded REMOVIDO. Canais agora vêm exclusivamente de:
+//   1) API eventstv.php (canal específico por evento), OU
+//   2) Tabela broadcast_overrides (gerenciada pelo admin em /admin/canais).
+// Eventos sem confirmação ficam com badge "Sem transmissão confirmada".
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -173,13 +132,40 @@ Deno.serve(async (req) => {
       return [];
     };
 
+    // Carrega allowlist de ligas (filtro de competições relevantes para o público BR).
+    type Allow = { competition_pattern: string; match_type: string; sport_type: string | null };
+    const { data: allowData } = await supabase
+      .from("league_allowlist")
+      .select("competition_pattern, match_type, sport_type")
+      .eq("active", true);
+    const allowlist: Allow[] = (allowData || []) as Allow[];
+    const allowlistEnabled = allowlist.length > 0;
+
+    const isLeagueAllowed = (competition: string, sportType: string): boolean => {
+      if (!allowlistEnabled) return true;
+      if (!competition) return false;
+      const compLower = competition.toLowerCase();
+      for (const a of allowlist) {
+        if (a.sport_type && a.sport_type !== sportType) continue;
+        const pat = (a.competition_pattern || "").toLowerCase();
+        if (!pat) continue;
+        let matched = false;
+        if (a.match_type === "exact") matched = compLower === pat;
+        else if (a.match_type === "regex") {
+          try { matched = new RegExp(a.competition_pattern, "i").test(competition); } catch { matched = false; }
+        } else matched = compLower.includes(pat);
+        if (matched) return true;
+      }
+      return false;
+    };
+
     const base = `https://www.thesportsdb.com/api/v1/json/${apiKey}`;
     const allRows: any[] = [];
     const errors: string[] = [];
     const perSport: Record<string, number> = {};
-    const fallbackHits: Record<string, number> = {};
     const overrideHits: Record<string, number> = {};
     const noChannelByCompetition: Record<string, number> = {};
+    const skippedByAllowlist: Record<string, number> = {};
 
     // Para a data alvo (já em BRT), precisamos consultar dateEvent UTC equivalente.
     // TheSportsDB indexa por dateEvent (UTC). Para garantir cobertura, consultamos dateParam e dateParam-1d e dateParam+1d, e filtramos depois pela data BRT real.
@@ -322,12 +308,17 @@ Deno.serve(async (req) => {
         const competition = ev.strLeague || sport;
         const competitionDetail = ev.strSeason ? `${ev.strSeason}${ev.intRound ? ` • R${ev.intRound}` : ""}` : (ev.intRound ? `R${ev.intRound}` : null);
 
-        // 1) Canais reais vindos do eventstv.php (já filtrados por isBrazilChannel)
+        // Allowlist: filtra ligas irrelevantes para o público brasileiro
+        if (!isLeagueAllowed(competition, sportType)) {
+          skippedByAllowlist[competition] = (skippedByAllowlist[competition] || 0) + 1;
+          continue;
+        }
+
+        // 1) Canais vindos do eventstv.php (canal específico, confiável)
         let channels: string[] = (tvByEvent.get(String(ev.idEvent)) || []).slice(0, 6);
-        let usedFallback = false;
         let usedOverride = false;
 
-        // 2) Override persistente (tabela broadcast_overrides, editável pelo admin)
+        // 2) Override persistente (broadcast_overrides). Sem fallback hardcoded.
         if (channels.length === 0) {
           const ov = lookupOverride(competition, sportType);
           if (ov.length > 0) {
@@ -336,19 +327,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        // 3) Fallback hardcoded (regex genéricas) — só se não houver override
-        if (channels.length === 0) {
-          const fb = lookupBroadcastFallback(competition, sportType);
-          if (fb.length > 0) {
-            channels = fb;
-            usedFallback = true;
-          }
-        }
-
         if (usedOverride) {
           overrideHits[competition] = (overrideHits[competition] || 0) + 1;
-        } else if (usedFallback) {
-          fallbackHits[competition] = (fallbackHits[competition] || 0) + 1;
         } else if (channels.length === 0) {
           noChannelByCompetition[competition] = (noChannelByCompetition[competition] || 0) + 1;
         }
@@ -442,9 +422,10 @@ Deno.serve(async (req) => {
           user_agent: req.headers.get("user-agent")?.slice(0, 120) || null,
           tv_stats_by_date: tvStats,
           candidate_dates: candidateDates,
-          fallback_hits: fallbackHits,
           override_hits: overrideHits,
           no_channel_by_competition: noChannelByCompetition,
+          skipped_by_allowlist: skippedByAllowlist,
+          allowlist_enabled: allowlistEnabled,
         },
       });
     } catch (logErr) {
@@ -452,7 +433,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, fallbackHits, overrideHits, noChannelByCompetition,
+      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, overrideHits, noChannelByCompetition, skippedByAllowlist, allowlistEnabled,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
