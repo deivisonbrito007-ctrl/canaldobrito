@@ -234,21 +234,14 @@ const DayPreviewCard = ({
 
 
 const AdminWhatsApp = () => {
-  const { yesterdayStr, todayStr, tomorrowStr, templates } = useMemo(() => {
+  const { todayStr, templates } = useMemo(() => {
     const now = new Date();
     const tStr = getLocalDateString(now);
-    const spNow = midnightInSaoPaulo(tStr);
-    const tomorrowDate = addDays(spNow, 1);
-    const yesterdayDate = addDays(spNow, -1);
-    const tmStr = getLocalDateString(tomorrowDate);
-    const yStr = getLocalDateString(yesterdayDate);
     const fDate = format(now, "dd/MM/yyyy");
     const dName = format(now, "EEEE", { locale: ptBR });
 
     return {
-      yesterdayStr: yStr,
       todayStr: tStr,
-      tomorrowStr: tmStr,
       templates: [
         { id: "geral", label: "📺 Geral do Dia",
           text: `📺 *Programação do Dia*\n\n📅 ${dName}, ${fDate}\n\nConfira os jogos, novidades e indicações de hoje no portal da Brito Solutions.\n\n👉 LINK_PLACEHOLDER` },
@@ -264,21 +257,12 @@ const AdminWhatsApp = () => {
     };
   }, []);
 
-  const { data: yesterdayGames } = useAllDailyGames(yesterdayStr);
   const { data: todayGames } = useAllDailyGames(todayStr);
-  const { data: tomorrowGames } = useAllDailyGames(tomorrowStr);
   const siteUrl = useSiteUrl();
   const [customMsg, setCustomMsg] = useState("");
-  const { run: duplicate, busy: duplicating } = useDuplicateDay();
 
   const todayText = useMemo(() => buildDayText(todayGames ?? [], todayStr, siteUrl), [todayGames, todayStr, siteUrl]);
-  const tomorrowText = useMemo(() => buildDayText(tomorrowGames ?? [], tomorrowStr, siteUrl), [tomorrowGames, tomorrowStr, siteUrl]);
-
   const todayValidation = useMemo(() => validateDay(todayGames ?? []), [todayGames]);
-  const tomorrowValidation = useMemo(() => validateDay(tomorrowGames ?? []), [tomorrowGames]);
-
-  const yesterdayCount = (yesterdayGames ?? []).filter((g) => !g.archived).length;
-  const todayCount = todayValidation.active;
 
   const customFinal = customMsg.trim() ? `${customMsg.trim()}\n\n👉 ${siteUrl}` : "";
   const charCount = customFinal.length;
@@ -294,7 +278,7 @@ const AdminWhatsApp = () => {
           <div>
             <h2 className="text-sm font-bold text-foreground">WhatsApp — Compartilhamento</h2>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Pré-visualize, valide e compartilhe a programação manual do dia.
+              Pré-visualize, valide e compartilhe a programação manual de hoje.
             </p>
           </div>
         </div>
@@ -314,77 +298,14 @@ const AdminWhatsApp = () => {
         </div>
       </div>
 
-      {/* Duplicate day actions */}
-      <div className="glass-panel rounded-xl p-4 space-y-3 admin-stagger-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
-            <CopyPlus className="h-4 w-4 text-primary" />
-          </div>
-          <span className="text-sm font-bold text-foreground">Duplicar programação</span>
-        </div>
-        <p className="text-[11px] text-muted-foreground">
-          Copia todos os jogos manuais de uma data para outra. Jogos com mesmo time + horário não são duplicados.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={duplicating || yesterdayCount === 0} className="min-h-[44px] gap-2">
-                {duplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CopyPlus className="h-4 w-4" />}
-                Ontem ({yesterdayCount}) → Hoje
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Duplicar jogos de ontem para hoje?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Vai copiar {yesterdayCount} jogo(s) de ontem ({yesterdayStr}) para hoje ({todayStr}). Duplicatas (mesmo time + horário) são ignoradas.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => duplicate(yesterdayStr, todayStr)}>Confirmar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={duplicating || todayCount === 0} className="min-h-[44px] gap-2">
-                {duplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CopyPlus className="h-4 w-4" />}
-                Hoje ({todayCount}) → Amanhã
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Duplicar jogos de hoje para amanhã?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Vai copiar {todayCount} jogo(s) de hoje ({todayStr}) para amanhã ({tomorrowStr}). Duplicatas (mesmo time + horário) são ignoradas.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => duplicate(todayStr, tomorrowStr)}>Confirmar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-
-      {/* Side-by-side preview */}
-      <div className="grid gap-4 lg:grid-cols-2 admin-stagger-4">
+      {/* Today preview */}
+      <div className="admin-stagger-4">
         <DayPreviewCard
           title="Hoje"
           dateStr={todayStr}
           games={todayGames}
           text={todayText}
           validation={todayValidation}
-        />
-        <DayPreviewCard
-          title="Amanhã"
-          dateStr={tomorrowStr}
-          games={tomorrowGames}
-          text={tomorrowText}
-          validation={tomorrowValidation}
         />
       </div>
 
