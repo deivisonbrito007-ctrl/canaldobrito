@@ -147,12 +147,16 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
           )}
 
           {/* Channels */}
-          {nextGame.channels && nextGame.channels.length > 0 && (
+          {nextGame.channels && nextGame.channels.length > 0 ? (
             <div className="flex gap-1 flex-wrap">
               {nextGame.channels.slice(0, 4).map((ch, i) => (
                 <ChannelBadge key={i} name={ch} />
               ))}
             </div>
+          ) : (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 px-2 py-1 rounded border border-border/40 bg-muted/20 self-start">
+              Sem transmissão confirmada
+            </span>
           )}
         </div>
       </div>
