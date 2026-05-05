@@ -367,7 +367,7 @@ const AdminWhatsApp = () => {
               msg: "📅 Programação completa de hoje no portal 👇",
             },
           ]).map(({ tab, label, emoji, Icon, accent, title, description, msg }) => {
-            const link = buildDeepLink(siteUrl, tab);
+            const link = buildDeepLink(siteUrl, tab, { utm: withUtm });
             const text = `${msg}\n\n${link}`;
             let host = siteUrl;
             try { host = new URL(link).host; } catch { /* noop */ }
