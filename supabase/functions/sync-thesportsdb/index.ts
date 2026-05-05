@@ -215,6 +215,11 @@ Deno.serve(async (req) => {
       /\bdazn\s*(brasil|br)\b/i,
     ];
 
+    // Marcas globais que transmitem oficialmente no Brasil. Aceitas mesmo se
+    // strCountry não for "Brazil", desde que NÃO tenham sufixo de outro país
+    // (ex: "ESPN Argentina" já é descartado por FOREIGN_REGION_RE acima).
+    const GLOBAL_BR_BROADCASTERS = /\b(espn|disney\s*\+|star\s*\+|fox\s*sports|paramount\s*\+|hbo\s*max|prime\s*video|amazon\s*prime|dazn|tnt\s*sports|caz[eé]\s*tv|nosso\s*futebol|combate|premiere|sport\s*tv\s*brasil|sportv|globoplay)\b/i;
+
     const isBrazilChannel = (country: string, channel: string) => {
       const c = (country || "").trim().toLowerCase();
       const ch = (channel || "").trim();
@@ -222,6 +227,8 @@ Deno.serve(async (req) => {
       if (BLOCK_COUNTRIES.has(c)) return false;
       if (FOREIGN_REGION_RE.test(ch)) return false;
       if (c === "brazil") return true;
+      // Aceita marcas globais com transmissão BR mesmo sem strCountry=Brazil
+      if (GLOBAL_BR_BROADCASTERS.test(ch)) return true;
       return BR_BRAND_PATTERNS.some((re) => re.test(ch));
     };
 
