@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors,
+      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
