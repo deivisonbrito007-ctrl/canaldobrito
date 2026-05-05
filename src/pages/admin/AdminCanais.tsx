@@ -218,7 +218,13 @@ const AdminCanais = () => {
               <Badge variant={r.active ? "default" : "secondary"}>{r.match_type}</Badge>
               {r.sport_type && <Badge variant="outline">{r.sport_type}</Badge>}
               <Badge variant="outline">prio {r.priority}</Badge>
-              <code className="text-sm font-mono flex-1">{r.competition_pattern}</code>
+              {(r.home_team_pattern || r.away_team_pattern) && (
+                <Badge variant="default" className="bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40">
+                  partida: {r.home_team_pattern || "*"} vs {r.away_team_pattern || "*"}
+                  {r.event_date ? ` (${r.event_date})` : ""}
+                </Badge>
+              )}
+              <code className="text-sm font-mono flex-1">{r.competition_pattern || "—"}</code>
               <Switch
                 checked={r.active}
                 onCheckedChange={(v) => updateRow(r.id, { active: v })}
