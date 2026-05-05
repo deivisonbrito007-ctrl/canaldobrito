@@ -544,6 +544,9 @@ Deno.serve(async (req) => {
           no_channel_by_competition: noChannelByCompetition,
           skipped_by_allowlist: skippedByAllowlist,
           allowlist_enabled: allowlistEnabled,
+          lookup_tv_hits: lookupHits,
+          lookup_tv_attempts: needsLookup.length,
+          channel_whitelist_count: channelWhitelist.length,
         },
       });
     } catch (logErr) {
@@ -551,7 +554,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, overrideHits, noChannelByCompetition, skippedByAllowlist, allowlistEnabled,
+      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, overrideHits, noChannelByCompetition, skippedByAllowlist, allowlistEnabled, lookupHits, lookupAttempts: needsLookup.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
