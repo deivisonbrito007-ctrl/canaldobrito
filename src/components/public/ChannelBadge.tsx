@@ -94,13 +94,16 @@ const ChannelIcon = ({
   size,
   alt,
 }: { domain?: string; emoji: string; size: BadgeSize; alt: string }) => {
-  const [failed, setFailed] = useState(false);
+  const [stage, setStage] = useState<0 | 1 | 2>(0); // 0: google, 1: ddg, 2: emoji
 
-  if (!domain || failed) {
+  if (!domain || stage === 2) {
     return <span className="leading-none">{emoji}</span>;
   }
 
-  const src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  const src =
+    stage === 0
+      ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+      : `https://icons.duckduckgo.com/ip3/${domain}.ico`;
 
   return (
     <img
@@ -108,7 +111,7 @@ const ChannelIcon = ({
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setFailed(true)}
+      onError={() => setStage((s) => (s === 0 ? 1 : 2))}
       className={cn("rounded-sm object-contain shrink-0", ICON_SIZE[size])}
     />
   );
