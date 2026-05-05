@@ -399,6 +399,8 @@ Deno.serve(async (req) => {
           user_agent: req.headers.get("user-agent")?.slice(0, 120) || null,
           tv_stats_by_date: tvStats,
           candidate_dates: candidateDates,
+          fallback_hits: fallbackHits,
+          no_channel_by_competition: noChannelByCompetition,
         },
       });
     } catch (logErr) {
@@ -406,7 +408,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats,
+      ok: true, date: dateParam, sports: sports.length, perSport, upserted, skipped, errors, tvStats, fallbackHits, noChannelByCompetition,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("[sync-thesportsdb]", e);
