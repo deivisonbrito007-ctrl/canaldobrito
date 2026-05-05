@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          props: Json
+          session_id: string | null
+          surface: string | null
+          tab: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          props?: Json
+          session_id?: string | null
+          surface?: string | null
+          tab?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          props?: Json
+          session_id?: string | null
+          surface?: string | null
+          tab?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
