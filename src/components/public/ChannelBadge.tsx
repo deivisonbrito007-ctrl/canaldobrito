@@ -9,8 +9,10 @@ type ChannelConfig = {
   gradient: string;
   glow: string;
   short?: string;
-  /** Domain used to fetch the official favicon via DuckDuckGo Icons CDN */
+  /** Domain used to fetch the official favicon via Google/DuckDuckGo CDN */
   domain?: string;
+  /** Local SVG/PNG path under /public — priority over CDN favicons */
+  localLogo?: string;
 };
 
 const CHANNEL_MAP: Record<string, ChannelConfig> = {
