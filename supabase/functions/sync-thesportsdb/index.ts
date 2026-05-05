@@ -132,13 +132,40 @@ Deno.serve(async (req) => {
       return [];
     };
 
+    // Carrega allowlist de ligas (filtro de competições relevantes para o público BR).
+    type Allow = { competition_pattern: string; match_type: string; sport_type: string | null };
+    const { data: allowData } = await supabase
+      .from("league_allowlist")
+      .select("competition_pattern, match_type, sport_type")
+      .eq("active", true);
+    const allowlist: Allow[] = (allowData || []) as Allow[];
+    const allowlistEnabled = allowlist.length > 0;
+
+    const isLeagueAllowed = (competition: string, sportType: string): boolean => {
+      if (!allowlistEnabled) return true;
+      if (!competition) return false;
+      const compLower = competition.toLowerCase();
+      for (const a of allowlist) {
+        if (a.sport_type && a.sport_type !== sportType) continue;
+        const pat = (a.competition_pattern || "").toLowerCase();
+        if (!pat) continue;
+        let matched = false;
+        if (a.match_type === "exact") matched = compLower === pat;
+        else if (a.match_type === "regex") {
+          try { matched = new RegExp(a.competition_pattern, "i").test(competition); } catch { matched = false; }
+        } else matched = compLower.includes(pat);
+        if (matched) return true;
+      }
+      return false;
+    };
+
     const base = `https://www.thesportsdb.com/api/v1/json/${apiKey}`;
     const allRows: any[] = [];
     const errors: string[] = [];
     const perSport: Record<string, number> = {};
-    const fallbackHits: Record<string, number> = {};
     const overrideHits: Record<string, number> = {};
     const noChannelByCompetition: Record<string, number> = {};
+    const skippedByAllowlist: Record<string, number> = {};
 
     // Para a data alvo (já em BRT), precisamos consultar dateEvent UTC equivalente.
     // TheSportsDB indexa por dateEvent (UTC). Para garantir cobertura, consultamos dateParam e dateParam-1d e dateParam+1d, e filtramos depois pela data BRT real.
