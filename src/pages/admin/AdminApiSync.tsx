@@ -44,15 +44,6 @@ const AdminApiSync = () => {
     }
   };
 
-
-const AdminApiSync = () => {
-  const qc = useQueryClient();
-  const [date, setDate] = useState(getLocalDateString());
-  const [busy, setBusy] = useState<null | "fetch" | "live">(null);
-  const [lastResult, setLastResult] = useState<any>(null);
-  const [selected, setSelected] = useState<string[]>(SPORTS_OPTIONS);
-  const [withTV, setWithTV] = useState(true);
-
   const { data: apiGames, refetch } = useQuery({
     queryKey: ["thesportsdb-games"],
     queryFn: async () => {
