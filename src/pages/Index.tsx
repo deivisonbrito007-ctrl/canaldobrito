@@ -77,14 +77,19 @@ const Index = () => {
     return () => window.removeEventListener("nav-tab-change", handler);
   }, [handleTabChange]);
 
-  // Deep-link support: read ?tab= param to open the right tab on load.
+  // Deep-link support: read pretty path slug or legacy ?tab= param.
   useEffect(() => {
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab) {
-      handleTabChange(tab);
-      const cleanUrl = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, "", cleanUrl);
+    const fromQuery = params.get("tab");
+    const candidate = path || fromQuery;
+    if (candidate) {
+      const mapped = SLUG_TO_TAB[candidate.toLowerCase()];
+      if (mapped) handleTabChange(mapped);
+      if (fromQuery) {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, "", cleanUrl);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
