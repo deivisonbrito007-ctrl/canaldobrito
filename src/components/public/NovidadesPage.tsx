@@ -174,6 +174,26 @@ export const NovidadesPage = () => {
         </div>
       )}
 
+      {/* Empty state global */}
+      {showWeekly && isEmptyAll && (
+        <div className="px-4">
+          <div className="rounded-2xl border border-border bg-surface-2 p-10 text-center space-y-3">
+            <Sparkles className="w-10 h-10 text-primary/60 mx-auto" />
+            <p className="text-base font-bold text-foreground font-body">Em breve novos títulos</p>
+            <p className="text-xs text-muted-foreground font-body max-w-xs mx-auto">
+              Estamos preparando novidades. Volte logo ou use a busca para procurar um título específico.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 text-primary text-sm font-semibold font-body hover:bg-primary/20 transition-colors min-h-[44px]"
+            >
+              <Search className="w-4 h-4" /> Buscar conteúdo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Grid / Lista — só aparece quando há filtro ativo (evita repetir o carrossel acima) */}
       {filter !== "all" && (
         <div className="space-y-3">
