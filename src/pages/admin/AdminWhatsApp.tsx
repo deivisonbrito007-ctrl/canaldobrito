@@ -266,7 +266,7 @@ const AdminWhatsApp = () => {
           text: `📺 *Programação do Dia*\n\n📅 ${dName}, ${fDate}\n\nConfira os jogos, novidades e indicações de hoje no portal da Brito Solutions.\n\n👉 LINK_PLACEHOLDER` },
         { id: "jogos", label: "⚽ Jogos", tab: "schedule" as DeepTab,
           text: `⚽ *Jogos de Hoje Atualizados*\n\n📅 ${fDate}\n\nVeja horários, canais e destaques do dia.\n\n👉 LINK_PLACEHOLDER` },
-        { id: "entretenimento", label: "🍿 Entretenimento", tab: "highlights" as DeepTab,
+        { id: "entretenimento", label: "🍿 Entretenimento", tab: "novidades" as DeepTab,
           text: `🍿 *Assista Hoje*\n\nFilmes, séries, novidades e lançamentos do dia em um só lugar.\n\n👉 LINK_PLACEHOLDER` },
         { id: "aovivo", label: "🔴 Ao Vivo", tab: "live" as DeepTab,
           text: `🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 LINK_PLACEHOLDER` },
@@ -338,8 +338,7 @@ const AdminWhatsApp = () => {
         <div className="flex flex-col gap-2">
           {([
             { tab: "live" as DeepTab, label: "Ao Vivo", emoji: "🔴", msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇" },
-            { tab: "novidades" as DeepTab, label: "Novidades", emoji: "🆕", msg: "🆕 Novidades da semana — confira os lançamentos 👇" },
-            { tab: "highlights" as DeepTab, label: "Sugestões", emoji: "⭐", msg: "⭐ Sugestões de filmes e séries pra hoje 👇" },
+            { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
             const link = buildDeepLink(siteUrl, tab, { short: true });

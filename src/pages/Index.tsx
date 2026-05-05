@@ -7,25 +7,15 @@ import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel
 import { LivePageContent } from "@/components/public/LivePageContent";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
-import { SectionHeaderSkeleton, PosterRowSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
+import { SectionHeaderSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
 import { SLUG_TO_TAB } from "@/lib/utils";
 import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/analytics";
 
-const HighlightsTab = lazy(() => import("@/components/public/HighlightsTab"));
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
 const LazyNovidadesPage = lazy(() => import("@/components/public/NovidadesPage").then(m => ({ default: m.NovidadesPage })));
 const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
 
 const LazyAnalyticsDebugOverlay = lazy(() => import("@/components/public/AnalyticsDebugOverlay"));
-
-const HighlightsFallback = () => (
-  <div className="pt-5 pb-3 space-y-6">
-    <div className="px-4"><SectionHeaderSkeleton /></div>
-    <PosterRowSkeleton />
-    <div className="px-4"><SectionHeaderSkeleton /></div>
-    <PosterRowSkeleton />
-  </div>
-);
 
 const ScheduleFallback = () => (
   <div className="px-4 pt-5 pb-3 space-y-5">
@@ -41,7 +31,7 @@ const BelowFoldSkeleton = () => (
   </div>
 );
 
-const TAB_ORDER = ["live", "novidades", "highlights", "schedule"] as const;
+const TAB_ORDER = ["live", "novidades", "schedule"] as const;
 type TabId = typeof TAB_ORDER[number];
 
 const slideVariants = {
@@ -57,8 +47,11 @@ const Index = () => {
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const handleTabChange = useCallback((tabId: string) => {
-    // Backwards-compat: legacy "home" maps to "live"
-    const next = (tabId === "home" ? "live" : tabId) as TabId;
+    // Backwards-compat: legacy "home" → live; legacy "highlights"/"sugestoes" → novidades
+    let normalized = tabId;
+    if (normalized === "home") normalized = "live";
+    if (normalized === "highlights" || normalized === "sugestoes" || normalized === "destaques") normalized = "novidades";
+    const next = normalized as TabId;
     if (!TAB_ORDER.includes(next)) return;
     setActiveTab((prev) => {
       const prevIdx = TAB_ORDER.indexOf(prev);
@@ -118,13 +111,6 @@ const Index = () => {
   }, [activeTab]);
 
   const renderContent = () => {
-    if (activeTab === "highlights") {
-      return (
-        <Suspense fallback={<HighlightsFallback />}>
-          <HighlightsTab />
-        </Suspense>
-      );
-    }
     if (activeTab === "schedule") {
       return (
         <Suspense fallback={<ScheduleFallback />}>

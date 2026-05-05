@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { Grid, List, Search } from "lucide-react";
 import { useActiveNewsReleases, type NewsRelease } from "@/hooks/useNewsReleases";
+import { useActiveMovies } from "@/hooks/useMovies";
+import { useActiveSeries } from "@/hooks/useSeries";
 import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
 import { FilterChip } from "@/components/public/novidades/FilterChip";
 import { FeaturedCarousel } from "@/components/public/novidades/FeaturedCarousel";
 import { ContentCard } from "@/components/public/novidades/ContentCard";
 import { ContentListItem } from "@/components/public/novidades/ContentListItem";
 import { SearchModal } from "@/components/public/novidades/SearchModal";
+import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
+import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 import { trackContentClick } from "@/lib/analytics";
 
 type FilterId = "all" | "movie" | "series" | "lancamento" | "estreia" | "exclusivo";
@@ -34,12 +38,16 @@ const PosterSkeletonGrid = () => (
 
 export const NovidadesPage = () => {
   const { data: items, isLoading } = useActiveNewsReleases();
+  const { data: weeklyMovies } = useActiveMovies();
+  const { data: weeklySeries } = useActiveSeries();
   const [filter, setFilter] = useState<FilterId>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selected, setSelected] = useState<NewsRelease | null>(null);
 
   const all = items ?? [];
+  const showWeekly = filter === "all";
+  const weeklyCount = (weeklyMovies?.length || 0) + (weeklySeries?.length || 0);
 
   const stats = useMemo(() => {
     const isMovie = (i: NewsRelease) => i.content_type === "movie";
@@ -54,14 +62,27 @@ export const NovidadesPage = () => {
     } as Record<FilterId, number>;
   }, [all]);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     if (filter === "all") return all;
     if (filter === "movie") return all.filter((i) => i.content_type === "movie");
     if (filter === "series") return all.filter((i) => i.content_type === "series" || i.content_type === "tv");
     return all.filter((i) => i.badge_type === filter);
   }, [all, filter]);
 
-  const featured = useMemo(() => filtered.slice(0, Math.min(5, filtered.length)), [filtered]);
+  // Featured is curated: only items with strong badges. Falls back to empty (hidden).
+  const featured = useMemo(() => {
+    const HERO_BADGES = new Set(["lancamento", "estreia", "exclusivo"]);
+    const pool = baseFiltered.filter((i) => HERO_BADGES.has(i.badge_type));
+    return pool.slice(0, Math.min(5, pool.length));
+  }, [baseFiltered]);
+
+  // Grid excludes items already in the featured carousel to remove redundancy.
+  const filtered = useMemo(() => {
+    if (featured.length === 0) return baseFiltered;
+    const heroIds = new Set(featured.map((i) => i.id));
+    return baseFiltered.filter((i) => !heroIds.has(i.id));
+  }, [baseFiltered, featured]);
+
   const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "Todos";
 
   const handleSelect = (item: NewsRelease) => {
@@ -82,10 +103,10 @@ export const NovidadesPage = () => {
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-1 min-w-0">
             <h1 className="font-display text-3xl text-foreground tracking-wide leading-none">
-              NOVIDADES <span className="text-primary">🎬</span>
+              FILMES E SÉRIES <span className="text-primary">🎬</span>
             </h1>
             <p className="text-xs text-muted-foreground font-body">
-              {isLoading ? "Carregando..." : `${stats.all} ${stats.all === 1 ? "título disponível" : "títulos disponíveis"}`}
+              {isLoading ? "Carregando..." : `${stats.all + (showWeekly ? weeklyCount : 0)} ${(stats.all + (showWeekly ? weeklyCount : 0)) === 1 ? "título disponível" : "títulos disponíveis"}`}
             </p>
           </div>
           <button
@@ -113,7 +134,7 @@ export const NovidadesPage = () => {
         </div>
       </div>
 
-      {/* Carrossel Em Destaque */}
+      {/* Carrossel Em Destaque (curadoria: lançamento/estreia/exclusivo) */}
       {isLoading ? (
         <div className="px-4">
           <div className="h-[420px] rounded-2xl skeleton-shimmer" />
@@ -122,11 +143,24 @@ export const NovidadesPage = () => {
         <FeaturedCarousel items={featured} onSelect={handleSelect} />
       ) : null}
 
+      {/* Destaques da Semana (apenas quando filtro = Todos) */}
+      {showWeekly && (
+        <div className="space-y-6">
+          <WeeklyMoviesSection />
+          {(weeklyMovies?.length || 0) > 0 && (weeklySeries?.length || 0) > 0 && (
+            <div className="px-4">
+              <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+            </div>
+          )}
+          <WeeklySeriesSection />
+        </div>
+      )}
+
       {/* Grid / Lista */}
       <div className="space-y-3">
         <div className="px-4 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
-            {filter === "all" ? "Todos os Títulos" : filterLabel}
+            {filter === "all" ? "Explorar" : filterLabel}
             <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
           </h2>
           <button
