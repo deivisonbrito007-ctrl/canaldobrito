@@ -5,21 +5,22 @@ import { useActiveMovies } from "@/hooks/useMovies";
 import { useActiveSeries } from "@/hooks/useSeries";
 import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
 import { FilterChip } from "@/components/public/novidades/FilterChip";
-import { FeaturedCarousel } from "@/components/public/novidades/FeaturedCarousel";
 import { ContentCard } from "@/components/public/novidades/ContentCard";
 import { ContentListItem } from "@/components/public/novidades/ContentListItem";
 import { SearchModal } from "@/components/public/novidades/SearchModal";
+import { NovidadesCard } from "@/components/public/NovidadesCard";
 import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
 import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 import { trackContentClick } from "@/lib/analytics";
 
-type FilterId = "all" | "movie" | "series" | "lancamento" | "estreia" | "exclusivo";
+type FilterId = "all" | "movie" | "series" | "lancamento" | "nova_temporada" | "estreia" | "exclusivo";
 
 const FILTERS: { id: FilterId; icon: string; label: string }[] = [
   { id: "all", icon: "✨", label: "Todos" },
   { id: "movie", icon: "🎬", label: "Filmes" },
   { id: "series", icon: "📺", label: "Séries" },
   { id: "lancamento", icon: "🆕", label: "Lançamentos" },
+  { id: "nova_temporada", icon: "🎞️", label: "Novas Temporadas" },
   { id: "estreia", icon: "⭐", label: "Estreias" },
   { id: "exclusivo", icon: "👑", label: "Exclusivos" },
 ];
@@ -57,31 +58,18 @@ export const NovidadesPage = () => {
       movie: all.filter(isMovie).length,
       series: all.filter(isSeries).length,
       lancamento: all.filter((i) => i.badge_type === "lancamento").length,
+      nova_temporada: all.filter((i) => i.badge_type === "nova_temporada").length,
       estreia: all.filter((i) => i.badge_type === "estreia").length,
       exclusivo: all.filter((i) => i.badge_type === "exclusivo").length,
     } as Record<FilterId, number>;
   }, [all]);
 
-  const baseFiltered = useMemo(() => {
+  const filtered = useMemo(() => {
     if (filter === "all") return all;
     if (filter === "movie") return all.filter((i) => i.content_type === "movie");
     if (filter === "series") return all.filter((i) => i.content_type === "series" || i.content_type === "tv");
     return all.filter((i) => i.badge_type === filter);
   }, [all, filter]);
-
-  // Featured is curated: only items with strong badges. Falls back to empty (hidden).
-  const featured = useMemo(() => {
-    const HERO_BADGES = new Set(["lancamento", "estreia", "exclusivo"]);
-    const pool = baseFiltered.filter((i) => HERO_BADGES.has(i.badge_type));
-    return pool.slice(0, Math.min(5, pool.length));
-  }, [baseFiltered]);
-
-  // Grid excludes items already in the featured carousel to remove redundancy.
-  const filtered = useMemo(() => {
-    if (featured.length === 0) return baseFiltered;
-    const heroIds = new Set(featured.map((i) => i.id));
-    return baseFiltered.filter((i) => !heroIds.has(i.id));
-  }, [baseFiltered, featured]);
 
   const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "Todos";
 
@@ -134,14 +122,8 @@ export const NovidadesPage = () => {
         </div>
       </div>
 
-      {/* Carrossel Em Destaque (curadoria: lançamento/estreia/exclusivo) */}
-      {isLoading ? (
-        <div className="px-4">
-          <div className="h-[420px] rounded-2xl skeleton-shimmer" />
-        </div>
-      ) : featured.length > 0 ? (
-        <FeaturedCarousel items={featured} onSelect={handleSelect} />
-      ) : null}
+      {/* Carrossel destacado (auto-rotate, badges, trailer) — apenas com filtro Todos */}
+      {showWeekly && <NovidadesCard />}
 
       {/* Destaques da Semana (apenas quando filtro = Todos) */}
       {showWeekly && (
@@ -160,7 +142,7 @@ export const NovidadesPage = () => {
       <div className="space-y-3">
         <div className="px-4 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body">
-            {filter === "all" ? "Explorar" : filterLabel}
+            {filter === "all" ? "Catálogo" : filterLabel}
             <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
           </h2>
           <button
