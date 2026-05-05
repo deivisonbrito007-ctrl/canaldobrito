@@ -232,60 +232,6 @@ const DayPreviewCard = ({
   );
 };
 
-/** Hook: clone all manual games from one date to another */
-function useDuplicateDay() {
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
-
-  const run = async (fromDate: string, toDate: string) => {
-    setBusy(true);
-    try {
-      const { data: src, error: e1 } = await supabase
-        .from("daily_games")
-        .select("*")
-        .eq("date", fromDate)
-        .eq("source", "manual")
-        .eq("archived", false);
-      if (e1) throw e1;
-      if (!src || src.length === 0) {
-        toast.warning("Nenhum jogo na data de origem.");
-        return;
-      }
-
-      const { data: existing } = await supabase
-        .from("daily_games")
-        .select("home_team, away_team, game_time")
-        .eq("date", toDate);
-      const existingKeys = new Set(
-        (existing || []).map((e: any) => `${e.home_team}|${e.away_team}|${e.game_time}`)
-      );
-
-      const rows = src
-        .map((g: any) => {
-          const { id, created_at, ...rest } = g;
-          return { ...rest, date: toDate, is_live: false, status_short: "NS", elapsed_minutes: null };
-        })
-        .filter((g: any) => !existingKeys.has(`${g.home_team}|${g.away_team}|${g.game_time}`));
-
-      if (rows.length === 0) {
-        toast.info("Todos os jogos já existem na data de destino.");
-        return;
-      }
-
-      const { error: e2 } = await supabase.from("daily_games").insert(rows as any);
-      if (e2) throw e2;
-
-      toast.success(`${rows.length} jogo(s) duplicado(s) (${src.length - rows.length} já existiam)`);
-      qc.invalidateQueries({ queryKey: ["daily_games"] });
-    } catch (e: any) {
-      toast.error(e.message ?? "Falha ao duplicar");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { run, busy };
-}
 
 const AdminWhatsApp = () => {
   const { yesterdayStr, todayStr, tomorrowStr, templates } = useMemo(() => {
