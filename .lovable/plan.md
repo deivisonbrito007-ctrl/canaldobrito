@@ -1,70 +1,65 @@
-Identifiquei dois problemas principais:
+# Plano: Corrigir canais de transmissão (TheSportsDB Premium)
 
-1. A transmissão repetida vem do mapeamento por competição aplicado de forma genérica. Hoje `Libertadores` e `Sudamericana` estão cadastradas para sempre preencher todos os jogos com `Paramount+, ESPN Brasil, SBT`. Isso faz aparecer a mesma lista em vários eventos, mesmo quando SBT só exibe um jogo específico.
-2. A sincronização está trazendo tudo que a API retorna para 11 esportes, incluindo ligas sem relevância/transmissão no Brasil. Na data atual há 214 eventos, com muitos exemplos como K League, Copa Ecuador, ligas chinesas, israelenses, divisões menores de hóquei etc.
+## Problema
+Logs confirmam o sintoma: no feed diário (`eventstv.php?d=DATA`) só aparecem 1-3 canais BR por dia entre 35-49 eventos. A API Premium tem os dados — só não estão sendo buscados nem aceitos corretamente.
 
-Plano de correção:
+Três causas combinadas:
+1. **Endpoint errado**: usamos só o feed diário, que é incompleto. O endpoint por evento (`lookuptv.php?id=ID`) tem muito mais cobertura BR.
+2. **Filtro estreito demais**: descartamos canais marcados como "World" (NBA League Pass, MLB.tv, F1 TV, UFC Fight Pass, DAZN, Disney+, Max) que são válidos para o Brasil.
+3. **Overrides genéricos**: `competition_pattern` aplica o mesmo canal para todos os jogos da competição (ex: SBT cai em 3 jogos da Libertadores ao mesmo tempo).
 
-1. Ajustar a prioridade dos canais
-   - Manter canais vindos diretamente da API (`eventstv.php`) quando forem específicos do evento.
-   - Parar de aplicar automaticamente canais genéricos em competições onde a transmissão é por jogo selecionado, especialmente:
-     - Libertadores
-     - Sul-Americana
-     - Champions League
-     - Copa do Brasil
-     - Brasileirão/Série A/Série B
-     - NBA, MLB, NHL, NFL e ligas internacionais
-   - Resultado: se a API não confirmar canal para aquele evento, o jogo fica com “Sem transmissão confirmada”, em vez de copiar Paramount+/ESPN/SBT para todos.
+## Solução
 
-2. Reformular `broadcast_overrides`
-   - Usar a tabela de aliases apenas para casos confiáveis ou específicos.
-   - Remover/desativar seeds genéricas que causam erro, como `libertadores -> Paramount+, ESPN Brasil, SBT` e `sudamericana -> Paramount+, ESPN Brasil, SBT`.
-   - Acrescentar um modo de uso recomendado: cadastrar padrões mais específicos, por exemplo:
-     - `Sporting Cristal.*Palmeiras` via regex -> canal correto daquele jogo
-     - `Deportivo Riestra.*Grêmio` via regex -> canal correto daquele jogo
-   - Se necessário, adicionar suporte no sync para match por nome do evento completo (`home_team + away_team + competition`), não apenas competição.
+### 1. Sync com lookup por evento (`sync-thesportsdb`)
+Para cada evento que passa no `league_allowlist`:
+- Buscar canais via `lookuptv.php?id={idEvent}` (1 chamada por jogo, com cache em memória durante a execução).
+- Mesclar com o feed diário (união, dedup).
+- Normalizar nomes: `HBO Max BR`→`Max`, `Disney Plus`→`Disney+`, `ESPN Brasil`→`ESPN`, etc.
 
-3. Criar filtro persistente de ligas principais
-   - Adicionar uma tabela/configuração para permitir somente competições relevantes na programação pública e no sync.
-   - Sugestão de estrutura: `league_allowlist` com:
-     - `competition_pattern`
-     - `match_type` (`contains`, `exact`, `regex`)
-     - `sport_type`
-     - `priority`
-     - `active`
-     - `notes`
-   - Seed inicial com ligas principais que fazem sentido para o público brasileiro, por exemplo:
-     - Futebol Brasil: Brasileirão A/B/C, Copa do Brasil, estaduais relevantes
-     - Conmebol: Libertadores, Sul-Americana, Recopa
-     - Europa principais: Champions, Europa League, Conference, Premier League, La Liga, Serie A Itália, Bundesliga, Ligue 1
-     - Seleções: Copa do Mundo, Eliminatórias, Copa América, Euro
-     - Esportes selecionados: NBA, NFL, MLB, NHL, F1, MotoGP, UFC, Superliga
-   - Tudo fora da allowlist será ignorado no sync, evitando ligas sem transmissão e excesso de cards.
+### 2. Whitelist global de canais (nova tabela `channel_whitelist`)
+Substitui o filtro hardcoded "só BR". Aceita:
+- Canais com `strCountry = Brazil`
+- Canais explicitamente listados (ex: NBA League Pass, MLB.tv, F1 TV Pro, UFC Fight Pass, DAZN, Disney+, Max, Paramount+, Apple TV+, Prime Video) mesmo quando vêm como "World".
+- Editável pelo admin.
 
-4. Atualizar a função `sync-thesportsdb`
-   - Aplicar a allowlist antes de inserir/atualizar eventos.
-   - Registrar no audit log quantos eventos foram ignorados por liga não permitida.
-   - Garantir que eventos existentes vindos da API e fora da allowlist possam ser limpos/arquivados após a correção.
-   - Corrigir o bug de chamada atual: `lookupBroadcastFallback(competition, sportType)` está sendo chamado com dois argumentos, mas a função aceita apenas um; vou ajustar a assinatura/uso.
+### 3. Overrides por partida (`broadcast_overrides`)
+Adicionar colunas:
+- `home_team_pattern text`
+- `away_team_pattern text`
+- `event_date date` (opcional, para um jogo específico)
 
-5. Melhorar o painel Admin
-   - Evoluir `/admin/canais` para deixar claro que overrides genéricos podem ser perigosos.
-   - Adicionar campos/filtros para aliases por evento específico quando necessário.
-   - Criar ou adicionar uma área de “Ligas permitidas” para o admin ativar/desativar competições sem mexer em código.
-   - No “Sync Stats”, mostrar:
-     - ligas ignoradas pela allowlist
-     - eventos sem canal confirmado
-     - eventos com canal vindo da API
-     - eventos com override manual
+Lógica de aplicação (em ordem de prioridade): partida específica > times > competição. Um override de partida específica **substitui** os canais; overrides de competição apenas **complementam**.
 
-6. Limpeza dos dados atuais
-   - Após ajustar a regra, limpar/arquivar os eventos TheSportsDB do dia que estão fora da allowlist.
-   - Reexecutar a sincronização para repopular somente ligas principais.
-   - Remover canais genéricos aplicados incorretamente nos jogos atuais, preservando apenas canais confirmados pela API ou overrides específicos.
+### 4. Diagnóstico no Admin
+Em `AdminCanais` / `AdminSyncStats`, mostrar para cada jogo:
+- Origem dos canais: `feed | lookup | override-match | override-competition`
+- Botão "Re-sincronizar este jogo" (chama `lookuptv.php` sob demanda).
 
-Resultado esperado:
-- A programação deixa de mostrar centenas de ligas irrelevantes.
-- Libertadores/Sul-Americana não recebem automaticamente a mesma transmissão em todos os jogos.
-- SBT só aparecerá quando cadastrado especificamente ou confirmado pela API.
-- Paramount+ pode continuar aparecendo em múltiplos jogos apenas quando houver confirmação confiável ou override consciente.
-- O admin ganha controle persistente para ajustar canais e ligas sem novo deploy.
+## Arquivos
+
+**Migração SQL** (nova):
+- `CREATE TABLE channel_whitelist (id, channel_name, country, active, notes)` + RLS admin/public-read.
+- Seed com ~15 canais globais válidos no BR.
+- `ALTER TABLE broadcast_overrides ADD COLUMN home_team_pattern, away_team_pattern, event_date`.
+
+**Edge function** `supabase/functions/sync-thesportsdb/index.ts`:
+- Substituir filtro fixo por consulta a `channel_whitelist`.
+- Após filtrar eventos pelo allowlist, fazer `lookuptv.php` por evento (Promise.all em lotes de 10).
+- Aplicar normalização de nomes (mapa hardcoded pequeno).
+- Aplicar overrides na ordem partida > times > competição.
+- Retornar metadata de origem por jogo (gravar em `daily_games.channels_source` — nova coluna jsonb opcional).
+
+**Frontend admin**:
+- `src/pages/admin/AdminCanaisWhitelist.tsx` (CRUD da nova tabela).
+- Atualizar `AdminCanais.tsx` para suportar os novos campos de override por partida.
+- `AdminSyncStats.tsx`: coluna de origem dos canais.
+- Rota nova em `src/App.tsx` + item no `AdminLayout.tsx`.
+
+## Custo de API
+~50 jogos/dia × 3 dias = 150 chamadas extras de `lookuptv.php` por execução do cron (1×/dia). Bem dentro dos limites do plano Premium.
+
+## Resultado esperado
+- Maioria dos jogos passa a ter canal correto vindo do lookup por evento.
+- Canais globais (NBA League Pass, F1 TV, etc.) deixam de ser descartados.
+- Overrides manuais ficam precisos por partida — fim do "SBT em 3 jogos ao mesmo tempo".
+- Admin consegue auditar de onde veio cada canal.
