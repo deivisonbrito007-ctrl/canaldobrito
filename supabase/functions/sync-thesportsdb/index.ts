@@ -507,6 +507,7 @@ Deno.serve(async (req) => {
             competition: row.competition,
             competition_detail: row.competition_detail,
             channels: merged,
+            channels_source: row.channels_source,
             sport_type: row.sport_type,
             external_id: row.external_id,
             source: existing.source === "manual" ? "manual" : "thesportsdb",
