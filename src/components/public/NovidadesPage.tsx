@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { Grid, List, Search } from "lucide-react";
 import { useActiveNewsReleases, type NewsRelease } from "@/hooks/useNewsReleases";
+import { useActiveMovies } from "@/hooks/useMovies";
+import { useActiveSeries } from "@/hooks/useSeries";
 import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
 import { FilterChip } from "@/components/public/novidades/FilterChip";
 import { FeaturedCarousel } from "@/components/public/novidades/FeaturedCarousel";
 import { ContentCard } from "@/components/public/novidades/ContentCard";
 import { ContentListItem } from "@/components/public/novidades/ContentListItem";
 import { SearchModal } from "@/components/public/novidades/SearchModal";
+import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
+import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
 import { trackContentClick } from "@/lib/analytics";
 
 type FilterId = "all" | "movie" | "series" | "lancamento" | "estreia" | "exclusivo";
