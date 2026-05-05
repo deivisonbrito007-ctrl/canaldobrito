@@ -73,6 +73,9 @@ const AdminCanais = () => {
       priority: draft.priority ?? 100,
       active: draft.active ?? true,
       notes: draft.notes || null,
+      home_team_pattern: draft.home_team_pattern?.trim() || null,
+      away_team_pattern: draft.away_team_pattern?.trim() || null,
+      event_date: draft.event_date || null,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
