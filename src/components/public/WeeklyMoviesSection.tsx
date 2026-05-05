@@ -8,27 +8,30 @@ import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
 import { trackContentClick } from "@/lib/analytics";
 import { motion } from "framer-motion";
-import { useState, useMemo } from "react";
+import { forwardRef, useState, useMemo } from "react";
 
 type MovieItem = NonNullable<ReturnType<typeof useActiveMovies>["data"]>[number];
 
-const MovieCard = ({
-  item,
-  index,
-  onSelect,
-  onPlayTrailer,
-  hasTrailer,
-}: {
+interface MovieCardProps {
   item: MovieItem;
   index: number;
   onSelect: () => void;
   onPlayTrailer: (e: React.MouseEvent) => void;
   hasTrailer: boolean;
-}) => {
+}
+
+const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(({
+  item,
+  index,
+  onSelect,
+  onPlayTrailer,
+  hasTrailer,
+}, ref) => {
   const [imgErr, setImgErr] = useState(false);
 
   return (
     <motion.div
+      ref={ref}
       className="snap-start shrink-0 w-[170px] sm:w-[180px]"
       style={{ willChange: "transform, opacity" }}
       initial={{ opacity: 0, y: 16 }}
