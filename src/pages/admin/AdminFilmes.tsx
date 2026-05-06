@@ -148,8 +148,13 @@ const AdminFilmes = () => {
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [searched, setSearched] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<FeaturedMovie | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const qc = useQueryClient();
 
-  const batchActive = !!batchProgress;
+  const batchActive = !!batchProgress || bulkRunning;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
