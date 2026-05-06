@@ -12,6 +12,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Assinar = lazy(() => import("./pages/Assinar"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminLayout = lazy(() => import("./pages/AdminLayout"));
+import RequireAdmin from "./components/admin/RequireAdmin";
 const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
 const AdminFilmes = lazy(() => import("./pages/admin/AdminFilmes"));
 const AdminSeries = lazy(() => import("./pages/admin/AdminSeries"));
