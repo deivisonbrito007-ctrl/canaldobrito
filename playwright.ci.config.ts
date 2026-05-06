@@ -24,8 +24,14 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   projects: [
+    // iOS
     { name: "iPhone 13 (WebKit)", use: { ...devices["iPhone 13"] } },
+    // Android (Chromium mobile) — múltiplos perfis para cobrir resoluções e densidades
     { name: "Pixel 5 (Chromium)", use: { ...devices["Pixel 5"] } },
+    { name: "Pixel 7 (Chromium)", use: { ...devices["Pixel 7"] } },
+    { name: "Galaxy S9+ (Chromium)", use: { ...devices["Galaxy S9+"] } },
+    { name: "Galaxy Tab S4 (Chromium)", use: { ...devices["Galaxy Tab S4"] } },
+    // Desktop
     { name: "Desktop Chrome", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
