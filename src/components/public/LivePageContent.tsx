@@ -14,6 +14,7 @@ import {
   type SportType,
 } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
+import { getSportTheme, isHighlightCompetition } from "./schedule/GameCardSportTheme";
 import { cn } from "@/lib/utils";
 
 type FilterId = "all" | "football" | "basketball" | "other";
