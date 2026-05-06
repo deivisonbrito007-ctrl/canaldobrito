@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from "workbox-precaching";
+import { precacheAndRoute, createHandlerBoundToURL } from "workbox-precaching";
 import { clientsClaim } from "workbox-core";
-import { registerRoute } from "workbox-routing";
-import { CacheFirst } from "workbox-strategies";
+import { registerRoute, NavigationRoute } from "workbox-routing";
+import { CacheFirst, NetworkFirst, NetworkOnly } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -11,8 +11,29 @@ declare const self: ServiceWorkerGlobalScope;
 clientsClaim();
 self.skipWaiting();
 
-// Workbox precache (injected by vite-plugin-pwa)
-precacheAndRoute(self.__WB_MANIFEST);
+// Workbox precache (injected by vite-plugin-pwa) — filtered to skip index.html
+// We never want index.html cached as a precached asset; it must always come from network
+// so users pick up new asset hashes immediately after a deploy.
+const manifest = self.__WB_MANIFEST.filter((entry) => {
+  const url = typeof entry === "string" ? entry : entry.url;
+  return !url.endsWith("index.html") && !url.endsWith("version.json");
+});
+precacheAndRoute(manifest);
+
+// version.json must NEVER be cached — it's the cache-busting beacon.
+registerRoute(({ url }) => url.pathname === "/version.json", new NetworkOnly());
+
+// SPA navigation: NetworkFirst with 3s timeout → falls back to cached shell only if offline.
+// This guarantees the freshest index.html (and therefore freshest asset hashes) on every navigation.
+registerRoute(
+  new NavigationRoute(
+    new NetworkFirst({
+      cacheName: "html-shell",
+      networkTimeoutSeconds: 3,
+      plugins: [new ExpirationPlugin({ maxEntries: 2, maxAgeSeconds: 60 * 60 * 24 })],
+    })
+  )
+);
 
 // Runtime caching: Google Fonts
 registerRoute(
@@ -85,11 +106,12 @@ self.addEventListener("notificationclick", (event) => {
 
 // ── Clean stale caches on activate ──────────────────────────────────
 self.addEventListener("activate", (event) => {
+  const KEEP = new Set(["google-fonts", "tmdb-images", "html-shell"]);
   event.waitUntil(
     caches.keys().then((names) =>
       Promise.all(
         names
-          .filter((name) => name !== "google-fonts" && name !== "tmdb-images")
+          .filter((name) => !KEEP.has(name))
           .filter((name) => !name.startsWith("workbox-precache"))
           .map((name) => caches.delete(name))
       )

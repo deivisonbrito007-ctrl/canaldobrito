@@ -26,6 +26,7 @@ const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
+const UpdateAvailableBanner = lazy(() => import("./components/UpdateAvailableBanner"));
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Suspense fallback={null}>
+            <UpdateAvailableBanner />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/ao-vivo" element={<Index />} />
