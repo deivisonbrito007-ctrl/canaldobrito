@@ -239,16 +239,30 @@ const LiveNotice = () => {
   return (
     <div
       role="status"
-      className="mx-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/25 px-2.5 py-1.5 flex items-center gap-2"
+      aria-label="Aviso sobre alterações de programação"
+      className="mx-3 group relative overflow-hidden rounded-xl border border-amber-500/30 bg-[linear-gradient(135deg,hsl(38_92%_50%/0.10)_0%,hsl(38_92%_50%/0.04)_50%,hsl(38_92%_50%/0.02)_100%)] shadow-[0_1px_0_0_hsl(38_92%_60%/0.10)_inset,0_8px_24px_-12px_hsl(38_92%_30%/0.30)] backdrop-blur-sm"
     >
-      <Info className="h-3.5 w-3.5 text-amber-400 shrink-0" aria-hidden="true" />
-      <p className="flex-1 min-w-0 text-[10.5px] leading-snug text-amber-100/85 font-body">
-        <span className="font-bold text-amber-300 uppercase tracking-wide">Aviso:</span>{" "}
-        Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!
-      </p>
+      {/* faixa lateral de destaque */}
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500/60" />
+      <div className="flex items-start gap-2.5 px-3 py-2 pl-3.5 sm:py-2.5">
+        <span
+          aria-hidden="true"
+          className="mt-[1px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/15 ring-1 ring-amber-400/30"
+        >
+          <Info className="h-3 w-3 text-amber-300" />
+        </span>
+        <p className="flex-1 min-w-0 text-[11px] sm:text-[12px] leading-snug text-amber-50/90 font-body">
+          <span className="mr-1 font-bold uppercase tracking-[0.14em] text-amber-300 text-[10px] sm:text-[10.5px]">
+            Aviso
+          </span>
+          <span className="text-amber-100/70">·</span>{" "}
+          Canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão.
+        </p>
+      </div>
     </div>
   );
 };
+
 
 /* ── Empty State ── */
 const EmptyLive = () => (
