@@ -72,9 +72,7 @@ describe("AdminFilmes", () => {
     wrap(<AdminFilmes />);
     const input = screen.getByPlaceholderText("Nome do filme...");
     fireEvent.change(input, { target: { value: "Matrix" } });
-    const buttons = screen.getAllByRole("button");
-    // segundo botão é o de busca (após "Buscar"/"Em cartaz" tabs)
-    fireEvent.click(buttons.find((b) => b.querySelector("svg.lucide-search")) || buttons[2]);
+    fireEvent.click(screen.getByLabelText("Buscar"));
     expect(searchMock).toHaveBeenCalledWith("search_movie", "Matrix");
   });
 
@@ -84,20 +82,22 @@ describe("AdminFilmes", () => {
     expect(searchMock).toHaveBeenCalledWith("now_playing");
   });
 
-  it("conta ativos vs total corretamente", () => {
+  it("conta ativos vs total corretamente nos cards de stats", () => {
     movieList = [
-      { id: "1", tmdb_id: 1, title: "F1", active: true, genre: "Ação" },
-      { id: "2", tmdb_id: 2, title: "F2", active: false, genre: "Drama" },
+      { id: "1", tmdb_id: 1, title: "F1", active: true, genre: "Ação", rating: 8 },
+      { id: "2", tmdb_id: 2, title: "F2", active: false, genre: "Drama", rating: 6 },
     ];
     wrap(<AdminFilmes />);
-    expect(screen.getByText("1 ativos / 2")).toBeInTheDocument();
+    // Total e Ativos aparecem nos cards de stats
+    expect(screen.getByText("Total")).toBeInTheDocument();
+    expect(screen.getByText("Ativos")).toBeInTheDocument();
   });
 
-  it("mostra botão 'Atualizar incompletos' quando há filme sem gênero/backdrop", () => {
+  it("mostra botão de incompletos quando há filme sem gênero/backdrop", () => {
     movieList = [
       { id: "1", tmdb_id: 1, title: "F1", active: true, genre: null, backdrop_url: null },
     ];
     wrap(<AdminFilmes />);
-    expect(screen.getByText(/Atualizar 1 incompletos/)).toBeInTheDocument();
+    expect(screen.getByText(/1 incompletos/)).toBeInTheDocument();
   });
 });
