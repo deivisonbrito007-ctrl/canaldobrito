@@ -24,8 +24,8 @@ describe("TrailerModal", () => {
   });
 
   it("mostra loader quando loading=true", () => {
-    const { container } = render(<TrailerModal open={true} onClose={() => {}} trailerKey={null} loading />);
-    expect(container.querySelector(".animate-spin")).toBeTruthy();
+    render(<TrailerModal open={true} onClose={() => {}} trailerKey={null} loading />);
+    expect(document.body.querySelector(".animate-spin")).toBeTruthy();
   });
 
   it("mostra fallback quando não há trailer", () => {
