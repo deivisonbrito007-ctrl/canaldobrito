@@ -26,22 +26,7 @@ const FILTERS: { id: FilterId; label: string; emoji: string }[] = [
   { id: "other", label: "Outros", emoji: "🏆" },
 ];
 
-const SPORT_ACCENT: Record<string, string> = {
-  football: "from-destructive to-red-700",
-  basketball: "from-blue-500 to-blue-700",
-  volleyball: "from-purple-500 to-purple-700",
-  tennis: "from-emerald-500 to-emerald-700",
-  f1: "from-amber-500 to-orange-600",
-  mma: "from-orange-500 to-red-600",
-  hockey: "from-sky-500 to-sky-700",
-  baseball: "from-yellow-500 to-yellow-700",
-  rugby: "from-green-600 to-green-800",
-  surf: "from-cyan-500 to-cyan-700",
-  cycling: "from-pink-500 to-pink-700",
-  boxing: "from-red-600 to-red-800",
-  swimming: "from-teal-500 to-teal-700",
-  golf: "from-lime-500 to-lime-700",
-};
+// Sport accents now come from getSportTheme (single source of truth shared with Programação).
 
 const matchesFilter = (st: SportType, f: FilterId): boolean => {
   if (f === "all") return true;
