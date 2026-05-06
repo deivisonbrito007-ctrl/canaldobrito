@@ -185,14 +185,17 @@ const TimePill = ({ time, themeColor }: { time: string | null | undefined; theme
 );
 
 /* ── Upcoming Card (compact, sport-themed) ── */
-const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: number }) => {
+const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame; minutesUntil: number; isNext?: boolean }) => {
   const sportType = (game.sport_type || "football") as SportType;
   const emoji = SPORT_EMOJI[sportType] || "⚽";
   const theme = getSportTheme(sportType);
   const isEvent = isNonAdversarial(sportType) || !game.away_team || game.away_team === game.home_team;
   return (
     <div
-      className="rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card"
+      className={cn(
+        "relative rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card",
+        isNext && "ring-2 ring-primary/40 shadow-[0_0_18px_hsl(var(--primary)/0.18)]"
+      )}
       style={{ borderLeft: `3px solid ${theme.color}`, border: `1px solid ${theme.border}`, borderLeftWidth: 3 }}
     >
       <div className="flex flex-col items-center justify-center min-w-[42px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
