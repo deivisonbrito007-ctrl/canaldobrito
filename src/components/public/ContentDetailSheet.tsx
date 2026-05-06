@@ -86,10 +86,6 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
             drag="y"
             dragListener={false}
             dragControls={dragControls}
@@ -221,7 +217,8 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 });
 
