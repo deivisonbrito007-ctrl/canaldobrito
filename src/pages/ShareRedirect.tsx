@@ -19,7 +19,10 @@ export default function ShareRedirect() {
 
   useEffect(() => {
     const tab = SLUG_TO_TAB[slug.toLowerCase()];
-    if (!tab) return;
+    if (!tab) {
+      if (import.meta.env.DEV) console.warn(`[ShareRedirect] Unknown slug: "${slug}" — redirecting to /`);
+      return;
+    }
     const tabSlug = TAB_SLUGS[tab];
     const utms = {
       utm_source: "whatsapp",
