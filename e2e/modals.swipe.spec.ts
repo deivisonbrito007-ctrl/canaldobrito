@@ -87,15 +87,14 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
 
   test("swipe curto (<120px) volta ao snap e NÃO fecha", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    const baseline = await dialog.boundingBox();
+    if (!baseline) throw new Error("baseline ausente");
     const { x, y } = await handleBox(page);
     await swipe(page, x, y, 80, 8, 20);
-    await page.waitForTimeout(500);
     await expect(dialog).toBeVisible();
-    // snap de volta: y final deve estar próximo de 0
-    const transform = await dialog.evaluate((el) => getComputedStyle(el).transform);
-    // matrix(...) — extrai translateY (último valor)
-    const ty = transform === "none" ? 0 : Number(transform.split(",").pop()?.replace(")", "") ?? 0);
-    expect(Math.abs(ty)).toBeLessThan(5);
+    // Espera o snap-back assentar e compara o top com o baseline (tolerância 4px).
+    const settled = await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
+    expect(Math.abs(settled.y - baseline.y)).toBeLessThanOrEqual(4);
   });
 
   test("swipe longo (>120px) fecha o sheet", async ({ page }) => {
