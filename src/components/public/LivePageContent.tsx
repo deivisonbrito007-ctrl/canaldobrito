@@ -382,9 +382,9 @@ export const LivePageContent = () => {
 
   return (
     <div className="space-y-4 min-h-[80vh] pb-[calc(1rem+env(safe-area-inset-bottom))]">
-      {/* ─── Hero Header (compacto) ─── */}
-      <section className="px-3 pt-4 animate-fade-up">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-destructive/10 via-card to-card border border-destructive/30">
+      {/* ─── Hero Header — STICKY para reduzir confusão com "Em breve" ─── */}
+      <section className="sticky top-[52px] sm:top-[60px] z-40 px-3 pt-2 pb-1 -mb-1 bg-background/85 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/70 animate-fade-up">
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-destructive/15 via-card to-card border border-destructive/40 shadow-[0_6px_20px_-8px_hsl(var(--destructive)/0.4)]">
           <div className="absolute inset-0 rounded-2xl border border-destructive/40 motion-safe:animate-pulse pointer-events-none" />
 
           <div className="relative px-3 py-2.5 space-y-2">
