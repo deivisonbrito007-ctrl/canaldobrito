@@ -5,56 +5,58 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useSettings } from "@/hooks/useSettings";
 import logo from "@/assets/canal_do_brito_logo.png";
 
+// Logos oficiais (SVG glyphs do simple-icons + wordmarks gerados com fundo da marca)
+import netflixLogo      from "@/assets/brand-logos/netflix.svg";
+import primevideoLogo   from "@/assets/brand-logos/primevideo.svg";
+import disneyplusLogo   from "@/assets/brand-logos/disneyplus.svg";
+import hbomaxLogo       from "@/assets/brand-logos/hbomax.svg";
+import paramountLogo    from "@/assets/brand-logos/paramountplus.svg";
+import appletvLogo      from "@/assets/brand-logos/appletv.svg";
+import starzLogo        from "@/assets/brand-logos/starz.svg";
+import daznLogo         from "@/assets/brand-logos/dazn.svg";
+import youtubeLogo      from "@/assets/brand-logos/youtube.svg";
+import espnLogo         from "@/assets/brand-logos/espn.svg";
+import sportvLogo       from "@/assets/brand-logos/sportv.svg";
+import globoLogo        from "@/assets/brand-logos/globo.svg";
+import premiereLogo     from "@/assets/brand-logos/premiere.svg";
+import tntsportsLogo    from "@/assets/brand-logos/tntsports.svg";
+import bandLogo         from "@/assets/brand-logos/band.svg";
+import cazetvLogo       from "@/assets/brand-logos/cazetv.svg";
+import recordLogo       from "@/assets/brand-logos/record.svg";
+import goatLogo         from "@/assets/brand-logos/goat.svg";
+import spaceLogo        from "@/assets/brand-logos/space.svg";
+import globoplayLogo    from "@/assets/brand-logos/globoplay.svg";
+
 type ChannelTileItem = {
   name: string;
-  /** Texto principal exibido dentro do badge */
-  label: string;
-  /** Classe Tailwind para o fundo do badge */
-  bg: string;
-  /** Classe Tailwind para a cor do texto principal */
-  fg: string;
-  /** Tamanho de fonte do label principal */
-  size?: string;
-  /** Peso da fonte */
-  weight?: string;
-  /** Itálico */
-  italic?: boolean;
-  /** Subtexto opcional embaixo do label principal */
-  sub?: string;
-  /** Cor do subtexto (default: usa fg) */
-  subFg?: string;
-  /** Classe de fonte (display vs sans). Default: font-display */
-  font?: string;
-  /** Letter-spacing customizado */
-  tracking?: string;
+  /** URL do SVG/PNG da logo (já contém fundo da marca) */
+  logo: string;
 };
 
-// Apps de streaming — mesmo formato visual dos canais (badges tipográficos com cor oficial)
 const STREAMING_APPS: ChannelTileItem[] = [
-  { name: "Netflix",     label: "NETFLIX",    bg: "bg-[#000000]",                                    fg: "text-[#E50914]", size: "text-[11px]", weight: "font-black",     font: "font-sans", tracking: "tracking-[0.05em]" },
-  { name: "Prime Video", label: "prime",      bg: "bg-[#0F1111]",                                    fg: "text-white",     size: "text-[15px]", weight: "font-extrabold", font: "font-sans", italic: true, sub: "video", subFg: "text-[#00A8E1]" },
-  { name: "Disney+",     label: "Disney+",    bg: "bg-gradient-to-br from-[#113CCF] to-[#061A4C]",   fg: "text-white",     size: "text-[13px]", weight: "font-extrabold", font: "font-sans" },
-  { name: "HBO Max",     label: "HBO",        bg: "bg-[#000000]",                                    fg: "text-white",     size: "text-[16px]", weight: "font-black",     font: "font-sans", sub: "MAX",  subFg: "text-white",  tracking: "tracking-[0.1em]" },
-  { name: "Globoplay",   label: "globoplay",  bg: "bg-[#000000]",                                    fg: "text-white",     size: "text-[11px]", weight: "font-extrabold", font: "font-sans", italic: true },
-  { name: "Paramount+",  label: "Paramount+", bg: "bg-gradient-to-br from-[#0066FF] to-[#003D99]",   fg: "text-white",     size: "text-[10px]", weight: "font-extrabold", font: "font-sans" },
-  { name: "Apple TV+",   label: "tv+",        bg: "bg-[#000000]",                                    fg: "text-white",     size: "text-[22px]", weight: "font-bold",      font: "font-sans", tracking: "tracking-tight" },
-  { name: "Starz",       label: "STARZ",      bg: "bg-[#000000]",                                    fg: "text-white",     size: "text-[14px]", weight: "font-black",     font: "font-display", tracking: "tracking-[0.15em]" },
+  { name: "Netflix",     logo: netflixLogo },
+  { name: "Prime Video", logo: primevideoLogo },
+  { name: "Disney+",     logo: disneyplusLogo },
+  { name: "HBO Max",     logo: hbomaxLogo },
+  { name: "Globoplay",   logo: globoplayLogo },
+  { name: "Paramount+",  logo: paramountLogo },
+  { name: "Apple TV+",   logo: appletvLogo },
+  { name: "Starz",       logo: starzLogo },
 ];
 
-// Canais de TV — badges tipográficos com cores oficiais das marcas
 const DEFAULT_TV_CHANNELS: ChannelTileItem[] = [
-  { name: "ESPN",       label: "ESPN",     bg: "bg-[#D9232E]",                                    fg: "text-white",     size: "text-[16px]", weight: "font-black",     font: "font-display", italic: true },
-  { name: "SporTV",     label: "sporTV",   bg: "bg-gradient-to-br from-[#00B04F] to-[#007A35]",   fg: "text-white",     size: "text-[14px]", weight: "font-black",     font: "font-sans",    italic: true },
-  { name: "Globo",      label: "globo",    bg: "bg-[#0A0A0A]",                                    fg: "text-white",     size: "text-[15px]", weight: "font-black",     font: "font-sans",    italic: true, tracking: "tracking-tight" },
-  { name: "Premiere",   label: "PREMIERE", bg: "bg-gradient-to-br from-[#00A859] to-[#007A3D]",   fg: "text-white",     size: "text-[10px]", weight: "font-black",     font: "font-display", tracking: "tracking-[0.1em]" },
-  { name: "TNT Sports", label: "TNT",      bg: "bg-[#000000]",                                    fg: "text-[#FFD200]", size: "text-[18px]", weight: "font-black",     font: "font-display", sub: "SPORTS", subFg: "text-white", tracking: "tracking-wider" },
-  { name: "Band",       label: "Band",     bg: "bg-gradient-to-br from-[#0050B3] to-[#003A82]",   fg: "text-white",     size: "text-[16px]", weight: "font-extrabold", font: "font-sans",    italic: true },
-  { name: "CazéTV",     label: "Cazé",     bg: "bg-gradient-to-br from-[#BEF264] to-[#84CC16]",   fg: "text-[#0a0a0a]", size: "text-[15px]", weight: "font-black",     font: "font-sans",    italic: true },
-  { name: "Record",     label: "RECORD",   bg: "bg-gradient-to-br from-[#0073CF] to-[#004A8A]",   fg: "text-white",     size: "text-[11px]", weight: "font-black",     font: "font-display", tracking: "tracking-[0.1em]" },
-  { name: "Canal GOAT", label: "GOAT",    bg: "bg-gradient-to-br from-[#FBBF24] to-[#D97706]",    fg: "text-[#0a0a0a]", size: "text-[14px]", weight: "font-black",     font: "font-display", tracking: "tracking-wider" },
-  { name: "Space",      label: "SPACE",   bg: "bg-gradient-to-br from-[#3A3A8C] to-[#0A0A2E]",    fg: "text-white",     size: "text-[12px]", weight: "font-black",     font: "font-display", tracking: "tracking-[0.2em]" },
-  { name: "DAZN",       label: "DAZN",    bg: "bg-[#F8F8F8]",                                     fg: "text-[#0a0a0a]", size: "text-[14px]", weight: "font-black",     font: "font-display", italic: true, tracking: "tracking-tight" },
-  { name: "YouTube",    label: "YouTube", bg: "bg-[#FF0000]",                                     fg: "text-white",     size: "text-[12px]", weight: "font-extrabold", font: "font-sans" },
+  { name: "ESPN",       logo: espnLogo },
+  { name: "SporTV",     logo: sportvLogo },
+  { name: "Globo",      logo: globoLogo },
+  { name: "Premiere",   logo: premiereLogo },
+  { name: "TNT Sports", logo: tntsportsLogo },
+  { name: "Band",       logo: bandLogo },
+  { name: "CazéTV",     logo: cazetvLogo },
+  { name: "Record",     logo: recordLogo },
+  { name: "Canal GOAT", logo: goatLogo },
+  { name: "Space",      logo: spaceLogo },
+  { name: "DAZN",       logo: daznLogo },
+  { name: "YouTube",    logo: youtubeLogo },
 ];
 
 const buildMarqueeItems = (channels: ChannelTileItem[]) => {
@@ -125,17 +127,14 @@ const Assinar = () => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length) {
         const mapped: ChannelTileItem[] = parsed
-          .map((c: Partial<ChannelTileItem>): ChannelTileItem => ({
-            name: c.name || "",
-            label: c.label || c.name || "",
-            bg: c.bg || "bg-[#0A0A0A]",
-            fg: c.fg || "text-white",
-            size: c.size || "text-[14px]",
-            weight: c.weight || "font-black",
-            italic: c.italic,
-            sub: c.sub,
-            font: c.font,
-          }))
+          .map((c: Partial<ChannelTileItem>): ChannelTileItem => {
+            // Tenta resolver logo a partir do nome no mapa de defaults
+            const fallback = DEFAULT_TV_CHANNELS.find((d) => d.name === c.name);
+            return {
+              name: c.name || "",
+              logo: c.logo || fallback?.logo || globoLogo,
+            };
+          })
           .filter((c) => c.name);
         if (mapped.length) return mapped;
       }
@@ -263,68 +262,22 @@ const Assinar = () => {
             onTouchEnd={resumeMarquee}
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
-              {marqueeItems.map((item, i) => {
-                // Detecta se é fonte display (Bebas Neue) — mais condensed, precisa de menos largura
-                const isDisplay = (item.font || "").includes("display");
-                const fontFamily = isDisplay
-                  ? '"Bebas Neue", system-ui, sans-serif'
-                  : '"Syne", system-ui, sans-serif';
-                const fontWeight = item.weight?.includes("extrabold") ? 800 : 900;
-                const fontStyle = item.italic ? "italic" : "normal";
-                // SVG viewBox 100x100 — textLength=80 garante que QUALQUER label preencha 80% da largura
-                // lengthAdjust="spacingAndGlyphs" estica/comprime as letras uniformemente
-                const hasSub = !!item.sub;
-                const mainY = hasSub ? 48 : 62;
-                const mainSize = hasSub ? 38 : 44;
-                return (
-                  <div key={`tile-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div
-                      className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative ${item.bg}`}
-                    >
-                      <svg viewBox="0 0 100 100" className="w-full h-full block" aria-label={item.name}>
-                        <text
-                          x="50"
-                          y={mainY}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          textLength="80"
-                          lengthAdjust="spacingAndGlyphs"
-                          fontFamily={fontFamily}
-                          fontWeight={fontWeight}
-                          fontStyle={fontStyle}
-                          fontSize={mainSize}
-                          className={item.fg}
-                          fill="currentColor"
-                        >
-                          {item.label}
-                        </text>
-                        {hasSub && (
-                          <text
-                            x="50"
-                            y="76"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            textLength="60"
-                            lengthAdjust="spacingAndGlyphs"
-                            fontFamily={fontFamily}
-                            fontWeight={900}
-                            fontSize={16}
-                            letterSpacing="2"
-                            className={item.subFg || item.fg}
-                            fill="currentColor"
-                          >
-                            {item.sub}
-                          </text>
-                        )}
-                      </svg>
-                      <span className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent opacity-30" aria-hidden="true" />
-                    </div>
-                    <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
-                      {item.name}
-                    </span>
+              {marqueeItems.map((item, i) => (
+                <div key={`tile-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                  <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative bg-white/5">
+                    <img
+                      src={item.logo}
+                      alt={`Logo ${item.name}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover block"
+                    />
                   </div>
-                );
-              })}
+                  <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
+                    {item.name}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 pt-1">
