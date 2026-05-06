@@ -194,26 +194,6 @@ export const useInsertDailyGames = () => {
         insertedIds = (insertedRows || []).map((r: any) => r.id);
       }
 
-      // Auto-vínculo TheSportsDB em background (não bloqueia o insert).
-      if (insertedIds.length > 0) {
-        (async () => {
-          let matched = 0;
-          for (const id of insertedIds) {
-            try {
-              const { data } = await supabase.functions.invoke("tsdb-match-game", { body: { gameId: id } });
-              if (data?.matched) matched++;
-            } catch (_) { /* silencioso */ }
-          }
-          if (matched > 0) {
-            toast.success(`📡 ${matched} jogo(s) vinculados à TheSportsDB`);
-            qc.invalidateQueries({ queryKey: ["daily_games"] });
-            // Já dispara um refresh de placares
-            supabase.functions.invoke("tsdb-live-update", { body: {} }).catch(() => {});
-          }
-        })();
-      }
-
-
       if (intraBatchSkipped > 0) {
         toast.info(`${intraBatchSkipped} duplicata(s) interna(s) no texto colado ignorada(s)`);
       }
