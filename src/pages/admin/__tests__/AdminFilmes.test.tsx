@@ -31,6 +31,7 @@ vi.mock("@/hooks/useMovies", () => ({
   useToggleMovie: () => ({ mutate: toggleMutate }),
   useDeleteMovie: () => ({ mutate: deleteMutate }),
   useUpdateMovie: () => ({ mutateAsync: updateMutateAsync }),
+  useReorderMovies: () => ({ mutate: vi.fn() }),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
