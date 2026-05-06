@@ -172,6 +172,39 @@ const AdminConfiguracoes = () => {
         </div>
       </div>
 
+      {/* TV Channels (página Assinar) */}
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Tv className="h-4 w-4 text-primary" />
+            Canais & Streaming (Assinar)
+          </h3>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setTvChannelsJson(DEFAULT_TV_CHANNELS_JSON)}
+            className="h-7 px-2 text-[10px]"
+            title="Restaurar padrão"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" /> Padrão
+          </Button>
+        </div>
+        <div className="p-4 space-y-2">
+          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Lista (JSON)</Label>
+          <Textarea
+            value={tvChannelsJson}
+            onChange={(e) => setTvChannelsJson(e.target.value)}
+            rows={10}
+            spellCheck={false}
+            className="glass-panel border-white/[0.1] font-mono text-[11px] leading-snug"
+          />
+          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
+            Cada canal: <code className="text-primary/80">{`{ name, domain, localLogo }`}</code>. O <code>localLogo</code> aceita caminhos de <code>/channels/*.svg</code>; se ausente, o ícone é buscado pelo <code>domain</code>.
+          </p>
+        </div>
+      </div>
+
       {/* About */}
       <div className="glass-panel rounded-xl p-4">
         <div className="flex items-center gap-2">
