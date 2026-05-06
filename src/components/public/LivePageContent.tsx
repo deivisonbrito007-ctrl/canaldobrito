@@ -341,6 +341,9 @@ export const LivePageContent = () => {
 
   const upcoming = useMemo(() => {
     const now = new Date();
+    const liveKeys = new Set(
+      liveGames.map((g) => `${(g.competition || "").toLowerCase().trim()}|${(g.home_team || "").toLowerCase().trim()}`)
+    );
     return all
       .map((g) => {
         const [h, m] = (g.game_time || "00:00").split(":").map(Number);
@@ -348,10 +351,14 @@ export const LivePageContent = () => {
         const diffMin = Math.round((start.getTime() - now.getTime()) / 60_000);
         return { g, diffMin };
       })
-      .filter(({ diffMin }) => diffMin > 0 && diffMin <= 60)
+      .filter(({ g, diffMin }) => {
+        if (diffMin <= 0 || diffMin > 60) return false;
+        const key = `${(g.competition || "").toLowerCase().trim()}|${(g.home_team || "").toLowerCase().trim()}`;
+        return !liveKeys.has(key);
+      })
       .sort((a, b) => a.diffMin - b.diffMin)
       .slice(0, 5);
-  }, [all, tick]);
+  }, [all, liveGames, tick]);
 
   // Stats by filter category
   const stats = useMemo(() => {
