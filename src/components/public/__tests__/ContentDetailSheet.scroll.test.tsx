@@ -58,10 +58,11 @@ describe("ContentDetailSheet — scroll interno e body-scroll lock", () => {
   it("o handle de drag tem touch-action:none — somente ele captura o drag-to-dismiss", () => {
     render(<ContentDetailSheet open onClose={() => {}} item={item} />);
     const dialog = screen.getByRole("dialog");
-    // O handle é o primeiro filho do dialog e contém a barrinha visual.
-    const handle = dialog.querySelector('[style*="touch-action: none"]') as HTMLElement | null;
-    expect(handle).not.toBeNull();
-    expect(handle!.querySelector("div.w-10.h-1")).not.toBeNull();
+    // Encontra o handle pelo seu marcador visual (a barrinha w-10 h-1).
+    const bar = dialog.querySelector("div.w-10.h-1");
+    expect(bar).not.toBeNull();
+    const handle = bar!.parentElement as HTMLElement;
+    expect(handle.style.touchAction).toBe("none");
   });
 
   it("scroll dentro do conteúdo NÃO dispara onClose (não arrasta o overlay)", () => {
