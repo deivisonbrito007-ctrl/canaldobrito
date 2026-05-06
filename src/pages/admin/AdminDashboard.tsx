@@ -35,10 +35,11 @@ import { ContentCharts } from "@/components/admin/ContentCharts";
 import { SportStatsFilter } from "@/components/admin/SportStatsFilter";
 
 const useCountUp = (target: number, duration = 800) => {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(target);
   const ref = useRef<number>();
   useEffect(() => {
     if (target <= 0) { setCount(0); return; }
+    if (prefersReducedMotion()) { setCount(target); return; }
     const start = performance.now();
     const tick = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
