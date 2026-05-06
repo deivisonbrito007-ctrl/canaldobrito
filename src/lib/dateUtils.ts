@@ -20,3 +20,11 @@ export function getScheduleDate(hoursOffset: number = 0): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/** Returns true when the local datetime-local string represents a future moment. */
+export function isFutureSchedule(localDatetime: string | null | undefined): boolean {
+  if (!localDatetime) return false;
+  const t = new Date(localDatetime).getTime();
+  if (Number.isNaN(t)) return false;
+  return t > Date.now();
+}
