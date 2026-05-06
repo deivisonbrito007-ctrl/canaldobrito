@@ -2,6 +2,7 @@ import { useState, forwardRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/bodyScrollLock";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls, type PanInfo } from "framer-motion";
 
@@ -44,18 +45,21 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
     }
   }, [onClose, dragY]);
 
-  // ESC fecha + lock body scroll quando aberto
+  // ESC fecha + lock body scroll quando aberto.
+  // Respeita defaultPrevented para que um modal acima (ex.: TrailerModal) consuma
+  // o ESC primeiro e o sheet permaneça aberto.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      e.preventDefault();
+      onClose();
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
+      unlockBodyScroll();
     };
   }, [open, onClose]);
 

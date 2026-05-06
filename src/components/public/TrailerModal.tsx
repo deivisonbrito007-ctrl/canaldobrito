@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Loader2, Youtube, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/bodyScrollLock";
 
 interface TrailerModalProps {
   open: boolean;
@@ -33,18 +34,22 @@ const buildYouTubeEmbedUrl = (key: string) => {
 export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ open, onClose, trailerKey, loading, title, fallbackQuery }, ref) => {
   const trapRef = useFocusTrap<HTMLDivElement>(open);
 
-  // ESC closes; lock body scroll while open
+  // ESC closes; lock body scroll while open.
+  // Captura na fase de captura + preventDefault para que, quando o trailer
+  // estiver por cima de outro modal (ex.: ContentDetailSheet), apenas ele feche.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      onClose();
     };
-    window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey, true);
+    lockBodyScroll();
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey, true);
+      unlockBodyScroll();
     };
   }, [open, onClose]);
 
