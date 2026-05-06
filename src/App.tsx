@@ -38,6 +38,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Suspense fallback={null}>
+            <UpdateAvailableBanner />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/ao-vivo" element={<Index />} />
