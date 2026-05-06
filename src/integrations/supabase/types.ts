@@ -247,6 +247,7 @@ export type Database = {
           overview: string | null
           poster_url: string | null
           rating: number | null
+          sort_order: number
           title: string
           tmdb_id: number
           year: number | null
@@ -261,6 +262,7 @@ export type Database = {
           overview?: string | null
           poster_url?: string | null
           rating?: number | null
+          sort_order?: number
           title: string
           tmdb_id: number
           year?: number | null
@@ -275,6 +277,7 @@ export type Database = {
           overview?: string | null
           poster_url?: string | null
           rating?: number | null
+          sort_order?: number
           title?: string
           tmdb_id?: number
           year?: number | null
