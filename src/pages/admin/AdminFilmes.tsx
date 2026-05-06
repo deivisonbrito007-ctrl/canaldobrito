@@ -50,6 +50,7 @@ const AdminFilmes = () => {
   const toggleMovie = useToggleMovie();
   const deleteMovie = useDeleteMovie();
   const updateMovie = useUpdateMovie();
+  const reorderMovies = useReorderMovies();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"search" | "trending">("search");
   const [addingId, setAddingId] = useState<number | null>(null);
