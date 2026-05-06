@@ -78,9 +78,8 @@ describe("Modais — rotação e safe-areas iOS", () => {
     it("aplica padding-bottom usando env(safe-area-inset-bottom) no conteúdo", () => {
       render(<ContentDetailSheet open onClose={() => {}} item={item} />);
       const dialog = screen.getByRole("dialog");
-      const inner = dialog.querySelector(".overflow-y-auto > div") as HTMLElement;
-      expect(inner).not.toBeNull();
-      // O componente declara paddingBottom inline com env(safe-area-inset-bottom).
+      const inner = Array.from(dialog.querySelectorAll<HTMLElement>("[style*='safe-area-inset-bottom']"))[0];
+      expect(inner).toBeDefined();
       expect(inner.getAttribute("style") || "").toMatch(/safe-area-inset-bottom/);
     });
 
