@@ -66,7 +66,8 @@ const buildMarqueeItems = (channels: ChannelTileItem[]) => {
     ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
     ...channels.map(c => ({ type: "channel" as const, ...c })),
   ];
-  return [...base, ...base, ...base];
+  // Exatamente 2 cópias — necessário para o keyframe translateX(-50%) fazer loop perfeito sem saltos.
+  return [...base, ...base];
 };
 
 const WA_NUMBER = "5511940759046";
