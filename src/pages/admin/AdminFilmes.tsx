@@ -42,6 +42,79 @@ const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
 const TMDB_BACKDROP = "https://image.tmdb.org/t/p/w780";
 const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
 
+interface SortableMovieRowProps {
+  movie: FeaturedMovie;
+  refreshingId: string | null;
+  batchActive: boolean;
+  onRefresh: (m: FeaturedMovie) => void;
+  onToggle: (id: string, active: boolean) => void;
+  onDelete: (m: FeaturedMovie) => void;
+}
+
+const SortableMovieRow = ({ movie: m, refreshingId, batchActive, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : "auto" as const,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 rounded-lg glass-panel p-3">
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        disabled={batchActive}
+        className="touch-none h-11 w-7 -ml-1 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label={`Arrastar para reordenar ${m.title}`}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      {m.poster_url ? (
+        <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded-md object-cover shrink-0" loading="lazy" />
+      ) : (
+        <div className="h-14 w-10 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold truncate">{m.title}</p>
+        <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
+          {m.year && <span>{m.year}</span>}
+          {m.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(m.rating)}`} /><span className={ratingColor(m.rating)}>{m.rating}</span></>}
+          {m.genre ? <span className="text-blue-400/70 truncate">• {m.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
+        </p>
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-11 w-11 rounded-lg text-muted-foreground hover:text-blue-400 transition-all duration-200"
+          disabled={refreshingId === m.id || batchActive}
+          onClick={() => onRefresh(m)}
+          aria-label={`Atualizar dados de ${m.title} via TMDB`}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === m.id ? "animate-spin" : ""}`} />
+        </Button>
+        <Switch
+          checked={m.active}
+          disabled={batchActive}
+          onCheckedChange={(v) => onToggle(m.id, v)}
+          aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`}
+        />
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-11 w-11 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200"
+          disabled={batchActive}
+          onClick={() => onDelete(m)}
+          aria-label={`Remover ${m.title}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 const AdminFilmes = () => {
   const { user } = useAuth();
   const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
