@@ -40,10 +40,10 @@ const ABBR: Record<string, string> = {
   "psg": "paris saint germain", "man": "manchester",
 };
 
+// Only generic connectors/suffixes — never team-name tokens.
 const STOP = new Set([
   "fc","cf","ec","sc","ac","cd","sa","aa","fk","sk","club","clube",
-  "de","do","da","dos","das","the","united","city","atletico","atlético",
-  "gremio","grêmio","futebol","football","del","la","el","los","las",
+  "de","do","da","dos","das","del","la","el","los","las","futebol","football",
 ]);
 
 const COUNTRY_SUFFIX = /[\s-]+(uru|equ|arg|bra|chi|col|par|per|ven|bol|usa|esp|por|ita|fra|ger|eng|mex|rj|sp|mg|rs|pr|sc|ba|ce|pe|am|go|al|w)$/i;
