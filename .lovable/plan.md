@@ -1,49 +1,51 @@
-## Auditoria — aba Filmes (admin)
+## Objetivo
 
-**Estado atual** (`src/pages/admin/AdminFilmes.tsx` + `useMovies` + `useTMDB`):
-- ✅ CRUD funciona: busca TMDB → add → toggle ativo → atualizar (1 ou batch) → deletar.
-- ✅ Suíte de testes existente (`AdminFilmes.test.tsx`) com 5 testes — **todos passam** (rodei agora).
-- ✅ Banco: 5 filmes, 5 ativos, 0 sem gênero, 0 sem backdrop. Saúde OK.
+Na seção **Streaming & TV ao Vivo** da página `/assine-ja`, os apps de streaming (Netflix, Prime, Disney+, HBO Max, Globoplay, Paramount+) já usam logos oficiais — mas os **canais de TV** (ESPN, SporTV, Globo, Premiere, TNT, Band, CazéTV, Record, GOAT, Space) ainda aparecem como **emojis genéricos** dentro de quadrados coloridos. Isso quebra a consistência visual e parece amador. Vamos padronizar tudo com logos oficiais e dar um polimento profissional na página inteira.
 
-**Problemas encontrados:**
+---
 
-1. **Mobile <430px**: header "Adicionados" tem badge + 2 botões em linha única → quebra.
-2. **Linha de filme**: `refresh + switch + delete` muito apertado (gaps 3, ícones 32-36px). Touch target abaixo do mínimo 44px da regra do projeto.
-3. **`confirm()` nativo** para deletar — péssima UX no PWA iOS, fora do tema escuro.
-4. **Sem feedback "nenhum resultado"** depois de buscar.
-5. **Sem `aria-live`** na barra de progresso do batch.
-6. **Sem skeleton** enquanto `useAllMovies` carrega (mostra "Nenhum filme adicionado" piscando).
-7. **Filme já adicionado** continua com botão "Add" verde — confunde. Não há marca visual.
-8. **Toggle/Delete não desabilitados** durante batch update — risco de race.
-9. **Tabs sem `role=tab`** — acessibilidade.
-10. **Stats**: mostra só "X ativos / Y" pequeno. Falta painel de saúde (total / ativos / nota média).
+## Mudanças
 
-## O que vou fazer
+### 1. Ícones oficiais para canais de TV (`src/pages/Assinar.tsx`)
 
-**`src/pages/admin/AdminFilmes.tsx`** (rewrite mantendo lógica):
-- Painel topo de stats: 3 cards (Total, Ativos, Nota média) — só aparece se houver filmes.
-- Tabs com `role=tab` + `aria-selected`, `flex-1` no mobile (touch 44px).
-- Input de busca com botão "limpar" (X), `enterKeyHint=search`, `inputMode=search`.
-- Botão buscar desabilitado se query vazia.
-- Card resultado TMDB ganha selo "✓" verde se já adicionado + botão "Adicionado" desabilitado.
-- Estado vazio "Nenhum resultado" pós-busca.
-- Header "Adicionados" com `flex-wrap` + label do botão encurta no mobile (`hidden xs:inline`).
-- Linha do filme: poster maior (h-14 w-10), botões `h-11 w-11` (toque 44px), grupo `shrink-0`.
-- Switch e botões desabilitados durante `batchActive`.
-- Skeleton shimmer durante `isLoading` (3 linhas).
-- `confirm()` → `<AlertDialog>` shadcn (tema escuro, dismissable).
-- Progress com `role=status aria-live=polite`.
-- Removo `console.log` de toggle/delete.
+Substituir o array `TV_CHANNELS` para incluir `domain` (favicon CDN) e `localLogo` (SVGs já presentes em `public/channels/`), reaproveitando exatamente a mesma cadeia de fallback do `ChannelBadge`:
 
-**Sugestões adicionais (não vou aplicar agora — pergunte se quer):**
-- **A. Reordenação por drag** dos filmes ativos (define ordem no carrossel público) — coluna nova `display_order` + `@dnd-kit`. ~1h.
-- **B. Filtro "só inativos / só sem gênero"** acima da lista. ~15min.
-- **C. Busca com debounce** de 400ms, sem precisar clicar no botão. ~10min.
-- **D. Sincronização por Realtime** (2 admins simultâneos veem alterações) — `supabase.channel('featured_movies')`. ~20min.
-- **E. Bulk select** (checkboxes) para ativar/desativar/deletar vários de uma vez. ~30min.
+`localLogo → Google Favicons → DuckDuckGo → emoji`
+
+Logos já disponíveis localmente: `espn.svg`, `premiere.svg`, `cazetv.svg`, `goat.svg`, `dazn.svg`, `youtube.svg`. Os demais (SporTV, Globo, TNT, Band, Record, Space) entram via Google Favicons na resolução 64px.
+
+### 2. Componente unificado de tile no carrossel
+
+Criar um pequeno helper `ChannelTile` dentro de `Assinar.tsx` que renderiza app **e** canal com a mesma estrutura visual: card 56–64px arredondado, logo centralizado em fundo branco translúcido (para canais cujos logos coloridos contrastam mal com o tema dark), label embaixo. Resultado: o carrossel deixa de ter "duas estéticas" (PNG vs emoji).
+
+### 3. Acréscimos sugeridos para profissionalizar a página
+
+- **Adicionar 2 canais relevantes ao showcase**: DAZN e YouTube (já temos os SVGs). Ficam 8 streamings + 12 canais.
+- **Trust badges**: trocar a linha "Atualizado diariamente · Full HD & 4K · Multi-telas" para um grid mais robusto com bordas sutis em vez de só ícone+texto solto.
+- **Social Proof**: o card "5.000+ Canais" duplica o "5.000+ Clientes" — trocar para algo como "+10 mil títulos" ou "Suporte 24h" para evitar repetição percebida.
+- **Headline da seção**: hoje é "Streaming & TV ao Vivo" com bolinha vermelha pulsante. Adicionar pequeno subtítulo (`Tudo em um só lugar`) abaixo para hierarquia tipográfica.
+- **Acessibilidade**: incluir `aria-label` no carrossel marquee e `prefers-reduced-motion: reduce` para parar a animação automaticamente.
+- **Performance**: adicionar `width`/`height` em todos os `<img>` e `decoding="async"` (alguns já têm).
+
+### 4. Refinamentos visuais gerais (opcionais nesta passada)
+
+- Espaçamento vertical entre seções: hoje várias usam `space-y-*` herdado; padronizar para `py-6 sm:py-8`.
+- O countdown "Expira hoje à meia-noite" gera urgência falsa (reseta todo dia). Sugiro remover ou trocar para uma promoção real com data fixa controlada por config.
+- O bloco de **planos** repete o nome "Brito Solutions · TV Completa" e tem só 1 plano — caso seja proposital (single plan), reforçar ainda mais o CTA WhatsApp e mostrar o **preço final por dia** (R$ 1,17/dia) como ancoragem.
+
+---
 
 ## Arquivos afetados
-- edit: `src/pages/admin/AdminFilmes.tsx`
-- testes existentes continuam passando (mocks compatíveis); posso adicionar 2 testes a mais cobrindo `AlertDialog` de delete e selo "já adicionado" se quiser.
 
-Aprova?
+- `src/pages/Assinar.tsx` — array `TV_CHANNELS`, render do carrossel, helper `ChannelTile`, ajustes de cópia e acessibilidade.
+
+## Detalhes técnicos
+
+```text
+TV_CHANNELS[] agora tem { name, domain, localLogo?, bg, text, border, emoji }
+ChannelTile reutiliza a lógica de fallback do ChannelBadge (stage 0..3)
+Marquee: aria-label="Plataformas e canais inclusos"
+                respeita @media (prefers-reduced-motion: reduce) → animação pausa
+```
+
+Sem mudanças de banco, sem novas dependências, sem migrações.

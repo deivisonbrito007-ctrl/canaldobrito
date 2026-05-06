@@ -24,17 +24,29 @@ const STREAMING_APPS = [
   { name: "Starz", icon: starzIcon },
 ];
 
-const TV_CHANNELS = [
-  { emoji: "📺", name: "ESPN", bg: "bg-red-600/20", text: "text-red-400", border: "border-red-500/30" },
-  { emoji: "⚽", name: "SporTV", bg: "bg-emerald-600/20", text: "text-emerald-400", border: "border-emerald-500/30" },
-  { emoji: "🌐", name: "Globo", bg: "bg-slate-200/15", text: "text-foreground/80", border: "border-foreground/20" },
-  { emoji: "⭐", name: "Premiere", bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
-  { emoji: "💥", name: "TNT", bg: "bg-blue-600/20", text: "text-blue-400", border: "border-blue-500/30" },
-  { emoji: "📡", name: "Band", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
-  { emoji: "🎮", name: "CazéTV", bg: "bg-lime-500/20", text: "text-lime-400", border: "border-lime-500/30" },
-  { emoji: "📺", name: "Record", bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/30" },
-  { emoji: "🐐", name: "Canal GOAT", bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/30" },
-  { emoji: "🚀", name: "Space", bg: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+type ChannelTileItem = {
+  name: string;
+  domain?: string;
+  localLogo?: string;
+  emoji: string;
+  bg: string;
+  text: string;
+  border: string;
+};
+
+const TV_CHANNELS: ChannelTileItem[] = [
+  { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg",     emoji: "📺", bg: "bg-red-600/15",     text: "text-red-300",       border: "border-red-500/30" },
+  { name: "SporTV",     domain: "sportv.globo.com",                                        emoji: "⚽", bg: "bg-emerald-600/15", text: "text-emerald-300",   border: "border-emerald-500/30" },
+  { name: "Globo",      domain: "globo.com",                                               emoji: "🌐", bg: "bg-slate-200/10",   text: "text-foreground/85", border: "border-foreground/15" },
+  { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg", emoji: "⭐", bg: "bg-yellow-500/15",  text: "text-yellow-300",    border: "border-yellow-500/30" },
+  { name: "TNT Sports", domain: "tntsports.com.br",                                        emoji: "💥", bg: "bg-blue-600/15",    text: "text-blue-300",      border: "border-blue-500/30" },
+  { name: "Band",       domain: "band.uol.com.br",                                         emoji: "📡", bg: "bg-emerald-500/15", text: "text-emerald-300",   border: "border-emerald-500/30" },
+  { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg",   emoji: "🎮", bg: "bg-lime-500/15",    text: "text-lime-300",      border: "border-lime-500/30" },
+  { name: "Record",     domain: "recordtv.r7.com",                                         emoji: "📺", bg: "bg-blue-500/15",    text: "text-blue-300",      border: "border-blue-500/30" },
+  { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg",     emoji: "🐐", bg: "bg-amber-500/15",   text: "text-amber-300",     border: "border-amber-500/30" },
+  { name: "Space",      domain: "tntsports.com.br",                                        emoji: "🚀", bg: "bg-indigo-500/15",  text: "text-indigo-300",    border: "border-indigo-500/30" },
+  { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg",     emoji: "🥊", bg: "bg-yellow-500/15",  text: "text-yellow-300",    border: "border-yellow-500/30" },
+  { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",  emoji: "▶️", bg: "bg-red-600/15",     text: "text-red-300",       border: "border-red-500/30" },
 ];
 
 const CAROUSEL_ITEMS = [
@@ -93,6 +105,40 @@ const FAQ_ITEMS = [
   { q: "Quanto tempo leva para ativar?", a: "A ativação é realizada rapidamente dentro do horário de atendimento. Se a solicitação for feita fora do horário, será realizada no próximo dia de atendimento." },
   { q: "O que acontece se eu indicar amigos?", a: "Você ganha descontos progressivos! 25% OFF na 1ª indicação, 50% OFF na 2ª e 1 mês grátis na 3ª. Após a 3ª, o ciclo recomeça." },
 ];
+
+/** Logo do canal com cadeia de fallback: localLogo → Google Favicons → DuckDuckGo → emoji */
+const ChannelLogo = ({
+  localLogo,
+  domain,
+  emoji,
+  alt,
+}: { localLogo?: string; domain?: string; emoji: string; alt: string }) => {
+  const [stage, setStage] = useState<0 | 1 | 2 | 3>(localLogo ? 0 : domain ? 1 : 3);
+  if (stage === 3) return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
+  let src = "";
+  if (stage === 0 && localLogo) src = localLogo;
+  else if (stage === 1 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  else if (stage === 2 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  else return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      width={48}
+      height={48}
+      onError={() =>
+        setStage((s) => {
+          let next = (s + 1) as 0 | 1 | 2 | 3;
+          if (next === 1 && !domain) next = 3;
+          return next;
+        })
+      }
+      className="w-full h-full object-contain"
+    />
+  );
+};
 
 const Assinar = () => {
   const { h, m, s } = useCountdown();
@@ -181,8 +227,8 @@ const Assinar = () => {
         <section className="grid grid-cols-3 gap-3">
           {[
             { val: "5.000+", label: "Clientes" },
-            { val: "5.000+", label: "Canais" },
-            { val: "4.9 ★", label: "Avaliação" },
+            { val: "+10 mil", label: "Títulos" },
+            { val: "4.9 ★",  label: "Avaliação" },
           ].map(({ val, label }) => (
             <div key={label} className="glass-panel p-3 text-center">
               <p className="font-display text-xl sm:text-2xl text-primary">{val}</p>
@@ -193,17 +239,24 @@ const Assinar = () => {
 
         {/* Streaming Apps - Carousel */}
         <section className="glass-panel p-5 space-y-4 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-destructive animate-pulse-live" />
-              <h2 className="font-display text-xl text-foreground tracking-wide">Streaming & TV ao Vivo</h2>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-destructive animate-pulse-live" />
+                <h2 className="font-display text-xl text-foreground tracking-wide">Streaming &amp; TV ao Vivo</h2>
+              </div>
+              <p className="text-[11px] text-muted-foreground font-body mt-1 ml-4">
+                Tudo em um só lugar — sem precisar de várias contas.
+              </p>
             </div>
-            <span className="text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-2.5 py-1">
+            <span className="text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-2.5 py-1 shrink-0 mt-0.5">
               +10.000 títulos
             </span>
           </div>
           <div
             className="overflow-hidden marquee-container marquee-mask"
+            role="region"
+            aria-label="Plataformas e canais inclusos"
             onTouchStart={pauseMarquee}
             onTouchEnd={resumeMarquee}
           >
@@ -211,16 +264,21 @@ const Assinar = () => {
               {MARQUEE_ITEMS.map((item, i) => (
                 item.type === "app" ? (
                   <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2 relative">
-                      <img src={(item as any).icon} alt={item.name} loading="lazy" width={48} height={48} className="w-full h-full object-contain" />
-                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center p-2 relative shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)]">
+                      <img src={(item as any).icon} alt={`Logo ${item.name}`} loading="lazy" width={48} height={48} decoding="async" className="w-full h-full object-contain" />
+                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                     </div>
                     <span className="text-[9px] text-muted-foreground font-body text-center w-14 sm:w-16 leading-tight">{item.name}</span>
                   </div>
                 ) : (
                   <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center ${(item as any).bg} ${(item as any).border}`}>
-                      <span className="text-2xl">{(item as any).emoji}</span>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center p-2 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
+                      <ChannelLogo
+                        localLogo={(item as any).localLogo}
+                        domain={(item as any).domain}
+                        emoji={(item as any).emoji}
+                        alt={`Logo ${item.name}`}
+                      />
                     </div>
                     <span className={`text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight ${(item as any).text}`}>{item.name}</span>
                   </div>
@@ -228,19 +286,20 @@ const Assinar = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-center gap-4 sm:gap-6 pt-1">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[10px] text-muted-foreground font-body">Atualizado diariamente</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[10px] text-muted-foreground font-body">Full HD & 4K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground font-body">Multi-telas</span>
-            </div>
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            {[
+              { icon: CheckCircle2, label: "Atualizado diariamente", primary: true },
+              { icon: Zap,          label: "Full HD & 4K",            primary: true },
+              { icon: Monitor,      label: "Multi-telas",             primary: false },
+            ].map(({ icon: Icon, label, primary }) => (
+              <div
+                key={label}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2"
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${primary ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="text-[10px] text-muted-foreground font-body leading-tight text-center">{label}</span>
+              </div>
+            ))}
           </div>
         </section>
 
