@@ -20,6 +20,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,12 +49,15 @@ interface SortableMovieRowProps {
   movie: FeaturedMovie;
   refreshingId: string | null;
   batchActive: boolean;
+  selected: boolean;
+  selectionMode: boolean;
+  onSelectChange: (id: string, checked: boolean) => void;
   onRefresh: (m: FeaturedMovie) => void;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (m: FeaturedMovie) => void;
 }
 
-const SortableMovieRow = ({ movie: m, refreshingId, batchActive, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
+const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selectionMode, onSelectChange, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -60,17 +66,28 @@ const SortableMovieRow = ({ movie: m, refreshingId, batchActive, onRefresh, onTo
     zIndex: isDragging ? 10 : "auto" as const,
   };
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 rounded-lg glass-panel p-3">
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        disabled={batchActive}
-        className="touch-none h-11 w-7 -ml-1 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
-        aria-label={`Arrastar para reordenar ${m.title}`}
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-2 rounded-lg glass-panel p-3 transition-colors ${selected ? "ring-1 ring-blue-500/40 bg-blue-500/[0.04]" : ""}`}>
+      <div className="flex items-center justify-center h-11 w-7 -ml-1">
+        {selectionMode ? (
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(v) => onSelectChange(m.id, !!v)}
+            disabled={batchActive}
+            aria-label={`Selecionar ${m.title}`}
+          />
+        ) : (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            disabled={batchActive}
+            className="touch-none h-11 w-7 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label={`Arrastar para reordenar ${m.title}`}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       {m.poster_url ? (
         <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded-md object-cover shrink-0" loading="lazy" />
       ) : (
@@ -131,8 +148,13 @@ const AdminFilmes = () => {
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [searched, setSearched] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<FeaturedMovie | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const qc = useQueryClient();
 
-  const batchActive = !!batchProgress;
+  const batchActive = !!batchProgress || bulkRunning;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -153,6 +175,42 @@ const AdminFilmes = () => {
     });
   };
 
+  const exitSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
+  const enterSelection = () => { setSelectionMode(true); setSelectedIds(new Set()); };
+  const toggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  };
+  const selectAllVisible = () => { if (movies) setSelectedIds(new Set(movies.map((m) => m.id))); };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("featured_movies").update({ active }).in("id", ids);
+    setBulkRunning(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["featured_movies"] });
+    toast.success(`${ids.length} filme(s) ${active ? "ativado(s)" : "desativado(s)"}`);
+    exitSelection();
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("featured_movies").delete().in("id", ids);
+    setBulkRunning(false);
+    setConfirmBulkDelete(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["featured_movies"] });
+    toast.success(`${ids.length} filme(s) removido(s)`);
+    exitSelection();
+  };
 
   const handleSearch = () => {
     if (!query.trim()) return;
@@ -384,18 +442,54 @@ const AdminFilmes = () => {
 
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-white/[0.06]">
-          <h3 className="text-sm font-bold text-foreground">Adicionados</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            {missingDataCount > 0 && (
-              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={batchActive} className="h-9 text-[10px] gap-1">
-                {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                {missingDataCount} incompletos
-              </Button>
+          <h3 className="text-sm font-bold text-foreground">
+            Adicionados {selectionMode && selectedIds.size > 0 && (
+              <span className="text-blue-400 font-normal">· {selectedIds.size} selecionado(s)</span>
             )}
-            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
-              {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Atualizar todos
-            </Button>
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            {!selectionMode ? (
+              <>
+                {missingDataCount > 0 && (
+                  <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={batchActive} className="h-9 text-[10px] gap-1">
+                    {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {missingDataCount} incompletos
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
+                  {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                  Atualizar todos
+                </Button>
+                <Button size="sm" variant="outline" onClick={enterSelection} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
+                  <Check className="h-3 w-3" />
+                  Selecionar
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" variant="ghost" onClick={selectAllVisible} disabled={bulkRunning} className="h-9 text-[10px]">
+                  Todos
+                </Button>
+                <Button size="sm" variant="ghost" onClick={clearSelection} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px]">
+                  Limpar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => bulkSetActive(true)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                  {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                  Ativar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => bulkSetActive(false)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                  {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                  Desativar
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                  <Trash2 className="h-3 w-3" />
+                  Excluir
+                </Button>
+                <Button size="sm" variant="ghost" onClick={exitSelection} disabled={bulkRunning} className="h-9 text-[10px]" aria-label="Sair do modo de seleção">
+                  <X className="h-3 w-3" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -435,6 +529,9 @@ const AdminFilmes = () => {
                       movie={m}
                       refreshingId={refreshingId}
                       batchActive={batchActive}
+                      selected={selectedIds.has(m.id)}
+                      selectionMode={selectionMode}
+                      onSelectChange={toggleSelect}
                       onRefresh={handleRefreshOne}
                       onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
                       onDelete={setPendingDelete}
@@ -458,6 +555,24 @@ const AdminFilmes = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmBulkDelete} onOpenChange={(o) => !o && !bulkRunning && setConfirmBulkDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover {selectedIds.size} filme(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Os filmes selecionados serão removidos permanentemente do catálogo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRunning}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={bulkDelete} disabled={bulkRunning} className="bg-destructive hover:bg-destructive/90">
+              {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
               Remover
             </AlertDialogAction>
           </AlertDialogFooter>
