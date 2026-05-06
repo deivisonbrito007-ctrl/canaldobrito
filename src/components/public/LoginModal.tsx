@@ -108,9 +108,12 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
               <input
                 type="email"
-                placeholder="admin@canalbrito.com"
+                placeholder="admin@britosolutions.tv"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                inputMode="email"
+                maxLength={255}
                 className="w-full bg-input border border-border rounded-lg px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground font-body focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                 required
               />
