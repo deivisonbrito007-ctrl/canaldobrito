@@ -213,29 +213,5 @@ const TimePill = ({
   </div>
 );
 
-const ScorePill = ({
-  home,
-  away,
-  live,
-  status,
-}: {
-  home: number;
-  away: number;
-  live: boolean;
-  status?: string | null;
-}) => (
-  <div
-    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 border tabular-nums ${
-      live
-        ? "bg-destructive/15 border-destructive/40 text-destructive"
-        : "bg-card/60 border-border/50 text-foreground"
-    }`}
-    aria-label={`Placar ${home} a ${away}${status ? `, ${status}` : ""}`}
-  >
-    <span className="text-sm sm:text-base font-extrabold">{home}</span>
-    <span className="opacity-50 text-xs">×</span>
-    <span className="text-sm sm:text-base font-extrabold">{away}</span>
-  </div>
-);
 
 export const GameCard = memo(GameCardImpl);
