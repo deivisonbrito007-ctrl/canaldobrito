@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Radio, Clock, Calendar, Flame, Trophy } from "lucide-react";
+import { Radio, Clock, Calendar, Flame, Trophy, Info, X } from "lucide-react";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useLiveTick } from "@/hooks/useLiveTick";
 import { useRealtimeDailyGames } from "@/hooks/useRealtimeDailyGames";
