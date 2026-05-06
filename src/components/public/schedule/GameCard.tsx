@@ -145,9 +145,18 @@ const GameCardImpl = ({ game, index }: GameCardProps) => {
                 {game.home_team}
               </p>
               <div className="flex flex-col items-center shrink-0">
-                <TimePill time={game.game_time} live={live} isSoon={isSoon} themeColor={theme.color} />
+                {(live || game.live_status === "finished") && game.home_score != null && game.away_score != null ? (
+                  <ScorePill
+                    home={game.home_score}
+                    away={game.away_score}
+                    live={live}
+                    status={game.status_short}
+                  />
+                ) : (
+                  <TimePill time={game.game_time} live={live} isSoon={isSoon} themeColor={theme.color} />
+                )}
                 <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mt-0.5">
-                  vs
+                  {live || game.live_status === "finished" ? (game.status_short || "vs") : "vs"}
                 </span>
               </div>
               <p
