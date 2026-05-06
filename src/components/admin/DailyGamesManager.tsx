@@ -97,6 +97,31 @@ export const DailyGamesManager = () => {
     }
   };
 
+  const handleMatchAllDay = async () => {
+    const pending = (games || []).filter((g) => !g.external_id && !g.archived);
+    if (pending.length === 0) {
+      toast.info("Todos os jogos do dia já estão vinculados");
+      return;
+    }
+    if (!confirm(`Tentar vincular ${pending.length} jogo(s) do dia à TheSportsDB?`)) return;
+    const t = toast.loading(`Vinculando 0/${pending.length}...`);
+    let matched = 0;
+    let i = 0;
+    for (const g of pending) {
+      i++;
+      toast.loading(`Vinculando ${i}/${pending.length}...`, { id: t });
+      try {
+        const { data } = await supabase.functions.invoke("tsdb-match-game", { body: { gameId: g.id } });
+        if (data?.matched) matched++;
+      } catch (_) { /* silencioso */ }
+    }
+    toast.success(`📡 ${matched}/${pending.length} jogo(s) vinculados`, { id: t });
+    queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    if (matched > 0) {
+      supabase.functions.invoke("tsdb-live-update", { body: {} }).catch(() => {});
+    }
+  };
+
 
   const handleArchiveDay = async () => {
     const nonArchived = games?.filter((g) => !g.archived) || [];
@@ -262,6 +287,9 @@ export const DailyGamesManager = () => {
           <Button size="sm" variant="ghost" onClick={handleReclassifySports} disabled={reclassifying} className="text-xs text-blue-400 hover:text-blue-300">
             {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
             Re-classificar
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleMatchAllDay} className="text-xs text-emerald-400 hover:text-emerald-300">
+            <Link2 className="h-3.5 w-3.5 mr-1" /> Vincular dia (TSDB)
           </Button>
           <Button size="sm" variant="ghost" onClick={handleRefreshLive} className="text-xs text-fuchsia-400 hover:text-fuchsia-300">
             <Radio className="h-3.5 w-3.5 mr-1" /> Atualizar placares
