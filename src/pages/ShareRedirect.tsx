@@ -21,6 +21,11 @@ export default function ShareRedirect() {
     const tab = SLUG_TO_TAB[slug.toLowerCase()];
     if (!tab) {
       if (import.meta.env.DEV) console.warn(`[ShareRedirect] Unknown slug: "${slug}" — redirecting to /`);
+      track("landing_with_unknown_slug", {
+        slug,
+        referrer: document.referrer || null,
+        captured_at: new Date().toISOString(),
+      });
       return;
     }
     const tabSlug = TAB_SLUGS[tab];
