@@ -509,12 +509,12 @@ export const LivePageContent = () => {
       {/* ─── Live Grid ─── */}
       {!isLoading && liveGames.length > 0 && (
         <section className="space-y-2.5 animate-fade-up stagger-2">
-          <div className="px-3 flex items-center gap-2">
-            <Flame className="h-4 w-4 text-destructive" />
-            <h2 className="text-sm font-extrabold text-foreground font-body uppercase tracking-tight">
+          <div className="px-3 flex items-center gap-1.5">
+            <Flame className="h-3 w-3 text-destructive" />
+            <h2 className="text-[10.5px] font-bold text-muted-foreground font-body uppercase tracking-[0.18em]">
               {filter === "all" ? "Acontecendo agora" : FILTERS.find((f) => f.id === filter)?.label}
             </h2>
-            <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold tabular-nums font-body">
+            <span className="text-[9px] bg-destructive/15 text-destructive rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body">
               {filteredLive.length}
             </span>
           </div>
