@@ -442,18 +442,54 @@ const AdminFilmes = () => {
 
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-white/[0.06]">
-          <h3 className="text-sm font-bold text-foreground">Adicionados</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            {missingDataCount > 0 && (
-              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={batchActive} className="h-9 text-[10px] gap-1">
-                {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                {missingDataCount} incompletos
-              </Button>
+          <h3 className="text-sm font-bold text-foreground">
+            Adicionados {selectionMode && selectedIds.size > 0 && (
+              <span className="text-blue-400 font-normal">· {selectedIds.size} selecionado(s)</span>
             )}
-            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
-              {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Atualizar todos
-            </Button>
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            {!selectionMode ? (
+              <>
+                {missingDataCount > 0 && (
+                  <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={batchActive} className="h-9 text-[10px] gap-1">
+                    {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {missingDataCount} incompletos
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
+                  {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                  Atualizar todos
+                </Button>
+                <Button size="sm" variant="outline" onClick={enterSelection} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
+                  <Check className="h-3 w-3" />
+                  Selecionar
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" variant="ghost" onClick={selectAllVisible} disabled={bulkRunning} className="h-9 text-[10px]">
+                  Todos
+                </Button>
+                <Button size="sm" variant="ghost" onClick={clearSelection} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px]">
+                  Limpar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => bulkSetActive(true)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                  {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                  Ativar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => bulkSetActive(false)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                  {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                  Desativar
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                  <Trash2 className="h-3 w-3" />
+                  Excluir
+                </Button>
+                <Button size="sm" variant="ghost" onClick={exitSelection} disabled={bulkRunning} className="h-9 text-[10px]" aria-label="Sair do modo de seleção">
+                  <X className="h-3 w-3" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
