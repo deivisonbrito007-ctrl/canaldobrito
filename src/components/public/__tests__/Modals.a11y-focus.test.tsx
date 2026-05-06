@@ -130,11 +130,12 @@ describe("Acessibilidade — foco e ARIA nos modais", () => {
       trigger.focus();
       fireEvent.click(trigger);
       await flush();
-      const backdrop = document.body.querySelector('[data-trailer-backdrop]') as HTMLElement
-        ?? document.body.querySelector('[role="dialog"]')?.parentElement as HTMLElement;
-      // Fallback: ESC garante o mesmo contrato (foco volta)
-      if (backdrop) fireEvent.click(backdrop);
-      else fireEvent.keyDown(window, { key: "Escape" });
+      // Backdrop é o primeiro overlay fixed inset-0 com bg-black/85
+      const backdrop = document.body.querySelector(
+        ".fixed.inset-0.bg-black\\/85",
+      ) as HTMLElement;
+      expect(backdrop).toBeTruthy();
+      fireEvent.click(backdrop);
       await flush();
       expect(document.activeElement).toBe(trigger);
     });
