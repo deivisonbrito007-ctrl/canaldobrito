@@ -41,10 +41,11 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
 
   const sportType = (nextGame.sport_type || 'football') as SportType;
   const emoji = SPORT_EMOJI[sportType] || '⚽';
+  const sportLabel = SPORT_LABEL[sportType] || 'Esporte';
+  const theme = getSportTheme(sportType);
   const nonAdversarial = isNonAdversarial(sportType);
   const mins = getMinutesUntilStart(nextGame.game_time, nextGame.date);
   const countdown = mins ? formatCountdown(mins) : "";
-  const gradient = getHeroGradient(nextGame.competition);
   const isSoon = mins !== null && mins <= 30;
 
   return (
@@ -53,24 +54,39 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <div className={`relative rounded-2xl overflow-hidden border border-primary/20 bg-gradient-to-br ${gradient} backdrop-blur-xl`}>
-        {/* Top accent */}
-        <div className="h-[3px] bg-gradient-to-r from-primary via-primary/60 to-transparent" />
-
-        <div className="p-3 sm:p-5 space-y-2 sm:space-y-3">
-          {/* Label */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                {nonAdversarial ? "Próximo evento" : "Próximo jogo"}
-              </span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              {emoji} {nextGame.competition}
+      <div
+        className="relative rounded-2xl overflow-hidden bg-card/70 backdrop-blur-xl"
+        style={{ border: `1px solid ${theme.border}`, boxShadow: theme.glow }}
+      >
+        {/* Sport identity strip */}
+        <div
+          className="flex items-center justify-between px-3 py-1.5 text-foreground"
+          style={{ background: theme.stripGradient }}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Zap className="h-3.5 w-3.5 shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em]">
+              {nonAdversarial ? "Próximo evento" : "Próximo jogo"}
+            </span>
+            <span className="text-foreground/40 text-[10px]">·</span>
+            <span className="text-[10px] font-semibold text-foreground/85 truncate">
+              {emoji} {sportLabel}
             </span>
           </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/70 truncate max-w-[40vw]">
+            {nextGame.competition}
+          </span>
+        </div>
 
+        {/* Watermark */}
+        <span
+          aria-hidden
+          className="pointer-events-none select-none absolute -right-2 -bottom-3 text-[88px] leading-none opacity-[0.05]"
+        >
+          {emoji}
+        </span>
+
+        <div className="relative p-3 sm:p-5 space-y-3">
           {/* Teams / Event */}
           {nonAdversarial ? (
             <div className="flex items-center gap-3">
