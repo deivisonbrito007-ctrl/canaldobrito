@@ -1,4 +1,5 @@
 import { test, expect, devices } from "@playwright/test";
+import { waitForStable } from "./utils/animation-stability";
 
 /**
  * Touch swipe behavior for ContentDetailSheet.
