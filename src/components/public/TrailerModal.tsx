@@ -46,11 +46,10 @@ export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ ope
       onClose();
     };
     window.addEventListener("keydown", onKey, true);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
       window.removeEventListener("keydown", onKey, true);
-      document.body.style.overflow = prevOverflow;
+      unlockBodyScroll();
     };
   }, [open, onClose]);
 
