@@ -1,51 +1,36 @@
-## Objetivo
+## Diagnóstico
 
-Você continua cadastrando todos os jogos manualmente (banner/parser). A TheSportsDB serve **somente** para enriquecer cada jogo com **placar ao vivo** e **tempo de jogo** (minutos). Sem importar jogos automaticamente.
+Testei o `tsdb-match-game` para um jogo real (`Botafogo x Racing` hoje). Resposta:
 
-## Como vai funcionar
+```json
+{ "matched": false, "candidates": [] }
+```
 
-1. Você cadastra o jogo normalmente (times, horário, canal).
-2. Um job em background tenta achar o evento correspondente na TheSportsDB (por times + data) e salva o `external_id` (`tsdb:<eventId>`) no jogo.
-3. A cada ~60s, uma function de "live update" busca placar e minuto dos jogos que estão no ar e atualiza o card.
-4. Sugestão de match com 1 clique no admin caso o auto-match falhe (ambíguo / nomes diferentes).
+Significa: **a TheSportsDB devolveu zero candidatos** no `eventsday.php?d=2026-05-06&s=Soccer`. Confirmando direto na API com a chave de teste `3`, retornou só **3 jogos no mundo todo** — basicamente vazio. Com a chave premium o resultado deveria ser muito maior, mas pelo comportamento (resposta vazia) é provável que a chamada não esteja efetivamente usando a chave premium ou esteja batendo em endpoint errado.
 
-## Mudanças
+Outro ponto: vários jogos do dia são de competições sul-americanas/Brasileirão B/Sudamericana que nem sempre aparecem no `eventsday`; precisam ser buscados também por liga.
 
-### Banco
-- Adicionar em `daily_games`:
-  - `external_id text` (reintroduzir, ex.: `tsdb:1234567`)
-  - `home_score int`, `away_score int`
-  - `live_status text` (`scheduled` | `live` | `finished`)
-  - `live_updated_at timestamptz`
-- Índice único parcial em `external_id` (quando não nulo).
+## Mudanças propostas
 
-### Edge functions
-- `tsdb-match-game` — recebe `gameId`, busca eventos do dia (`eventsday.php?d=YYYY-MM-DD&s=Soccer` etc por esporte), faz fuzzy match dos times e grava `external_id` + sugestões.
-- `tsdb-live-update` — roda via cron a cada 60s; para todo `daily_games` com `external_id`, `is_live=true` ou janela de ±15min do `game_time`, chama `lookupevent.php?id=<n>` e atualiza placar/minuto/status.
-- Reutiliza `THESPORTSDB_KEY` (já existe).
+### 1) `tsdb-match-game` — buscar de mais fontes e logar
+- Tentar `eventsday.php?d=DATE&s=Soccer` **e** `eventsday.php?d=DATE` (sem filtro), deduplicando.
+- Adicionar `console.log` mostrando: total de eventos retornados pela TSDB, top 3 candidatos com score. Assim conseguimos ver no Logs se o problema é "API vazia" ou "match ruim".
+- Normalização melhor: remover sufixos comuns (`fc`, `cf`, `sc`, `ec`, `clube`, `de`, `do`, etc.) antes de comparar.
+- Reduzir threshold de aceite de **0.85 → 0.80** e de candidato de **0.45 → 0.40**.
 
-### Admin (DailyGamesManager)
-- Badge "Vinculado TSDB ✓" / "Sem vínculo".
-- Botão "Buscar placar" (dispara `tsdb-match-game`); se múltiplos candidatos, abre modal para escolher.
-- Botão "Desvincular" para limpar `external_id`.
+### 2) `tsdb-live-update` — fallback por busca quando vínculo falhou
+- Se um jogo está na janela ao vivo e ainda não tem `external_id`, tentar **auto-match em runtime** (chamada direta ao `eventsday`) e gravar se score ≥ 0.8.
+- Assim, mesmo sem você clicar em "Vincular dia", o cron de 1 min já tenta vincular sozinho e puxa o placar.
 
-### UI pública
-- Card do jogo ao vivo passa a mostrar `home_score x away_score` e o minuto (`45'`, `HT`, `FT`) quando vier da TSDB.
-- Mantém o layout/cores atuais; sem placar, mostra só horário (comportamento atual).
+### 3) Suporte ao endpoint **v2 livescore** (se a chave premium for v2)
+- Adicionar fallback para `https://www.thesportsdb.com/api/v2/json/livescore/all` (header `X-API-KEY`) — esse endpoint retorna **só os jogos ao vivo agora**, com placar e minuto. Isso é exatamente o que precisamos.
+- O `tsdb-live-update` passa a ler livescore primeiro, casa por times+data, e cai no `lookupevent` só se já houver `external_id` salvo.
 
-## Detalhes técnicos
+### 4) Verificar se a chave premium está sendo aceita
+- Adicionar uma function de diagnóstico simples (ou só um log no `tsdb-match-game`) imprimindo os primeiros 4 chars da chave + `eventsday` retornado, para confirmar se a chave está em vigor.
 
-- Mapeamento esporte → liga TSDB feito por `sport_type` (Soccer, Basketball, MMA, etc.).
-- Fuzzy match: normalizar (lowercase, sem acento), comparar `home_team`/`away_team` com `strHomeTeam`/`strAwayTeam`; aceitar match com score ≥ 0.85, senão retornar candidatos.
-- Cron: usar `pg_cron` chamando `tsdb-live-update` a cada minuto (limitado à janela de jogos do dia para economizar quota).
-- Time zone: comparar datas em `America/Sao_Paulo` antes de pedir `eventsday`.
-- Sem CHECK constraints com `now()` — usar trigger se precisar validar.
+## Sugestão extra
 
-## Sugestões extras
+- Caso a chave premium esteja correta mas a TheSportsDB simplesmente **não cobre** Sul-Americana/Sudamericana/Brasileirão B com profundidade, manter um **fallback opcional via API-Football** (`API_FOOTBALL_KEY` já existe nos secrets) só para o placar, sem cadastrar nada.
 
-- **Auto-match no insert**: trigger/edge que tenta vincular logo após o cadastro, sem você clicar.
-- **Fallback "ao vivo manual"**: se TSDB não retornar dados em 5 min após o início, manter o card como "AO VIVO" sem placar (não some).
-- **Cache TSDB**: cachear `eventsday` por 10 min em `settings` ou KV pra não estourar quota quando vários jogos estiverem rolando.
-- **Indicador de "atrasado"**: se `live_updated_at` > 3 min, mostrar pontinho amarelo discreto no card admin.
-
-Posso aplicar?
+Posso aplicar essas 4 mudanças?
