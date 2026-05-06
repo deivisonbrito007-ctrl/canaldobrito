@@ -1,6 +1,6 @@
-import { useState, useCallback, memo } from "react";
+import { memo } from "react";
 import { motion } from "framer-motion";
-import { Clock, Flame, Bell, BellOff } from "lucide-react";
+import { Clock, Flame } from "lucide-react";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import {
   isGameCurrentlyLive,
@@ -14,35 +14,14 @@ import {
 import { ChannelBadge } from "../ChannelBadge";
 import { getSportTheme, isHighlightCompetition } from "./GameCardSportTheme";
 
-/* localStorage reminder helpers (kept identical to legacy) */
-function getReminders(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem("game_reminders") || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function toggleReminder(gameId: string): boolean {
-  const reminders = getReminders();
-  const idx = reminders.indexOf(gameId);
-  if (idx >= 0) {
-    reminders.splice(idx, 1);
-    localStorage.setItem("game_reminders", JSON.stringify(reminders));
-    return false;
-  }
-  reminders.push(gameId);
-  localStorage.setItem("game_reminders", JSON.stringify(reminders));
-  return true;
-}
-
 interface GameCardProps {
   game: DailyGame;
   index: number;
+  /** Kept for API compatibility; reminder UI removed. */
   onPushReminder?: (gameId: string, add: boolean) => void;
 }
 
-const GameCardImpl = ({ game, index, onPushReminder }: GameCardProps) => {
+const GameCardImpl = ({ game, index }: GameCardProps) => {
   const sportType = (game.sport_type || "football") as SportType;
   const theme = getSportTheme(sportType);
   const sportLabel = SPORT_LABEL[sportType] || theme.label;
@@ -53,18 +32,6 @@ const GameCardImpl = ({ game, index, onPushReminder }: GameCardProps) => {
   const minsUntil = getMinutesUntilStart(game.game_time, game.date);
   const isSoon = minsUntil !== null && minsUntil > 0 && minsUntil <= 120;
   const eventLayout = isNonAdversarial(sportType) || !game.away_team;
-
-  const [reminded, setReminded] = useState(() => getReminders().includes(game.id));
-
-  const handleReminder = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const isNow = toggleReminder(game.id);
-      setReminded(isNow);
-      onPushReminder?.(game.id, isNow);
-    },
-    [game.id, onPushReminder]
-  );
 
   const ariaLabel = `${sportLabel}: ${
     eventLayout ? game.home_team : `${game.home_team} vs ${game.away_team}`
@@ -129,7 +96,7 @@ const GameCardImpl = ({ game, index, onPushReminder }: GameCardProps) => {
         <div className="relative p-3 sm:p-4 space-y-2.5">
           {/* Status row: live / countdown */}
           {(live || isSoon) && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center">
               {live ? (
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-destructive/20 text-destructive border border-destructive/35 motion-safe:animate-pulse">
                   <span className="relative flex h-1.5 w-1.5">
@@ -146,46 +113,6 @@ const GameCardImpl = ({ game, index, onPushReminder }: GameCardProps) => {
                   Começa em {minsUntil ? formatCountdown(minsUntil) : ""}
                 </span>
               )}
-              {!live && (
-                <button
-                  onClick={handleReminder}
-                  aria-pressed={reminded}
-                  aria-label={
-                    reminded
-                      ? `Remover lembrete de ${game.home_team}`
-                      : `Adicionar lembrete para ${game.home_team}`
-                  }
-                  className={`inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg transition-all border ${
-                    reminded
-                      ? "bg-primary/15 text-primary border-primary/35"
-                      : "bg-card/40 text-muted-foreground/70 border-border/30 hover:text-primary hover:border-primary/30"
-                  }`}
-                >
-                  {reminded ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Reminder button when no status badge present */}
-          {!live && !isSoon && (
-            <div className="absolute right-2 top-2">
-              <button
-                onClick={handleReminder}
-                aria-pressed={reminded}
-                aria-label={
-                  reminded
-                    ? `Remover lembrete de ${game.home_team}`
-                    : `Adicionar lembrete para ${game.home_team}`
-                }
-                className={`inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg transition-all border ${
-                  reminded
-                    ? "bg-primary/15 text-primary border-primary/35"
-                    : "bg-card/40 text-muted-foreground/60 border-border/30 hover:text-primary hover:border-primary/30"
-                }`}
-              >
-                {reminded ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
-              </button>
             </div>
           )}
 
@@ -234,15 +161,20 @@ const GameCardImpl = ({ game, index, onPushReminder }: GameCardProps) => {
 
           {/* Channels */}
           {game.channels && game.channels.length > 0 ? (
-            <div className="flex gap-1 flex-wrap">
-              {game.channels.slice(0, 3).map((ch, i) => (
-                <ChannelBadge key={i} name={ch} />
-              ))}
-              {game.channels.length > 3 && (
-                <span className="text-[10px] text-muted-foreground/50 self-center">
-                  +{game.channels.length - 3}
-                </span>
-              )}
+            <div className="space-y-1.5">
+              <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+                ▶ Onde assistir
+              </span>
+              <div className="flex gap-1.5 flex-wrap">
+                {game.channels.slice(0, 2).map((ch, i) => (
+                  <ChannelBadge key={i} name={ch} />
+                ))}
+                {game.channels.length > 2 && (
+                  <span className="inline-flex items-center text-[10px] font-bold text-muted-foreground/70 bg-card/40 border border-border/30 rounded-md px-2 py-1">
+                    +{game.channels.length - 2}
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60 px-2 py-0.5 rounded border border-border/40 bg-muted/20 self-start inline-block">

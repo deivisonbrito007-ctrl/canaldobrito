@@ -85,15 +85,15 @@ function isCanalDoBrito(name: string) {
 type BadgeSize = "sm" | "md" | "lg";
 
 const SIZE_CLASSES: Record<BadgeSize, string> = {
-  sm: "text-[9px] px-1.5 py-0.5 gap-1 rounded-md",
-  md: "text-[10px] px-2 py-1 gap-1.5 rounded-lg",
-  lg: "text-[11px] px-2.5 py-1.5 gap-1.5 rounded-lg",
+  sm: "text-[10px] px-2 py-1 gap-1.5 rounded-md",
+  md: "text-[11px] px-2.5 py-1.5 gap-1.5 rounded-lg",
+  lg: "text-xs px-3 py-2 gap-2 rounded-lg",
 };
 
 const ICON_SIZE: Record<BadgeSize, string> = {
-  sm: "h-3 w-3",
-  md: "h-3.5 w-3.5",
-  lg: "h-4 w-4",
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
 };
 
 interface ChannelBadgeProps {
@@ -142,7 +142,6 @@ const ChannelIcon = ({
 
 export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>(
   ({ name, size = "md", className }, ref) => {
-    const isMobile = useIsMobile();
     const sizeCls = SIZE_CLASSES[size];
 
     if (isCanalDoBrito(name)) {
@@ -150,7 +149,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
         <span
           ref={ref}
           className={cn(
-            "inline-flex items-center font-bold shrink-0 border bg-gradient-to-r transition-all duration-200 hover:scale-105 hover:brightness-110",
+            "inline-flex items-center font-bold shrink-0 border bg-gradient-to-r transition-all duration-200 hover:scale-105 hover:brightness-110 whitespace-nowrap",
             sizeCls,
             "from-red-600/30 via-orange-600/25 to-amber-500/25 text-amber-200 border-amber-500/40 shadow-[0_0_14px_rgba(251,191,36,0.25)]",
             className
@@ -161,19 +160,18 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
             alt="Canal do Brito"
             className={cn("rounded-sm object-contain shrink-0", ICON_SIZE[size])}
           />
-          {isMobile ? "Brito" : name}
+          Canal do Brito
         </span>
       );
     }
 
     const config = matchChannel(name);
-    const displayName = isMobile && config.short ? config.short : name;
 
     return (
       <span
         ref={ref}
         className={cn(
-          "inline-flex items-center font-bold shrink-0 border bg-gradient-to-r transition-all duration-200 hover:scale-105 hover:brightness-110",
+          "inline-flex items-center font-bold shrink-0 border bg-gradient-to-r transition-all duration-200 hover:scale-105 hover:brightness-110 whitespace-nowrap",
           sizeCls,
           config.gradient,
           config.text,
@@ -183,7 +181,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
         )}
       >
         <ChannelIcon localLogo={config.localLogo} domain={config.domain} emoji={config.emoji} size={size} alt={`${name} logo`} />
-        {displayName}
+        {name}
       </span>
     );
   }
