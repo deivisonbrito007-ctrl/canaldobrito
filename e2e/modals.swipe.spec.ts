@@ -23,9 +23,10 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
     await page.goto(HARNESS_PATH);
     await expect(page.getByRole("heading", { name: "E2E Modal Harness" })).toBeVisible();
     await page.getByTestId("open-sheet").click();
-    await expect(page.getByRole("dialog", { name: "E2E Sample Title" })).toBeVisible();
-    // Aguarda animação de entrada estabilizar
-    await page.waitForTimeout(450);
+    const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    await expect(dialog).toBeVisible();
+    // Aguarda animação de entrada estabilizar via boundingBox (em vez de sleep fixo).
+    await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
   });
 
   const handleBox = async (page: import("@playwright/test").Page) => {
