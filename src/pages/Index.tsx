@@ -9,7 +9,6 @@ import { LivePageContent } from "@/components/public/LivePageContent";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
-import { SLUG_TO_TAB } from "@/lib/utils";
 import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/analytics";
 
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
