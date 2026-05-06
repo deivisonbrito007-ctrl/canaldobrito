@@ -1,67 +1,45 @@
 
-## Auditoria do Dashboard Admin
+## Atualizar página `/login` para alinhar com o branding
 
-### O que foi verificado
-- Fluxo de dados: `useAllBanners`, `useAllMovies`, `useAllSeries`, `useAllNewsReleases`, `useAllDailyGames(hoje)` — todos com `isLoading`, `isError`, `refetch`, `dataUpdatedAt`.
-- Componentes: `ContentHealthBar`, `ExpiredBannersAlert`, `ContentCharts` (Bar+Pie), `SportStatsFilter`, `UpcomingActivations`, `RecentActivity`, Quick Actions.
-- Suíte de testes: **72/72 passam** (`bunx vitest run src/pages/admin src/components/admin`).
-- Logs do console: limpos (apenas mensagem inócua `RESET_BLANK_CHECK` do harness).
+### Comparativo
 
-### Issues encontradas
-
-| # | Severidade | Problema |
-|---|---|---|
-| 1 | Médio | Card "Jogos Hoje" abre `/admin/banners?tab=programacao` mas o param `tab` não é lido em `AdminBanners` — abre sempre na 1ª aba. |
-| 2 | Médio | Quick Action "Programação" tem o mesmo problema. |
-| 3 | Médio (mobile) | `grid-cols-3` no stat grid → 5 cards quebram em 3+2, com o 4º/5º ocupando colunas desbalanceadas em telas pequenas. Em <360px o `text-2xl` corta. |
-| 4 | Baixo | Quick Actions com `grid-cols-3` em mobile gera 7 botões → última linha com 1 item solitário. |
-| 5 | Baixo | `getGreeting()` e `now` usam `new Date()` direto — viola memória "Lock all time/date logic to America/Sao_Paulo". |
-| 6 | Baixo | `useCountUp` não respeita `prefers-reduced-motion` (memória de acessibilidade). |
-| 7 | Baixo | Recharts loga warnings de width/height=0 nos testes (jsdom sem ResizeObserver) — ruído. |
-| 8 | Baixo | `lastUpdated` mostra apenas `HH:mm` sem label — usuários não sabem que é "última atualização". |
-| 9 | Baixo | Botão refresh não dá feedback visual durante refetch (sem spinner). |
-| 10 | Cobertura | Faltam testes para: navegação ao clicar em stat card, alerta de erro, botão refresh, estado loading dos stat cards. |
-
-### Plano de implementação
-
-**1. Roteamento de "Programação" (issues 1, 2)**
-- Em `src/pages/admin/AdminBanners.tsx`: ler `useSearchParams()` e mapear `?tab=programacao` para a aba correta no carregamento (e atualizar a URL ao trocar de aba).
-
-**2. Layout responsivo (issues 3, 4)**
-- Stat grid: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` (2 colunas em mobile <360px-mid evita corte; 3 em sm).
-- Reduzir número da contagem para `text-xl sm:text-2xl` quando muito grande.
-- Quick Actions: `grid-cols-2 sm:grid-cols-4` (linhas balanceadas com 7 itens → 2/2/2/1 em mobile, 4/3 em sm+).
-
-**3. Time zone (issue 5)**
-- Importar helper `getSPNow()`/`getSPDate()` de `@/lib/dateUtils` (criar se não existir uma versão simples) ou usar `getLocalDateString()` já existente. Saudação derivada de hora SP.
-
-**4. Reduced motion (issue 6)**
-- `useCountUp`: detectar `window.matchMedia('(prefers-reduced-motion: reduce)').matches` e setar `count = target` direto.
-
-**5. UX do refresh (issues 8, 9)**
-- Mostrar `Atualizado HH:mm` (label completo) em telas ≥sm; só `HH:mm` em <sm.
-- Botão refresh: aplicar `animate-spin` no ícone enquanto `isFetching` (somar `isFetching` dos 5 hooks).
-
-**6. Silenciar warnings de chart nos testes (issue 7)**
-- Em `src/test/setup.ts`: stub `ResizeObserver` global. Limpa o output.
-
-**7. Novos testes em `AdminDashboard.test.tsx`**
-- Click em stat card "Banners" navega para `/admin/banners` (`useNavigate` mock).
-- Render do alerta de erro quando `isError = true`.
-- Botão refresh chama todos os `refetch`.
-- Estado loading dos stat cards renderiza skeletons.
-
-**8. Sugestões adicionais (proposta — implemento se aprovado)**
-- **Sticky stat bar em mobile**: ao rolar, manter um mini-resumo no topo. *(skip por padrão — adiciona complexidade)*
-- **Indicador de "novo desde última visita"**: salvar `lastVisitedAt` em localStorage, marcar items criados depois com bullet. *(opcional)*
-- **Atalho de teclado** `R` para refresh. *(opcional)*
-
-Vou implementar **#1 a #7** (correções e melhorias core). Os adicionais (#8) ficam como sugestão; me avise se quer algum deles também.
+| Item | `/login` (atual) | `LoginModal` (já atualizado) | Decisão |
+|---|---|---|---|
+| Background | `bg-gradient-to-b ... via-secondary/20` (tom roxo do print) | dark com primary verde | Usar dark + ambient blobs verdes |
+| Botão CTA | shadcn padrão (sem cor primary verde) | `bg-primary` verde | `bg-primary` verde com glow |
+| Tipografia título | `font-display text-xl` | bold com primary destacado | `font-display text-2xl uppercase tracking-wider` |
+| Inputs | shadcn `Input` (visual roxo no print) | inputs custom dark com `bg-white/[0.04]` | Inputs custom para combinar com modal |
+| Logo | sem glow | inline com tema | Logo com halo verde sutil |
+| Suporte WhatsApp | ausente | presente | Adicionar |
+| iOS/mobile | sem `100dvh`, sem safe-area | usa `visualViewport` | Usar `min-h-[100dvh]`, áreas de toque ≥44px |
+| Validação | sem maxLength | sem | Adicionar `maxLength` (255 email / 128 senha) e `email.trim()` |
 
 ### Arquivos a editar
-- `src/pages/admin/AdminDashboard.tsx`
-- `src/pages/admin/AdminBanners.tsx` (apenas leitura de `?tab=`)
-- `src/test/setup.ts` (stub ResizeObserver)
-- `src/pages/admin/__tests__/AdminDashboard.test.tsx` (novos casos)
+- `src/pages/Login.tsx` — reescrita visual mantendo lógica atual (`signIn`, redirect `/admin`, toggle senha, `Navigate` se já admin).
+- `src/components/public/LoginModal.tsx` — pequenos ajustes pontuais para paridade:
+  - Adicionar `maxLength` nos inputs.
+  - `email.trim()` antes do `signIn`.
+  - Ícone `Loader2` no botão durante loading.
+  - Email placeholder consistente: `admin@britosolutions.tv` (alinhar com o site).
 
-Sem migrações de banco. Sem mudanças em RLS.
+### Mudanças de UI principais em `/login`
+- Container: `min-h-[100dvh]` + `bg-gradient from-background to-surface` + 2 ambient blobs `bg-primary/[0.06-0.08]`.
+- Card: `rounded-3xl border-white/[0.08] bg-card/90 backdrop-blur-xl` com glow externo verde.
+- Logo com halo verde (`bg-primary/20 blur-xl`).
+- Título "ADMIN LOGIN" em `font-display` uppercase tracking-wider.
+- Inputs custom dark (`bg-white/[0.04]`, focus ring verde).
+- Botão "Entrar": `bg-primary` (verde #00ff87) com `shadow-primary/20`, ícone de cadeado, `Loader2` quando carregando, `disabled` se email/senha vazios.
+- Divisor "ACESSO RESTRITO" igual ao modal.
+- Footer: link "← Voltar para a agenda" + linha "Problemas? Fale com o suporte" (WhatsApp).
+
+### Não muda
+- Lógica `useAuth().signIn()` e redirecionamento.
+- Rota `/login` em `App.tsx`.
+- Sem mudança de banco / RLS / auth providers.
+
+### Sugestões adicionais (opcionais — só se aprovar)
+- Caps Lock detector no campo senha (avisar quando ligado).
+- Rate limit visual: após 3 tentativas erradas, mostrar contador de cooldown (5s).
+- Lembrar email no `localStorage` (checkbox "Lembrar email").
+
+Por padrão **não** vou implementar as opcionais; me avise se quiser alguma.
