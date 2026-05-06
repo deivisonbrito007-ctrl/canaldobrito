@@ -1,127 +1,46 @@
-## Auditoria atual da aba Programação
+## Mudanças solicitadas
 
-Arquivos: `ScheduleTab.tsx` → `DailyGamesSection.tsx` (771 linhas, monolítico) + `DayStatsBar`, `NextGameHero`.
-
-### Pontos fortes (mantém)
-- Lógica de live, countdown e detecção de esporte está sólida (`gameUtils.ts` cobre 14 esportes).
-- Filtros acordeão (Esporte/Competição/Canal), reminders, push e collapsibles para Manhã/Tarde/Noite/Madrugada já funcionam.
-- Touch targets ≥44px em quase todos os botões.
-
-### Problemas identificados (UI/profissionalismo)
-1. **Cards visualmente "iguais"**: o esporte aparece só num badge minúsculo de 8px no topo. À distância tudo parece futebol. Não há identidade visual por esporte.
-2. **Hierarquia confusa**: badge esporte + badge competição + badge highlight + badge "em X" + badge "AO VIVO" + badge "FEM" + sino — até 6 elementos competindo por atenção na primeira linha em mobile 360px.
-3. **Cores aleatórias por competição** (`COMP_COLORS`) com dezenas de hex hardcoded. Não usa design tokens, conflita com tema dark.
-4. **Mobile <360px**: a linha de times (`Time A — 21:00 vs — Time B`) quebra com competições longas; o "vs" minúsculo se perde; competition_detail aparece duplicado em alguns layouts.
-5. **DayStatsBar redundante** com a linha de cabeçalho que já mostra "X jogos · Y ao vivo".
-6. **Sem indicação visual de quem está jogando agora** versus quem é próximo — só o badge "AO VIVO" pequeno.
-7. **Sem empty states por filtro**: se filtrar e não houver resultado, some tudo silenciosamente.
-8. **Acessibilidade**: alguns botões só com emoji sem label, contrastes border/40 muito sutis no dark.
+1. **Remover sino de notificação** dos cards na aba Programação.
+2. **Cards de canal mais profissionais e maiores** — sem abreviar nomes (sem "Param+", "Cazé", "Gplay", "Brito", "Apple", etc.).
 
 ## Plano
 
-### Etapa 1 — Refatoração estrutural
-Quebrar `DailyGamesSection.tsx` (771 linhas) em arquivos pequenos:
-- `schedule/GameCard.tsx`
-- `schedule/GameCardSportTheme.ts` (mapa central de cores/gradientes/ícones por esporte)
-- `schedule/PeriodGroup.tsx`
-- `schedule/TomorrowSection.tsx`
-- `schedule/ScheduleFilters.tsx`
-- `schedule/ScheduleHeader.tsx`
-- `DailyGamesSection.tsx` vira só orquestração (~150 linhas)
+### 1. GameCard — remover lembrete (sino)
+Em `src/components/public/schedule/GameCard.tsx`:
+- Remover import de `Bell`, `BellOff`, `useState`, `useCallback`.
+- Remover funções `getReminders`, `toggleReminder`.
+- Remover bloco do botão de sino (tanto o do header quando há live/isSoon, quanto o absoluto do canto superior direito).
+- Manter o badge de "AO VIVO" / "Começa em X" alinhado à esquerda (em vez de `justify-between`, virar `flex items-center`).
 
-Sem mudança de comportamento aqui — só organização para os testes ficarem focados.
+### 2. ChannelBadge — maior e sem abreviações
+Em `src/components/public/ChannelBadge.tsx`:
+- **Tamanhos aumentados** (size `md` é o usado nos cards):
+  - `sm`: text 9px → **10px**, padding mais generoso, ícone 12px → **14px**.
+  - `md`: text 10px → **11px**, padding `px-2.5 py-1.5`, ícone 14px → **16px**.
+  - `lg`: text 11px → **12px**, ícone 16px → **20px**.
+- **Sempre nome completo**: remover lógica `isMobile && config.short ? config.short : name` e parar de usar `short` no nome principal (mantém `short` no tipo só para não quebrar o map, mas não é mais usado para renderizar).
+- **Canal do Brito**: mostrar "Canal do Brito" também em mobile (era "Brito").
+- **Apple TV / Apple TV+ / Paramount+ / Cazé TV** etc. exibidos por extenso.
+- `whitespace-nowrap` adicionado para evitar quebra estranha em palavras curtas como "Prime Video".
 
-### Etapa 2 — Novo design dos cards (diferenciação por esporte)
-Cada esporte ganha **identidade visual completa**:
+### 3. Ajuste de layout para acomodar badges maiores
+Em `GameCard.tsx`:
+- Container de canais: trocar `slice(0, 3)` para `slice(0, 2)` (badges agora maiores), e ajustar o "+N" para ficar visualmente equilibrado.
+- Em telas ≥sm continua mostrando até 3.
 
-```text
-┌─────────────────────────────────────────┐
-│ ⚽ FUTEBOL │ Brasileirão · Rodada 12     │  ← faixa colorida do esporte
-├─────────────────────────────────────────┤
-│                                         │
-│  Flamengo            21:00       Palmeiras │
-│                       VS                │
-│  ─────────────       em 2h      ─────── │
-│                                         │
-│ 📺 Globo  Premiere  +1                  │
-└─────────────────────────────────────────┘
-```
+### 4. Atualizar testes
+- `GameCard.test.tsx`: remover testes do toggle de reminder + assertion de "+2" troca para "+3" (com 5 canais mostrando 2, sobram 3).
+- `ChannelBadge.test.tsx` (existente, já com 1 falha pré-existente): verificar se passa após nome completo.
 
-- **Faixa colorida superior** com gradiente do esporte (não só 3px — ~24px com label "FUTEBOL", "BASQUETE" etc.) e ícone grande.
-- **Paleta semântica por esporte** em `index.css` como tokens HSL: `--sport-football`, `--sport-basketball`, etc. Sem hex direto.
-- **Watermark sutil** do ícone do esporte no canto direito do card (opacidade 6%).
-- **Layout de times**: nomes em coluna lateral, hora central com countdown abaixo, "VS" só quando faz sentido (omitido em F1/MMA/Surf/etc.).
-- **Estado AO VIVO**: borda animada verde + selo "AO VIVO" maior + minuto da partida quando disponível.
-- **Estado destaque** (Champions, Brasileirão, etc.): glow sutil na borda + ícone 🔥 fixo no topo direito.
-- **Card variants** baseados em `cva`: `default | live | upcoming | highlight` para estados consistentes.
-
-### Etapa 3 — Header e stats consolidados
-- Substituir `DayStatsBar` + linha de header atual por um único **ScheduleHeader** com pills horizontais limpas:
-  ```text
-  [Hoje · Ter, 6 mai] [12 jogos] [3 AO VIVO ●] · [⚽12] [🏀3] [🎾2]
-  ```
-- Tudo em uma linha, com scroll horizontal só quando exceder.
-- Tipografia em Bebas Neue para os números (chama atenção sem pesar).
-
-### Etapa 4 — Empty states + feedback
-- Quando filtros não retornam resultado: mensagem dedicada com botão "Limpar filtros".
-- Quando próximo evento é >12h: esconder o `NextGameHero` (atualmente mostra sempre, fica esquisito de manhã sem jogos próximos).
-- Skeleton novo já refletindo o layout novo.
-
-### Etapa 5 — Compatibilidade mobile real
-Vou testar no browser nos viewports 320px, 360px, 390px, 430px:
-- Garantir nenhum `overflow-x` indesejado.
-- Times com nome longo: truncate com title atributo no hover/long-press.
-- Filtros: ainda scroll horizontal, mas com fade nas bordas indicando mais conteúdo.
-- Testar com 0 jogos, 1 jogo, 30 jogos, jogo longe (madrugada de amanhã), jogo ao vivo agora.
-
-### Etapa 6 — Testes
-Adicionar/atualizar:
-- `src/components/public/schedule/__tests__/GameCard.test.tsx` — render por esporte, estado live, estado upcoming, reminder toggle.
-- `src/components/public/schedule/__tests__/ScheduleFilters.test.tsx` — filtro por esporte/comp/canal, clear all.
-- `src/components/public/schedule/__tests__/PeriodGroup.test.tsx` — collapse/expand.
-- `src/components/public/__tests__/DailyGamesSection.test.tsx` — empty state, loading, com dados.
-- Manter os testes existentes (`useDailyGames`, `NextGameHero`) passando.
-
-Rodar a suíte completa via `lovable-exec test` após implementação.
-
-### Etapa 7 — Verificação final em preview
-Usar o browser tool para:
-1. Abrir aba Programação em 360x800 e 414x896.
-2. Screenshot de cada estado (loading, dados, filtrado, empty).
-3. Verificar console limpo (sem warnings de forwardRef etc.).
-4. Confirmar que reminders persistem em localStorage.
-
-## Arquivos criados / editados
-
-**Novos:**
+## Arquivos editados
 - `src/components/public/schedule/GameCard.tsx`
-- `src/components/public/schedule/GameCardSportTheme.ts`
-- `src/components/public/schedule/PeriodGroup.tsx`
-- `src/components/public/schedule/TomorrowSection.tsx`
-- `src/components/public/schedule/ScheduleFilters.tsx`
-- `src/components/public/schedule/ScheduleHeader.tsx`
-- `src/components/public/schedule/EmptyFilterState.tsx`
-- 4 arquivos de teste em `schedule/__tests__/`
-
-**Editados:**
-- `src/components/public/DailyGamesSection.tsx` (reduzido a orquestração)
-- `src/components/public/ScheduleTab.tsx` (sem mudança visível, garantir padding consistente)
-- `src/components/public/DayStatsBar.tsx` (removido — funcionalidade migrada para ScheduleHeader)
-- `src/components/public/NextGameHero.tsx` (esconder se >12h até próximo)
-- `src/index.css` (novos tokens `--sport-*` HSL)
-
-**Não muda:**
-- `src/lib/gameUtils.ts` — lógica de detecção e tempo já está boa
-- `src/hooks/useDailyGames.ts`, `usePushSubscription.ts`
-- Auth, banco, RLS
+- `src/components/public/ChannelBadge.tsx`
+- `src/components/public/schedule/__tests__/GameCard.test.tsx`
 
 ## Sugestões adicionais (não implemento sem aprovar)
 
-1. **Pin "Meus times"**: usuário marca times favoritos no localStorage e eles aparecem no topo da lista com destaque dourado.
-2. **Compartilhar jogo individual** via WhatsApp: botão de share no card que gera deep link `/s/jogo/{id}` (precisa rota e parser pra reabrir o card).
-3. **Notificação de gol** (não só lembrete): quando jogo está ao vivo e o status_short muda, dispara push curto. Já temos infra de push.
-4. **Modo "só meus canais"**: usuário marca quais canais tem (ex: Premiere, ESPN) e a aba esconde jogos sem transmissão acessível.
-5. **Resumo automático às 8h via push**: "Hoje: Flamengo vs Vasco 21h, NBA Finals 23h, F1 Mônaco 10h". Depende do edge function de push.
-6. **Modo TV (landscape)**: detecta orientação e mostra um grid 4 colunas otimizado para tablet/TV.
-7. **Indicador de "começou agora"**: jogo que ficou live nos últimos 5 min ganha um pulso especial verde durante esse intervalo.
+1. **Logo oficial em vez de favicon**: a maioria dos canais hoje usa favicon do Google (16-32px borrado quando esticado). Posso baixar SVGs/PNGs HD oficiais para os 10 mais comuns (ESPN, SporTV, Premiere, Globo, TNT, Cazé TV, DAZN, Disney+, Prime Video, Max) e colocar em `/public/channels/`. Os SVGs locais já têm prioridade no código.
+2. **Variante "compacta vs completa"**: numa próxima iteração, badge em hover/click expande pro nome completo ainda maior.
+3. **Linha dedicada "Onde assistir"**: separar canais do resto do card com label discreta tipo `▶ ASSISTIR EM:` para hierarquia mais clara.
+4. **Ordenar canais**: priorizar Canal do Brito sempre primeiro, depois canais abertos (Globo/Band/Record), depois fechados, depois streaming.
+5. **Tooltip em desktop** com info do canal ("Disponível na Sky/Claro/Vivo" etc.) — já temos infra de tooltip.
