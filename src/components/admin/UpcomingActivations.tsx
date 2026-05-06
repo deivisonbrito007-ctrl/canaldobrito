@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCountdown } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Image, Trophy, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 
 interface ScheduledItem {
   id: string;
