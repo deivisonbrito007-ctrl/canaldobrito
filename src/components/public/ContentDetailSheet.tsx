@@ -1,4 +1,5 @@
-import { useState, forwardRef, useCallback } from "react";
+import { useState, forwardRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls, type PanInfo } from "framer-motion";
