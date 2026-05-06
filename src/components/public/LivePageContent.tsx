@@ -185,16 +185,24 @@ const TimePill = ({ time, themeColor }: { time: string | null | undefined; theme
 );
 
 /* ── Upcoming Card (compact, sport-themed) ── */
-const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: number }) => {
+const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame; minutesUntil: number; isNext?: boolean }) => {
   const sportType = (game.sport_type || "football") as SportType;
   const emoji = SPORT_EMOJI[sportType] || "⚽";
   const theme = getSportTheme(sportType);
   const isEvent = isNonAdversarial(sportType) || !game.away_team || game.away_team === game.home_team;
   return (
     <div
-      className="rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card"
+      className={cn(
+        "relative rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card",
+        isNext && "ring-2 ring-primary/40 shadow-[0_0_18px_hsl(var(--primary)/0.18)]"
+      )}
       style={{ borderLeft: `3px solid ${theme.color}`, border: `1px solid ${theme.border}`, borderLeftWidth: 3 }}
     >
+      {isNext && (
+        <span className="absolute -top-2 left-3 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground text-[8px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_10px_hsl(var(--primary)/0.5)]">
+          ★ Próximo
+        </span>
+      )}
       <div className="flex flex-col items-center justify-center min-w-[42px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
         <span className="text-[8px] font-bold text-primary uppercase tracking-wide font-body leading-none">em</span>
         <span className="text-[13px] font-extrabold text-primary tabular-nums font-body leading-none mt-0.5">
@@ -502,21 +510,46 @@ export const LivePageContent = () => {
         </section>
       )}
 
-      {/* ─── Upcoming ─── */}
+      {/* ─── Upcoming — Premium Banner ─── */}
       {!isLoading && upcoming.length > 0 && (
-        <section className="space-y-2.5 animate-fade-up stagger-3">
-          <div className="px-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-extrabold text-foreground font-body uppercase tracking-tight">
-              Começam em breve
-            </h2>
-            <span className="text-[10px] bg-primary/15 text-primary rounded-full px-2 py-0.5 font-bold tabular-nums font-body">
-              {upcoming.length}
-            </span>
+        <section className="space-y-3 animate-fade-up stagger-3">
+          <div className="px-3">
+            <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent backdrop-blur-xl">
+              <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+              <div className="relative flex items-center gap-3 px-3 py-2.5">
+                <div className="shrink-0 flex items-center justify-center h-10 w-10 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_16px_hsl(var(--primary)/0.25)]">
+                  <Trophy className="h-5 w-5 text-primary" aria-hidden />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-[13px] font-extrabold text-foreground font-body uppercase tracking-[0.14em] leading-none">
+                      Começam em breve
+                    </h2>
+                    <span className="inline-flex items-center justify-center min-w-[22px] h-[18px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold tabular-nums shadow-[0_0_10px_hsl(var(--primary)/0.5)]">
+                      {upcoming.length}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[10px] font-medium text-foreground/70 font-body">
+                    Próximo em{" "}
+                    <span className="font-extrabold text-primary tabular-nums">{upcoming[0].diffMin}min</span>
+                    {" · "}
+                    {upcoming.length > 1 ? `${upcoming.length} eventos na próxima hora` : "1 evento na próxima hora"}
+                  </p>
+                  {/* Mini timeline progress (inverted: closer to start = fuller) */}
+                  <div className="mt-1.5 h-1 rounded-full bg-primary/10 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.max(8, 100 - (upcoming[0].diffMin / 60) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="px-3 space-y-1.5">
-            {upcoming.map(({ g, diffMin }) => (
-              <UpcomingCard key={g.id} game={g} minutesUntil={diffMin} />
+            {upcoming.map(({ g, diffMin }, i) => (
+              <UpcomingCard key={g.id} game={g} minutesUntil={diffMin} isNext={i === 0} />
             ))}
           </div>
         </section>

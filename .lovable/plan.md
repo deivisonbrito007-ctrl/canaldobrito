@@ -1,64 +1,42 @@
 ## Objetivo
 
-Padronizar todos os cards de jogos do portal (Ao Vivo + Próximo Evento) seguindo o mesmo padrão visual já aplicado na aba Programação: identidade por esporte (faixa colorida + emoji + label), badges de canal grandes com nome completo, e a seção "▶ Onde assistir".
+Transformar os dois headers de "próximos eventos" em banners premium com identidade visual forte, sem aumentar custo cognitivo. Hoje:
+- **Programação → "Amanhã"** (`TomorrowSection.tsx`): texto pequeno, cinza, fácil de perder.
+- **Ao Vivo → "Começam em breve"** (`LivePageContent.tsx`): título simples + chip pequeno, sem destaque.
 
-## Problemas detectados
+## Plano
 
-1. **`LivePageContent.tsx` → `LiveGameCard`**: usa um esquema de cores próprio (`SPORT_ACCENT`), badges `size="sm"`, máximo de 2 canais com `+N`, sem label "Onde assistir", e ainda exibe "VS" e "Sem TV" — inconsistente com Programação.
-2. **`LivePageContent.tsx` → `UpcomingCard`**: mostra apenas 1 canal pequeno, sem label.
-3. **`NextGameHero.tsx`**: mostra os canais sem o cabeçalho "▶ Onde assistir" e usa badges em tamanho default sem padronizar com o GameCard.
-4. Cores por esporte vivem em dois lugares (`SPORT_ACCENT` em LivePageContent e `GameCardSportTheme.ts` em schedule) — fonte de verdade duplicada.
+### 1. Banner premium "Começam em breve" (Ao Vivo)
+Substituir o header simples por um banner com:
+- Container `rounded-2xl` com gradiente `from-primary/15 via-primary/5 to-transparent`, borda `primary/30`, blur orb decorativo no canto, e linha de accent no topo.
+- Ícone `Trophy` em quadrado 40px com glow (`shadow-[0_0_16px_hsl(var(--primary)/0.25)]`).
+- Título uppercase tracking-wide + chip de contagem com glow `bg-primary text-primary-foreground`.
+- Subtítulo informativo dinâmico: **"Próximo em Xmin · N eventos na próxima hora"** (usa `upcoming[0].diffMin`).
+- Próximo evento (`upcoming[0]`) recebe um destaque sutil: borda primary mais forte e badge "PRÓXIMO" no `UpcomingCard` quando `index === 0`.
 
-## Plano de implementação
+### 2. Banner premium "Amanhã" (Programação)
+Reescrever o `CollapsibleTrigger` em `TomorrowSection.tsx`:
+- Card `rounded-2xl` com gradiente `from-accent/10 via-accent/5 to-transparent` (usa o verde do tema), borda `accent/25`, glow orb azulado.
+- Ícone `CalendarClock` (lucide) em quadrado 40px com tinta accent.
+- Linha 1: título "Amanhã" uppercase + chip de contagem com glow accent + chip de data formatada ("Qui, 7 mai").
+- Linha 2: stats compactas — "🌅 N · ☀️ N · 🌙 N" (manhã / tarde / noite) calculadas a partir de `grouped`.
+- Chevron animado à direita, ainda atua como toggle (mantém o `min-h-[44px]` para acessibilidade mobile).
+- Quando aberto, manter o `space-y-5` atual dentro do `CollapsibleContent`.
 
-### 1. Promover o tema de esporte a módulo compartilhado
-- Mover `src/components/public/schedule/GameCardSportTheme.ts` para `src/components/public/shared/sportTheme.ts` (mantendo um re-export no caminho antigo para não quebrar imports).
-- Garantir que `getSportTheme`, `isHighlightCompetition` e tipos sejam reutilizáveis.
+### 3. Polimentos compartilhados
+- Respeitar `motion-safe:` para o glow pulsante (não animar com `prefers-reduced-motion`).
+- Garantir contraste AA do texto secundário (`text-foreground/70` no lugar de `text-muted-foreground/50`).
+- Manter aria-labels descritivos: `aria-label="Mostrar jogos de amanhã, N jogos"` no trigger do colapsável.
 
-### 2. Criar um card unificado `LiveGameCard` baseado no `GameCard`
-- Reescrever `LiveGameCard` dentro de `LivePageContent.tsx` (ou extrair para `src/components/public/LiveGameCard.tsx`) reaproveitando o layout do `schedule/GameCard`:
-  - Faixa superior com gradiente do esporte + emoji + label do esporte + competição.
-  - Watermark grande do emoji no canto inferior direito (opacity 0.05).
-  - Pill "Ao vivo" (com `elapsed`) substituindo o badge atual.
-  - Times com `TimePill` no centro (mantendo "vs" pequeno como na Programação) ou layout single-event para esportes não adversariais.
-  - Bloco "▶ Onde assistir" com `ChannelBadge` em tamanho default (nomes completos), exibindo até 3 canais + `+N` quando exceder.
-  - Remover as abreviações antigas e o badge "Sem TV" → usar o mesmo "Sem transmissão confirmada" do GameCard.
+## Sugestões adicionais (peço aprovação antes de aplicar)
 
-### 3. Atualizar `UpcomingCard` (Começam em breve)
-- Manter o formato compacto (lista vertical), mas:
-  - Trocar o canal único pequeno por uma linha "▶ Onde assistir" com até 2 `ChannelBadge` em `size="sm"` e `+N` quando exceder.
-  - Garantir nome completo (sem `short`).
-  - Adicionar borda lateral colorida com a cor do esporte (`theme.color`) para reforçar a identidade.
-
-### 4. Corrigir `NextGameHero`
-- Acima da lista de canais, adicionar o cabeçalho:
-  ```tsx
-  <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
-    ▶ Onde assistir
-  </span>
-  ```
-- Aumentar o limite de 4 → mostrar até 3 canais + `+N`, mantendo `ChannelBadge` no tamanho default (nomes completos).
-- Quando não houver canais, manter a pill "Sem transmissão confirmada" com o mesmo estilo do GameCard.
-- Aplicar a faixa de cor do esporte no topo (substituir o gradiente fixo `from-primary` pela cor do `getSportTheme(sportType)`) para coerência visual com os outros cards.
-
-### 5. Testes
-- Atualizar `src/components/public/__tests__/` (e criar `LiveGameCard.test.tsx` se extraído) cobrindo:
-  - Renderização do label "Onde assistir" no hero e no card ao vivo.
-  - Exibição de nomes completos de canais.
-  - Layout single-event vs adversarial.
-- Rodar `bunx vitest run` e garantir que toda a suíte continua passando.
-
-## Sugestões adicionais (opcionais — peço aprovação antes de aplicar)
-
-1. **Compartilhar `SportIdentityStrip` como subcomponente** reutilizável para qualquer futuro card (ex.: detalhes de jogo, busca).
-2. **Pulse "começou agora"** (item 5 da lista anterior): jogos que entraram em live nos últimos 5 minutos ganham um glow verde extra no card Ao Vivo.
-3. **Resumo dos canais no header da seção "Acontecendo agora"** mostrando os 3 canais com mais jogos no momento (chip clicável que filtra).
-4. **Empty state contextual por filtro**: ao filtrar "Basquete" e não ter jogos, sugerir o próximo basquete via `NextGameHero` reduzido.
+1. **Mini-progresso temporal**: barra horizontal fina sob o banner "Começam em breve" mostrando posição do próximo evento na janela de 60 min (`diffMin / 60`).
+2. **Sticky header ao rolar**: o banner "Começam em breve" gruda no topo enquanto o usuário rola pelos cards live.
+3. **Botão "Ver tudo"** no banner Amanhã que abre direto a aba Programação no dia seguinte (evita o duplo clique de expandir + navegar).
+4. **Ícone do esporte mais próximo**: substituir o `Trophy` pelo emoji do esporte de `upcoming[0]` para reforçar contexto ("⚽ Começa em 7min").
 
 ## Arquivos afetados
 
-- `src/components/public/LivePageContent.tsx` (reescrita do `LiveGameCard` e `UpcomingCard`)
-- `src/components/public/NextGameHero.tsx` (label "Onde assistir" + tema do esporte)
-- `src/components/public/schedule/GameCardSportTheme.ts` → `src/components/public/shared/sportTheme.ts` (mover + re-export)
-- `src/components/public/schedule/GameCard.tsx` (atualizar import)
-- Novos/atualizados testes em `src/components/public/__tests__/`
+- `src/components/public/LivePageContent.tsx` (banner "Começam em breve" + destaque do primeiro `UpcomingCard`).
+- `src/components/public/schedule/TomorrowSection.tsx` (banner "Amanhã" com stats por período).
+- Sem alterações em testes (apenas visuais); rodar `bunx vitest run` para garantir 274/274.
