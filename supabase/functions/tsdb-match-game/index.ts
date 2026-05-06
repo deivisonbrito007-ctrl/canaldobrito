@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 const TSDB_KEY = Deno.env.get("THESPORTSDB_KEY") ?? "3";
-const TSDB_BASE = `https://www.thesportsdb.com/api/v1/json/${TSDB_KEY}`;
+const TSDB_V1 = `https://www.thesportsdb.com/api/v1/json/${TSDB_KEY}`;
+const TSDB_V2 = `https://www.thesportsdb.com/api/v2/json`;
 
 const SPORT_MAP: Record<string, string> = {
   football: "Soccer",
@@ -27,26 +28,47 @@ const SPORT_MAP: Record<string, string> = {
   golf: "Golf",
 };
 
+const SINGLE_EVENT_SPORTS = new Set(["tennis", "f1", "mma", "boxing", "cycling", "surf", "swimming", "golf"]);
+
+const ABBR: Record<string, string> = {
+  "ind": "independiente", "dep": "deportivo", "depor": "deportivo",
+  "univ": "universidad", "u": "universitario", "ac": "academia",
+  "atl": "atletico", "atle": "atletico", "spt": "sporting",
+  "rb": "red bull", "est": "estudiantes", "bar": "barcelona",
+  "barca": "barcelona", "b": "bayern", "m": "montevideo",
+  "intl": "international", "int": "internacional", "inter": "internazionale",
+  "psg": "paris saint germain", "man": "manchester",
+};
+
 const STOP = new Set([
   "fc","cf","ec","sc","ac","cd","sa","aa","fk","sk","club","clube",
   "de","do","da","dos","das","the","united","city","atletico","atlético",
-  "gremio","grêmio","futebol","football",
+  "gremio","grêmio","futebol","football","del","la","el","los","las",
 ]);
 
-const norm = (s: string) =>
-  (s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+const COUNTRY_SUFFIX = /[\s-]+(uru|equ|arg|bra|chi|col|par|per|ven|bol|usa|esp|por|ita|fra|ger|eng|mex|rj|sp|mg|rs|pr|sc|ba|ce|pe|am|go|al|w)$/i;
+
+function norm(s: string): string {
+  if (!s) return "";
+  let cleaned = s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (let i = 0; i < 3; i++) {
+    const after = cleaned.replace(COUNTRY_SUFFIX, "");
+    if (after === cleaned) break;
+    cleaned = after;
+  }
+  return cleaned
     .replace(/[^a-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .map((w) => ABBR[w] || w)
+    .join(" ")
     .split(/\s+/)
     .filter((w) => w && !STOP.has(w))
     .join(" ")
     .trim();
+}
 
 function similarity(a: string, b: string): number {
-  const A = norm(a);
-  const B = norm(b);
+  const A = norm(a), B = norm(b);
   if (!A || !B) return 0;
   if (A === B) return 1;
   if (A.includes(B) || B.includes(A)) return 0.92;
@@ -58,12 +80,12 @@ function similarity(a: string, b: string): number {
   return common / Math.max(aw.size, bw.size);
 }
 
-export async function fetchEventsForDate(date: string, sport: string): Promise<any[]> {
+async function fetchEventsForDate(date: string, sport: string): Promise<any[]> {
   const collected: any[] = [];
   const seen = new Set<string>();
   const urls = [
-    `${TSDB_BASE}/eventsday.php?d=${date}&s=${encodeURIComponent(sport)}`,
-    `${TSDB_BASE}/eventsday.php?d=${date}`,
+    `${TSDB_V1}/eventsday.php?d=${date}&s=${encodeURIComponent(sport)}`,
+    `${TSDB_V1}/eventsday.php?d=${date}`,
   ];
   for (const url of urls) {
     try {
@@ -83,19 +105,43 @@ export async function fetchEventsForDate(date: string, sport: string): Promise<a
   return collected;
 }
 
-export function rankCandidates(game: { home_team: string; away_team: string | null }, events: any[]) {
+async function fetchLivescoreV2(sport?: string): Promise<any[]> {
+  try {
+    const path = sport ? `/livescore/${encodeURIComponent(sport)}` : `/livescore/all`;
+    const r = await fetch(`${TSDB_V2}${path}`, {
+      headers: { "X-API-KEY": TSDB_KEY },
+    });
+    if (!r.ok) return [];
+    const j = await r.json();
+    return j?.livescore || j?.events || [];
+  } catch {
+    return [];
+  }
+}
+
+function rankCandidates(
+  game: { home_team: string; away_team: string | null; sport_type?: string | null },
+  events: any[],
+) {
+  const isSingle = SINGLE_EVENT_SPORTS.has(game.sport_type || "") || !game.away_team;
   return events
     .map((ev) => {
-      const homeSim = similarity(game.home_team, ev.strHomeTeam || "");
-      const awaySim = similarity(game.away_team || "", ev.strAwayTeam || "");
-      const swapped =
-        (similarity(game.home_team, ev.strAwayTeam || "") +
-          similarity(game.away_team || "", ev.strHomeTeam || "")) / 2;
-      const score = Math.max((homeSim + awaySim) / 2, swapped);
+      let score = 0;
+      if (isSingle) {
+        score = Math.max(
+          similarity(game.home_team, ev.strEvent || ""),
+          similarity(game.home_team, ev.strHomeTeam || ""),
+        );
+      } else {
+        const a = (similarity(game.home_team, ev.strHomeTeam || "") + similarity(game.away_team || "", ev.strAwayTeam || "")) / 2;
+        const b = (similarity(game.home_team, ev.strAwayTeam || "") + similarity(game.away_team || "", ev.strHomeTeam || "")) / 2;
+        score = Math.max(a, b);
+      }
       return {
         id: ev.idEvent,
         home: ev.strHomeTeam,
         away: ev.strAwayTeam,
+        event: ev.strEvent,
         league: ev.strLeague,
         time: ev.strTime,
         score,
@@ -131,15 +177,24 @@ Deno.serve(async (req) => {
     if (error || !game) throw new Error(error?.message || "game not found");
 
     const tsdbSport = SPORT_MAP[game.sport_type || "football"] || "Soccer";
-    const events = await fetchEventsForDate(game.date, tsdbSport);
-    const keyHint = TSDB_KEY.length > 4 ? `${TSDB_KEY.slice(0, 2)}…(${TSDB_KEY.length})` : TSDB_KEY;
-    console.log(`[match] key=${keyHint} ${game.home_team} vs ${game.away_team} (${tsdbSport}) — ${events.length} events on ${game.date}`);
 
-    const candidates = rankCandidates(game, events);
-    console.log(`[match] top:`, JSON.stringify(candidates.slice(0, 3)));
+    // 1) eventsday
+    const events = await fetchEventsForDate(game.date, tsdbSport);
+    let candidates = rankCandidates(game, events);
+
+    // 2) Fallback: v2 livescore filtered by sport
+    if (!candidates[0] || candidates[0].score < 0.65) {
+      const live = await fetchLivescoreV2(tsdbSport);
+      const liveCandidates = rankCandidates(game, live);
+      if (liveCandidates[0] && (!candidates[0] || liveCandidates[0].score > candidates[0].score)) {
+        candidates = liveCandidates;
+      }
+    }
+
+    console.log(`[match] ${game.home_team} vs ${game.away_team || "(single)"} (${tsdbSport}) top:`, JSON.stringify(candidates.slice(0, 3)));
 
     const best = candidates[0];
-    if (best && best.score >= 0.8) {
+    if (best && best.score >= 0.65) {
       await supabase
         .from("daily_games")
         .update({ external_id: `tsdb:${best.id}` })

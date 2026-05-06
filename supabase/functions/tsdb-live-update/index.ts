@@ -28,10 +28,44 @@ const SPORT_MAP: Record<string, string> = {
   golf: "Golf",
 };
 
-const STOP = new Set(["fc","cf","ec","sc","ac","cd","sa","aa","fk","sk","club","clube","de","do","da","dos","das","the","united","city","atletico","atlético","gremio","grêmio","futebol","football"]);
-const norm = (s: string) =>
-  (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && !STOP.has(w)).join(" ").trim();
+const SINGLE_EVENT_SPORTS = new Set(["tennis", "f1", "mma", "boxing", "cycling", "surf", "swimming", "golf"]);
+
+const ABBR: Record<string, string> = {
+  "ind": "independiente", "dep": "deportivo", "depor": "deportivo",
+  "univ": "universidad", "u": "universitario", "ac": "academia",
+  "atl": "atletico", "atle": "atletico", "spt": "sporting",
+  "rb": "red bull", "est": "estudiantes", "bar": "barcelona",
+  "barca": "barcelona", "b": "bayern", "m": "montevideo",
+  "intl": "international", "int": "internacional", "inter": "internazionale",
+  "psg": "paris saint germain", "man": "manchester",
+};
+
+const STOP = new Set([
+  "fc","cf","ec","sc","ac","cd","sa","aa","fk","sk","club","clube",
+  "de","do","da","dos","das","the","united","city","atletico","atlético",
+  "gremio","grêmio","futebol","football","del","la","el","los","las",
+]);
+
+const COUNTRY_SUFFIX = /[\s-]+(uru|equ|arg|bra|chi|col|par|per|ven|bol|usa|esp|por|ita|fra|ger|eng|mex|rj|sp|mg|rs|pr|sc|ba|ce|pe|am|go|al|w)$/i;
+
+function norm(s: string): string {
+  if (!s) return "";
+  let cleaned = s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (let i = 0; i < 3; i++) {
+    const after = cleaned.replace(COUNTRY_SUFFIX, "");
+    if (after === cleaned) break;
+    cleaned = after;
+  }
+  return cleaned
+    .replace(/[^a-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .map((w) => ABBR[w] || w)
+    .join(" ")
+    .split(/\s+/)
+    .filter((w) => w && !STOP.has(w))
+    .join(" ")
+    .trim();
+}
 
 function similarity(a: string, b: string): number {
   const A = norm(a), B = norm(b);
@@ -44,6 +78,19 @@ function similarity(a: string, b: string): number {
   let common = 0;
   for (const w of aw) if (bw.has(w)) common++;
   return common / Math.max(aw.size, bw.size);
+}
+
+function bestScore(g: { home_team: string; away_team: string | null; sport_type?: string | null }, e: any): number {
+  const isSingle = SINGLE_EVENT_SPORTS.has(g.sport_type || "") || !g.away_team;
+  if (isSingle) {
+    return Math.max(
+      similarity(g.home_team, e.strEvent || ""),
+      similarity(g.home_team, e.strHomeTeam || ""),
+    );
+  }
+  const a = (similarity(g.home_team, e.strHomeTeam || "") + similarity(g.away_team || "", e.strAwayTeam || "")) / 2;
+  const b = (similarity(g.home_team, e.strAwayTeam || "") + similarity(g.away_team || "", e.strHomeTeam || "")) / 2;
+  return Math.max(a, b);
 }
 
 function todaySaoPaulo(): string {
@@ -91,13 +138,14 @@ async function fetchEventsForDate(date: string, sport: string): Promise<any[]> {
   return collected;
 }
 
-async function fetchLivescoreV2(): Promise<any[]> {
+async function fetchLivescore(sport?: string): Promise<any[]> {
   try {
-    const r = await fetch(`${TSDB_V2}/livescore/all`, {
+    const path = sport ? `/livescore/${encodeURIComponent(sport)}` : `/livescore/all`;
+    const r = await fetch(`${TSDB_V2}${path}`, {
       headers: { "X-API-KEY": TSDB_KEY },
     });
     if (!r.ok) {
-      console.warn("[live] v2 livescore status", r.status);
+      console.warn(`[live] v2 livescore${sport ? `/${sport}` : "/all"} status`, r.status);
       return [];
     }
     const j = await r.json();
@@ -120,7 +168,6 @@ Deno.serve(async (req) => {
     const today = todaySaoPaulo();
     const yesterday = new Date(Date.parse(today) - 86400000).toISOString().slice(0, 10);
 
-    // 1) All games today/yesterday (linked or not)
     const { data: games, error } = await supabase
       .from("daily_games")
       .select("id, external_id, date, game_time, home_team, away_team, sport_type, live_status")
@@ -128,11 +175,17 @@ Deno.serve(async (req) => {
       .neq("archived", true);
     if (error) throw error;
 
-    // 2) Pre-fetch v2 livescore once (covers running matches across sports)
-    const livescore = await fetchLivescoreV2();
-    console.log(`[live] v2 livescore returned ${livescore.length} events`);
+    // Pre-fetch livescore by unique sport
+    const sportsNeeded = new Set<string>();
+    for (const g of (games || [])) {
+      sportsNeeded.add(SPORT_MAP[g.sport_type || "football"] || "Soccer");
+    }
+    const liveBySport: Record<string, any[]> = {};
+    for (const sp of sportsNeeded) {
+      liveBySport[sp] = await fetchLivescore(sp);
+      console.log(`[live] v2 livescore/${sp} → ${liveBySport[sp].length} events`);
+    }
 
-    // 3) Pre-fetch eventsday (Soccer + all) for both dates — used for auto-link of unlinked games
     const dayCache: Record<string, any[]> = {};
     async function getDay(date: string, sport: string) {
       const k = `${date}|${sport}`;
@@ -141,55 +194,59 @@ Deno.serve(async (req) => {
     }
 
     const updates: any[] = [];
+    const unmatched: string[] = [];
     let autoLinked = 0;
 
     for (const g of (games || [])) {
       try {
         let extId = (g.external_id || "").replace(/^tsdb:/, "");
         let ev: any = null;
+        const tsdbSport = SPORT_MAP[g.sport_type || "football"] || "Soccer";
+        const livescore = liveBySport[tsdbSport] || [];
 
-        // Try livescore by team-name match first
+        // 1) livescore (sport-filtered)
         if (livescore.length > 0) {
-          const found = livescore
-            .map((e: any) => {
-              const a = (similarity(g.home_team, e.strHomeTeam || "") + similarity(g.away_team || "", e.strAwayTeam || "")) / 2;
-              const b = (similarity(g.home_team, e.strAwayTeam || "") + similarity(g.away_team || "", e.strHomeTeam || "")) / 2;
-              return { e, score: Math.max(a, b) };
-            })
-            .filter((c) => c.score >= 0.8)
+          const ranked = livescore
+            .map((e: any) => ({ e, score: bestScore(g, e) }))
+            .filter((c) => c.score >= 0.65)
             .sort((a, b) => b.score - a.score)[0];
-          if (found) {
-            ev = found.e;
+          if (ranked) {
+            ev = ranked.e;
             if (!extId && ev.idEvent) {
               extId = String(ev.idEvent);
               await supabase.from("daily_games").update({ external_id: `tsdb:${extId}` }).eq("id", g.id);
               autoLinked++;
+              console.log(`[live] auto-linked "${g.home_team} vs ${g.away_team}" → "${ev.strEvent || `${ev.strHomeTeam} vs ${ev.strAwayTeam}`}" (${ranked.score.toFixed(2)})`);
             }
           }
         }
 
-        // If still unlinked, try auto-match via eventsday (only when game is in live window ±15min)
+        // 2) eventsday fallback
         if (!extId && !ev) {
-          const tsdbSport = SPORT_MAP[g.sport_type || "football"] || "Soccer";
           const evs = await getDay(g.date, tsdbSport);
-          const candidates = evs
-            .map((e: any) => {
-              const a = (similarity(g.home_team, e.strHomeTeam || "") + similarity(g.away_team || "", e.strAwayTeam || "")) / 2;
-              const b = (similarity(g.home_team, e.strAwayTeam || "") + similarity(g.away_team || "", e.strHomeTeam || "")) / 2;
-              return { e, score: Math.max(a, b) };
-            })
-            .filter((c) => c.score >= 0.8)
-            .sort((a, b) => b.score - a.score);
-          const best = candidates[0];
-          if (best) {
-            extId = String(best.e.idEvent);
+          const ranked = evs
+            .map((e: any) => ({ e, score: bestScore(g, e) }))
+            .filter((c) => c.score >= 0.65)
+            .sort((a, b) => b.score - a.score)[0];
+          if (ranked) {
+            extId = String(ranked.e.idEvent);
             await supabase.from("daily_games").update({ external_id: `tsdb:${extId}` }).eq("id", g.id);
             autoLinked++;
-            ev = best.e;
+            ev = ranked.e;
+            console.log(`[live] day-linked "${g.home_team} vs ${g.away_team}" → "${ev.strEvent || `${ev.strHomeTeam} vs ${ev.strAwayTeam}`}" (${ranked.score.toFixed(2)})`);
+          } else {
+            const top = evs
+              .map((e: any) => ({ e, score: bestScore(g, e) }))
+              .sort((a, b) => b.score - a.score)[0];
+            if (top && top.score > 0.3) {
+              unmatched.push(`"${g.home_team} vs ${g.away_team}" → top "${top.e.strEvent || `${top.e.strHomeTeam} vs ${top.e.strAwayTeam}`}" (${top.score.toFixed(2)})`);
+            } else {
+              unmatched.push(`"${g.home_team} vs ${g.away_team}" → no candidate`);
+            }
           }
         }
 
-        // If we have an extId but no ev yet, fetch lookupevent
+        // 3) lookup by extId
         if (extId && !ev) {
           const r = await fetch(`${TSDB_V1}/lookupevent.php?id=${extId}`);
           const j = await r.json();
@@ -223,9 +280,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ updated: updates.length, autoLinked, livescoreCount: livescore.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (unmatched.length > 0) {
+      console.log(`[live] unmatched (${unmatched.length}):\n  - ${unmatched.slice(0, 30).join("\n  - ")}`);
+    }
+
+    return new Response(
+      JSON.stringify({
+        updated: updates.length,
+        autoLinked,
+        unmatchedCount: unmatched.length,
+        livescoreSports: Object.fromEntries(Object.entries(liveBySport).map(([k, v]) => [k, v.length])),
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
