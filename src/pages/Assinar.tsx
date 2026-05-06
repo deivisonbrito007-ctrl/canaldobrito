@@ -35,19 +35,21 @@ type ChannelTileItem = {
   border: string;
 };
 
+// Logos reais buscados via CDN (Clearbit → Google Favicons → DuckDuckGo → emoji).
+// Sem SVGs caseiros: usamos a marca oficial servida pelos próprios sites.
 const DEFAULT_TV_CHANNELS: ChannelTileItem[] = [
-  { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg",       emoji: "📺", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "SporTV",     domain: "sportv.globo.com",   localLogo: "/channels/sportv.svg",     emoji: "⚽", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Globo",      domain: "globo.com",          localLogo: "/channels/globo.svg",      emoji: "🌐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg",   emoji: "⭐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "TNT Sports", domain: "tntsports.com.br",   localLogo: "/channels/tnt-sports.svg", emoji: "💥", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Band",       domain: "band.uol.com.br",    localLogo: "/channels/band.svg",       emoji: "📡", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg",     emoji: "🎮", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Record",     domain: "recordtv.r7.com",    localLogo: "/channels/record.svg",     emoji: "📺", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg",       emoji: "🐐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Space",      domain: "tntsports.com.br",   localLogo: "/channels/space.svg",      emoji: "🚀", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg",       emoji: "🥊", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",    emoji: "▶️", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "ESPN",       domain: "espn.com",           emoji: "📺", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "SporTV",     domain: "sportv.globo.com",   emoji: "⚽", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Globo",      domain: "globo.com",          emoji: "🌐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Premiere",   domain: "premiere.globo.com", emoji: "⭐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "TNT Sports", domain: "tntsports.com.br",   emoji: "💥", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Band",       domain: "band.uol.com.br",    emoji: "📡", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "CazéTV",     domain: "cazetv.com.br",      emoji: "🎮", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Record",     domain: "recordtv.r7.com",    emoji: "📺", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Canal GOAT", domain: "canalgoat.com",      emoji: "🐐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Space",      domain: "tntsports.com.br",   emoji: "🚀", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "DAZN",       domain: "dazn.com",           emoji: "🥊", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "YouTube",    domain: "youtube.com",        emoji: "▶️", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
 ];
 
 const buildMarqueeItems = (channels: ChannelTileItem[]) => {
