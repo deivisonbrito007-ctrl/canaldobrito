@@ -264,38 +264,28 @@ const Assinar = () => {
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
               {marqueeItems.map((item, i) => (
-                item.type === "app" ? (
-                  <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center p-2 relative shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)]">
-                      <img src={(item as any).icon} alt={`Logo ${item.name}`} loading="lazy" width={48} height={48} decoding="async" className="w-full h-full object-contain" />
-                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-body text-center w-14 sm:w-16 leading-tight">{item.name}</span>
-                  </div>
-                ) : (
-                  <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border border-white/10 flex flex-col items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative ${(item as any).bg}`}
+                <div key={`tile-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                  <div
+                    className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 flex flex-col items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative ${item.bg}`}
+                  >
+                    <span
+                      className={`leading-none ${item.fg} ${item.size || "text-[14px]"} ${item.weight || "font-black"} ${item.italic ? "italic" : ""} ${item.font || "font-display"} ${item.tracking || "tracking-tight"}`}
                     >
-                      <span
-                        className={`leading-none tracking-tight ${(item as any).fg} ${(item as any).size || "text-[14px]"} ${(item as any).weight || "font-black"} ${(item as any).italic ? "italic" : ""} ${(item as any).font || "font-display"}`}
-                      >
-                        {(item as any).label}
-                      </span>
-                      {(item as any).sub && (
-                        <span
-                          className={`text-[7px] font-black tracking-[0.15em] mt-0.5 ${(item as any).fg}`}
-                        >
-                          {(item as any).sub}
-                        </span>
-                      )}
-                      <span className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent opacity-40" aria-hidden="true" />
-                    </div>
-                    <span className="text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight text-muted-foreground">
-                      {item.name}
+                      {item.label}
                     </span>
+                    {item.sub && (
+                      <span
+                        className={`text-[8px] font-black tracking-[0.18em] mt-0.5 leading-none ${item.subFg || item.fg}`}
+                      >
+                        {item.sub}
+                      </span>
+                    )}
+                    <span className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent opacity-30" aria-hidden="true" />
                   </div>
-                )
+                  <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
+                    {item.name}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
