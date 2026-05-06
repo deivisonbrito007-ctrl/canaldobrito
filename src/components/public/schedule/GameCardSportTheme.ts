@@ -2,7 +2,7 @@ import type { SportType } from "@/lib/gameUtils";
 
 /** Centralized visual theme per sport.
  *  Uses HSL CSS variables defined in index.css (--sport-*).
- *  Only Tailwind arbitrary `bg-[hsl(var(--...))]` style strings here. */
+ *  Values are emitted as inline style strings (not Tailwind classes). */
 export interface SportTheme {
   /** Bright HSL color string `hsl(var(--sport-x))` */
   color: string;
