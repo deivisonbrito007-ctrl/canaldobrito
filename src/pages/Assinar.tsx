@@ -227,8 +227,8 @@ const Assinar = () => {
         <section className="grid grid-cols-3 gap-3">
           {[
             { val: "5.000+", label: "Clientes" },
-            { val: "5.000+", label: "Canais" },
-            { val: "4.9 ★", label: "Avaliação" },
+            { val: "+10 mil", label: "Títulos" },
+            { val: "4.9 ★",  label: "Avaliação" },
           ].map(({ val, label }) => (
             <div key={label} className="glass-panel p-3 text-center">
               <p className="font-display text-xl sm:text-2xl text-primary">{val}</p>
@@ -239,17 +239,24 @@ const Assinar = () => {
 
         {/* Streaming Apps - Carousel */}
         <section className="glass-panel p-5 space-y-4 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-destructive animate-pulse-live" />
-              <h2 className="font-display text-xl text-foreground tracking-wide">Streaming & TV ao Vivo</h2>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-destructive animate-pulse-live" />
+                <h2 className="font-display text-xl text-foreground tracking-wide">Streaming &amp; TV ao Vivo</h2>
+              </div>
+              <p className="text-[11px] text-muted-foreground font-body mt-1 ml-4">
+                Tudo em um só lugar — sem precisar de várias contas.
+              </p>
             </div>
-            <span className="text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-2.5 py-1">
+            <span className="text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-2.5 py-1 shrink-0 mt-0.5">
               +10.000 títulos
             </span>
           </div>
           <div
             className="overflow-hidden marquee-container marquee-mask"
+            role="region"
+            aria-label="Plataformas e canais inclusos"
             onTouchStart={pauseMarquee}
             onTouchEnd={resumeMarquee}
           >
@@ -257,16 +264,21 @@ const Assinar = () => {
               {MARQUEE_ITEMS.map((item, i) => (
                 item.type === "app" ? (
                   <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-surface-2 border border-border flex items-center justify-center p-2 relative">
-                      <img src={(item as any).icon} alt={item.name} loading="lazy" width={48} height={48} className="w-full h-full object-contain" />
-                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center p-2 relative shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)]">
+                      <img src={(item as any).icon} alt={`Logo ${item.name}`} loading="lazy" width={48} height={48} decoding="async" className="w-full h-full object-contain" />
+                      <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                     </div>
                     <span className="text-[9px] text-muted-foreground font-body text-center w-14 sm:w-16 leading-tight">{item.name}</span>
                   </div>
                 ) : (
                   <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center ${(item as any).bg} ${(item as any).border}`}>
-                      <span className="text-2xl">{(item as any).emoji}</span>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center p-2 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
+                      <ChannelLogo
+                        localLogo={(item as any).localLogo}
+                        domain={(item as any).domain}
+                        emoji={(item as any).emoji}
+                        alt={`Logo ${item.name}`}
+                      />
                     </div>
                     <span className={`text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight ${(item as any).text}`}>{item.name}</span>
                   </div>
@@ -274,19 +286,20 @@ const Assinar = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-center gap-4 sm:gap-6 pt-1">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[10px] text-muted-foreground font-body">Atualizado diariamente</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[10px] text-muted-foreground font-body">Full HD & 4K</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground font-body">Multi-telas</span>
-            </div>
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            {[
+              { icon: CheckCircle2, label: "Atualizado diariamente", primary: true },
+              { icon: Zap,          label: "Full HD & 4K",            primary: true },
+              { icon: Monitor,      label: "Multi-telas",             primary: false },
+            ].map(({ icon: Icon, label, primary }) => (
+              <div
+                key={label}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2"
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${primary ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="text-[10px] text-muted-foreground font-body leading-tight text-center">{label}</span>
+              </div>
+            ))}
           </div>
         </section>
 
