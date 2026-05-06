@@ -32,31 +32,27 @@ for (const { name, device } of iosProfiles) {
       const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
       await expect(dialog).toBeVisible();
 
-      // Aguarda animação assentar e valida que o transform final é estável (snap).
-      const transformStart = await dialog.evaluate((el) => getComputedStyle(el).transform);
-      await page.waitForTimeout(450);
-      const transformSettled = await dialog.evaluate((el) => getComputedStyle(el).transform);
-      expect(transformSettled).toBe(
-        await dialog.evaluate((el) => getComputedStyle(el).transform),
-      );
-      // sanity: depois de assentar não está em estado inicial off-screen
-      expect(transformSettled).not.toBe("");
+      // Snap pronto = bounding box estável por várias amostras consecutivas.
+      const settled = await waitForStable(page, dialog, {
+        samples: 5,
+        thresholdPx: 0.5,
+        timeoutMs: 2_500,
+      });
+      expect(settled.height).toBeGreaterThan(0);
+      expect(settled.width).toBeGreaterThan(0);
 
-      // Z-index acima do nav
+      // Z-index acima do nav.
       const nav = page.locator("nav").first();
       const dz = Number(await dialog.evaluate((el) => getComputedStyle(el).zIndex));
       const nz = Number(await nav.evaluate((el) => getComputedStyle(el).zIndex));
       expect(dz).toBeGreaterThan(nz);
 
-      // O fundo do sheet cobre a área onde a BottomNav fica (visualmente sobre).
-      const dialogBox = await dialog.boundingBox();
+      // O sheet deve sobrepor verticalmente a faixa da BottomNav.
       const navBox = await nav.boundingBox();
-      expect(dialogBox).toBeTruthy();
       expect(navBox).toBeTruthy();
-      if (dialogBox && navBox) {
-        // o dialog deve sobrepor verticalmente a faixa da nav
-        const overlap = Math.min(dialogBox.y + dialogBox.height, navBox.y + navBox.height)
-          - Math.max(dialogBox.y, navBox.y);
+      if (navBox) {
+        const overlap = Math.min(settled.y + settled.height, navBox.y + navBox.height)
+          - Math.max(settled.y, navBox.y);
         expect(overlap).toBeGreaterThan(0);
       }
     });
