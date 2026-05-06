@@ -156,8 +156,9 @@ export const useInsertDailyGames = () => {
       const dates = [...new Set(intraDeduped.map((g) => g.date))];
       const { data: existing, error: fetchErr } = await supabase
         .from("daily_games")
-        .select("home_team, away_team, game_time, date")
-        .in("date", dates);
+        .select("home_team, away_team, game_time, date, sport_type")
+        .in("date", dates)
+        .eq("archived", false);
       if (fetchErr) throw fetchErr;
 
       const existingKeys = new Set(
@@ -252,7 +253,8 @@ export const useDeleteDailyGamesByDate = () => {
 export async function fetchExistingGameKeys(date: string): Promise<Set<string>> {
   const { data } = await supabase
     .from("daily_games")
-    .select("home_team, away_team, game_time")
-    .eq("date", date);
+    .select("home_team, away_team, game_time, sport_type")
+    .eq("date", date)
+    .eq("archived", false);
   return new Set((data || []).map((g: any) => gameKey(g)));
 }
