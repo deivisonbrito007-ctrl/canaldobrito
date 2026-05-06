@@ -174,12 +174,15 @@ export const useInsertDailyGames = () => {
       const dbSkipped = intraDeduped.length - unique.length;
       const skipped = dbSkipped + intraBatchSkipped;
 
+      let insertedIds: string[] = [];
       if (unique.length > 0) {
         const sanitized = unique.map(sanitizeGame);
-        const { error } = await supabase.from("daily_games").insert(sanitized as any);
+        const { data: insertedRows, error } = await supabase
+          .from("daily_games")
+          .insert(sanitized as any)
+          .select("id");
         if (error) {
           // PG 23505 = unique_violation. Race condition or hidden duplicate.
-          // Don't blow up with a cryptic message — surface it gracefully.
           if ((error as any).code === "23505") {
             toast.warning(
               "Alguns jogos já existem com data, horário e times idênticos. Foram ignorados."
@@ -188,7 +191,28 @@ export const useInsertDailyGames = () => {
           }
           throw error;
         }
+        insertedIds = (insertedRows || []).map((r: any) => r.id);
       }
+
+      // Auto-vínculo TheSportsDB em background (não bloqueia o insert).
+      if (insertedIds.length > 0) {
+        (async () => {
+          let matched = 0;
+          for (const id of insertedIds) {
+            try {
+              const { data } = await supabase.functions.invoke("tsdb-match-game", { body: { gameId: id } });
+              if (data?.matched) matched++;
+            } catch (_) { /* silencioso */ }
+          }
+          if (matched > 0) {
+            toast.success(`📡 ${matched} jogo(s) vinculados à TheSportsDB`);
+            qc.invalidateQueries({ queryKey: ["daily_games"] });
+            // Já dispara um refresh de placares
+            supabase.functions.invoke("tsdb-live-update", { body: {} }).catch(() => {});
+          }
+        })();
+      }
+
 
       if (intraBatchSkipped > 0) {
         toast.info(`${intraBatchSkipped} duplicata(s) interna(s) no texto colado ignorada(s)`);
