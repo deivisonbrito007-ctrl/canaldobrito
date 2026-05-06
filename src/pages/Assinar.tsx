@@ -6,26 +6,26 @@ import { useSettings } from "@/hooks/useSettings";
 import logo from "@/assets/canal_do_brito_logo.png";
 
 // Logos oficiais (SVG glyphs do simple-icons + wordmarks gerados com fundo da marca)
-import netflixLogo      from "@/assets/brand-logos/netflix.svg";
-import primevideoLogo   from "@/assets/brand-logos/primevideo.svg";
-import disneyplusLogo   from "@/assets/brand-logos/disneyplus.svg";
-import hbomaxLogo       from "@/assets/brand-logos/hbomax.svg";
-import paramountLogo    from "@/assets/brand-logos/paramountplus.svg";
+import netflixLogo      from "@/assets/brand-logos/netflix.png";
+import primevideoLogo   from "@/assets/brand-logos/primevideo.png";
+import disneyplusLogo   from "@/assets/brand-logos/disneyplus.png";
+import maxLogo          from "@/assets/brand-logos/max.png";
+import paramountLogo    from "@/assets/brand-logos/paramountplus.png";
 import appletvLogo      from "@/assets/brand-logos/appletv.svg";
 import starzLogo        from "@/assets/brand-logos/starz.svg";
-import daznLogo         from "@/assets/brand-logos/dazn.svg";
-import youtubeLogo      from "@/assets/brand-logos/youtube.svg";
-import espnLogo         from "@/assets/brand-logos/espn.svg";
-import sportvLogo       from "@/assets/brand-logos/sportv.svg";
-import globoLogo        from "@/assets/brand-logos/globo.svg";
-import premiereLogo     from "@/assets/brand-logos/premiere.svg";
-import tntsportsLogo    from "@/assets/brand-logos/tntsports.svg";
-import bandLogo         from "@/assets/brand-logos/band.svg";
-import cazetvLogo       from "@/assets/brand-logos/cazetv.svg";
-import recordLogo       from "@/assets/brand-logos/record.svg";
-import goatLogo         from "@/assets/brand-logos/goat.svg";
-import spaceLogo        from "@/assets/brand-logos/space.svg";
-import globoplayLogo    from "@/assets/brand-logos/globoplay.svg";
+import daznLogo         from "@/assets/brand-logos/dazn.png";
+import youtubeLogo      from "@/assets/brand-logos/youtube.png";
+import espnLogo         from "@/assets/brand-logos/espn.png";
+import sportvLogo       from "@/assets/brand-logos/sportv.png";
+import globoLogo        from "@/assets/brand-logos/globo.png";
+import premiereLogo     from "@/assets/brand-logos/premiere.png";
+import tntsportsLogo    from "@/assets/brand-logos/tntsports.png";
+import bandLogo         from "@/assets/brand-logos/band.png";
+import cazetvLogo       from "@/assets/brand-logos/cazetv.png";
+import recordLogo       from "@/assets/brand-logos/record.png";
+import goatLogo         from "@/assets/brand-logos/goat.png";
+import spaceLogo        from "@/assets/brand-logos/space.png";
+import globoplayLogo    from "@/assets/brand-logos/globoplay.png";
 
 type ChannelTileItem = {
   name: string;
@@ -37,7 +37,7 @@ const STREAMING_APPS: ChannelTileItem[] = [
   { name: "Netflix",     logo: netflixLogo },
   { name: "Prime Video", logo: primevideoLogo },
   { name: "Disney+",     logo: disneyplusLogo },
-  { name: "HBO Max",     logo: hbomaxLogo },
+  { name: "Max",         logo: maxLogo },
   { name: "Globoplay",   logo: globoplayLogo },
   { name: "Paramount+",  logo: paramountLogo },
   { name: "Apple TV+",   logo: appletvLogo },
