@@ -560,6 +560,24 @@ const AdminFilmes = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={confirmBulkDelete} onOpenChange={(o) => !o && !bulkRunning && setConfirmBulkDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover {selectedIds.size} filme(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Os filmes selecionados serão removidos permanentemente do catálogo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRunning}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={bulkDelete} disabled={bulkRunning} className="bg-destructive hover:bg-destructive/90">
+              {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
