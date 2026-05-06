@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop, Zap, CheckCircle2, Gift, AlertTriangle, MessageCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useSettings } from "@/hooks/useSettings";
 import logo from "@/assets/canal_do_brito_logo.png";
 
 import netflixIcon from "@/assets/app-icons/netflix.png";
