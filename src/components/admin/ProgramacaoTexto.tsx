@@ -676,6 +676,7 @@ export const ProgramacaoTexto = () => {
   };
 
   const handlePublish = () => {
+    if (insertGames.isPending) return; // anti double-click guard
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) {
       toast.error("Selecione pelo menos um jogo");
@@ -713,6 +714,7 @@ export const ProgramacaoTexto = () => {
   };
 
   const handleRepublish = () => {
+    if (insertGames.isPending || deleteByDate.isPending) return; // anti double-click guard
     const selected = parsed.filter((g) => g.selected);
     if (selected.length === 0) return;
     if (midnightGamesCount > 0 || bumpedGamesCount > 0) {
