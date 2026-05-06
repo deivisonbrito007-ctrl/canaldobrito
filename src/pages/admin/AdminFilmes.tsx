@@ -175,6 +175,42 @@ const AdminFilmes = () => {
     });
   };
 
+  const exitSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
+  const enterSelection = () => { setSelectionMode(true); setSelectedIds(new Set()); };
+  const toggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  };
+  const selectAllVisible = () => { if (movies) setSelectedIds(new Set(movies.map((m) => m.id))); };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("featured_movies").update({ active }).in("id", ids);
+    setBulkRunning(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["featured_movies"] });
+    toast.success(`${ids.length} filme(s) ${active ? "ativado(s)" : "desativado(s)"}`);
+    exitSelection();
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("featured_movies").delete().in("id", ids);
+    setBulkRunning(false);
+    setConfirmBulkDelete(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["featured_movies"] });
+    toast.success(`${ids.length} filme(s) removido(s)`);
+    exitSelection();
+  };
 
   const handleSearch = () => {
     if (!query.trim()) return;
