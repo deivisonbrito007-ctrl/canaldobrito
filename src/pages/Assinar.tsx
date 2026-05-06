@@ -24,17 +24,29 @@ const STREAMING_APPS = [
   { name: "Starz", icon: starzIcon },
 ];
 
-const TV_CHANNELS = [
-  { emoji: "📺", name: "ESPN", bg: "bg-red-600/20", text: "text-red-400", border: "border-red-500/30" },
-  { emoji: "⚽", name: "SporTV", bg: "bg-emerald-600/20", text: "text-emerald-400", border: "border-emerald-500/30" },
-  { emoji: "🌐", name: "Globo", bg: "bg-slate-200/15", text: "text-foreground/80", border: "border-foreground/20" },
-  { emoji: "⭐", name: "Premiere", bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
-  { emoji: "💥", name: "TNT", bg: "bg-blue-600/20", text: "text-blue-400", border: "border-blue-500/30" },
-  { emoji: "📡", name: "Band", bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/30" },
-  { emoji: "🎮", name: "CazéTV", bg: "bg-lime-500/20", text: "text-lime-400", border: "border-lime-500/30" },
-  { emoji: "📺", name: "Record", bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/30" },
-  { emoji: "🐐", name: "Canal GOAT", bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/30" },
-  { emoji: "🚀", name: "Space", bg: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+type ChannelTileItem = {
+  name: string;
+  domain?: string;
+  localLogo?: string;
+  emoji: string;
+  bg: string;
+  text: string;
+  border: string;
+};
+
+const TV_CHANNELS: ChannelTileItem[] = [
+  { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg",     emoji: "📺", bg: "bg-red-600/15",     text: "text-red-300",       border: "border-red-500/30" },
+  { name: "SporTV",     domain: "sportv.globo.com",                                        emoji: "⚽", bg: "bg-emerald-600/15", text: "text-emerald-300",   border: "border-emerald-500/30" },
+  { name: "Globo",      domain: "globo.com",                                               emoji: "🌐", bg: "bg-slate-200/10",   text: "text-foreground/85", border: "border-foreground/15" },
+  { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg", emoji: "⭐", bg: "bg-yellow-500/15",  text: "text-yellow-300",    border: "border-yellow-500/30" },
+  { name: "TNT Sports", domain: "tntsports.com.br",                                        emoji: "💥", bg: "bg-blue-600/15",    text: "text-blue-300",      border: "border-blue-500/30" },
+  { name: "Band",       domain: "band.uol.com.br",                                         emoji: "📡", bg: "bg-emerald-500/15", text: "text-emerald-300",   border: "border-emerald-500/30" },
+  { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg",   emoji: "🎮", bg: "bg-lime-500/15",    text: "text-lime-300",      border: "border-lime-500/30" },
+  { name: "Record",     domain: "recordtv.r7.com",                                         emoji: "📺", bg: "bg-blue-500/15",    text: "text-blue-300",      border: "border-blue-500/30" },
+  { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg",     emoji: "🐐", bg: "bg-amber-500/15",   text: "text-amber-300",     border: "border-amber-500/30" },
+  { name: "Space",      domain: "tntsports.com.br",                                        emoji: "🚀", bg: "bg-indigo-500/15",  text: "text-indigo-300",    border: "border-indigo-500/30" },
+  { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg",     emoji: "🥊", bg: "bg-yellow-500/15",  text: "text-yellow-300",    border: "border-yellow-500/30" },
+  { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",  emoji: "▶️", bg: "bg-red-600/15",     text: "text-red-300",       border: "border-red-500/30" },
 ];
 
 const CAROUSEL_ITEMS = [
