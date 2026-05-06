@@ -217,6 +217,10 @@ export const DailyGamesManager = () => {
             {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
             Re-classificar
           </Button>
+          <Button size="sm" variant="ghost" onClick={handleCheckDuplicates} disabled={checkingDupes} className="text-xs text-emerald-400 hover:text-emerald-300">
+            {checkingDupes ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />}
+            Verificar duplicatas
+          </Button>
         </div>
       </div>
 
