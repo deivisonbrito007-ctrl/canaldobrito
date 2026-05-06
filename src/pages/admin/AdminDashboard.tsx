@@ -5,6 +5,18 @@ import { useAllMovies } from "@/hooks/useMovies";
 import { useAllSeries } from "@/hooks/useSeries";
 import { useAllNewsReleases } from "@/hooks/useNewsReleases";
 import { useAllDailyGames } from "@/hooks/useDailyGames";
+
+// Returns current Date adjusted to America/Sao_Paulo (UTC-3) for hour-based logic.
+const getSPDate = () => {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + -3 * 3600000);
+};
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { getLocalDateString } from "@/lib/gameUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -23,10 +35,11 @@ import { ContentCharts } from "@/components/admin/ContentCharts";
 import { SportStatsFilter } from "@/components/admin/SportStatsFilter";
 
 const useCountUp = (target: number, duration = 800) => {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(target);
   const ref = useRef<number>();
   useEffect(() => {
     if (target <= 0) { setCount(0); return; }
+    if (prefersReducedMotion()) { setCount(target); return; }
     const start = performance.now();
     const tick = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
@@ -58,7 +71,7 @@ const quickActions = [
 ];
 
 const getGreeting = () => {
-  const h = new Date().getHours();
+  const h = getSPDate().getHours();
   if (h < 12) return "Bom dia";
   if (h < 18) return "Boa tarde";
   return "Boa noite";
@@ -66,13 +79,14 @@ const getGreeting = () => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: banners, isLoading: loadingBanners, isError: errorBanners, refetch: refetchBanners, dataUpdatedAt: updatedBanners } = useAllBanners();
-  const { data: movies, isLoading: loadingMovies, isError: errorMovies, refetch: refetchMovies, dataUpdatedAt: updatedMovies } = useAllMovies();
-  const { data: series, isLoading: loadingSeries, isError: errorSeries, refetch: refetchSeries, dataUpdatedAt: updatedSeries } = useAllSeries();
-  const { data: news, isLoading: loadingNews, isError: errorNews, refetch: refetchNews, dataUpdatedAt: updatedNews } = useAllNewsReleases();
-  const { data: todayGames, isLoading: loadingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(getLocalDateString());
+  const { data: banners, isLoading: loadingBanners, isFetching: fetchingBanners, isError: errorBanners, refetch: refetchBanners, dataUpdatedAt: updatedBanners } = useAllBanners();
+  const { data: movies, isLoading: loadingMovies, isFetching: fetchingMovies, isError: errorMovies, refetch: refetchMovies, dataUpdatedAt: updatedMovies } = useAllMovies();
+  const { data: series, isLoading: loadingSeries, isFetching: fetchingSeries, isError: errorSeries, refetch: refetchSeries, dataUpdatedAt: updatedSeries } = useAllSeries();
+  const { data: news, isLoading: loadingNews, isFetching: fetchingNews, isError: errorNews, refetch: refetchNews, dataUpdatedAt: updatedNews } = useAllNewsReleases();
+  const { data: todayGames, isLoading: loadingGames, isFetching: fetchingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(getLocalDateString());
 
   const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
+  const isFetching = fetchingBanners || fetchingMovies || fetchingSeries || fetchingNews || fetchingGames;
   const hasError = errorBanners || errorMovies || errorSeries || errorNews || errorGames;
 
   const handleRetry = () => {
@@ -140,16 +154,19 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-1.5">
             {lastUpdated && (
-              <span className="text-[9px] text-muted-foreground/60">
+              <span className="text-[9px] text-muted-foreground/60" title={`Atualizado às ${format(new Date(lastUpdated), "HH:mm")}`}>
+                <span className="hidden sm:inline">Atualizado </span>
                 {format(new Date(lastUpdated), "HH:mm")}
               </span>
             )}
             <button
               onClick={handleRetry}
-              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
+              disabled={isFetching}
+              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-60 min-h-[36px] min-w-[36px] flex items-center justify-center"
               aria-label="Atualizar dados do dashboard"
+              data-testid="dashboard-refresh"
             >
-              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground/60" />
+              <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground/60 ${isFetching ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -200,7 +217,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Stats grid with micro progress bars */}
-      <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((card, i) => {
           const total = totals[card.key] || 0;
           const active = actives[card.key] || 0;
@@ -221,7 +238,7 @@ const AdminDashboard = () => {
               ) : (
                 <div className="flex flex-col items-center text-center gap-2">
                   <card.icon className={`h-5 w-5 ${card.color}`} />
-                  <p className={`text-2xl font-black ${card.color}`}>{counts[card.key]}</p>
+                  <p className={`text-xl sm:text-2xl font-black tabular-nums ${card.color}`}>{counts[card.key]}</p>
                   <div className="w-full">
                     <p className="text-[10px] text-muted-foreground">{card.label}</p>
                     <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
@@ -260,7 +277,7 @@ const AdminDashboard = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ações Rápidas</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {quickActions.map((action) => (
             <button
               key={action.label}
