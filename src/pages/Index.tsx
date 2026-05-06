@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
+import { TAB_SLUGS } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
