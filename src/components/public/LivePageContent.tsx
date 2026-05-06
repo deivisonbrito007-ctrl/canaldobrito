@@ -506,17 +506,27 @@ export const LivePageContent = () => {
       {/* ─── Empty State ─── */}
       {!isLoading && liveGames.length === 0 && <EmptyLive />}
 
-      {/* ─── Live Grid ─── */}
+      {/* ─── Live Grid — bloco vermelho destacado ─── */}
       {!isLoading && liveGames.length > 0 && (
-        <section className="space-y-2.5 animate-fade-up stagger-2">
-          <div className="px-3 flex items-center gap-1.5">
-            <Flame className="h-3 w-3 text-destructive" />
-            <h2 className="text-[10.5px] font-bold text-muted-foreground font-body uppercase tracking-[0.18em]">
-              {filter === "all" ? "Acontecendo agora" : FILTERS.find((f) => f.id === filter)?.label}
-            </h2>
-            <span className="text-[9px] bg-destructive/15 text-destructive rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body">
-              {filteredLive.length}
-            </span>
+        <section className="animate-fade-up stagger-2">
+          {/* Section banner LIVE — vermelho, claro e inconfundível */}
+          <div className="px-3 mb-2.5">
+            <div className="relative overflow-hidden rounded-xl border border-destructive/40 bg-gradient-to-r from-destructive/20 via-destructive/10 to-transparent">
+              <div className="absolute inset-y-0 left-0 w-1 bg-destructive shadow-[0_0_12px_hsl(var(--destructive)/0.6)]" />
+              <div className="relative flex items-center gap-2 pl-3.5 pr-3 py-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-destructive motion-safe:animate-ping opacity-70" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                </span>
+                <h2 className="text-[12px] font-extrabold text-destructive font-body uppercase tracking-[0.18em]">
+                  {filter === "all" ? "Ao vivo agora" : FILTERS.find((f) => f.id === filter)?.label}
+                </h2>
+                <span className="text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body shadow-[0_0_10px_hsl(var(--destructive)/0.5)]">
+                  {filteredLive.length}
+                </span>
+                <Flame className="h-3.5 w-3.5 text-destructive ml-auto motion-safe:animate-pulse" aria-hidden />
+              </div>
+            </div>
           </div>
 
           {filteredLive.length === 0 ? (
@@ -537,30 +547,40 @@ export const LivePageContent = () => {
         </section>
       )}
 
-      {/* ─── Upcoming — header inline compacto ─── */}
+      {/* ─── Divisor visual entre AO VIVO e PRÓXIMOS ─── */}
+      {!isLoading && liveGames.length > 0 && upcoming.length > 0 && (
+        <div className="px-6" aria-hidden>
+          <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+        </div>
+      )}
+
+      {/* ─── Upcoming — bloco verde discreto, claramente separado ─── */}
       {!isLoading && upcoming.length > 0 && (
-        <section className="space-y-2 animate-fade-up stagger-3">
-          <div className="px-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Trophy className="h-3 w-3 text-primary" aria-hidden />
-              <h2 className="text-[10.5px] font-bold text-muted-foreground font-body uppercase tracking-[0.18em]">
-                Próximos
-              </h2>
-              <span className="text-[10px] text-foreground/80 font-body">
-                · em <span className="font-extrabold text-primary tabular-nums">{upcoming[0].diffMin}min</span>
-              </span>
-              <span className="ml-auto text-[9px] bg-primary/15 text-primary rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body">
-                {upcoming.length}
-              </span>
-            </div>
-            <div className="h-[3px] rounded-full bg-primary/10 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all duration-700"
-                style={{ width: `${Math.max(8, 100 - (upcoming[0].diffMin / 60) * 100)}%` }}
-              />
+        <section className="animate-fade-up stagger-3">
+          <div className="px-3 mb-2">
+            <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+              <div className="absolute inset-y-0 left-0 w-1 bg-primary/60" />
+              <div className="relative flex items-center gap-2 pl-3.5 pr-3 py-2">
+                <Clock className="h-3.5 w-3.5 text-primary" aria-hidden />
+                <h2 className="text-[12px] font-extrabold text-primary font-body uppercase tracking-[0.18em]">
+                  Em breve
+                </h2>
+                <span className="text-[10px] text-foreground/70 font-body">
+                  · próximo em <span className="font-extrabold text-primary tabular-nums">{upcoming[0].diffMin}min</span>
+                </span>
+                <span className="ml-auto text-[10px] bg-primary/15 text-primary rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body">
+                  {upcoming.length}
+                </span>
+              </div>
+              <div className="h-[2px] bg-primary/10 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-700"
+                  style={{ width: `${Math.max(8, 100 - (upcoming[0].diffMin / 60) * 100)}%` }}
+                />
+              </div>
             </div>
           </div>
-          <div className="px-3 space-y-1.5">
+          <div className="px-3 space-y-1.5 opacity-95">
             {upcoming.map(({ g, diffMin }, i) => (
               <UpcomingCard key={g.id} game={g} minutesUntil={diffMin} isNext={i === 0} />
             ))}
