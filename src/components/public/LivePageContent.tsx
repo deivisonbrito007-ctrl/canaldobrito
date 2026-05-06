@@ -234,49 +234,18 @@ const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame;
   );
 };
 
-/* ── Notice Banner (dispensável, persiste em localStorage) ── */
-const LIVE_NOTICE_KEY = "live-notice-dismissed-v2";
-const LIVE_NOTICE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // reaparece após 7 dias
+/* ── Notice Banner (fixo, sempre visível) ── */
 const LiveNotice = () => {
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      const ts = Number(localStorage.getItem(LIVE_NOTICE_KEY) || 0);
-      return ts > 0 && Date.now() - ts < LIVE_NOTICE_TTL_MS;
-    } catch { return false; }
-  });
-  const [expanded, setExpanded] = useState(false);
-  if (dismissed) return null;
-  const dismiss = () => {
-    try { localStorage.setItem(LIVE_NOTICE_KEY, String(Date.now())); } catch { /* ignore */ }
-    setDismissed(true);
-  };
   return (
     <div
       role="status"
       className="mx-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/25 px-2.5 py-1.5 flex items-center gap-2"
     >
       <Info className="h-3.5 w-3.5 text-amber-400 shrink-0" aria-hidden="true" />
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex-1 min-w-0 text-left text-[10.5px] leading-snug text-amber-100/85 font-body"
-        aria-expanded={expanded}
-      >
+      <p className="flex-1 min-w-0 text-[10.5px] leading-snug text-amber-100/85 font-body">
         <span className="font-bold text-amber-300 uppercase tracking-wide">Aviso:</span>{" "}
-        {expanded ? (
-          "Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!"
-        ) : (
-          <span className="truncate inline-block max-w-full align-bottom">Canais e horários sujeitos a alterações.</span>
-        )}
-      </button>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dispensar aviso"
-        className="shrink-0 h-7 w-7 -mr-1 inline-flex items-center justify-center rounded-md text-amber-300/70 hover:text-amber-200 hover:bg-amber-500/10 transition-colors"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+        Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!
+      </p>
     </div>
   );
 };
