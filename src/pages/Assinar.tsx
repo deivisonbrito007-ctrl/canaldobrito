@@ -262,68 +262,22 @@ const Assinar = () => {
             onTouchEnd={resumeMarquee}
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
-              {marqueeItems.map((item, i) => {
-                // Detecta se é fonte display (Bebas Neue) — mais condensed, precisa de menos largura
-                const isDisplay = (item.font || "").includes("display");
-                const fontFamily = isDisplay
-                  ? '"Bebas Neue", system-ui, sans-serif'
-                  : '"Syne", system-ui, sans-serif';
-                const fontWeight = item.weight?.includes("extrabold") ? 800 : 900;
-                const fontStyle = item.italic ? "italic" : "normal";
-                // SVG viewBox 100x100 — textLength=80 garante que QUALQUER label preencha 80% da largura
-                // lengthAdjust="spacingAndGlyphs" estica/comprime as letras uniformemente
-                const hasSub = !!item.sub;
-                const mainY = hasSub ? 48 : 62;
-                const mainSize = hasSub ? 38 : 44;
-                return (
-                  <div key={`tile-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div
-                      className={`w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative ${item.bg}`}
-                    >
-                      <svg viewBox="0 0 100 100" className="w-full h-full block" aria-label={item.name}>
-                        <text
-                          x="50"
-                          y={mainY}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          textLength="80"
-                          lengthAdjust="spacingAndGlyphs"
-                          fontFamily={fontFamily}
-                          fontWeight={fontWeight}
-                          fontStyle={fontStyle}
-                          fontSize={mainSize}
-                          className={item.fg}
-                          fill="currentColor"
-                        >
-                          {item.label}
-                        </text>
-                        {hasSub && (
-                          <text
-                            x="50"
-                            y="76"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            textLength="60"
-                            lengthAdjust="spacingAndGlyphs"
-                            fontFamily={fontFamily}
-                            fontWeight={900}
-                            fontSize={16}
-                            letterSpacing="2"
-                            className={item.subFg || item.fg}
-                            fill="currentColor"
-                          >
-                            {item.sub}
-                          </text>
-                        )}
-                      </svg>
-                      <span className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent opacity-30" aria-hidden="true" />
-                    </div>
-                    <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
-                      {item.name}
-                    </span>
+              {marqueeItems.map((item, i) => (
+                <div key={`tile-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
+                  <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative bg-white/5">
+                    <img
+                      src={item.logo}
+                      alt={`Logo ${item.name}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover block"
+                    />
                   </div>
-                );
-              })}
+                  <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
+                    {item.name}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 pt-1">
