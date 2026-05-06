@@ -219,12 +219,6 @@ export const DailyGamesManager = () => {
             {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
             Re-classificar
           </Button>
-          <Button size="sm" variant="ghost" onClick={handleMatchAllDay} className="text-xs text-emerald-400 hover:text-emerald-300">
-            <Link2 className="h-3.5 w-3.5 mr-1" /> Vincular dia (TSDB)
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleRefreshLive} className="text-xs text-fuchsia-400 hover:text-fuchsia-300">
-            <Radio className="h-3.5 w-3.5 mr-1" /> Atualizar placares
-          </Button>
           <Button size="sm" variant="ghost" onClick={handleCheckDuplicates} disabled={checkingDupes} className="text-xs text-emerald-400 hover:text-emerald-300">
             {checkingDupes ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />}
             Verificar duplicatas
