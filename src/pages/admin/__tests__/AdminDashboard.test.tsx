@@ -1,27 +1,72 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import AdminDashboard from "../AdminDashboard";
 
+// Mutable refs to control mocked hook returns per test
+const refetchBanners = vi.fn();
+const refetchMovies = vi.fn();
+const refetchSeries = vi.fn();
+const refetchNews = vi.fn();
+const refetchGames = vi.fn();
+
+const state = {
+  errorAll: false,
+  loadingAll: false,
+};
+
+const mkResult = (data: any) => ({
+  data: state.loadingAll ? undefined : data,
+  isLoading: state.loadingAll,
+  isFetching: state.loadingAll,
+  isError: state.errorAll,
+  refetch: vi.fn(),
+  dataUpdatedAt: Date.now(),
+});
+
 vi.mock("@/hooks/useBanners", () => ({
-  useAllBanners: () => ({ data: [{ active: true, title: "Banner 1", image_url: "https://example.com/a.jpg", created_at: new Date().toISOString() }, { active: false, title: "Banner 2", image_url: "https://example.com/b.jpg", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllBanners: () => ({
+    ...mkResult([
+      { active: true, title: "Banner 1", image_url: "https://example.com/a.jpg", created_at: new Date().toISOString() },
+      { active: false, title: "Banner 2", image_url: "https://example.com/b.jpg", created_at: new Date().toISOString() },
+    ]),
+    refetch: refetchBanners,
+  }),
 }));
 vi.mock("@/hooks/useMovies", () => ({
-  useAllMovies: () => ({ data: [{ active: true, genre: "Action", title: "Movie 1", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllMovies: () => ({
+    ...mkResult([{ active: true, genre: "Action", title: "Movie 1", created_at: new Date().toISOString() }]),
+    refetch: refetchMovies,
+  }),
 }));
 vi.mock("@/hooks/useSeries", () => ({
-  useAllSeries: () => ({ data: [{ active: true, genre: null, title: "Series 1", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllSeries: () => ({
+    ...mkResult([{ active: true, genre: null, title: "Series 1", created_at: new Date().toISOString() }]),
+    refetch: refetchSeries,
+  }),
 }));
 vi.mock("@/hooks/useNewsReleases", () => ({
-  useAllNewsReleases: () => ({ data: [{ active: true, genres: "Drama", title: "News 1", created_at: new Date().toISOString() }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllNewsReleases: () => ({
+    ...mkResult([{ active: true, genres: "Drama", title: "News 1", created_at: new Date().toISOString() }]),
+    refetch: refetchNews,
+  }),
 }));
 vi.mock("@/hooks/useDailyGames", () => ({
-  useAllDailyGames: () => ({ data: [{ active: true }], isLoading: false, isError: false, refetch: vi.fn(), dataUpdatedAt: Date.now() }),
+  useAllDailyGames: () => ({
+    ...mkResult([{ active: true }]),
+    refetch: refetchGames,
+  }),
 }));
 vi.mock("@/components/admin/UpcomingActivations", () => ({
   UpcomingActivations: () => <div data-testid="upcoming" />,
 }));
+
+const navigateMock = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return { ...actual, useNavigate: () => navigateMock };
+});
 
 const wrap = (ui: React.ReactElement) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -32,10 +77,20 @@ const wrap = (ui: React.ReactElement) => {
   );
 };
 
+beforeEach(() => {
+  state.errorAll = false;
+  state.loadingAll = false;
+  navigateMock.mockClear();
+  refetchBanners.mockClear();
+  refetchMovies.mockClear();
+  refetchSeries.mockClear();
+  refetchNews.mockClear();
+  refetchGames.mockClear();
+});
+
 describe("AdminDashboard", () => {
   it("renders stat card labels", () => {
     wrap(<AdminDashboard />);
-    // Use getAllByText since labels may appear in both stat cards and chart legends
     expect(screen.getAllByText("Banners").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Filmes").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Séries").length).toBeGreaterThanOrEqual(1);
@@ -63,5 +118,29 @@ describe("AdminDashboard", () => {
   it("renders UpcomingActivations", () => {
     wrap(<AdminDashboard />);
     expect(screen.getByTestId("upcoming")).toBeInTheDocument();
+  });
+
+  it("navigates to /admin/banners when Banners stat card is clicked", () => {
+    wrap(<AdminDashboard />);
+    const card = screen.getByLabelText(/^Banners: \d+ total/);
+    fireEvent.click(card);
+    expect(navigateMock).toHaveBeenCalledWith("/admin/banners");
+  });
+
+  it("triggers all refetch when refresh button is clicked", () => {
+    wrap(<AdminDashboard />);
+    fireEvent.click(screen.getByTestId("dashboard-refresh"));
+    expect(refetchBanners).toHaveBeenCalled();
+    expect(refetchMovies).toHaveBeenCalled();
+    expect(refetchSeries).toHaveBeenCalled();
+    expect(refetchNews).toHaveBeenCalled();
+    expect(refetchGames).toHaveBeenCalled();
+  });
+
+  it("renders error alert when a hook fails", () => {
+    state.errorAll = true;
+    wrap(<AdminDashboard />);
+    expect(screen.getByText(/Erro ao carregar alguns dados/)).toBeInTheDocument();
+    expect(screen.getByText(/Tentar novamente/)).toBeInTheDocument();
   });
 });
