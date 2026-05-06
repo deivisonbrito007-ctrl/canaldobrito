@@ -124,6 +124,8 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   placeholder="Senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  maxLength={128}
                   className="w-full bg-input border border-border rounded-lg px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground font-body pr-10 focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                   required
                 />
@@ -132,6 +134,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   onClick={() => setShowPw(!showPw)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
                   aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                  tabIndex={-1}
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -139,10 +142,17 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-primary text-primary-foreground font-bold text-sm py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-body min-h-[44px]"
+                disabled={loading || !email || !password}
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-body min-h-[44px]"
               >
-                {loading ? "Entrando..." : "Entrar"}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
               </button>
             </form>
 
