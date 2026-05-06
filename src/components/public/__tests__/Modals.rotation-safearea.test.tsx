@@ -1,4 +1,6 @@
+/// <reference types="node" />
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { readFileSync } from "fs";
 import { render, screen, cleanup } from "@testing-library/react";
 import { ContentDetailSheet } from "../ContentDetailSheet";
 import { TrailerModal } from "../TrailerModal";
@@ -75,10 +77,9 @@ describe("Modais — rotação e safe-areas iOS", () => {
   });
 
   describe("ContentDetailSheet", () => {
-    it("declara padding-bottom com env(safe-area-inset-bottom) no fonte do componente", async () => {
-      // jsdom remove env() do CSS computado, então validamos o source.
-      const fs = await import("node:fs/promises");
-      const src = await fs.readFile("src/components/public/ContentDetailSheet.tsx", "utf8");
+    it("declara padding-bottom com env(safe-area-inset-bottom) no fonte do componente", () => {
+      // jsdom descarta env() do estilo computado, então validamos no source.
+      const src = readFileSync("src/components/public/ContentDetailSheet.tsx", "utf8");
       expect(src).toMatch(/env\(safe-area-inset-bottom/);
     });
 
