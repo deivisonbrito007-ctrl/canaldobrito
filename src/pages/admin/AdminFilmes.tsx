@@ -137,6 +137,7 @@ const AdminFilmes = () => {
   const { user } = useAuth();
   const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
   const { data: movies, isLoading } = useAllMovies();
+  useRealtimeMovies();
   const addMovie = useAddMovie();
   const toggleMovie = useToggleMovie();
   const deleteMovie = useDeleteMovie();
