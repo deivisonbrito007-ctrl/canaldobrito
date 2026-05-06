@@ -200,6 +200,47 @@ const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: n
   );
 };
 
+/* ── Notice Banner ── */
+const NOTICE_KEY = "live-notice-dismissed-v1";
+const LiveNotice = () => {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(NOTICE_KEY) === "1"; } catch { return false; }
+  });
+  if (dismissed) return null;
+  const handleDismiss = () => {
+    try { localStorage.setItem(NOTICE_KEY, "1"); } catch {}
+    setDismissed(true);
+  };
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="live-notice"
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97 }}
+        transition={{ duration: 0.25 }}
+        role="status"
+        className="mx-3 rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 flex items-start gap-2.5"
+      >
+        <Info className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+        <p className="flex-1 text-[11px] sm:text-xs leading-snug text-amber-100/90 font-body">
+          <span className="font-bold text-amber-300">Aviso:</span>{" "}
+          Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!
+        </p>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="Dispensar aviso"
+          className="shrink-0 -m-1 p-2.5 rounded-lg text-amber-300/80 hover:text-amber-200 hover:bg-amber-500/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 /* ── Empty State ── */
 const EmptyLive = () => (
   <div className="mx-3 rounded-2xl bg-card border border-border/60 p-4 text-center space-y-3">
