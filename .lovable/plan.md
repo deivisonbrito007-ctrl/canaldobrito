@@ -1,54 +1,46 @@
-## Diagnóstico
+## Objetivo
+Adicionar uma spec E2E **iOS-only** (WebKit em iPhone SE / 13 / 14 Pro Max, com `hasTouch`) garantindo que o **tap no backdrop** fecha **apenas o modal alvo** quando há um único modal aberto e, no cenário empilhado (sheet + trailer), fecha somente o modal de cima.
 
-A captura mostra o `ContentDetailSheet` (bottom sheet) sendo renderizado **atrás da BottomNav**, com a parte inferior cortada e o conteúdo (poster/título "COMO MÁGICA") escondido pela barra de navegação. Isso é o bug visual reportado no mobile.
+Esses cenários complementam `e2e/modals.spec.ts` (mouse desktop) e `e2e/modals.ios.spec.ts` (snap/rotação) — nenhum deles cobre tap real iOS no backdrop com a granularidade pedida.
 
-Investigando o código encontrei três problemas reais:
+## Arquivo a criar
 
-### 1. z-index conflitante (causa principal do bug visual)
-- `BottomNav` usa `z-50`
-- `ContentDetailSheet` usa `z-[60]` ✔ (acima da nav)
-- **Mas** `Index.tsx` envolve a página em `<AnimatePresence>` + `motion.div` que cria um novo *stacking context*. Como a `<main>` tem `z-10` e o sheet é renderizado como filho dela (via portal-less `fixed`), o `position: fixed` do sheet fica preso ao stacking context da `motion.div` ancestral (que está abaixo do `BottomNav` `z-50`). Resultado: o sheet aparece visualmente **abaixo** da BottomNav no mobile, mesmo com `z-[60]`.
-- Mesmo problema afeta o `TrailerModal` (`z-[70]`) — também fica preso pelo `motion.div` ancestral em alguns navegadores mobile (Chrome Android, conforme screenshot).
+`e2e/modals.ios-backdrop.spec.ts`
 
-### 2. `padding-bottom` insuficiente no sheet
-- `ContentDetailSheet` usa `paddingBottom: calc(6rem + env(safe-area-inset-bottom))` no conteúdo interno, mas o sheet em si tem `max-h-[85vh]` e termina em `bottom-0`. A `BottomNav` tem ~64px + safe-area, então o conteúdo final do sheet (botões, links) fica encoberto.
+Estrutura:
 
-### 3. Sheet/Modal não usam React Portal
-- Por estar dentro do `motion.div` da página, qualquer transformação/animação do ancestral também afeta o `position: fixed` (bug conhecido do CSS: `transform` em ancestral quebra `fixed`).
+```text
+for each iOS profile (SE, 13, 14 Pro Max) {
+  describe("iOS backdrop tap — only correct modal closes") {
+    beforeEach: goto /e2e/modals; aguarda harness
+    test 1: tap backdrop com SÓ o sheet aberto -> sheet fecha; nav permanece
+    test 2: tap backdrop com SÓ o trailer aberto -> trailer fecha
+    test 3: tap DENTRO do conteúdo do sheet (poster/heading) -> NÃO fecha
+    test 4: tap DENTRO do iframe/área do trailer -> NÃO fecha
+    test 5: empilhados (sheet + trailer) — tap no backdrop do trailer fecha
+            APENAS o trailer; sheet continua visível e travando body scroll
+    test 6: depois de (5), tap no backdrop do sheet fecha o sheet;
+            body.overflow restaurado
+  }
+}
+```
 
-## Plano de Correção
+## Detalhes técnicos
+- `test.use({ ...devices["iPhone X"] })` por bloco, com `hasTouch: true` herdado.
+- Usar `page.touchscreen.tap(x, y)` (gesto real iOS) para o backdrop, em vez de `page.mouse.click`.
+- Backdrop do trailer: primeiro `.fixed.inset-0.bg-black\\/85`. Backdrop do sheet: `.fixed.inset-0.bg-black\\/60`. Coordenadas calculadas a partir do `boundingBox()` do backdrop, garantindo área **fora** do `pointer-events-auto` interno.
+- Validar não-fechamento via `await expect(dialog).toBeVisible()` após 300ms.
+- Validar `document.body.style.overflow === "hidden"` enquanto qualquer modal estiver aberto e `=== ""` ao fim.
+- Reaproveitar `data-testid="open-sheet"` / `open-trailer"` já presentes em `src/pages/E2EModals.tsx`.
 
-### A. Renderizar overlays via Portal (`createPortal` para `document.body`)
-Refatorar `ContentDetailSheet.tsx` e `TrailerModal.tsx` para envolver o `<AnimatePresence>` em `createPortal(..., document.body)`. Isso resolve o bug raiz: os overlays escapam do stacking context da página animada e respeitam de fato seu `z-index` global, tanto em mobile quanto desktop.
+## CI
+A spec entra automaticamente nos jobs existentes:
+- `e2e` matriz (perfil "iPhone 13 (WebKit)")
+- `playwright.ci.config.ts` já registra os perfis iOS.
 
-### B. Ajustar offsets do BottomNav
-- Em `ContentDetailSheet`: aumentar `max-h` para `90vh` e elevar o `bottom` final acima da BottomNav quando aberto (ou simplesmente usar portal + manter z-[60], já que a nav some atrás do backdrop). Garantir `paddingBottom` final do conteúdo scroll = `calc(7rem + env(safe-area-inset-bottom))`.
-- Em `TrailerModal`: já está centralizado; com portal o `z-[70]` passa a funcionar e fica acima de tudo.
+Sem mudanças em `.github/workflows/ci.yml`.
 
-### C. Esconder BottomNav quando há overlay aberto (UX bonus)
-Pequena melhoria: quando `sheetOpen` ou `trailerItem` ativos, emitir um evento ou usar contexto para esconder a `BottomNav` (ou usar `inert` + `aria-hidden`). Alternativa mais simples: aumentar o backdrop do sheet para cobrir 100vh (já está `inset-0`), o que com portal já resolve visualmente.
-
-### D. Corrigir `dragSnapToOrigin` em iOS
-`framer-motion` `dragSnapToOrigin` em iOS pode falhar ao recolocar o sheet quando o usuário solta abaixo do threshold. Garantir reset explícito de `dragY.set(0)` no `onDragEnd` quando não dispara o close.
-
-### E. Garantir que clicks no card abrem corretamente em desktop
-`NovidadesCard.handleCardClick` depende de `didSwipe.current`, mas `didSwipe` só é setado em `onTouchEnd` (mobile). No desktop funciona ok. Sem mudança necessária.
-
-## Arquivos a editar
-
-1. `src/components/public/ContentDetailSheet.tsx` — adicionar `createPortal`, ajustar paddings, fix do `dragY` reset.
-2. `src/components/public/TrailerModal.tsx` — adicionar `createPortal`.
-3. (opcional) `src/components/public/BottomNav.tsx` — aceitar prop `hidden` e esconder com transition; controlar via estado em `Index.tsx` se quisermos a melhoria UX bonus.
-
-## Sugestões adicionais (opcionais, posso aplicar junto)
-
-- **Loading do trailer**: hoje o `useTrailerKey` é refeito a cada abertura. Cachear por `tmdb_id` (já existe `useTrailerAvailability` parcial) para abertura instantânea ao reabrir o mesmo conteúdo.
-- **Acessibilidade**: adicionar `role="dialog"` + `aria-modal="true"` + focus trap no `ContentDetailSheet` e `TrailerModal`.
-- **ESC para fechar**: já não é tratado nos overlays — adicionar listener de `Escape` (ajuda em desktop).
-- **Bloqueio de scroll do body** quando overlay aberto (`overflow: hidden` no `<body>`), evitando scroll de fundo no mobile.
-
-## Testes
-
-- Atualizar testes existentes do `NovidadesCard` para mockar `createPortal` (ou simplesmente confirmar que renderiza em `document.body`).
-- Adicionar teste novo: `ContentDetailSheet.test.tsx` cobrindo: abre, mostra título, botão fechar dispara `onClose`, ESC fecha.
-- Rodar `bunx vitest run` ao final.
+## Critérios de aceite
+- 6 testes × 3 perfis = 18 execuções, todas verdes localmente e no CI.
+- Em nenhum cenário o tap no backdrop fecha o modal errado.
+- Sheet sob o trailer permanece com foco preso e body lock ativo até seu próprio fechamento.
