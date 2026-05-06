@@ -42,7 +42,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     setError("");
     setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       toast.success("Login realizado com sucesso!");
       onClose();
       navigate("/admin");
