@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { useState } from "react";
-import { render, screen, fireEvent, cleanup, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { ContentDetailSheet } from "../ContentDetailSheet";
 import { TrailerModal } from "../TrailerModal";
 
@@ -61,6 +61,8 @@ const Harness = ({
 
 const findSheet = () => screen.queryByRole("dialog", { name: "Como Mágica" });
 const findTrailer = () => screen.queryByRole("dialog", { name: /Trailer/ });
+const expectGone = (getter: () => Element | null) =>
+  waitFor(() => expect(getter()).not.toBeInTheDocument(), { timeout: 2000 });
 
 const zIndexOf = (el: Element | null) => {
   if (!el) return -1;
@@ -68,7 +70,7 @@ const zIndexOf = (el: Element | null) => {
   return m ? Number(m[1]) : 0;
 };
 
-describe("Modais — abertura em sequência (sheet → trailer)", () => {
+describe("Modais — abertura em sequência (sheet ↔ trailer)", () => {
   afterEach(() => {
     cleanup();
     document.body.style.overflow = "";
@@ -95,7 +97,7 @@ describe("Modais — abertura em sequência (sheet → trailer)", () => {
     expect(zIndexOf(trailer)).toBeGreaterThanOrEqual(zIndexOf(sheet));
   });
 
-  it("ESC com ambos abertos fecha apenas o trailer; sheet permanece e mantém scroll lock", () => {
+  it("ESC com ambos abertos fecha apenas o trailer; sheet permanece e mantém scroll lock", async () => {
     const onSheetClose = vi.fn();
     const onTrailerClose = vi.fn();
     render(
@@ -109,16 +111,14 @@ describe("Modais — abertura em sequência (sheet → trailer)", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    // Ambos componentes escutam ESC; queremos garantir que após o ESC o trailer
-    // suma e o sheet continue. (Os dois podem ter chamado onClose; o que importa
-    // é o estado visual resultante.)
-    expect(findTrailer()).not.toBeInTheDocument();
+    await expectGone(findTrailer);
     expect(findSheet()).toBeInTheDocument();
-    expect(onTrailerClose).toHaveBeenCalled();
+    expect(onTrailerClose).toHaveBeenCalledTimes(1);
+    expect(onSheetClose).not.toHaveBeenCalled();
     expect(document.body.style.overflow).toBe("hidden");
   });
 
-  it("clicar no botão Fechar do trailer fecha apenas o trailer", () => {
+  it("clicar no botão Fechar do trailer fecha apenas o trailer", async () => {
     const onSheetClose = vi.fn();
     const onTrailerClose = vi.fn();
     render(
@@ -132,24 +132,24 @@ describe("Modais — abertura em sequência (sheet → trailer)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Fechar trailer" }));
 
-    expect(findTrailer()).not.toBeInTheDocument();
+    await expectGone(findTrailer);
     expect(findSheet()).toBeInTheDocument();
     expect(onTrailerClose).toHaveBeenCalledTimes(1);
     expect(onSheetClose).not.toHaveBeenCalled();
   });
 
-  it("clicar no botão Fechar do sheet (com sheet sozinho) fecha o sheet e restaura body-scroll", () => {
+  it("clicar no botão Fechar do sheet (com sheet sozinho) fecha o sheet e restaura body-scroll", async () => {
     const onSheetClose = vi.fn();
     render(<Harness initialSheet onSheetClose={onSheetClose} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
-    expect(findSheet()).not.toBeInTheDocument();
+    await expectGone(findSheet);
     expect(onSheetClose).toHaveBeenCalledTimes(1);
-    expect(document.body.style.overflow).toBe("");
+    await waitFor(() => expect(document.body.style.overflow).toBe(""));
   });
 
-  it("backdrop do trailer fecha apenas o trailer (sheet permanece aberto)", () => {
+  it("backdrop do trailer fecha apenas o trailer (sheet permanece aberto)", async () => {
     const onSheetClose = vi.fn();
     const onTrailerClose = vi.fn();
     render(
@@ -161,29 +161,29 @@ describe("Modais — abertura em sequência (sheet → trailer)", () => {
       />
     );
 
-    // O backdrop do trailer é o primeiro filho irmão do dialog do trailer com bg-black/85.
+    // Backdrop específico do trailer (bg-black/85) — o do sheet usa bg-black/60.
     const trailerBackdrop = document.body.querySelector(".bg-black\\/85") as HTMLElement;
     expect(trailerBackdrop).not.toBeNull();
     fireEvent.click(trailerBackdrop);
 
-    expect(findTrailer()).not.toBeInTheDocument();
+    await expectGone(findTrailer);
     expect(findSheet()).toBeInTheDocument();
     expect(onTrailerClose).toHaveBeenCalledTimes(1);
     expect(onSheetClose).not.toHaveBeenCalled();
   });
 
-  it("ESC com somente o sheet aberto fecha o sheet e restaura body-scroll", () => {
+  it("ESC com somente o sheet aberto fecha o sheet e restaura body-scroll", async () => {
     const onSheetClose = vi.fn();
     render(<Harness initialSheet onSheetClose={onSheetClose} />);
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    expect(findSheet()).not.toBeInTheDocument();
+    await expectGone(findSheet);
     expect(onSheetClose).toHaveBeenCalledTimes(1);
-    expect(document.body.style.overflow).toBe("");
+    await waitFor(() => expect(document.body.style.overflow).toBe(""));
   });
 
-  it("fluxo completo: abre sheet → abre trailer → fecha trailer (ESC) → fecha sheet (ESC)", () => {
+  it("fluxo completo: abre sheet → abre trailer → ESC fecha trailer → ESC fecha sheet", async () => {
     render(<Harness />);
 
     fireEvent.click(screen.getByText("open-sheet"));
@@ -194,15 +194,13 @@ describe("Modais — abertura em sequência (sheet → trailer)", () => {
     expect(findSheet()).toBeInTheDocument();
     expect(findTrailer()).toBeInTheDocument();
 
-    // ESC fecha o trailer (camada do topo); sheet continua.
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(findTrailer()).not.toBeInTheDocument();
+    await expectGone(findTrailer);
     expect(findSheet()).toBeInTheDocument();
     expect(document.body.style.overflow).toBe("hidden");
 
-    // ESC novamente fecha o sheet.
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(findSheet()).not.toBeInTheDocument();
-    expect(document.body.style.overflow).toBe("");
+    await expectGone(findSheet);
+    await waitFor(() => expect(document.body.style.overflow).toBe(""));
   });
 });
