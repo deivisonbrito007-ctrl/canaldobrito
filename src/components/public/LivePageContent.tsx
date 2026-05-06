@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Radio, Clock, Calendar, Flame, Trophy, Info } from "lucide-react";
+import { Radio, Clock, Calendar, Flame, Trophy, Info, X } from "lucide-react";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useLiveTick } from "@/hooks/useLiveTick";
 import { useRealtimeDailyGames } from "@/hooks/useRealtimeDailyGames";
@@ -194,16 +194,14 @@ const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame;
     <div
       className={cn(
         "relative rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card",
-        isNext && "ring-2 ring-primary/40 shadow-[0_0_18px_hsl(var(--primary)/0.18)]"
+        isNext && "ring-1 ring-primary/40"
       )}
       style={{ borderLeft: `3px solid ${theme.color}`, border: `1px solid ${theme.border}`, borderLeftWidth: 3 }}
     >
-      {isNext && (
-        <span className="absolute -top-2 left-3 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground text-[8px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_10px_hsl(var(--primary)/0.5)]">
-          ★ Próximo
-        </span>
-      )}
       <div className="flex flex-col items-center justify-center min-w-[42px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
+        {isNext && (
+          <span className="text-[7px] font-extrabold text-primary uppercase tracking-[0.16em] leading-none mb-0.5">★</span>
+        )}
         <span className="text-[8px] font-bold text-primary uppercase tracking-wide font-body leading-none">em</span>
         <span className="text-[13px] font-extrabold text-primary tabular-nums font-body leading-none mt-0.5">
           {minutesUntil}m
@@ -236,19 +234,48 @@ const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame;
   );
 };
 
-/* ── Notice Banner (sempre visível) ── */
-const LiveNotice = () => (
-  <div
-    role="status"
-    className="mx-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 border border-amber-500/30 px-3 py-2.5 flex items-start gap-2.5 shadow-[0_0_12px_rgba(245,158,11,0.08)]"
-  >
-    <Info className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
-    <p className="flex-1 text-[11px] sm:text-xs leading-snug text-amber-100/90 font-body">
-      <span className="font-bold text-amber-300 uppercase tracking-wide">Aviso:</span>{" "}
-      Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!
-    </p>
-  </div>
-);
+/* ── Notice Banner (dispensável, persiste em localStorage) ── */
+const LIVE_NOTICE_KEY = "live-notice-dismissed-v1";
+const LiveNotice = () => {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(LIVE_NOTICE_KEY) === "1"; } catch { return false; }
+  });
+  const [expanded, setExpanded] = useState(false);
+  if (dismissed) return null;
+  const dismiss = () => {
+    try { localStorage.setItem(LIVE_NOTICE_KEY, "1"); } catch { /* ignore */ }
+    setDismissed(true);
+  };
+  return (
+    <div
+      role="status"
+      className="mx-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/25 px-2.5 py-1.5 flex items-center gap-2"
+    >
+      <Info className="h-3.5 w-3.5 text-amber-400 shrink-0" aria-hidden="true" />
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex-1 min-w-0 text-left text-[10.5px] leading-snug text-amber-100/85 font-body"
+        aria-expanded={expanded}
+      >
+        <span className="font-bold text-amber-300 uppercase tracking-wide">Aviso:</span>{" "}
+        {expanded ? (
+          "Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!"
+        ) : (
+          <span className="truncate inline-block max-w-full align-bottom">Canais e horários sujeitos a alterações.</span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dispensar aviso"
+        className="shrink-0 h-7 w-7 -mr-1 inline-flex items-center justify-center rounded-md text-amber-300/70 hover:text-amber-200 hover:bg-amber-500/10 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+};
 
 /* ── Empty State ── */
 const EmptyLive = () => (
@@ -314,6 +341,9 @@ export const LivePageContent = () => {
 
   const upcoming = useMemo(() => {
     const now = new Date();
+    const liveKeys = new Set(
+      liveGames.map((g) => `${(g.competition || "").toLowerCase().trim()}|${(g.home_team || "").toLowerCase().trim()}`)
+    );
     return all
       .map((g) => {
         const [h, m] = (g.game_time || "00:00").split(":").map(Number);
@@ -321,10 +351,14 @@ export const LivePageContent = () => {
         const diffMin = Math.round((start.getTime() - now.getTime()) / 60_000);
         return { g, diffMin };
       })
-      .filter(({ diffMin }) => diffMin > 0 && diffMin <= 60)
+      .filter(({ g, diffMin }) => {
+        if (diffMin <= 0 || diffMin > 60) return false;
+        const key = `${(g.competition || "").toLowerCase().trim()}|${(g.home_team || "").toLowerCase().trim()}`;
+        return !liveKeys.has(key);
+      })
       .sort((a, b) => a.diffMin - b.diffMin)
       .slice(0, 5);
-  }, [all, tick]);
+  }, [all, liveGames, tick]);
 
   // Stats by filter category
   const stats = useMemo(() => {
@@ -348,39 +382,36 @@ export const LivePageContent = () => {
 
   return (
     <div className="space-y-4 min-h-[80vh] pb-[calc(1rem+env(safe-area-inset-bottom))]">
-      {/* ─── Hero Header ─── */}
+      {/* ─── Hero Header (compacto) ─── */}
       <section className="px-3 pt-4 animate-fade-up">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-destructive/10 via-card to-card border border-destructive/30">
-          {/* Pulsing glow border (respects prefers-reduced-motion) */}
           <div className="absolute inset-0 rounded-2xl border border-destructive/40 motion-safe:animate-pulse pointer-events-none" />
-          {/* Background glow blob */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-destructive/10 blur-3xl pointer-events-none" />
 
-          <div className="relative p-3 sm:p-4 space-y-3">
+          <div className="relative px-3 py-2.5 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="space-y-1.5 min-w-0 flex-1">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 border border-destructive/40 px-2.5 py-1">
-                  <span className="relative flex h-2 w-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 border border-destructive/40 px-2 py-0.5 shrink-0">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-destructive motion-safe:animate-ping opacity-70" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
                   </span>
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-destructive font-body">
+                  <span className="text-[9px] uppercase font-extrabold tracking-wider text-destructive font-body">
                     Ao Vivo
                   </span>
-                </div>
+                </span>
                 {hasLive ? (
                   <h1
-                    className="text-xl sm:text-3xl font-extrabold text-foreground font-body leading-none tracking-tight"
+                    className="text-base font-extrabold text-foreground font-body leading-none tracking-tight truncate"
                     aria-live="polite"
                   >
                     {liveGames.length}{" "}
-                    <span className="text-sm sm:text-base font-bold text-muted-foreground">
+                    <span className="text-[11px] font-bold text-muted-foreground">
                       {liveGames.length === 1 ? "jogo agora" : "jogos agora"}
                     </span>
                   </h1>
                 ) : (
                   <p
-                    className="text-[11px] sm:text-xs text-muted-foreground font-body"
+                    className="text-[11px] text-muted-foreground font-body truncate"
                     aria-live="polite"
                   >
                     Sem jogos ao vivo no momento
@@ -388,78 +419,74 @@ export const LivePageContent = () => {
                 )}
               </div>
 
-              <div className="flex flex-col items-end shrink-0 gap-1">
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-body">
-                  Brasília
-                </span>
+              <div className="flex items-center gap-1.5 shrink-0">
                 <LiveClock />
                 <AnimatePresence>
                   {(justUpdated || isFetching) && (
-                    <motion.div
+                    <motion.span
                       key={isFetching ? "fetching" : "updated"}
-                      initial={{ opacity: 0, y: -4, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
-                      className="inline-flex items-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2 py-0.5"
-                      aria-live="polite"
+                      className="relative flex h-1.5 w-1.5"
+                      aria-label={isFetching ? "Atualizando" : "Atualizado"}
                     >
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-primary motion-safe:animate-ping opacity-70" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
-                      </span>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-primary font-body">
-                        {isFetching ? "Atualizando" : "Atualizado"}
-                      </span>
-                    </motion.div>
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-primary motion-safe:animate-ping opacity-70" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+                    </motion.span>
                   )}
                 </AnimatePresence>
               </div>
             </div>
 
-            {/* Filter pills — only show when there are live games */}
-            {hasLive && (
-              <div className="relative -mx-1">
-                <div
-                  data-horizontal-scroll
-                  className="flex gap-1.5 overflow-x-auto scrollbar-hide px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
-                  role="tablist"
-                  aria-label="Filtrar por esporte"
-                >
-                  {FILTERS.filter((f) => f.id === "all" || stats[f.id] > 0).map((f) => {
-                    const count = stats[f.id];
-                    const active = filter === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        onClick={() => setFilter(f.id)}
-                        role="tab"
-                        aria-selected={active}
-                        aria-label={`${f.label} (${count} ao vivo)`}
-                        className={cn(
-                          "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 min-h-[40px]",
-                          "text-[11px] font-bold font-body",
-                          active
-                            ? "bg-destructive text-destructive-foreground border-destructive shadow-[0_0_12px_hsl(0,84%,60%,0.4)]"
-                            : "bg-card/60 text-foreground/80 border-border/60 hover:border-destructive/30 hover:text-foreground"
-                        )}
-                      >
-                        <span>{f.emoji}</span>
-                        <span>{f.label}</span>
-                        <span
+            {/* Filter pills — só aparece se ≥2 categorias com live games */}
+            {hasLive && (() => {
+              const visibleFilters = FILTERS.filter((f) => f.id === "all" || stats[f.id] > 0);
+              if (visibleFilters.length < 3) return null; // "all" + 2+ esportes
+              return (
+                <div className="relative -mx-1">
+                  <div
+                    data-horizontal-scroll
+                    className="flex gap-1.5 overflow-x-auto scrollbar-hide px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
+                    role="tablist"
+                    aria-label="Filtrar por esporte"
+                  >
+                    {visibleFilters.map((f) => {
+                      const count = stats[f.id];
+                      const active = filter === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => setFilter(f.id)}
+                          role="tab"
+                          aria-selected={active}
+                          aria-label={`${f.label} (${count} ao vivo)`}
                           className={cn(
-                            "tabular-nums px-1.5 py-0.5 rounded-md text-[9px] font-extrabold",
-                            active ? "bg-destructive-foreground/20 text-destructive-foreground" : "bg-muted/50 text-muted-foreground"
+                            "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 min-h-[40px]",
+                            "text-[11px] font-bold font-body",
+                            active
+                              ? "bg-destructive text-destructive-foreground border-destructive shadow-[0_0_12px_hsl(0,84%,60%,0.4)]"
+                              : "bg-card/60 text-foreground/80 border-border/60 hover:border-destructive/30 hover:text-foreground"
                           )}
                         >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span>{f.emoji}</span>
+                          <span>{f.label}</span>
+                          <span
+                            className={cn(
+                              "tabular-nums px-1.5 py-0.5 rounded-md text-[9px] font-extrabold",
+                              active ? "bg-destructive-foreground/20 text-destructive-foreground" : "bg-muted/50 text-muted-foreground"
+                            )}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       </section>
@@ -482,12 +509,12 @@ export const LivePageContent = () => {
       {/* ─── Live Grid ─── */}
       {!isLoading && liveGames.length > 0 && (
         <section className="space-y-2.5 animate-fade-up stagger-2">
-          <div className="px-3 flex items-center gap-2">
-            <Flame className="h-4 w-4 text-destructive" />
-            <h2 className="text-sm font-extrabold text-foreground font-body uppercase tracking-tight">
+          <div className="px-3 flex items-center gap-1.5">
+            <Flame className="h-3 w-3 text-destructive" />
+            <h2 className="text-[10.5px] font-bold text-muted-foreground font-body uppercase tracking-[0.18em]">
               {filter === "all" ? "Acontecendo agora" : FILTERS.find((f) => f.id === filter)?.label}
             </h2>
-            <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-bold tabular-nums font-body">
+            <span className="text-[9px] bg-destructive/15 text-destructive rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body">
               {filteredLive.length}
             </span>
           </div>
@@ -510,41 +537,27 @@ export const LivePageContent = () => {
         </section>
       )}
 
-      {/* ─── Upcoming — Premium Banner ─── */}
+      {/* ─── Upcoming — header inline compacto ─── */}
       {!isLoading && upcoming.length > 0 && (
-        <section className="space-y-3 animate-fade-up stagger-3">
+        <section className="space-y-2 animate-fade-up stagger-3">
           <div className="px-3">
-            <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent backdrop-blur-xl">
-              <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
-              <div className="relative flex items-center gap-3 px-3 py-2.5">
-                <div className="shrink-0 flex items-center justify-center h-10 w-10 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_16px_hsl(var(--primary)/0.25)]">
-                  <Trophy className="h-5 w-5 text-primary" aria-hidden />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-[13px] font-extrabold text-foreground font-body uppercase tracking-[0.14em] leading-none">
-                      Começam em breve
-                    </h2>
-                    <span className="inline-flex items-center justify-center min-w-[22px] h-[18px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold tabular-nums shadow-[0_0_10px_hsl(var(--primary)/0.5)]">
-                      {upcoming.length}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[10px] font-medium text-foreground/70 font-body">
-                    Próximo em{" "}
-                    <span className="font-extrabold text-primary tabular-nums">{upcoming[0].diffMin}min</span>
-                    {" · "}
-                    {upcoming.length > 1 ? `${upcoming.length} eventos na próxima hora` : "1 evento na próxima hora"}
-                  </p>
-                  {/* Mini timeline progress (inverted: closer to start = fuller) */}
-                  <div className="mt-1.5 h-1 rounded-full bg-primary/10 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all duration-700"
-                      style={{ width: `${Math.max(8, 100 - (upcoming[0].diffMin / 60) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <Trophy className="h-3 w-3 text-primary" aria-hidden />
+              <h2 className="text-[10.5px] font-bold text-muted-foreground font-body uppercase tracking-[0.18em]">
+                Próximos
+              </h2>
+              <span className="text-[10px] text-foreground/80 font-body">
+                · em <span className="font-extrabold text-primary tabular-nums">{upcoming[0].diffMin}min</span>
+              </span>
+              <span className="ml-auto text-[9px] bg-primary/15 text-primary rounded-full px-1.5 py-0.5 font-extrabold tabular-nums font-body">
+                {upcoming.length}
+              </span>
+            </div>
+            <div className="h-[3px] rounded-full bg-primary/10 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all duration-700"
+                style={{ width: `${Math.max(8, 100 - (upcoming[0].diffMin / 60) * 100)}%` }}
+              />
             </div>
           </div>
           <div className="px-3 space-y-1.5">
