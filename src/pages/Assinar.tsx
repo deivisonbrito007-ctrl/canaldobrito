@@ -49,11 +49,13 @@ const DEFAULT_TV_CHANNELS: ChannelTileItem[] = [
   { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",    emoji: "▶️", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
 ];
 
-const CAROUSEL_ITEMS = [
-  ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
-  ...TV_CHANNELS.map(c => ({ type: "channel" as const, ...c })),
-];
-const MARQUEE_ITEMS = [...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS];
+const buildMarqueeItems = (channels: ChannelTileItem[]) => {
+  const base = [
+    ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
+    ...channels.map(c => ({ type: "channel" as const, ...c })),
+  ];
+  return [...base, ...base, ...base];
+};
 
 const WA_NUMBER = "5511940759046";
 const WA_LINK = (msg: string) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
