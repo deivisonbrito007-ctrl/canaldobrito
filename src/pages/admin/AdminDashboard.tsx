@@ -277,7 +277,7 @@ const AdminDashboard = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Ações Rápidas</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {quickActions.map((action) => (
             <button
               key={action.label}
