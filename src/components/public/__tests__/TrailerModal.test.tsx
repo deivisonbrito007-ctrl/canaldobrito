@@ -31,9 +31,13 @@ describe("TrailerModal", () => {
     expect(document.body.querySelector(".animate-spin")).toBeTruthy();
   });
 
-  it("mostra fallback quando não há trailer", () => {
-    render(<TrailerModal open={true} onClose={() => {}} trailerKey={null} />);
+  it("mostra fallback com link de busca no YouTube quando não há trailer", () => {
+    render(<TrailerModal open={true} onClose={() => {}} trailerKey={null} title="Como Mágica" />);
     expect(screen.getByText("Trailer não disponível")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /Procurar no YouTube/i }) as HTMLAnchorElement;
+    expect(link.href).toContain("youtube.com/results");
+    expect(decodeURIComponent(link.href)).toContain("Como Mágica trailer");
+    expect(link.target).toBe("_blank");
   });
 
   it("dispara onClose ao clicar no botão fechar", () => {
