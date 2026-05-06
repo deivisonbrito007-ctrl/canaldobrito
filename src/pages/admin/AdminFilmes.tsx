@@ -49,12 +49,15 @@ interface SortableMovieRowProps {
   movie: FeaturedMovie;
   refreshingId: string | null;
   batchActive: boolean;
+  selected: boolean;
+  selectionMode: boolean;
+  onSelectChange: (id: string, checked: boolean) => void;
   onRefresh: (m: FeaturedMovie) => void;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (m: FeaturedMovie) => void;
 }
 
-const SortableMovieRow = ({ movie: m, refreshingId, batchActive, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
+const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selectionMode, onSelectChange, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -63,17 +66,28 @@ const SortableMovieRow = ({ movie: m, refreshingId, batchActive, onRefresh, onTo
     zIndex: isDragging ? 10 : "auto" as const,
   };
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 rounded-lg glass-panel p-3">
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        disabled={batchActive}
-        className="touch-none h-11 w-7 -ml-1 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
-        aria-label={`Arrastar para reordenar ${m.title}`}
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-2 rounded-lg glass-panel p-3 transition-colors ${selected ? "ring-1 ring-blue-500/40 bg-blue-500/[0.04]" : ""}`}>
+      <div className="flex items-center justify-center h-11 w-7 -ml-1">
+        {selectionMode ? (
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(v) => onSelectChange(m.id, !!v)}
+            disabled={batchActive}
+            aria-label={`Selecionar ${m.title}`}
+          />
+        ) : (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            disabled={batchActive}
+            className="touch-none h-11 w-7 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label={`Arrastar para reordenar ${m.title}`}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       {m.poster_url ? (
         <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded-md object-cover shrink-0" loading="lazy" />
       ) : (
