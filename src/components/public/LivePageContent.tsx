@@ -382,39 +382,36 @@ export const LivePageContent = () => {
 
   return (
     <div className="space-y-4 min-h-[80vh] pb-[calc(1rem+env(safe-area-inset-bottom))]">
-      {/* ─── Hero Header ─── */}
+      {/* ─── Hero Header (compacto) ─── */}
       <section className="px-3 pt-4 animate-fade-up">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-destructive/10 via-card to-card border border-destructive/30">
-          {/* Pulsing glow border (respects prefers-reduced-motion) */}
           <div className="absolute inset-0 rounded-2xl border border-destructive/40 motion-safe:animate-pulse pointer-events-none" />
-          {/* Background glow blob */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-destructive/10 blur-3xl pointer-events-none" />
 
-          <div className="relative p-3 sm:p-4 space-y-3">
+          <div className="relative px-3 py-2.5 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="space-y-1.5 min-w-0 flex-1">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 border border-destructive/40 px-2.5 py-1">
-                  <span className="relative flex h-2 w-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 border border-destructive/40 px-2 py-0.5 shrink-0">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-destructive motion-safe:animate-ping opacity-70" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
                   </span>
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider text-destructive font-body">
+                  <span className="text-[9px] uppercase font-extrabold tracking-wider text-destructive font-body">
                     Ao Vivo
                   </span>
-                </div>
+                </span>
                 {hasLive ? (
                   <h1
-                    className="text-xl sm:text-3xl font-extrabold text-foreground font-body leading-none tracking-tight"
+                    className="text-base font-extrabold text-foreground font-body leading-none tracking-tight truncate"
                     aria-live="polite"
                   >
                     {liveGames.length}{" "}
-                    <span className="text-sm sm:text-base font-bold text-muted-foreground">
+                    <span className="text-[11px] font-bold text-muted-foreground">
                       {liveGames.length === 1 ? "jogo agora" : "jogos agora"}
                     </span>
                   </h1>
                 ) : (
                   <p
-                    className="text-[11px] sm:text-xs text-muted-foreground font-body"
+                    className="text-[11px] text-muted-foreground font-body truncate"
                     aria-live="polite"
                   >
                     Sem jogos ao vivo no momento
@@ -422,78 +419,74 @@ export const LivePageContent = () => {
                 )}
               </div>
 
-              <div className="flex flex-col items-end shrink-0 gap-1">
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-body">
-                  Brasília
-                </span>
+              <div className="flex items-center gap-1.5 shrink-0">
                 <LiveClock />
                 <AnimatePresence>
                   {(justUpdated || isFetching) && (
-                    <motion.div
+                    <motion.span
                       key={isFetching ? "fetching" : "updated"}
-                      initial={{ opacity: 0, y: -4, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
-                      className="inline-flex items-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2 py-0.5"
-                      aria-live="polite"
+                      className="relative flex h-1.5 w-1.5"
+                      aria-label={isFetching ? "Atualizando" : "Atualizado"}
                     >
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-primary motion-safe:animate-ping opacity-70" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
-                      </span>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-primary font-body">
-                        {isFetching ? "Atualizando" : "Atualizado"}
-                      </span>
-                    </motion.div>
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-primary motion-safe:animate-ping opacity-70" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+                    </motion.span>
                   )}
                 </AnimatePresence>
               </div>
             </div>
 
-            {/* Filter pills — only show when there are live games */}
-            {hasLive && (
-              <div className="relative -mx-1">
-                <div
-                  data-horizontal-scroll
-                  className="flex gap-1.5 overflow-x-auto scrollbar-hide px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
-                  role="tablist"
-                  aria-label="Filtrar por esporte"
-                >
-                  {FILTERS.filter((f) => f.id === "all" || stats[f.id] > 0).map((f) => {
-                    const count = stats[f.id];
-                    const active = filter === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        onClick={() => setFilter(f.id)}
-                        role="tab"
-                        aria-selected={active}
-                        aria-label={`${f.label} (${count} ao vivo)`}
-                        className={cn(
-                          "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 min-h-[40px]",
-                          "text-[11px] font-bold font-body",
-                          active
-                            ? "bg-destructive text-destructive-foreground border-destructive shadow-[0_0_12px_hsl(0,84%,60%,0.4)]"
-                            : "bg-card/60 text-foreground/80 border-border/60 hover:border-destructive/30 hover:text-foreground"
-                        )}
-                      >
-                        <span>{f.emoji}</span>
-                        <span>{f.label}</span>
-                        <span
+            {/* Filter pills — só aparece se ≥2 categorias com live games */}
+            {hasLive && (() => {
+              const visibleFilters = FILTERS.filter((f) => f.id === "all" || stats[f.id] > 0);
+              if (visibleFilters.length < 3) return null; // "all" + 2+ esportes
+              return (
+                <div className="relative -mx-1">
+                  <div
+                    data-horizontal-scroll
+                    className="flex gap-1.5 overflow-x-auto scrollbar-hide px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
+                    role="tablist"
+                    aria-label="Filtrar por esporte"
+                  >
+                    {visibleFilters.map((f) => {
+                      const count = stats[f.id];
+                      const active = filter === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => setFilter(f.id)}
+                          role="tab"
+                          aria-selected={active}
+                          aria-label={`${f.label} (${count} ao vivo)`}
                           className={cn(
-                            "tabular-nums px-1.5 py-0.5 rounded-md text-[9px] font-extrabold",
-                            active ? "bg-destructive-foreground/20 text-destructive-foreground" : "bg-muted/50 text-muted-foreground"
+                            "shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all duration-200 min-h-[40px]",
+                            "text-[11px] font-bold font-body",
+                            active
+                              ? "bg-destructive text-destructive-foreground border-destructive shadow-[0_0_12px_hsl(0,84%,60%,0.4)]"
+                              : "bg-card/60 text-foreground/80 border-border/60 hover:border-destructive/30 hover:text-foreground"
                           )}
                         >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span>{f.emoji}</span>
+                          <span>{f.label}</span>
+                          <span
+                            className={cn(
+                              "tabular-nums px-1.5 py-0.5 rounded-md text-[9px] font-extrabold",
+                              active ? "bg-destructive-foreground/20 text-destructive-foreground" : "bg-muted/50 text-muted-foreground"
+                            )}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       </section>
