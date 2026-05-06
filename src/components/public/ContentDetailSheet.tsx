@@ -1,4 +1,5 @@
-import { useState, forwardRef, useCallback } from "react";
+import { useState, forwardRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls, type PanInfo } from "framer-motion";
@@ -36,20 +37,38 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
   const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
     if (info.offset.y > DISMISS_THRESHOLD || info.velocity.y > 500) {
       onClose();
+    } else {
+      dragY.set(0);
     }
-  }, [onClose]);
+  }, [onClose, dragY]);
 
+  // ESC fecha + lock body scroll quando aberto
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose]);
+
+  if (typeof document === "undefined") return null;
   if (!item) return null;
 
   const poster = item.poster_url || item.image_url;
   const backdrop = item.backdrop_url;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -59,7 +78,10 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
 
           <motion.div
             ref={ref}
-            className="fixed bottom-0 left-0 right-0 z-[60] max-h-[85vh] flex flex-col rounded-t-3xl bg-card border-t border-border/30"
+            role="dialog"
+            aria-modal="true"
+            aria-label={item.title}
+            className="fixed bottom-0 left-0 right-0 z-[100] max-h-[90vh] flex flex-col rounded-t-3xl bg-card border-t border-border/30"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -195,7 +217,8 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 });
 
