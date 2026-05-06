@@ -270,7 +270,7 @@ const Assinar = () => {
                       alt={`Logo ${item.name}`}
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-cover block"
+                      className="w-full h-full object-contain block p-1"
                     />
                   </div>
                   <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
