@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { GameCard } from "../GameCard";
 import type { DailyGame } from "@/hooks/useDailyGames";
 
@@ -71,19 +71,9 @@ describe("GameCard", () => {
     expect(screen.getByText(/ao vivo/i)).toBeInTheDocument();
   });
 
-  it("toggles reminder and persists to localStorage", async () => {
-    const { isGameCurrentlyLive, getMinutesUntilStart } = await import("@/lib/gameUtils");
-    (isGameCurrentlyLive as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (getMinutesUntilStart as ReturnType<typeof vi.fn>).mockReturnValue(240);
-
-    const onPush = vi.fn();
-    render(<GameCard game={makeGame()} index={0} onPushReminder={onPush} />);
-
-    const btn = screen.getByLabelText(/adicionar lembrete/i);
-    fireEvent.click(btn);
-
-    expect(JSON.parse(localStorage.getItem("game_reminders") || "[]")).toContain("g1");
-    expect(onPush).toHaveBeenCalledWith("g1", true);
+  it("does NOT render reminder bell button", () => {
+    render(<GameCard game={makeGame()} index={0} />);
+    expect(screen.queryByLabelText(/lembrete/i)).toBeNull();
   });
 
   it("shows 'Sem transmissão confirmada' when no channels", () => {
@@ -91,8 +81,13 @@ describe("GameCard", () => {
     expect(screen.getByText(/sem transmissão confirmada/i)).toBeInTheDocument();
   });
 
-  it("shows '+N' when more than 3 channels", () => {
+  it("shows '+N' when more than 2 channels", () => {
     render(<GameCard game={makeGame({ channels: ["A", "B", "C", "D", "E"] })} index={0} />);
-    expect(screen.getByText("+2")).toBeInTheDocument();
+    expect(screen.getByText("+3")).toBeInTheDocument();
+  });
+
+  it("renders 'Onde assistir' label when there are channels", () => {
+    render(<GameCard game={makeGame()} index={0} />);
+    expect(screen.getByText(/onde assistir/i)).toBeInTheDocument();
   });
 });
