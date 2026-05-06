@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie, useReorderMovies, type FeaturedMovie } from "@/hooks/useMovies";
+import { useRealtimeMovies } from "@/hooks/useRealtimeMovies";
 import {
   DndContext,
   closestCenter,
@@ -136,6 +137,7 @@ const AdminFilmes = () => {
   const { user } = useAuth();
   const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
   const { data: movies, isLoading } = useAllMovies();
+  useRealtimeMovies();
   const addMovie = useAddMovie();
   const toggleMovie = useToggleMovie();
   const deleteMovie = useDeleteMovie();
