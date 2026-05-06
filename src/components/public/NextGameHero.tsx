@@ -150,13 +150,23 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
 
           {/* Channels */}
           {nextGame.channels && nextGame.channels.length > 0 ? (
-            <div className="flex gap-1 flex-wrap">
-              {nextGame.channels.slice(0, 4).map((ch, i) => (
-                <ChannelBadge key={i} name={ch} />
-              ))}
+            <div className="space-y-1.5">
+              <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+                ▶ Onde assistir
+              </span>
+              <div className="flex gap-1.5 flex-wrap">
+                {nextGame.channels.slice(0, 3).map((ch, i) => (
+                  <ChannelBadge key={i} name={ch} />
+                ))}
+                {nextGame.channels.length > 3 && (
+                  <span className="inline-flex items-center text-[10px] font-bold text-muted-foreground/70 bg-card/40 border border-border/30 rounded-md px-2 py-1">
+                    +{nextGame.channels.length - 3}
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 px-2 py-1 rounded border border-border/40 bg-muted/20 self-start">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 px-2 py-1 rounded border border-border/40 bg-muted/20 self-start inline-block">
               Sem transmissão confirmada
             </span>
           )}
