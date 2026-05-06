@@ -33,17 +33,22 @@ const buildYouTubeEmbedUrl = (key: string) => {
 export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ open, onClose, trailerKey, loading, title, fallbackQuery }, ref) => {
   const trapRef = useFocusTrap<HTMLDivElement>(open);
 
-  // ESC closes; lock body scroll while open
+  // ESC closes; lock body scroll while open.
+  // Captura na fase de captura + preventDefault para que, quando o trailer
+  // estiver por cima de outro modal (ex.: ContentDetailSheet), apenas ele feche.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      onClose();
     };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);

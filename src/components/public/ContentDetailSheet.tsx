@@ -44,11 +44,15 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
     }
   }, [onClose, dragY]);
 
-  // ESC fecha + lock body scroll quando aberto
+  // ESC fecha + lock body scroll quando aberto.
+  // Respeita defaultPrevented para que um modal acima (ex.: TrailerModal) consuma
+  // o ESC primeiro e o sheet permaneça aberto.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      e.preventDefault();
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
