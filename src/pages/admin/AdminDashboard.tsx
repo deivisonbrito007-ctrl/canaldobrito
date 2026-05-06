@@ -154,16 +154,19 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-1.5">
             {lastUpdated && (
-              <span className="text-[9px] text-muted-foreground/60">
+              <span className="text-[9px] text-muted-foreground/60" title={`Atualizado às ${format(new Date(lastUpdated), "HH:mm")}`}>
+                <span className="hidden sm:inline">Atualizado </span>
                 {format(new Date(lastUpdated), "HH:mm")}
               </span>
             )}
             <button
               onClick={handleRetry}
-              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
+              disabled={isFetching}
+              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-60 min-h-[36px] min-w-[36px] flex items-center justify-center"
               aria-label="Atualizar dados do dashboard"
+              data-testid="dashboard-refresh"
             >
-              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground/60" />
+              <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground/60 ${isFetching ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
