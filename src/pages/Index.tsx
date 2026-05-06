@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
+import { TAB_SLUGS, SLUG_TO_TAB } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
 import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
@@ -8,7 +9,6 @@ import { LivePageContent } from "@/components/public/LivePageContent";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
-import { SLUG_TO_TAB } from "@/lib/utils";
 import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/analytics";
 
 const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
@@ -59,6 +59,11 @@ const Index = () => {
       setDirection(nextIdx >= prevIdx ? 1 : -1);
       return next;
     });
+    // Sync URL so refresh stays on the same tab
+    const targetPath = `/${TAB_SLUGS[next]}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.replaceState({}, "", targetPath + window.location.hash);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
