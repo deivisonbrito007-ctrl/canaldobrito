@@ -1,59 +1,67 @@
-## Objetivo
-Garantir que **jogos com data + horário + times + esporte idênticos nunca mais sejam inseridos em duplicidade**, mesmo sob:
-- duplo-clique no botão Publicar (race condition),
-- variações invisíveis no texto colado (espaço duplo, NBSP `\u00A0`, maiúscula/minúscula, acento),
-- dois admins publicando ao mesmo tempo.
 
-Eventos com horários diferentes (ex.: Italian Open 06:00 e 10:00) **continuam tratados como entradas independentes** — você confirmou que está correto.
+## Auditoria do Dashboard Admin
 
-## O que muda
+### O que foi verificado
+- Fluxo de dados: `useAllBanners`, `useAllMovies`, `useAllSeries`, `useAllNewsReleases`, `useAllDailyGames(hoje)` — todos com `isLoading`, `isError`, `refetch`, `dataUpdatedAt`.
+- Componentes: `ContentHealthBar`, `ExpiredBannersAlert`, `ContentCharts` (Bar+Pie), `SportStatsFilter`, `UpcomingActivations`, `RecentActivity`, Quick Actions.
+- Suíte de testes: **72/72 passam** (`bunx vitest run src/pages/admin src/components/admin`).
+- Logs do console: limpos (apenas mensagem inócua `RESET_BLANK_CHECK` do harness).
 
-### 1. Constraint UNIQUE no banco (barreira definitiva)
-Migration nova:
-```sql
-CREATE UNIQUE INDEX daily_games_unique_event
-  ON public.daily_games (
-    date,
-    lower(btrim(home_team)),
-    lower(btrim(coalesce(away_team, ''))),
-    game_time,
-    sport_type
-  )
-  WHERE archived = false;
-```
-A partir daí, mesmo se o app falhar, o Postgres rejeita.
+### Issues encontradas
 
-### 2. Normalizar a chave de dedup — `src/lib/dedup.ts`
-Hoje compara `toLowerCase().trim()` apenas. Adicionar:
-- `normalize("NFKC")` (resolve acentos compostos vs combinados),
-- substituir NBSP (`\u00A0`) por espaço normal,
-- colapsar múltiplos espaços (`/\s+/g → " "`),
-- incluir `sport_type` na chave (casa com o índice do banco).
+| # | Severidade | Problema |
+|---|---|---|
+| 1 | Médio | Card "Jogos Hoje" abre `/admin/banners?tab=programacao` mas o param `tab` não é lido em `AdminBanners` — abre sempre na 1ª aba. |
+| 2 | Médio | Quick Action "Programação" tem o mesmo problema. |
+| 3 | Médio (mobile) | `grid-cols-3` no stat grid → 5 cards quebram em 3+2, com o 4º/5º ocupando colunas desbalanceadas em telas pequenas. Em <360px o `text-2xl` corta. |
+| 4 | Baixo | Quick Actions com `grid-cols-3` em mobile gera 7 botões → última linha com 1 item solitário. |
+| 5 | Baixo | `getGreeting()` e `now` usam `new Date()` direto — viola memória "Lock all time/date logic to America/Sao_Paulo". |
+| 6 | Baixo | `useCountUp` não respeita `prefers-reduced-motion` (memória de acessibilidade). |
+| 7 | Baixo | Recharts loga warnings de width/height=0 nos testes (jsdom sem ResizeObserver) — ruído. |
+| 8 | Baixo | `lastUpdated` mostra apenas `HH:mm` sem label — usuários não sabem que é "última atualização". |
+| 9 | Baixo | Botão refresh não dá feedback visual durante refetch (sem spinner). |
+| 10 | Cobertura | Faltam testes para: navegação ao clicar em stat card, alerta de erro, botão refresh, estado loading dos stat cards. |
 
-### 3. Tratar erro `23505` com elegância — `src/hooks/useDailyGames.ts`
-Já existe parcialmente. Reforçar: quando o índice rejeitar, contar como `skipped` (não como erro fatal) e seguir o batch.
+### Plano de implementação
 
-### 4. Bloqueio anti double-click — `src/components/admin/ProgramacaoTexto.tsx`
-Guarda explícita: `if (insertGames.isPending) return;` no handler + `disabled={insertGames.isPending}` no botão (já parcial, reforçar).
+**1. Roteamento de "Programação" (issues 1, 2)**
+- Em `src/pages/admin/AdminBanners.tsx`: ler `useSearchParams()` e mapear `?tab=programacao` para a aba correta no carregamento (e atualizar a URL ao trocar de aba).
 
-### 5. Botão "Verificar duplicatas" — `src/components/admin/DailyGamesManager.tsx`
-Roda `GROUP BY (date, lower(trim(home_team)), lower(trim(away_team)), game_time, sport_type) HAVING count > 1`, mostra preview num `AlertDialog` com IDs e `created_at`, e oferece "Manter o mais antigo, deletar os demais". Auto-cura para qualquer caso futuro.
+**2. Layout responsivo (issues 3, 4)**
+- Stat grid: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` (2 colunas em mobile <360px-mid evita corte; 3 em sm).
+- Reduzir número da contagem para `text-xl sm:text-2xl` quando muito grande.
+- Quick Actions: `grid-cols-2 sm:grid-cols-4` (linhas balanceadas com 7 itens → 2/2/2/1 em mobile, 4/3 em sm+).
 
-### 6. Testes
-- `src/lib/__tests__/dedup.test.ts` (novo): "Botafogo " vs "Botafogo", `"Sao\u00A0Paulo"` vs `"Sao Paulo"`, maiúsculas → mesma chave.
-- `src/hooks/__tests__/useDailyGames.test.ts`: simular Supabase retornando `code: "23505"` → mutation resolve sem throw, contadores corretos.
+**3. Time zone (issue 5)**
+- Importar helper `getSPNow()`/`getSPDate()` de `@/lib/dateUtils` (criar se não existir uma versão simples) ou usar `getLocalDateString()` já existente. Saudação derivada de hora SP.
 
-## Arquivos
-- Migration nova (UNIQUE INDEX)
-- `src/lib/dedup.ts`
-- `src/hooks/useDailyGames.ts`
-- `src/components/admin/ProgramacaoTexto.tsx`
-- `src/components/admin/DailyGamesManager.tsx`
-- 2 arquivos de teste
+**4. Reduced motion (issue 6)**
+- `useCountUp`: detectar `window.matchMedia('(prefers-reduced-motion: reduce)').matches` e setar `count = target` direto.
 
-## Critérios de aceite
-- Tentar inserir o mesmo jogo 2x via UI → segundo é silenciosamente ignorado, toast informa "1 já existente".
-- Colar texto com `"Botafogo"` e `"Botafogo "` (com espaço) → entra apenas 1.
-- Duplo-clique rápido em Publicar → não cria nada duplicado (`isPending` bloqueia + índice no DB rejeita).
-- Botão "Verificar duplicatas" lista 0 itens depois da limpeza.
-- `bunx vitest run` verde.
+**5. UX do refresh (issues 8, 9)**
+- Mostrar `Atualizado HH:mm` (label completo) em telas ≥sm; só `HH:mm` em <sm.
+- Botão refresh: aplicar `animate-spin` no ícone enquanto `isFetching` (somar `isFetching` dos 5 hooks).
+
+**6. Silenciar warnings de chart nos testes (issue 7)**
+- Em `src/test/setup.ts`: stub `ResizeObserver` global. Limpa o output.
+
+**7. Novos testes em `AdminDashboard.test.tsx`**
+- Click em stat card "Banners" navega para `/admin/banners` (`useNavigate` mock).
+- Render do alerta de erro quando `isError = true`.
+- Botão refresh chama todos os `refetch`.
+- Estado loading dos stat cards renderiza skeletons.
+
+**8. Sugestões adicionais (proposta — implemento se aprovado)**
+- **Sticky stat bar em mobile**: ao rolar, manter um mini-resumo no topo. *(skip por padrão — adiciona complexidade)*
+- **Indicador de "novo desde última visita"**: salvar `lastVisitedAt` em localStorage, marcar items criados depois com bullet. *(opcional)*
+- **Atalho de teclado** `R` para refresh. *(opcional)*
+
+Vou implementar **#1 a #7** (correções e melhorias core). Os adicionais (#8) ficam como sugestão; me avise se quer algum deles também.
+
+### Arquivos a editar
+- `src/pages/admin/AdminDashboard.tsx`
+- `src/pages/admin/AdminBanners.tsx` (apenas leitura de `?tab=`)
+- `src/test/setup.ts` (stub ResizeObserver)
+- `src/pages/admin/__tests__/AdminDashboard.test.tsx` (novos casos)
+
+Sem migrações de banco. Sem mudanças em RLS.
