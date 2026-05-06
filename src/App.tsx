@@ -42,6 +42,9 @@ const App = () => (
               <Route path="/novidades" element={<Index />} />
               <Route path="/sugestoes" element={<Index />} />
               <Route path="/destaques" element={<Index />} />
+              <Route path="/filmes-e-series" element={<Index />} />
+              <Route path="/filmes" element={<Index />} />
+              <Route path="/series" element={<Index />} />
               <Route path="/programacao" element={<Index />} />
               <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
