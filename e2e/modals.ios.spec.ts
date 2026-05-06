@@ -1,4 +1,5 @@
 import { test, expect, devices } from "@playwright/test";
+import { waitForStable, waitForOpacity } from "./utils/animation-stability";
 
 /**
  * iOS-specific spec: roda em múltiplos iPhones (SE, 13, 14 Pro Max) garantindo
