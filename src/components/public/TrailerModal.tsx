@@ -13,6 +13,7 @@ interface TrailerModalProps {
 }
 
 export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ open, onClose, trailerKey, loading, title }, ref) => {
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
   // ESC closes; lock body scroll while open
   useEffect(() => {
     if (!open) return;
@@ -42,11 +43,16 @@ export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ ope
             onClick={onClose}
           />
           <motion.div
-            ref={ref}
+            ref={(node) => {
+              trapRef.current = node;
+              if (typeof ref === "function") ref(node);
+              else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }}
             role="dialog"
             aria-modal="true"
             aria-label={title ? `Trailer — ${title}` : "Trailer"}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none outline-none"
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
