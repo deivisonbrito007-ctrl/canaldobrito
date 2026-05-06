@@ -34,8 +34,7 @@ const mockSafeArea = (insets: { top?: number; bottom?: number; left?: number; ri
         if (prop === "paddingTop" && insets.top != null) return `${insets.top}px`;
         if (prop === "paddingLeft" && insets.left != null) return `${insets.left}px`;
         if (prop === "paddingRight" && insets.right != null) return `${insets.right}px`;
-        // @ts-expect-error indexada
-        return target[prop];
+        return (target as unknown as Record<string, unknown>)[prop];
       },
     });
   });
