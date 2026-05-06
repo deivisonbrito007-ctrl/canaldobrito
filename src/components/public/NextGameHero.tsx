@@ -2,26 +2,9 @@ import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Clock, Zap } from "lucide-react";
 import { type DailyGame } from "@/hooks/useDailyGames";
-import { getMinutesUntilStart, formatCountdown, isGameCurrentlyLive, isNonAdversarial, SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
+import { getMinutesUntilStart, formatCountdown, isGameCurrentlyLive, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
-
-const COMP_GRADIENTS: Record<string, string> = {
-  "brasileirão": "from-emerald-600/30 to-emerald-900/20",
-  "brasileirao": "from-emerald-600/30 to-emerald-900/20",
-  "campeonato brasileiro": "from-emerald-600/30 to-emerald-900/20",
-  "champions league": "from-blue-600/30 to-blue-900/20",
-  "libertadores": "from-amber-600/30 to-amber-900/20",
-  "copa do brasil": "from-yellow-600/30 to-yellow-900/20",
-  "premier league": "from-purple-700/30 to-purple-900/20",
-};
-
-function getHeroGradient(comp: string): string {
-  const key = comp.toLowerCase().trim();
-  for (const [k, v] of Object.entries(COMP_GRADIENTS)) {
-    if (key.includes(k)) return v;
-  }
-  return "from-primary/20 to-primary/5";
-}
+import { getSportTheme } from "./schedule/GameCardSportTheme";
 
 interface NextGameHeroProps {
   games: DailyGame[];
