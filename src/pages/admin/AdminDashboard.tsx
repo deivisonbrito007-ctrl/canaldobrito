@@ -79,13 +79,14 @@ const getGreeting = () => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: banners, isLoading: loadingBanners, isError: errorBanners, refetch: refetchBanners, dataUpdatedAt: updatedBanners } = useAllBanners();
-  const { data: movies, isLoading: loadingMovies, isError: errorMovies, refetch: refetchMovies, dataUpdatedAt: updatedMovies } = useAllMovies();
-  const { data: series, isLoading: loadingSeries, isError: errorSeries, refetch: refetchSeries, dataUpdatedAt: updatedSeries } = useAllSeries();
-  const { data: news, isLoading: loadingNews, isError: errorNews, refetch: refetchNews, dataUpdatedAt: updatedNews } = useAllNewsReleases();
-  const { data: todayGames, isLoading: loadingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(getLocalDateString());
+  const { data: banners, isLoading: loadingBanners, isFetching: fetchingBanners, isError: errorBanners, refetch: refetchBanners, dataUpdatedAt: updatedBanners } = useAllBanners();
+  const { data: movies, isLoading: loadingMovies, isFetching: fetchingMovies, isError: errorMovies, refetch: refetchMovies, dataUpdatedAt: updatedMovies } = useAllMovies();
+  const { data: series, isLoading: loadingSeries, isFetching: fetchingSeries, isError: errorSeries, refetch: refetchSeries, dataUpdatedAt: updatedSeries } = useAllSeries();
+  const { data: news, isLoading: loadingNews, isFetching: fetchingNews, isError: errorNews, refetch: refetchNews, dataUpdatedAt: updatedNews } = useAllNewsReleases();
+  const { data: todayGames, isLoading: loadingGames, isFetching: fetchingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(getLocalDateString());
 
   const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
+  const isFetching = fetchingBanners || fetchingMovies || fetchingSeries || fetchingNews || fetchingGames;
   const hasError = errorBanners || errorMovies || errorSeries || errorNews || errorGames;
 
   const handleRetry = () => {
