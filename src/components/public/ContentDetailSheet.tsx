@@ -1,6 +1,7 @@
 import { useState, forwardRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls, type PanInfo } from "framer-motion";
 
@@ -33,6 +34,7 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
   const dragY = useMotionValue(0);
   const backdropOpacity = useTransform(dragY, [0, 300], [1, 0.2]);
   const dragControls = useDragControls();
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
 
   const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
     if (info.offset.y > DISMISS_THRESHOLD || info.velocity.y > 500) {
@@ -77,11 +79,15 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
           />
 
           <motion.div
-            ref={ref}
+            ref={(node) => {
+              trapRef.current = node;
+              if (typeof ref === "function") ref(node);
+              else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }}
             role="dialog"
             aria-modal="true"
             aria-label={item.title}
-            className="fixed bottom-0 left-0 right-0 z-[100] max-h-[90vh] flex flex-col rounded-t-3xl bg-card border-t border-border/30"
+            className="fixed bottom-0 left-0 right-0 z-[100] max-h-[90vh] flex flex-col rounded-t-3xl bg-card border-t border-border/30 outline-none"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
