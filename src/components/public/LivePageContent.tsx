@@ -455,6 +455,9 @@ export const LivePageContent = () => {
         </div>
       </section>
 
+      {/* ─── Aviso informativo ─── */}
+      <LiveNotice />
+
       {/* ─── Loading ─── */}
       {isLoading && (
         <div className="px-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
