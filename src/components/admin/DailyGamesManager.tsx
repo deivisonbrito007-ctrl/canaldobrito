@@ -154,6 +154,8 @@ export const DailyGamesManager = () => {
       setCheckingDupes(false);
     }
   };
+
+  const handleClearDay = async () => {
     if (!confirm(`Excluir todos os jogos de ${selectedDate}?`)) return;
     try {
       await deleteByDate.mutateAsync(selectedDate);
