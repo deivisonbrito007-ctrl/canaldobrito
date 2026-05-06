@@ -27,29 +27,38 @@ const STREAMING_APPS = [
 
 type ChannelTileItem = {
   name: string;
-  domain?: string;
-  localLogo?: string;
-  emoji: string;
+  /** Texto exibido dentro do badge (curto) */
+  label: string;
+  /** Classe Tailwind para o fundo do badge (cor sólida ou gradient da marca) */
   bg: string;
-  text: string;
-  border: string;
+  /** Classe Tailwind para a cor do texto */
+  fg: string;
+  /** Tamanho de fonte (Tailwind) */
+  size?: string;
+  /** Peso da fonte */
+  weight?: string;
+  /** Itálico */
+  italic?: boolean;
+  /** Subtexto opcional embaixo do label principal */
+  sub?: string;
+  /** Classe de fonte (display vs sans). Default: font-display */
+  font?: string;
 };
 
-// Logos reais buscados via CDN (Clearbit → Google Favicons → DuckDuckGo → emoji).
-// Sem SVGs caseiros: usamos a marca oficial servida pelos próprios sites.
+// Badges tipográficos com cores oficiais das marcas — sem fetch externo, sem flicker, sem 404.
 const DEFAULT_TV_CHANNELS: ChannelTileItem[] = [
-  { name: "ESPN",       domain: "espn.com",           emoji: "📺", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "SporTV",     domain: "sportv.globo.com",   emoji: "⚽", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "Globo",      domain: "globo.com",          emoji: "🌐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "Premiere",   domain: "premiere.globo.com", emoji: "⭐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "TNT Sports", domain: "tntsports.com.br",   emoji: "💥", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "Band",       domain: "band.uol.com.br",    emoji: "📡", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "CazéTV",     domain: "cazetv.com.br",      emoji: "🎮", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "Record",     domain: "recordtv.r7.com",    emoji: "📺", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "Canal GOAT", domain: "canalgoat.com",      emoji: "🐐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "Space",      domain: "tntsports.com.br",   emoji: "🚀", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "DAZN",       domain: "dazn.com",           emoji: "🥊", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
-  { name: "YouTube",    domain: "youtube.com",        emoji: "▶️", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "ESPN",       label: "ESPN",   bg: "bg-[#D9232E]",                                    fg: "text-white",     size: "text-[15px]", weight: "font-black",     italic: true },
+  { name: "SporTV",     label: "sporTV", bg: "bg-gradient-to-br from-[#00B04F] to-[#007A35]",   fg: "text-white",     size: "text-[14px]", weight: "font-black",     italic: true },
+  { name: "Globo",      label: "GLOBO",  bg: "bg-[#0A0A0A]",                                    fg: "text-white",     size: "text-[12px]", weight: "font-extrabold" },
+  { name: "Premiere",   label: "P!",     bg: "bg-gradient-to-br from-[#1a1a1a] to-[#000]",      fg: "text-[#FFD700]", size: "text-[24px]", weight: "font-black",     italic: true },
+  { name: "TNT Sports", label: "tnt",    bg: "bg-[#000000]",                                    fg: "text-[#FFD200]", size: "text-[18px]", weight: "font-black",     sub: "SPORTS" },
+  { name: "Band",       label: "B.",     bg: "bg-gradient-to-br from-[#0050B3] to-[#003A82]",   fg: "text-white",     size: "text-[26px]", weight: "font-black" },
+  { name: "CazéTV",     label: "Cazé",   bg: "bg-gradient-to-br from-[#BEF264] to-[#84CC16]",   fg: "text-[#0a0a0a]", size: "text-[14px]", weight: "font-black",     italic: true },
+  { name: "Record",     label: "REC",    bg: "bg-gradient-to-br from-[#0073CF] to-[#004A8A]",   fg: "text-white",     size: "text-[16px]", weight: "font-black" },
+  { name: "Canal GOAT", label: "GOAT",   bg: "bg-gradient-to-br from-[#FBBF24] to-[#D97706]",   fg: "text-[#0a0a0a]", size: "text-[14px]", weight: "font-black" },
+  { name: "Space",      label: "SPACE",  bg: "bg-gradient-to-br from-[#3A3A8C] to-[#0A0A2E]",   fg: "text-white",     size: "text-[11px]", weight: "font-black" },
+  { name: "DAZN",       label: "DAZN",   bg: "bg-[#F8F8F8]",                                    fg: "text-[#0a0a0a]", size: "text-[14px]", weight: "font-black",     italic: true },
+  { name: "YouTube",    label: "▶",      bg: "bg-[#FF0000]",                                    fg: "text-white",     size: "text-[28px]", weight: "font-black" },
 ];
 
 const buildMarqueeItems = (channels: ChannelTileItem[]) => {
