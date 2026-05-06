@@ -287,7 +287,7 @@ const Assinar = () => {
             onTouchEnd={resumeMarquee}
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
-              {MARQUEE_ITEMS.map((item, i) => (
+              {marqueeItems.map((item, i) => (
                 item.type === "app" ? (
                   <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center p-2 relative shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)]">
