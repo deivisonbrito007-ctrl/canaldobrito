@@ -75,10 +75,11 @@ describe("Modais — rotação e safe-areas iOS", () => {
   });
 
   describe("ContentDetailSheet", () => {
-    it("declara padding-bottom com env(safe-area-inset-bottom) no markup do conteúdo", () => {
-      const { container } = render(<ContentDetailSheet open onClose={() => {}} item={item} />);
-      // jsdom não interpreta env(); validamos no markup serializado.
-      expect(container.ownerDocument.body.innerHTML).toMatch(/safe-area-inset-bottom/);
+    it("declara padding-bottom com env(safe-area-inset-bottom) no fonte do componente", async () => {
+      // jsdom remove env() do CSS computado, então validamos o source.
+      const fs = await import("node:fs/promises");
+      const src = await fs.readFile("src/components/public/ContentDetailSheet.tsx", "utf8");
+      expect(src).toMatch(/env\(safe-area-inset-bottom/);
     });
 
     it.each([
