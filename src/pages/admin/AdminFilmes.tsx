@@ -426,53 +426,23 @@ const AdminFilmes = () => {
               <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar filmes do TMDB</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {movies.map((m) => (
-                <div key={m.id} className="flex items-center gap-2 rounded-lg glass-panel p-3">
-                  {m.poster_url ? (
-                    <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded-md object-cover shrink-0" loading="lazy" />
-                  ) : (
-                    <div className="h-14 w-10 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">{m.title}</p>
-                    <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
-                      {m.year && <span>{m.year}</span>}
-                      {m.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(m.rating)}`} /><span className={ratingColor(m.rating)}>{m.rating}</span></>}
-                      {m.genre ? <span className="text-blue-400/70 truncate">• {m.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-11 w-11 rounded-lg text-muted-foreground hover:text-blue-400 transition-all duration-200"
-                      disabled={refreshingId === m.id || batchActive}
-                      onClick={() => handleRefreshOne(m)}
-                      aria-label={`Atualizar dados de ${m.title} via TMDB`}
-                    >
-                      <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === m.id ? "animate-spin" : ""}`} />
-                    </Button>
-                    <Switch
-                      checked={m.active}
-                      disabled={batchActive}
-                      onCheckedChange={(v) => toggleMovie.mutate({ id: m.id, active: v })}
-                      aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={movies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {movies.map((m) => (
+                    <SortableMovieRow
+                      key={m.id}
+                      movie={m}
+                      refreshingId={refreshingId}
+                      batchActive={batchActive}
+                      onRefresh={handleRefreshOne}
+                      onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
+                      onDelete={setPendingDelete}
                     />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-11 w-11 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200"
-                      disabled={batchActive}
-                      onClick={() => setPendingDelete(m)}
-                      aria-label={`Remover ${m.title}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>
