@@ -5,6 +5,18 @@ import { useAllMovies } from "@/hooks/useMovies";
 import { useAllSeries } from "@/hooks/useSeries";
 import { useAllNewsReleases } from "@/hooks/useNewsReleases";
 import { useAllDailyGames } from "@/hooks/useDailyGames";
+
+// Returns current Date adjusted to America/Sao_Paulo (UTC-3) for hour-based logic.
+const getSPDate = () => {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + -3 * 3600000);
+};
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { getLocalDateString } from "@/lib/gameUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
