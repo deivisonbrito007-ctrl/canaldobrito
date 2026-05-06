@@ -114,15 +114,16 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
 
   test("swipe para CIMA é limitado por dragConstraints (top:0)", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    const baseline = await dialog.boundingBox();
+    if (!baseline) throw new Error("baseline ausente");
     const { x, y } = await handleBox(page);
     await swipe(page, x, y, -200, 10, 16);
-    await page.waitForTimeout(400);
     await expect(dialog).toBeVisible();
-    const transform = await dialog.evaluate((el) => getComputedStyle(el).transform);
-    const ty = transform === "none" ? 0 : Number(transform.split(",").pop()?.replace(")", "") ?? 0);
-    // Sem elasticidade no topo: ty deve ser ~0
-    expect(ty).toBeGreaterThanOrEqual(-2);
-    expect(ty).toBeLessThan(5);
+    const settled = await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
+    // Sem elasticidade no topo: o sheet não pode ter subido (y atual >= baseline.y - 2)
+    expect(settled.y).toBeGreaterThanOrEqual(baseline.y - 2);
+    // E também não pode ter descido
+    expect(settled.y).toBeLessThanOrEqual(baseline.y + 4);
   });
 
   test("swipe iniciado FORA do handle (área scrollável) NÃO fecha o sheet", async ({ page }) => {
