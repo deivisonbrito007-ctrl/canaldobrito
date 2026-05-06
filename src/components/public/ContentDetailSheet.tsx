@@ -63,12 +63,12 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
   const poster = item.poster_url || item.image_url;
   const backdrop = item.backdrop_url;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -78,7 +78,14 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
 
           <motion.div
             ref={ref}
-            className="fixed bottom-0 left-0 right-0 z-[60] max-h-[85vh] flex flex-col rounded-t-3xl bg-card border-t border-border/30"
+            role="dialog"
+            aria-modal="true"
+            aria-label={item.title}
+            className="fixed bottom-0 left-0 right-0 z-[100] max-h-[90vh] flex flex-col rounded-t-3xl bg-card border-t border-border/30"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
