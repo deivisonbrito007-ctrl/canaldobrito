@@ -37,6 +37,9 @@ jobs:
         project:
           - "iPhone 13 (WebKit)"
           - "Pixel 5 (Chromium)"
+          - "Pixel 7 (Chromium)"
+          - "Galaxy S9+ (Chromium)"
+          - "Galaxy Tab S4 (Chromium)"
           - "Desktop Chrome"
     steps:
       - uses: actions/checkout@v4
