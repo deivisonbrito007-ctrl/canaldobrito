@@ -1,51 +1,48 @@
-## Objetivo
+## Diagnóstico
 
-Na seção **Streaming & TV ao Vivo** da página `/assine-ja`, os apps de streaming (Netflix, Prime, Disney+, HBO Max, Globoplay, Paramount+) já usam logos oficiais — mas os **canais de TV** (ESPN, SporTV, Globo, Premiere, TNT, Band, CazéTV, Record, GOAT, Space) ainda aparecem como **emojis genéricos** dentro de quadrados coloridos. Isso quebra a consistência visual e parece amador. Vamos padronizar tudo com logos oficiais e dar um polimento profissional na página inteira.
+Os bugs que você está vendo (logos sumindo após carregar, "globo borrado" repetido em vários canais, layouts feios) têm 3 causas:
 
----
+1. **Clearbit Logo API foi descontinuado** (dez/2023) → todas as URLs `logo.clearbit.com/...` retornam 404 depois de uns segundos.
+2. **Google Favicons devolve 16x16 esticado** → aquele "globinho azul borrado" que aparece em CazéTV, Canal GOAT e Space é o favicon genérico do navegador.
+3. **SVGs locais** (`/channels/*.svg`) que tentei desenhar antes ficaram caseiros e inconsistentes.
 
-## Mudanças
+Não existe CDN público confiável que tenha logo oficial de **todos** esses canais brasileiros (ESPN BR, SporTV, Premiere, Canal GOAT, CazéTV, Space).
 
-### 1. Ícones oficiais para canais de TV (`src/pages/Assinar.tsx`)
+## Solução
 
-Substituir o array `TV_CHANNELS` para incluir `domain` (favicon CDN) e `localLogo` (SVGs já presentes em `public/channels/`), reaproveitando exatamente a mesma cadeia de fallback do `ChannelBadge`:
+**Abandonar completamente a busca de imagem externa para canais de TV.** Renderizar cada canal como **badge tipográfico** com:
 
-`localLogo → Google Favicons → DuckDuckGo → emoji`
+- Cor de fundo oficial da marca (verde SporTV, vermelho ESPN, preto+amarelo TNT, etc.)
+- Sigla/nome curto em fonte bold/black
+- Gradientes sutis para dar profundidade
 
-Logos já disponíveis localmente: `espn.svg`, `premiere.svg`, `cazetv.svg`, `goat.svg`, `dazn.svg`, `youtube.svg`. Os demais (SporTV, Globo, TNT, Band, Record, Space) entram via Google Favicons na resolução 64px.
+Resultado: zero requisições externas, zero flicker, zero 404, visual consistente e profissional.
 
-### 2. Componente unificado de tile no carrossel
+Os apps de streaming (Netflix, Prime, Disney+, etc.) **continuam usando os PNGs reais** já em `src/assets/app-icons/` — esses são logos oficiais comprovados.
 
-Criar um pequeno helper `ChannelTile` dentro de `Assinar.tsx` que renderiza app **e** canal com a mesma estrutura visual: card 56–64px arredondado, logo centralizado em fundo branco translúcido (para canais cujos logos coloridos contrastam mal com o tema dark), label embaixo. Resultado: o carrossel deixa de ter "duas estéticas" (PNG vs emoji).
+## Mudanças em `src/pages/Assinar.tsx`
 
-### 3. Acréscimos sugeridos para profissionalizar a página
+1. Trocar tipo `ChannelTileItem` para badge: `{ name, label, bg, fg, size, weight, italic, sub }`.
+2. Reescrever `DEFAULT_TV_CHANNELS` com cores oficiais:
+   - **ESPN** → vermelho `#D9232E`, "ESPN" itálico branco
+   - **SporTV** → gradient verde `#00B04F → #007A35`, "sporTV" itálico branco
+   - **Globo** → preto, "GLOBO"
+   - **Premiere** → preto, "P!" dourado `#FFD700`
+   - **TNT Sports** → preto, "tnt" amarelo + sub "SPORTS"
+   - **Band** → gradient azul `#0050B3 → #003A82`, "B."
+   - **CazéTV** → gradient verde-limão `#BEF264 → #84CC16`, "Cazé"
+   - **Record** → gradient azul `#0073CF → #004A8A`, "REC"
+   - **GOAT** → gradient âmbar `#FBBF24 → #D97706`, "GOAT"
+   - **Space** → gradient cosmos `#3A3A8C → #0A0A2E`, "SPACE"
+   - **DAZN** → branco `#F8F8F8`, "DAZN" preto itálico
+   - **YouTube** → vermelho `#FF0000`, "▶" branco
+3. Remover componente `ChannelLogo` (todo o sistema de fallback `localLogo → Clearbit → Google → DuckDuckGo → emoji`).
+4. Substituir o render do tile do canal por um único `<div>` com classes do badge, mostrando `label` (e `sub` opcional embaixo).
+5. Limpar `useSettings`/`tv_channels` parsing — manter compat se admin já salvou JSON, mas sem campos de logo externo.
 
-- **Adicionar 2 canais relevantes ao showcase**: DAZN e YouTube (já temos os SVGs). Ficam 8 streamings + 12 canais.
-- **Trust badges**: trocar a linha "Atualizado diariamente · Full HD & 4K · Multi-telas" para um grid mais robusto com bordas sutis em vez de só ícone+texto solto.
-- **Social Proof**: o card "5.000+ Canais" duplica o "5.000+ Clientes" — trocar para algo como "+10 mil títulos" ou "Suporte 24h" para evitar repetição percebida.
-- **Headline da seção**: hoje é "Streaming & TV ao Vivo" com bolinha vermelha pulsante. Adicionar pequeno subtítulo (`Tudo em um só lugar`) abaixo para hierarquia tipográfica.
-- **Acessibilidade**: incluir `aria-label` no carrossel marquee e `prefers-reduced-motion: reduce` para parar a animação automaticamente.
-- **Performance**: adicionar `width`/`height` em todos os `<img>` e `decoding="async"` (alguns já têm).
+## Limpeza opcional (recomendada)
 
-### 4. Refinamentos visuais gerais (opcionais nesta passada)
+- Deletar `public/channels/*.svg` (não são mais usados em lugar nenhum).
+- Remover seção "Canais & Streaming" do `AdminConfiguracoes.tsx` (editor JSON virou irrelevante já que tudo é hardcoded com cor da marca).
 
-- Espaçamento vertical entre seções: hoje várias usam `space-y-*` herdado; padronizar para `py-6 sm:py-8`.
-- O countdown "Expira hoje à meia-noite" gera urgência falsa (reseta todo dia). Sugiro remover ou trocar para uma promoção real com data fixa controlada por config.
-- O bloco de **planos** repete o nome "Brito Solutions · TV Completa" e tem só 1 plano — caso seja proposital (single plan), reforçar ainda mais o CTA WhatsApp e mostrar o **preço final por dia** (R$ 1,17/dia) como ancoragem.
-
----
-
-## Arquivos afetados
-
-- `src/pages/Assinar.tsx` — array `TV_CHANNELS`, render do carrossel, helper `ChannelTile`, ajustes de cópia e acessibilidade.
-
-## Detalhes técnicos
-
-```text
-TV_CHANNELS[] agora tem { name, domain, localLogo?, bg, text, border, emoji }
-ChannelTile reutiliza a lógica de fallback do ChannelBadge (stage 0..3)
-Marquee: aria-label="Plataformas e canais inclusos"
-                respeita @media (prefers-reduced-motion: reduce) → animação pausa
-```
-
-Sem mudanças de banco, sem novas dependências, sem migrações.
+Posso aplicar a limpeza junto, ou só a correção principal e mantemos o admin como está. Aprova que eu já implemento?
