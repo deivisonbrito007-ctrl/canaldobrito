@@ -540,8 +540,8 @@ export const LivePageContent = () => {
             </div>
           </div>
           <div className="px-3 space-y-1.5">
-            {upcoming.map(({ g, diffMin }) => (
-              <UpcomingCard key={g.id} game={g} minutesUntil={diffMin} />
+            {upcoming.map(({ g, diffMin }, i) => (
+              <UpcomingCard key={g.id} game={g} minutesUntil={diffMin} isNext={i === 0} />
             ))}
           </div>
         </section>
