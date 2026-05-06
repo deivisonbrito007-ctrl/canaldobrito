@@ -1,12 +1,22 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie } from "@/hooks/useMovies";
+import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie, type FeaturedMovie } from "@/hooks/useMovies";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2, Film, RefreshCw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Plus, Trash2, Star, ImageOff, Loader2, Film, RefreshCw, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
@@ -16,7 +26,7 @@ const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-
 const AdminFilmes = () => {
   const { user } = useAuth();
   const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
-  const { data: movies } = useAllMovies();
+  const { data: movies, isLoading } = useAllMovies();
   const addMovie = useAddMovie();
   const toggleMovie = useToggleMovie();
   const deleteMovie = useDeleteMovie();
@@ -26,10 +36,19 @@ const AdminFilmes = () => {
   const [addingId, setAddingId] = useState<number | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<FeaturedMovie | null>(null);
 
-  const handleSearch = () => { if (query.trim()) search("search_movie", query); };
-  const loadNowPlaying = () => { setTab("trending"); setResults([]); search("now_playing"); };
-  const switchToSearch = () => { setTab("search"); setResults([]); };
+  const batchActive = !!batchProgress;
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    setSearched(true);
+    search("search_movie", query.trim());
+  };
+  const loadNowPlaying = () => { setTab("trending"); setResults([]); setSearched(true); search("now_playing"); };
+  const switchToSearch = () => { setTab("search"); setResults([]); setSearched(false); };
+  const clearQuery = () => { setQuery(""); setResults([]); setSearched(false); };
 
   const handleAdd = async (r: TMDBResult) => {
     const existing = movies?.find((m) => m.tmdb_id === r.id);
@@ -52,7 +71,7 @@ const AdminFilmes = () => {
     finally { setAddingId(null); }
   };
 
-  const handleRefreshOne = async (movie: typeof movies extends (infer T)[] | undefined ? T : never) => {
+  const handleRefreshOne = async (movie: FeaturedMovie) => {
     if (!movie) return;
     setRefreshingId(movie.id);
     try {
@@ -108,12 +127,42 @@ const AdminFilmes = () => {
     await runBatch(movies, "filmes");
   };
 
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    deleteMovie.mutate(pendingDelete.id);
+    setPendingDelete(null);
+  };
+
   const activeCount = movies?.filter((m) => m.active).length || 0;
   const totalCount = movies?.length || 0;
   const missingDataCount = movies?.filter((m) => !m.genre || !m.backdrop_url).length || 0;
+  const ratedCount = movies?.filter((m) => m.rating != null).length || 0;
+  const avgRating = ratedCount
+    ? (movies!.reduce((s, m) => s + (m.rating || 0), 0) / ratedCount)
+    : 0;
 
   return (
     <div className="space-y-5">
+      {/* Stats compactos */}
+      {totalCount > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="glass-panel rounded-xl p-3 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-bold">Total</p>
+            <p className="text-lg font-extrabold text-foreground tabular-nums mt-0.5">{totalCount}</p>
+          </div>
+          <div className="glass-panel rounded-xl p-3 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-bold">Ativos</p>
+            <p className="text-lg font-extrabold text-blue-400 tabular-nums mt-0.5">{activeCount}</p>
+          </div>
+          <div className="glass-panel rounded-xl p-3 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-bold">Nota média</p>
+            <p className={`text-lg font-extrabold tabular-nums mt-0.5 ${avgRating ? ratingColor(avgRating) : "text-muted-foreground/40"}`}>
+              {avgRating ? avgRating.toFixed(1) : "—"}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -122,12 +171,18 @@ const AdminFilmes = () => {
           </h3>
         </div>
         <div className="p-4 space-y-3">
-          <div className="flex gap-1.5">
+          <div role="tablist" aria-label="Modo de busca" className="flex gap-1.5">
             {[
               { key: "search" as const, label: "Buscar", onClick: switchToSearch },
               { key: "trending" as const, label: "Em cartaz", onClick: loadNowPlaying },
             ].map((t) => (
-              <button key={t.key} onClick={t.onClick} className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${tab === t.key ? "bg-blue-500/15 text-blue-400 border border-blue-500/30" : "glass-panel text-muted-foreground/70"}`}>
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={t.onClick}
+                className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[44px] flex-1 sm:flex-initial ${tab === t.key ? "bg-blue-500/15 text-blue-400 border border-blue-500/30" : "glass-panel text-muted-foreground/70"}`}
+              >
                 {t.label}
               </button>
             ))}
@@ -135,8 +190,29 @@ const AdminFilmes = () => {
 
           {tab === "search" ? (
             <div className="flex gap-2">
-              <Input placeholder="Nome do filme..." value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="glass-panel border-white/[0.1] text-sm h-10" aria-label="Buscar filme por nome" />
-              <Button onClick={handleSearch} disabled={searching} size="icon" className="shrink-0 h-10 w-10" aria-label="Buscar">
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Nome do filme..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="glass-panel border-white/[0.1] text-sm h-11 pr-9"
+                  aria-label="Buscar filme por nome"
+                  enterKeyHint="search"
+                  inputMode="search"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={clearQuery}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.05] flex items-center justify-center"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <Button onClick={handleSearch} disabled={searching || !query.trim()} size="icon" className="shrink-0 h-11 w-11" aria-label="Buscar">
                 {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
             </div>
@@ -146,93 +222,164 @@ const AdminFilmes = () => {
 
           {searching && <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" />Buscando...</div>}
 
+          {!searching && searched && results.length === 0 && (
+            <div className="py-6 text-center">
+              <p className="text-xs text-muted-foreground">Nenhum resultado encontrado</p>
+            </div>
+          )}
+
           {results.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-              {results.map((r) => (
-                <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden group">
-                  {r.poster_path ? (
-                    <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.title || r.name} className="w-full aspect-[2/3] object-cover" loading="lazy" />
-                  ) : (
-                    <div className="w-full aspect-[2/3] flex items-center justify-center bg-white/[0.02]"><ImageOff className="h-6 w-6 text-muted-foreground/20" /></div>
-                  )}
-                  <div className="p-2">
-                    <p className="text-[10px] font-semibold truncate">{r.title || r.name}</p>
-                    <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-0.5">
-                      <Star className={`h-2 w-2 fill-current ${ratingColor(r.vote_average || 0)}`} />
-                      <span>{r.vote_average?.toFixed(1)}</span>
+              {results.map((r) => {
+                const alreadyAdded = movies?.some((m) => m.tmdb_id === r.id);
+                return (
+                  <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden group">
+                    {r.poster_path ? (
+                      <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.title || r.name} className="w-full aspect-[2/3] object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-full aspect-[2/3] flex items-center justify-center bg-white/[0.02]"><ImageOff className="h-6 w-6 text-muted-foreground/20" /></div>
+                    )}
+                    {alreadyAdded && (
+                      <div className="absolute top-1 right-1 px-1 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center" aria-label="Já adicionado">
+                        <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                      </div>
+                    )}
+                    <div className="p-2">
+                      <p className="text-[10px] font-semibold truncate">{r.title || r.name}</p>
+                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-0.5">
+                        <Star className={`h-2 w-2 fill-current ${ratingColor(r.vote_average || 0)}`} />
+                        <span>{r.vote_average?.toFixed(1)}</span>
+                      </div>
                     </div>
+                    <Button
+                      size="sm"
+                      disabled={addingId === r.id || alreadyAdded}
+                      className="absolute bottom-0 left-0 right-0 rounded-none h-9 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity"
+                      onClick={() => handleAdd(r)}
+                      aria-label={`Adicionar ${r.title || r.name} ao catálogo`}
+                    >
+                      {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                      {alreadyAdded ? "Adicionado" : "Add"}
+                    </Button>
                   </div>
-                  <Button size="sm" disabled={addingId === r.id} className="absolute bottom-0 left-0 right-0 rounded-none h-8 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity" onClick={() => handleAdd(r)} aria-label={`Adicionar ${r.title || r.name} ao catálogo`}>
-                    {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />} Add
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
       <div className="glass-panel rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-white/[0.06]">
           <h3 className="text-sm font-bold text-foreground">Adicionados</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {missingDataCount > 0 && (
-              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
-                {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                Atualizar {missingDataCount} incompletos
+              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={batchActive} className="h-9 text-[10px] gap-1">
+                {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                {missingDataCount} incompletos
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={!!batchProgress} className="h-7 text-[10px] gap-1">
-              {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Atualizar Todos
+            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={batchActive || totalCount === 0} className="h-9 text-[10px] gap-1">
+              {batchActive ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Atualizar todos
             </Button>
-            <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-0.5">
-              {activeCount} ativos / {totalCount}
-            </span>
           </div>
         </div>
 
         {batchProgress && (
-          <div className="px-4 pt-3 space-y-1">
+          <div className="px-4 pt-3 space-y-1" role="status" aria-live="polite">
             <p className="text-[10px] text-muted-foreground">Atualizando {batchProgress.current}/{batchProgress.total}...</p>
             <Progress value={(batchProgress.current / batchProgress.total) * 100} className="h-1.5" />
           </div>
         )}
 
         <div className="p-4">
-          {!movies || movies.length === 0 ? (
-            <div className="py-10 text-center space-y-3">
+          {isLoading ? (
+            <div className="space-y-2" aria-busy="true">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg glass-panel p-3 shimmer-skeleton">
+                  <div className="h-14 w-10 rounded-md bg-white/[0.04]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-1/2 bg-white/[0.04] rounded" />
+                    <div className="h-2 w-1/3 bg-white/[0.04] rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !movies || movies.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
               <Film className="h-8 w-8 text-muted-foreground/20 mx-auto" />
               <p className="text-xs text-muted-foreground">Nenhum filme adicionado</p>
+              <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar filmes do TMDB</p>
             </div>
           ) : (
             <div className="space-y-2">
               {movies.map((m) => (
-                <div key={m.id} className="flex items-center gap-3 rounded-lg glass-panel p-3">
+                <div key={m.id} className="flex items-center gap-2 rounded-lg glass-panel p-3">
                   {m.poster_url ? (
-                    <img src={m.poster_url} alt={m.title} className="h-12 w-9 rounded-md object-cover shrink-0" />
+                    <img src={m.poster_url} alt={m.title} className="h-14 w-10 rounded-md object-cover shrink-0" loading="lazy" />
                   ) : (
-                    <div className="h-12 w-9 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
+                    <div className="h-14 w-10 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{m.title}</p>
                     <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
                       {m.year && <span>{m.year}</span>}
                       {m.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(m.rating)}`} /><span className={ratingColor(m.rating)}>{m.rating}</span></>}
-                      {m.genre ? <span className="text-blue-400/70">• {m.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
+                      {m.genre ? <span className="text-blue-400/70 truncate">• {m.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
                     </p>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-blue-400 shrink-0 transition-all duration-200" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)} aria-label={`Atualizar dados de ${m.title} via TMDB`}>
-                    <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === m.id ? "animate-spin" : ""}`} />
-                  </Button>
-                  <Switch checked={m.active} onCheckedChange={(v) => { console.log("[AdminFilmes:toggle]", { id: m.id, active: v }); toggleMovie.mutate({ id: m.id, active: v }); }} aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`} />
-                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0 transition-all duration-200" onClick={() => { if (confirm("Remover filme?")) { console.log("[AdminFilmes:delete]", { id: m.id, title: m.title }); deleteMovie.mutate(m.id); } }} aria-label={`Remover ${m.title}`}><Trash2 className="h-4 w-4" /></Button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-11 w-11 rounded-lg text-muted-foreground hover:text-blue-400 transition-all duration-200"
+                      disabled={refreshingId === m.id || batchActive}
+                      onClick={() => handleRefreshOne(m)}
+                      aria-label={`Atualizar dados de ${m.title} via TMDB`}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === m.id ? "animate-spin" : ""}`} />
+                    </Button>
+                    <Switch
+                      checked={m.active}
+                      disabled={batchActive}
+                      onCheckedChange={(v) => toggleMovie.mutate({ id: m.id, active: v })}
+                      aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-11 w-11 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200"
+                      disabled={batchActive}
+                      onClick={() => setPendingDelete(m)}
+                      aria-label={`Remover ${m.title}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover filme?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete?.title ? `"${pendingDelete.title}" será removido permanentemente do catálogo.` : "Essa ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
