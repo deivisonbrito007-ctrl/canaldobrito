@@ -198,6 +198,11 @@ const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame;
       )}
       style={{ borderLeft: `3px solid ${theme.color}`, border: `1px solid ${theme.border}`, borderLeftWidth: 3 }}
     >
+      {isNext && (
+        <span className="absolute -top-2 left-3 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground text-[8px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_10px_hsl(var(--primary)/0.5)]">
+          ★ Próximo
+        </span>
+      )}
       <div className="flex flex-col items-center justify-center min-w-[42px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
         <span className="text-[8px] font-bold text-primary uppercase tracking-wide font-body leading-none">em</span>
         <span className="text-[13px] font-extrabold text-primary tabular-nums font-body leading-none mt-0.5">
