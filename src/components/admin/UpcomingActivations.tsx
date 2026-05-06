@@ -93,7 +93,7 @@ export const UpcomingActivations = forwardRef<HTMLDivElement>((_props, ref) => {
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden border border-amber-500/[0.15] bg-gradient-to-br from-amber-500/[0.06] to-amber-500/[0.01]">
+    <div ref={ref} className="glass-panel rounded-xl overflow-hidden border border-amber-500/[0.15] bg-gradient-to-br from-amber-500/[0.06] to-amber-500/[0.01]">
       <div className="p-4 border-b border-amber-500/10">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-amber-400" />
@@ -137,4 +137,6 @@ export const UpcomingActivations = forwardRef<HTMLDivElement>((_props, ref) => {
       </div>
     </div>
   );
-};
+});
+
+UpcomingActivations.displayName = "UpcomingActivations";
