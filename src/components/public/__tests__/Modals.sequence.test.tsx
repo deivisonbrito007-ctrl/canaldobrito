@@ -3,6 +3,7 @@ import { useState } from "react";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { ContentDetailSheet } from "../ContentDetailSheet";
 import { TrailerModal } from "../TrailerModal";
+import { __resetBodyScrollLock } from "@/lib/bodyScrollLock";
 
 vi.mock("@/hooks/useTrailerKey", () => ({
   useTrailerKey: () => ({ trailerKey: null, loading: false }),
@@ -73,7 +74,7 @@ const zIndexOf = (el: Element | null) => {
 describe("Modais — abertura em sequência (sheet ↔ trailer)", () => {
   afterEach(() => {
     cleanup();
-    document.body.style.overflow = "";
+    __resetBodyScrollLock();
   });
 
   it("apenas o sheet aparece quando só ele é aberto", () => {
