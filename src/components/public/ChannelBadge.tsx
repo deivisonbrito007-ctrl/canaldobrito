@@ -45,6 +45,19 @@ const CHANNEL_MAP: Record<string, ChannelConfig> = {
   youtube:      { emoji: "▶️", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]", short: "YT", domain: "youtube.com", localLogo: "/channels/youtube.svg" },
   dazn:         { emoji: "🥊", text: "text-yellow-300",  border: "border-yellow-500/40",  gradient: "from-yellow-500/30 to-amber-600/20",    glow: "shadow-[0_0_12px_rgba(234,179,8,0.2)]", domain: "dazn.com", localLogo: "/channels/dazn.svg" },
   nsports:      { emoji: "🏆", text: "text-cyan-300",    border: "border-cyan-500/40",    gradient: "from-cyan-500/30 to-sky-600/20",        glow: "shadow-[0_0_12px_rgba(6,182,212,0.2)]", domain: "nsports.com.br" },
+  "x sports":   { emoji: "❌", text: "text-fuchsia-300", border: "border-fuchsia-500/40", gradient: "from-fuchsia-600/30 to-purple-700/20",  glow: "shadow-[0_0_12px_rgba(217,70,239,0.25)]", short: "X Sports", domain: "xsports.com.br" },
+  xsports:      { emoji: "❌", text: "text-fuchsia-300", border: "border-fuchsia-500/40", gradient: "from-fuchsia-600/30 to-purple-700/20",  glow: "shadow-[0_0_12px_rgba(217,70,239,0.25)]", short: "X Sports", domain: "xsports.com.br" },
+  combate:      { emoji: "🥋", text: "text-red-300",     border: "border-red-600/40",     gradient: "from-red-700/30 to-rose-800/20",        glow: "shadow-[0_0_12px_rgba(220,38,38,0.25)]", domain: "canalcombate.globo.com" },
+  "canal do benja": { emoji: "🎙️", text: "text-orange-300", border: "border-orange-500/40", gradient: "from-orange-500/30 to-amber-600/20", glow: "shadow-[0_0_12px_rgba(249,115,22,0.2)]", short: "Benja", domain: "youtube.com", localLogo: "/channels/youtube.svg" },
+  onefootball:  { emoji: "⚽", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-600/30 to-teal-700/20",    glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", short: "OneFt", domain: "onefootball.com" },
+  redetv:       { emoji: "📺", text: "text-rose-300",    border: "border-rose-500/40",    gradient: "from-rose-500/30 to-red-600/20",        glow: "shadow-[0_0_12px_rgba(244,63,94,0.2)]", short: "RedeTV", domain: "redetv.uol.com.br" },
+  "redetv!":    { emoji: "📺", text: "text-rose-300",    border: "border-rose-500/40",    gradient: "from-rose-500/30 to-red-600/20",        glow: "shadow-[0_0_12px_rgba(244,63,94,0.2)]", short: "RedeTV", domain: "redetv.uol.com.br" },
+  "league pass":{ emoji: "🏀", text: "text-orange-300",  border: "border-orange-500/40",  gradient: "from-orange-500/30 to-red-600/20",      glow: "shadow-[0_0_12px_rgba(249,115,22,0.25)]", short: "NBA LP", domain: "nba.com" },
+  nba:          { emoji: "🏀", text: "text-orange-300",  border: "border-orange-500/40",  gradient: "from-orange-500/30 to-red-600/20",      glow: "shadow-[0_0_12px_rgba(249,115,22,0.25)]", domain: "nba.com" },
+  sportynet:    { emoji: "🏆", text: "text-cyan-300",    border: "border-cyan-500/40",    gradient: "from-cyan-500/30 to-sky-600/20",        glow: "shadow-[0_0_12px_rgba(6,182,212,0.2)]", short: "SNet", domain: "nsports.com.br" },
+  snet:         { emoji: "🏆", text: "text-cyan-300",    border: "border-cyan-500/40",    gradient: "from-cyan-500/30 to-sky-600/20",        glow: "shadow-[0_0_12px_rgba(6,182,212,0.2)]", domain: "nsports.com.br" },
+  "tv aratu":   { emoji: "📡", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-500/30 to-indigo-600/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "Aratu", domain: "aratuon.com.br" },
+  "tv jornal":  { emoji: "📡", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-500/30 to-indigo-600/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "TVJ", domain: "tvjornal.ne10.uol.com.br" },
 };
 
 const FALLBACK: ChannelConfig = {
