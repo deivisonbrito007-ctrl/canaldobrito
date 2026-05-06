@@ -280,15 +280,26 @@ const Assinar = () => {
                   </div>
                 ) : (
                   <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
-                      <ChannelLogo
-                        localLogo={(item as any).localLogo}
-                        domain={(item as any).domain}
-                        emoji={(item as any).emoji}
-                        alt={`Logo ${item.name}`}
-                      />
+                    <div
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border border-white/10 flex flex-col items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative ${(item as any).bg}`}
+                    >
+                      <span
+                        className={`leading-none tracking-tight ${(item as any).fg} ${(item as any).size || "text-[14px]"} ${(item as any).weight || "font-black"} ${(item as any).italic ? "italic" : ""} ${(item as any).font || "font-display"}`}
+                      >
+                        {(item as any).label}
+                      </span>
+                      {(item as any).sub && (
+                        <span
+                          className={`text-[7px] font-black tracking-[0.15em] mt-0.5 ${(item as any).fg}`}
+                        >
+                          {(item as any).sub}
+                        </span>
+                      )}
+                      <span className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent opacity-40" aria-hidden="true" />
                     </div>
-                    <span className={`text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight ${(item as any).text}`}>{item.name}</span>
+                    <span className="text-[9px] font-body font-semibold text-center w-14 sm:w-16 leading-tight text-muted-foreground">
+                      {item.name}
+                    </span>
                   </div>
                 )
               ))}
