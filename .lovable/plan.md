@@ -1,81 +1,54 @@
-# Auditoria e melhorias — aba Filmes e Séries
-
 ## Diagnóstico
 
-Após revisar `NovidadesPage`, `WeeklyMoviesSection`, `WeeklySeriesSection`, `ContentDetailSheet`, `ContentCard`, `ContentListItem`, `FilterChip`, `SearchModal` e os testes existentes, encontrei o seguinte:
+A captura mostra o `ContentDetailSheet` (bottom sheet) sendo renderizado **atrás da BottomNav**, com a parte inferior cortada e o conteúdo (poster/título "COMO MÁGICA") escondido pela barra de navegação. Isso é o bug visual reportado no mobile.
 
-### Bugs / warnings ativos
-1. **Warning do React** no console: `MovieCard` (e por consequência `SeriesCard`) "cannot be given refs". O `framer-motion` no caminho `AnimatePresence → motion.div → MovieCard` exige `forwardRef` quando o componente é alvo de medição/animação. Regra de projeto (memória Core) já manda usar `React.forwardRef` em componentes envolvidos com framer-motion/tooltips.
-2. `ContentDetailSheet` já é `forwardRef`, mas o warning ainda aparece no rastro porque o componente irmão (`MovieCard`) é o real culpado — ao corrigir #1 o stack some.
+Investigando o código encontrei três problemas reais:
 
-### Cobertura de testes ausente
-- `ContentCard`, `ContentListItem`, `FilterChip`, `BadgePill`, `SearchModal` e a própria `NovidadesPage` (filtros, ordenação, empty state, alternância grid/list) não têm testes.
+### 1. z-index conflitante (causa principal do bug visual)
+- `BottomNav` usa `z-50`
+- `ContentDetailSheet` usa `z-[60]` ✔ (acima da nav)
+- **Mas** `Index.tsx` envolve a página em `<AnimatePresence>` + `motion.div` que cria um novo *stacking context*. Como a `<main>` tem `z-10` e o sheet é renderizado como filho dela (via portal-less `fixed`), o `position: fixed` do sheet fica preso ao stacking context da `motion.div` ancestral (que está abaixo do `BottomNav` `z-50`). Resultado: o sheet aparece visualmente **abaixo** da BottomNav no mobile, mesmo com `z-[60]`.
+- Mesmo problema afeta o `TrailerModal` (`z-[70]`) — também fica preso pelo `motion.div` ancestral em alguns navegadores mobile (Chrome Android, conforme screenshot).
 
-### Pontos de UX/mobile a melhorar
-- **Empty state global**: se `stats.all === 0` e não houver `weeklyMovies/weeklySeries`, a página fica em branco abaixo do hero (sem CTA).
-- **Ordenação fica escondida**: o `<select>` só aparece dentro do filtro ativo. Não é descoberto na visão padrão "Todos".
-- **Botão de busca** (`44×44`) ok, mas falta atalho de teclado (`/`) e foco automático no modal.
-- **Filtros com scroll horizontal**: o mask-gradient corta o último chip em telas estreitas (≤360px). Ajustar padding e snap.
-- **Acessibilidade**: chips usam `<button>` mas faltam `aria-pressed`. Sort `<select>` precisa de label visível em telas grandes — ok manter `sr-only` em mobile.
-- **Performance**: `WeeklyMoviesSection` e `WeeklySeriesSection` chamam `useTrailerAvailability` separadamente. Já está cacheado, ok manter.
-- **iOS safe area**: o container tem `pb-2`. Como `BottomNav` cobre o final, adicionar `pb-[calc(5rem+env(safe-area-inset-bottom))]` para evitar último item escondido em iPhones.
+### 2. `padding-bottom` insuficiente no sheet
+- `ContentDetailSheet` usa `paddingBottom: calc(6rem + env(safe-area-inset-bottom))` no conteúdo interno, mas o sheet em si tem `max-h-[85vh]` e termina em `bottom-0`. A `BottomNav` tem ~64px + safe-area, então o conteúdo final do sheet (botões, links) fica encoberto.
 
-### Sugestões extras (opcionais, marco como nice-to-have)
-- Mostrar contador de resultados no header quando há filtro ativo (já feito).
-- Persistir filtro/ordem em `sessionStorage` para preservar entre navegações.
-- Adicionar skeleton específico para listas (atualmente reaproveita o de grid).
+### 3. Sheet/Modal não usam React Portal
+- Por estar dentro do `motion.div` da página, qualquer transformação/animação do ancestral também afeta o `position: fixed` (bug conhecido do CSS: `transform` em ancestral quebra `fixed`).
 
-## Mudanças propostas
+## Plano de Correção
 
-### 1. Corrigir warning de refs (Core memory)
-- `WeeklyMoviesSection.tsx`: converter `MovieCard` em `React.forwardRef<HTMLDivElement, Props>` aplicando `ref` no `motion.div`.
-- `WeeklySeriesSection.tsx`: idem para `SeriesCard`.
+### A. Renderizar overlays via Portal (`createPortal` para `document.body`)
+Refatorar `ContentDetailSheet.tsx` e `TrailerModal.tsx` para envolver o `<AnimatePresence>` em `createPortal(..., document.body)`. Isso resolve o bug raiz: os overlays escapam do stacking context da página animada e respeitam de fato seu `z-index` global, tanto em mobile quanto desktop.
 
-### 2. Empty state global na NovidadesPage
-- Quando `!isLoading && stats.all === 0 && weeklyCount === 0`, renderizar painel central "Em breve novos títulos" com ícone e CTA para abrir busca.
+### B. Ajustar offsets do BottomNav
+- Em `ContentDetailSheet`: aumentar `max-h` para `90vh` e elevar o `bottom` final acima da BottomNav quando aberto (ou simplesmente usar portal + manter z-[60], já que a nav some atrás do backdrop). Garantir `paddingBottom` final do conteúdo scroll = `calc(7rem + env(safe-area-inset-bottom))`.
+- Em `TrailerModal`: já está centralizado; com portal o `z-[70]` passa a funcionar e fica acima de tudo.
 
-### 3. Ordenação visível no modo "Todos"
-- Mover o `<select>` de ordenação para o header global (à direita do botão de busca em telas ≥sm; abaixo do filtro chips em mobile). A ordenação afeta apenas o grid filtrado; quando filtro = "all", ela ordena `WeeklyMovies` + `WeeklySeries` localmente passando prop `sort` para essas seções.
-- Alternativa mais simples: manter dentro do filtro ativo e remover do escopo (escolher na implementação).
+### C. Esconder BottomNav quando há overlay aberto (UX bonus)
+Pequena melhoria: quando `sheetOpen` ou `trailerItem` ativos, emitir um evento ou usar contexto para esconder a `BottomNav` (ou usar `inert` + `aria-hidden`). Alternativa mais simples: aumentar o backdrop do sheet para cobrir 100vh (já está `inset-0`), o que com portal já resolve visualmente.
 
-### 4. Acessibilidade & atalhos
-- Adicionar `aria-pressed={active}` em `FilterChip`.
-- `NovidadesPage`: listener de teclado para `/` abrir `SearchModal`.
-- `SearchModal`: `autoFocus` no input + `Escape` fecha (verificar se já existe).
+### D. Corrigir `dragSnapToOrigin` em iOS
+`framer-motion` `dragSnapToOrigin` em iOS pode falhar ao recolocar o sheet quando o usuário solta abaixo do threshold. Garantir reset explícito de `dragY.set(0)` no `onDragEnd` quando não dispara o close.
 
-### 5. Padding & safe area mobile
-- Trocar `pb-2` no wrapper por `pb-[calc(5rem+env(safe-area-inset-bottom))]`.
-- Ajustar mask-gradient dos filtros para `calc(100%-12px)` e `pr-4` para garantir visibilidade do último chip em 320px.
+### E. Garantir que clicks no card abrem corretamente em desktop
+`NovidadesCard.handleCardClick` depende de `didSwipe.current`, mas `didSwipe` só é setado em `onTouchEnd` (mobile). No desktop funciona ok. Sem mudança necessária.
 
-### 6. Testes (Vitest + Testing Library)
-Criar arquivos novos:
-- `src/components/public/novidades/__tests__/FilterChip.test.tsx` — render label/contagem, click handler, `aria-pressed`.
-- `src/components/public/novidades/__tests__/ContentCard.test.tsx` — título, badge de tipo, fallback de imagem, callback `onSelect`.
-- `src/components/public/novidades/__tests__/ContentListItem.test.tsx` — render lista, rating, chevron, callback.
-- `src/components/public/novidades/__tests__/BadgePill.test.tsx` — variantes (`lancamento`, `nova_temporada`, `estreia`, `exclusivo`, `movie`, `series`).
-- `src/components/public/__tests__/NovidadesPage.test.tsx` — mock dos hooks `useActiveNewsReleases`/`useActiveMovies`/`useActiveSeries`; verifica:
-  - render do header e contagem total
-  - alternância de filtro mostra o grid e esconde o carrossel
-  - mudança no `<select>` reordena (A–Z e Ano)
-  - alternância grid → list troca os componentes renderizados
-  - empty state global aparece quando todos os hooks retornam vazio
-- Atualizar `WeeklyMoviesSection.test.tsx` / `WeeklySeriesSection.test.tsx` para garantir que `forwardRef` não quebra o render existente.
+## Arquivos a editar
 
-### 7. Rodar a suíte completa
-- Executar `bunx vitest run` ao final e reportar resultado (passes/falhas).
+1. `src/components/public/ContentDetailSheet.tsx` — adicionar `createPortal`, ajustar paddings, fix do `dragY` reset.
+2. `src/components/public/TrailerModal.tsx` — adicionar `createPortal`.
+3. (opcional) `src/components/public/BottomNav.tsx` — aceitar prop `hidden` e esconder com transition; controlar via estado em `Index.tsx` se quisermos a melhoria UX bonus.
 
-## Arquivos afetados
+## Sugestões adicionais (opcionais, posso aplicar junto)
 
-- `src/components/public/WeeklyMoviesSection.tsx` (forwardRef)
-- `src/components/public/WeeklySeriesSection.tsx` (forwardRef)
-- `src/components/public/NovidadesPage.tsx` (empty state global, safe-area, atalho `/`, aria)
-- `src/components/public/novidades/FilterChip.tsx` (aria-pressed)
-- `src/components/public/novidades/SearchModal.tsx` (autoFocus / Escape — apenas se faltar)
-- 5 arquivos novos de teste em `src/components/public/novidades/__tests__/` e `src/components/public/__tests__/`
+- **Loading do trailer**: hoje o `useTrailerKey` é refeito a cada abertura. Cachear por `tmdb_id` (já existe `useTrailerAvailability` parcial) para abertura instantânea ao reabrir o mesmo conteúdo.
+- **Acessibilidade**: adicionar `role="dialog"` + `aria-modal="true"` + focus trap no `ContentDetailSheet` e `TrailerModal`.
+- **ESC para fechar**: já não é tratado nos overlays — adicionar listener de `Escape` (ajuda em desktop).
+- **Bloqueio de scroll do body** quando overlay aberto (`overflow: hidden` no `<body>`), evitando scroll de fundo no mobile.
 
-## Itens fora do escopo (sugestões para depois)
+## Testes
 
-- Persistência de filtro/ordem em `sessionStorage`.
-- Skeleton dedicado para a visão lista.
-- Pré-carregamento de pôsteres do próximo "lote" no scroll vertical (IntersectionObserver).
-- Compartilhamento de cards via Web Share API.
+- Atualizar testes existentes do `NovidadesCard` para mockar `createPortal` (ou simplesmente confirmar que renderiza em `document.body`).
+- Adicionar teste novo: `ContentDetailSheet.test.tsx` cobrindo: abre, mostra título, botão fechar dispara `onClose`, ESC fecha.
+- Rodar `bunx vitest run` ao final.
