@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Loader2, Youtube, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/bodyScrollLock";
 
 interface TrailerModalProps {
   open: boolean;
