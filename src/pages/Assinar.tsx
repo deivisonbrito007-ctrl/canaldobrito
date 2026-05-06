@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Tv, Film, Trophy, Star, Smartphone, Monitor, Tablet, Laptop, Zap, CheckCircle2, Gift, AlertTriangle, MessageCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useSettings } from "@/hooks/useSettings";
 import logo from "@/assets/canal_do_brito_logo.png";
 
 import netflixIcon from "@/assets/app-icons/netflix.png";
@@ -34,26 +35,28 @@ type ChannelTileItem = {
   border: string;
 };
 
-const TV_CHANNELS: ChannelTileItem[] = [
-  { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg",     emoji: "📺", bg: "bg-red-600/15",     text: "text-red-300",       border: "border-red-500/30" },
-  { name: "SporTV",     domain: "sportv.globo.com",                                        emoji: "⚽", bg: "bg-emerald-600/15", text: "text-emerald-300",   border: "border-emerald-500/30" },
-  { name: "Globo",      domain: "globo.com",                                               emoji: "🌐", bg: "bg-slate-200/10",   text: "text-foreground/85", border: "border-foreground/15" },
-  { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg", emoji: "⭐", bg: "bg-yellow-500/15",  text: "text-yellow-300",    border: "border-yellow-500/30" },
-  { name: "TNT Sports", domain: "tntsports.com.br",                                        emoji: "💥", bg: "bg-blue-600/15",    text: "text-blue-300",      border: "border-blue-500/30" },
-  { name: "Band",       domain: "band.uol.com.br",                                         emoji: "📡", bg: "bg-emerald-500/15", text: "text-emerald-300",   border: "border-emerald-500/30" },
-  { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg",   emoji: "🎮", bg: "bg-lime-500/15",    text: "text-lime-300",      border: "border-lime-500/30" },
-  { name: "Record",     domain: "recordtv.r7.com",                                         emoji: "📺", bg: "bg-blue-500/15",    text: "text-blue-300",      border: "border-blue-500/30" },
-  { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg",     emoji: "🐐", bg: "bg-amber-500/15",   text: "text-amber-300",     border: "border-amber-500/30" },
-  { name: "Space",      domain: "tntsports.com.br",                                        emoji: "🚀", bg: "bg-indigo-500/15",  text: "text-indigo-300",    border: "border-indigo-500/30" },
-  { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg",     emoji: "🥊", bg: "bg-yellow-500/15",  text: "text-yellow-300",    border: "border-yellow-500/30" },
-  { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",  emoji: "▶️", bg: "bg-red-600/15",     text: "text-red-300",       border: "border-red-500/30" },
+const DEFAULT_TV_CHANNELS: ChannelTileItem[] = [
+  { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg",       emoji: "📺", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "SporTV",     domain: "sportv.globo.com",   localLogo: "/channels/sportv.svg",     emoji: "⚽", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "Globo",      domain: "globo.com",          localLogo: "/channels/globo.svg",      emoji: "🌐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg",   emoji: "⭐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "TNT Sports", domain: "tntsports.com.br",   localLogo: "/channels/tnt-sports.svg", emoji: "💥", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "Band",       domain: "band.uol.com.br",    localLogo: "/channels/band.svg",       emoji: "📡", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg",     emoji: "🎮", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "Record",     domain: "recordtv.r7.com",    localLogo: "/channels/record.svg",     emoji: "📺", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg",       emoji: "🐐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "Space",      domain: "tntsports.com.br",   localLogo: "/channels/space.svg",      emoji: "🚀", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg",       emoji: "🥊", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",    emoji: "▶️", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
 ];
 
-const CAROUSEL_ITEMS = [
-  ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
-  ...TV_CHANNELS.map(c => ({ type: "channel" as const, ...c })),
-];
-const MARQUEE_ITEMS = [...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS, ...CAROUSEL_ITEMS];
+const buildMarqueeItems = (channels: ChannelTileItem[]) => {
+  const base = [
+    ...STREAMING_APPS.map(a => ({ type: "app" as const, ...a })),
+    ...channels.map(c => ({ type: "channel" as const, ...c })),
+  ];
+  return [...base, ...base, ...base];
+};
 
 const WA_NUMBER = "5511940759046";
 const WA_LINK = (msg: string) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
@@ -142,6 +145,29 @@ const ChannelLogo = ({
 
 const Assinar = () => {
   const { h, m, s } = useCountdown();
+  const { data: settings } = useSettings();
+
+  const tvChannels = useMemo<ChannelTileItem[]>(() => {
+    const raw = settings?.tv_channels;
+    if (!raw) return DEFAULT_TV_CHANNELS;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) {
+        return parsed.map((c: Partial<ChannelTileItem>) => ({
+          name: c.name || "",
+          domain: c.domain,
+          localLogo: c.localLogo,
+          emoji: c.emoji || "📺",
+          bg: c.bg || "bg-white",
+          text: c.text || "text-foreground/85",
+          border: c.border || "border-white/10",
+        })).filter(c => c.name);
+      }
+    } catch {/* fallback */}
+    return DEFAULT_TV_CHANNELS;
+  }, [settings?.tv_channels]);
+
+  const marqueeItems = useMemo(() => buildMarqueeItems(tvChannels), [tvChannels]);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
@@ -261,7 +287,7 @@ const Assinar = () => {
             onTouchEnd={resumeMarquee}
           >
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
-              {MARQUEE_ITEMS.map((item, i) => (
+              {marqueeItems.map((item, i) => (
                 item.type === "app" ? (
                   <div key={`app-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center p-2 relative shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)]">
@@ -320,6 +346,9 @@ const Assinar = () => {
                 <span className="font-display text-5xl sm:text-6xl text-primary">R$ 35</span>
                 <span className="text-sm text-muted-foreground font-body">/mês</span>
               </div>
+              <p className="text-[11px] text-muted-foreground font-body">
+                Equivale a <span className="text-primary font-bold">R$ 1,17/dia</span> · menos que um café
+              </p>
             </div>
             <span className="inline-block text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-3 py-1">
               Sem fidelidade · Cancele quando quiser

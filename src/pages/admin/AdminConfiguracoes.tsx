@@ -3,8 +3,28 @@ import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, Phone, Key, Info, Globe, Copy, Check } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Save, Loader2, Phone, Key, Info, Globe, Copy, Check, Tv, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+
+const DEFAULT_TV_CHANNELS_JSON = JSON.stringify(
+  [
+    { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg" },
+    { name: "SporTV",     domain: "sportv.globo.com",   localLogo: "/channels/sportv.svg" },
+    { name: "Globo",      domain: "globo.com",          localLogo: "/channels/globo.svg" },
+    { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg" },
+    { name: "TNT Sports", domain: "tntsports.com.br",   localLogo: "/channels/tnt-sports.svg" },
+    { name: "Band",       domain: "band.uol.com.br",    localLogo: "/channels/band.svg" },
+    { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg" },
+    { name: "Record",     domain: "recordtv.r7.com",    localLogo: "/channels/record.svg" },
+    { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg" },
+    { name: "Space",      domain: "tntsports.com.br",   localLogo: "/channels/space.svg" },
+    { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg" },
+    { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg" },
+  ],
+  null,
+  2,
+);
 
 const AdminConfiguracoes = () => {
   const { data: settings, isLoading } = useSettings();
@@ -12,6 +32,7 @@ const AdminConfiguracoes = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [tmdbKey, setTmdbKey] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
+  const [tvChannelsJson, setTvChannelsJson] = useState("");
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -20,6 +41,7 @@ const AdminConfiguracoes = () => {
       setWhatsapp(settings.whatsapp || "");
       setTmdbKey(settings.tmdb_api_key || "");
       setSiteUrl(settings.site_url || "");
+      setTvChannelsJson(settings.tv_channels || DEFAULT_TV_CHANNELS_JSON);
     }
   }, [settings]);
 
@@ -28,9 +50,10 @@ const AdminConfiguracoes = () => {
     return (
       whatsapp !== (settings.whatsapp || "") ||
       tmdbKey !== (settings.tmdb_api_key || "") ||
-      siteUrl !== (settings.site_url || "")
+      siteUrl !== (settings.site_url || "") ||
+      tvChannelsJson !== (settings.tv_channels || DEFAULT_TV_CHANNELS_JSON)
     );
-  }, [whatsapp, tmdbKey, siteUrl, settings]);
+  }, [whatsapp, tmdbKey, siteUrl, tvChannelsJson, settings]);
 
   const handleSave = async () => {
     if (whatsapp && !/^\d{10,15}$/.test(whatsapp)) {
@@ -48,12 +71,22 @@ const AdminConfiguracoes = () => {
       }
     }
 
+    if (tvChannelsJson) {
+      try {
+        const parsed = JSON.parse(tvChannelsJson);
+        if (!Array.isArray(parsed)) throw new Error("array");
+      } catch {
+        toast.error("JSON dos canais inválido");
+        return;
+      }
+    }
+
     try {
-      console.log("[AdminConfiguracoes:save]", { whatsapp: !!whatsapp, hasTmdb: !!tmdbKey, siteUrl });
       await Promise.all([
         updateSetting.mutateAsync({ key: "whatsapp", value: whatsapp }),
         updateSetting.mutateAsync({ key: "tmdb_api_key", value: tmdbKey }),
         updateSetting.mutateAsync({ key: "site_url", value: siteUrl }),
+        updateSetting.mutateAsync({ key: "tv_channels", value: tvChannelsJson }),
       ]);
       setSaved(true);
       toast.success("Configurações salvas!");
@@ -135,6 +168,39 @@ const AdminConfiguracoes = () => {
           <p className="text-[10px] text-muted-foreground/50">
             Obtenha em{" "}
             <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">themoviedb.org</a>
+          </p>
+        </div>
+      </div>
+
+      {/* TV Channels (página Assinar) */}
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Tv className="h-4 w-4 text-primary" />
+            Canais & Streaming (Assinar)
+          </h3>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setTvChannelsJson(DEFAULT_TV_CHANNELS_JSON)}
+            className="h-7 px-2 text-[10px]"
+            title="Restaurar padrão"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" /> Padrão
+          </Button>
+        </div>
+        <div className="p-4 space-y-2">
+          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Lista (JSON)</Label>
+          <Textarea
+            value={tvChannelsJson}
+            onChange={(e) => setTvChannelsJson(e.target.value)}
+            rows={10}
+            spellCheck={false}
+            className="glass-panel border-white/[0.1] font-mono text-[11px] leading-snug"
+          />
+          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
+            Cada canal: <code className="text-primary/80">{`{ name, domain, localLogo }`}</code>. O <code>localLogo</code> aceita caminhos de <code>/channels/*.svg</code>; se ausente, o ícone é buscado pelo <code>domain</code>.
           </p>
         </div>
       </div>
