@@ -48,6 +48,22 @@
     --green-dim: 153 100% 50% / 0.08;
     --green-border: 153 100% 50% / 0.20;
 
+    /* Sport identity colors (HSL) */
+    --sport-football: 142 76% 45%;
+    --sport-basketball: 24 95% 55%;
+    --sport-volleyball: 271 81% 65%;
+    --sport-tennis: 78 70% 55%;
+    --sport-f1: 0 84% 55%;
+    --sport-mma: 14 100% 50%;
+    --sport-hockey: 199 89% 55%;
+    --sport-baseball: 43 89% 50%;
+    --sport-rugby: 152 60% 40%;
+    --sport-surf: 187 85% 55%;
+    --sport-cycling: 332 82% 60%;
+    --sport-boxing: 0 73% 45%;
+    --sport-swimming: 174 80% 45%;
+    --sport-golf: 84 70% 45%;
+
     --sidebar-background: 210 22% 3%;
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 153 100% 50%;
