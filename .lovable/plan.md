@@ -1,33 +1,51 @@
-# Refinar hierarquia visual mobile da aba "Ao Vivo"
+## Objetivo
 
-## Mudanças em `src/components/public/LivePageContent.tsx`
+Você continua cadastrando todos os jogos manualmente (banner/parser). A TheSportsDB serve **somente** para enriquecer cada jogo com **placar ao vivo** e **tempo de jogo** (minutos). Sem importar jogos automaticamente.
 
-### 1. Hero compacto
-- Reduzir padding `p-3 sm:p-4` → `px-3 py-2.5`.
-- Linha única: badge `● AO VIVO` + título inline + relógio menor à direita.
-- Remover blob de glow redundante (`-top-10 -right-10`).
-- Pills de filtro só aparecem se houver **2+ esportes diferentes** ao vivo.
+## Como vai funcionar
 
-### 2. Aviso dispensável (`LiveNotice`)
-- Adicionar botão `X` para fechar.
-- Persistir dismissal em `localStorage` (`live-notice-dismissed-v1`).
-- Reduzir para 1 linha com texto truncado.
+1. Você cadastra o jogo normalmente (times, horário, canal).
+2. Um job em background tenta achar o evento correspondente na TheSportsDB (por times + data) e salva o `external_id` (`tsdb:<eventId>`) no jogo.
+3. A cada ~60s, uma function de "live update" busca placar e minuto dos jogos que estão no ar e atualiza o card.
+4. Sugestão de match com 1 clique no admin caso o auto-match falhe (ambíguo / nomes diferentes).
 
-### 3. Header "Acontecendo agora" mais leve
-- `text-sm font-extrabold` → `text-[11px] uppercase tracking-wider`. Cards passam a ser o protagonista visual.
+## Mudanças
 
-### 4. Banner "Começam em breve" → header inline compacto
-- Substituir bloco de ~110px por header de ~36px:
-  `🏆 PRÓXIMOS · em 13min  [1]` com barra fina inline.
-- Remove redundância visual com card `★ Próximo` logo abaixo.
+### Banco
+- Adicionar em `daily_games`:
+  - `external_id text` (reintroduzir, ex.: `tsdb:1234567`)
+  - `home_score int`, `away_score int`
+  - `live_status text` (`scheduled` | `live` | `finished`)
+  - `live_updated_at timestamptz`
+- Índice único parcial em `external_id` (quando não nulo).
 
-### 5. Deduplicar live × upcoming
-- Filtrar de `upcoming` qualquer game cujo `competition + home_team` já apareça em `liveGames`.
-- Evita "Italian Open" listado duas vezes.
+### Edge functions
+- `tsdb-match-game` — recebe `gameId`, busca eventos do dia (`eventsday.php?d=YYYY-MM-DD&s=Soccer` etc por esporte), faz fuzzy match dos times e grava `external_id` + sugestões.
+- `tsdb-live-update` — roda via cron a cada 60s; para todo `daily_games` com `external_id`, `is_live=true` ou janela de ±15min do `game_time`, chama `lookupevent.php?id=<n>` e atualiza placar/minuto/status.
+- Reutiliza `THESPORTSDB_KEY` (já existe).
 
-### 6. Card `★ Próximo` mais discreto
-- Mover badge para dentro do card (sem `-top-2` flutuante).
-- `ring-2` → `ring-1` para não competir com a borda do esporte.
+### Admin (DailyGamesManager)
+- Badge "Vinculado TSDB ✓" / "Sem vínculo".
+- Botão "Buscar placar" (dispara `tsdb-match-game`); se múltiplos candidatos, abre modal para escolher.
+- Botão "Desvincular" para limpar `external_id`.
 
-## Resultado
-~180px recuperados na primeira dobra mobile. Hierarquia clara: cards = protagonistas, headers = coadjuvantes.
+### UI pública
+- Card do jogo ao vivo passa a mostrar `home_score x away_score` e o minuto (`45'`, `HT`, `FT`) quando vier da TSDB.
+- Mantém o layout/cores atuais; sem placar, mostra só horário (comportamento atual).
+
+## Detalhes técnicos
+
+- Mapeamento esporte → liga TSDB feito por `sport_type` (Soccer, Basketball, MMA, etc.).
+- Fuzzy match: normalizar (lowercase, sem acento), comparar `home_team`/`away_team` com `strHomeTeam`/`strAwayTeam`; aceitar match com score ≥ 0.85, senão retornar candidatos.
+- Cron: usar `pg_cron` chamando `tsdb-live-update` a cada minuto (limitado à janela de jogos do dia para economizar quota).
+- Time zone: comparar datas em `America/Sao_Paulo` antes de pedir `eventsday`.
+- Sem CHECK constraints com `now()` — usar trigger se precisar validar.
+
+## Sugestões extras
+
+- **Auto-match no insert**: trigger/edge que tenta vincular logo após o cadastro, sem você clicar.
+- **Fallback "ao vivo manual"**: se TSDB não retornar dados em 5 min após o início, manter o card como "AO VIVO" sem placar (não some).
+- **Cache TSDB**: cachear `eventsday` por 10 min em `settings` ou KV pra não estourar quota quando vários jogos estiverem rolando.
+- **Indicador de "atrasado"**: se `live_updated_at` > 3 min, mostrar pontinho amarelo discreto no card admin.
+
+Posso aplicar?
