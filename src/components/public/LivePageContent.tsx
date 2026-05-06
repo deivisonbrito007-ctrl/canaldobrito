@@ -502,17 +502,42 @@ export const LivePageContent = () => {
         </section>
       )}
 
-      {/* ─── Upcoming ─── */}
+      {/* ─── Upcoming — Premium Banner ─── */}
       {!isLoading && upcoming.length > 0 && (
-        <section className="space-y-2.5 animate-fade-up stagger-3">
-          <div className="px-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-extrabold text-foreground font-body uppercase tracking-tight">
-              Começam em breve
-            </h2>
-            <span className="text-[10px] bg-primary/15 text-primary rounded-full px-2 py-0.5 font-bold tabular-nums font-body">
-              {upcoming.length}
-            </span>
+        <section className="space-y-3 animate-fade-up stagger-3">
+          <div className="px-3">
+            <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent backdrop-blur-xl">
+              <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+              <div className="relative flex items-center gap-3 px-3 py-2.5">
+                <div className="shrink-0 flex items-center justify-center h-10 w-10 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_16px_hsl(var(--primary)/0.25)]">
+                  <Trophy className="h-5 w-5 text-primary" aria-hidden />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-[13px] font-extrabold text-foreground font-body uppercase tracking-[0.14em] leading-none">
+                      Começam em breve
+                    </h2>
+                    <span className="inline-flex items-center justify-center min-w-[22px] h-[18px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold tabular-nums shadow-[0_0_10px_hsl(var(--primary)/0.5)]">
+                      {upcoming.length}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[10px] font-medium text-foreground/70 font-body">
+                    Próximo em{" "}
+                    <span className="font-extrabold text-primary tabular-nums">{upcoming[0].diffMin}min</span>
+                    {" · "}
+                    {upcoming.length > 1 ? `${upcoming.length} eventos na próxima hora` : "1 evento na próxima hora"}
+                  </p>
+                  {/* Mini timeline progress (inverted: closer to start = fuller) */}
+                  <div className="mt-1.5 h-1 rounded-full bg-primary/10 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.max(8, 100 - (upcoming[0].diffMin / 60) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="px-3 space-y-1.5">
             {upcoming.map(({ g, diffMin }) => (
