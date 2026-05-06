@@ -1,4 +1,5 @@
 import { test, expect, devices } from "@playwright/test";
+import { waitForStable } from "./utils/animation-stability";
 
 /**
  * Touch swipe behavior for ContentDetailSheet.
@@ -22,9 +23,10 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
     await page.goto(HARNESS_PATH);
     await expect(page.getByRole("heading", { name: "E2E Modal Harness" })).toBeVisible();
     await page.getByTestId("open-sheet").click();
-    await expect(page.getByRole("dialog", { name: "E2E Sample Title" })).toBeVisible();
-    // Aguarda animação de entrada estabilizar
-    await page.waitForTimeout(450);
+    const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    await expect(dialog).toBeVisible();
+    // Aguarda animação de entrada estabilizar via boundingBox (em vez de sleep fixo).
+    await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
   });
 
   const handleBox = async (page: import("@playwright/test").Page) => {
@@ -85,15 +87,14 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
 
   test("swipe curto (<120px) volta ao snap e NÃO fecha", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    const baseline = await dialog.boundingBox();
+    if (!baseline) throw new Error("baseline ausente");
     const { x, y } = await handleBox(page);
     await swipe(page, x, y, 80, 8, 20);
-    await page.waitForTimeout(500);
     await expect(dialog).toBeVisible();
-    // snap de volta: y final deve estar próximo de 0
-    const transform = await dialog.evaluate((el) => getComputedStyle(el).transform);
-    // matrix(...) — extrai translateY (último valor)
-    const ty = transform === "none" ? 0 : Number(transform.split(",").pop()?.replace(")", "") ?? 0);
-    expect(Math.abs(ty)).toBeLessThan(5);
+    // Espera o snap-back assentar e compara o top com o baseline (tolerância 4px).
+    const settled = await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
+    expect(Math.abs(settled.y - baseline.y)).toBeLessThanOrEqual(4);
   });
 
   test("swipe longo (>120px) fecha o sheet", async ({ page }) => {
@@ -113,15 +114,16 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
 
   test("swipe para CIMA é limitado por dragConstraints (top:0)", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    const baseline = await dialog.boundingBox();
+    if (!baseline) throw new Error("baseline ausente");
     const { x, y } = await handleBox(page);
     await swipe(page, x, y, -200, 10, 16);
-    await page.waitForTimeout(400);
     await expect(dialog).toBeVisible();
-    const transform = await dialog.evaluate((el) => getComputedStyle(el).transform);
-    const ty = transform === "none" ? 0 : Number(transform.split(",").pop()?.replace(")", "") ?? 0);
-    // Sem elasticidade no topo: ty deve ser ~0
-    expect(ty).toBeGreaterThanOrEqual(-2);
-    expect(ty).toBeLessThan(5);
+    const settled = await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
+    // Sem elasticidade no topo: o sheet não pode ter subido (y atual >= baseline.y - 2)
+    expect(settled.y).toBeGreaterThanOrEqual(baseline.y - 2);
+    // E também não pode ter descido
+    expect(settled.y).toBeLessThanOrEqual(baseline.y + 4);
   });
 
   test("swipe iniciado FORA do handle (área scrollável) NÃO fecha o sheet", async ({ page }) => {
@@ -139,9 +141,11 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
 
   test("drag elastic respeita limite ~60% (não desce arbitrariamente)", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    const baseline = await dialog.boundingBox();
+    if (!baseline) throw new Error("baseline ausente");
     const { x, y } = await handleBox(page);
 
-    // Drag muito longo, mas SEM soltar — mede o offset durante o gesto
+    // Drag muito longo, mas SEM soltar — mede o offset durante o gesto.
     await page.evaluate(
       ({ x, y }) => {
         const target = document.elementFromPoint(x, y) as HTMLElement;
@@ -165,14 +169,15 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
       },
       { x, y },
     );
-    await page.waitForTimeout(150);
-    const transform = await dialog.evaluate((el) => getComputedStyle(el).transform);
-    const ty = transform === "none" ? 0 : Number(transform.split(",").pop()?.replace(")", "") ?? 0);
-    // Com dragElastic.bottom=0.6, offset real <= ~600px (60% de 1000)
-    expect(ty).toBeLessThanOrEqual(650);
-    expect(ty).toBeGreaterThan(0);
 
-    // Solta sem disparar fechamento (offset > 120 -> fecharia; o objetivo aqui é só o limite elástico).
+    // Aguarda o offset estabilizar (sem soltar). Mede via boundingBox: o sheet
+    // desceu uma quantidade ELÁSTICA (entre 50px e 700px de offset real).
+    const settled = await waitForStable(page, dialog, { samples: 3, thresholdPx: 1, timeoutMs: 1_500 });
+    const offset = settled.y - baseline.y;
+    expect(offset).toBeGreaterThan(50);
+    expect(offset).toBeLessThanOrEqual(700);
+
+    // Solta o gesto.
     await page.evaluate(({ x, y }) => {
       const target = document.elementFromPoint(x, y) as HTMLElement;
       const t = new Touch({ identifier: 1, target, clientX: x, clientY: y, pageX: x, pageY: y });

@@ -1,4 +1,5 @@
 import { test, expect, devices } from "@playwright/test";
+import { waitForStable, waitForOpacity } from "./utils/animation-stability";
 
 /**
  * iOS-specific spec: roda em múltiplos iPhones (SE, 13, 14 Pro Max) garantindo
@@ -31,31 +32,27 @@ for (const { name, device } of iosProfiles) {
       const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
       await expect(dialog).toBeVisible();
 
-      // Aguarda animação assentar e valida que o transform final é estável (snap).
-      const transformStart = await dialog.evaluate((el) => getComputedStyle(el).transform);
-      await page.waitForTimeout(450);
-      const transformSettled = await dialog.evaluate((el) => getComputedStyle(el).transform);
-      expect(transformSettled).toBe(
-        await dialog.evaluate((el) => getComputedStyle(el).transform),
-      );
-      // sanity: depois de assentar não está em estado inicial off-screen
-      expect(transformSettled).not.toBe("");
+      // Snap pronto = bounding box estável por várias amostras consecutivas.
+      const settled = await waitForStable(page, dialog, {
+        samples: 5,
+        thresholdPx: 0.5,
+        timeoutMs: 2_500,
+      });
+      expect(settled.height).toBeGreaterThan(0);
+      expect(settled.width).toBeGreaterThan(0);
 
-      // Z-index acima do nav
+      // Z-index acima do nav.
       const nav = page.locator("nav").first();
       const dz = Number(await dialog.evaluate((el) => getComputedStyle(el).zIndex));
       const nz = Number(await nav.evaluate((el) => getComputedStyle(el).zIndex));
       expect(dz).toBeGreaterThan(nz);
 
-      // O fundo do sheet cobre a área onde a BottomNav fica (visualmente sobre).
-      const dialogBox = await dialog.boundingBox();
+      // O sheet deve sobrepor verticalmente a faixa da BottomNav.
       const navBox = await nav.boundingBox();
-      expect(dialogBox).toBeTruthy();
       expect(navBox).toBeTruthy();
-      if (dialogBox && navBox) {
-        // o dialog deve sobrepor verticalmente a faixa da nav
-        const overlap = Math.min(dialogBox.y + dialogBox.height, navBox.y + navBox.height)
-          - Math.max(dialogBox.y, navBox.y);
+      if (navBox) {
+        const overlap = Math.min(settled.y + settled.height, navBox.y + navBox.height)
+          - Math.max(settled.y, navBox.y);
         expect(overlap).toBeGreaterThan(0);
       }
     });
@@ -82,12 +79,13 @@ for (const { name, device } of iosProfiles) {
       const dialog = page.getByRole("dialog", { name: /Trailer/ });
       await expect(dialog).toBeVisible();
 
-      // mesmo com reduced-motion, opacity final = 1 e elemento mensurável
-      await page.waitForTimeout(250);
-      const opacity = await dialog.evaluate((el) => Number(getComputedStyle(el).opacity));
+      // Mesmo com reduced-motion: opacity converge para >= 0.99 sem sleep fixo.
+      const opacity = await waitForOpacity(page, dialog, 0.99, 1_500);
       expect(opacity).toBeGreaterThanOrEqual(0.99);
-      const box = await dialog.boundingBox();
-      expect(box && box.width > 0 && box.height > 0).toBe(true);
+      const settled = await waitForStable(page, dialog, { samples: 3, thresholdPx: 0.5, timeoutMs: 1_500 });
+      expect(settled.width).toBeGreaterThan(0);
+      expect(settled.height).toBeGreaterThan(0);
+      // (estabilidade já validada por waitForStable acima)
 
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
@@ -97,25 +95,28 @@ for (const { name, device } of iosProfiles) {
       await page.getByTestId("open-sheet").click();
       const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
       await expect(dialog).toBeVisible();
+      await waitForStable(page, dialog, { samples: 4, thresholdPx: 0.5, timeoutMs: 2_000 });
 
       const portrait = page.viewportSize();
       if (!portrait) test.skip();
 
       await page.setViewportSize({ width: portrait!.height, height: portrait!.width });
       await page.evaluate(() => window.dispatchEvent(new Event("orientationchange")));
-      await page.waitForTimeout(200);
 
-      // continua montado e visível
+      // Espera reflow assentar (sem sleep fixo).
+      const settled = await waitForStable(page, dialog, {
+        samples: 4,
+        thresholdPx: 0.5,
+        timeoutMs: 2_500,
+      });
+
       await expect(dialog).toBeVisible();
       const nav = page.locator("nav").first();
       const dz = Number(await dialog.evaluate((el) => getComputedStyle(el).zIndex));
       const nz = Number(await nav.evaluate((el) => getComputedStyle(el).zIndex));
       expect(dz).toBeGreaterThan(nz);
-
-      // Não excede a viewport (regra max-h em landscape)
-      const box = await dialog.boundingBox();
-      expect(box).toBeTruthy();
-      if (box) expect(box.height).toBeLessThanOrEqual(portrait!.width);
+      // Não excede a viewport (max-h em landscape)
+      expect(settled.height).toBeLessThanOrEqual(portrait!.width);
     });
 
     test("Ambos os modais são portais filhos de <body> (não presos a stacking context)", async ({ page }) => {
