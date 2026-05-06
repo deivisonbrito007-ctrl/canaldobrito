@@ -290,14 +290,6 @@ export const DailyGamesManager = () => {
                         <p className="text-[10px] text-muted-foreground/60">
                           📺 {game.channels?.join(", ") || "—"}
                         </p>
-                        {game.home_score != null && game.away_score != null && (
-                          <p className="text-[10px] mt-0.5">
-                            <span className="text-fuchsia-300 font-bold tabular-nums">
-                              {game.home_score} × {game.away_score}
-                              {game.status_short ? ` · ${game.status_short}` : ""}
-                            </span>
-                          </p>
-                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isArchived ? (
