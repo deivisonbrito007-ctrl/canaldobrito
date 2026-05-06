@@ -67,7 +67,7 @@ const useScheduledItems = () =>
     refetchInterval: 60000,
   });
 
-export const UpcomingActivations = () => {
+export const UpcomingActivations = forwardRef<HTMLDivElement>((_props, ref) => {
   const { data: items, isLoading } = useScheduledItems();
   const [, setTick] = useState(0);
 
