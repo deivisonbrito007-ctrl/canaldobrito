@@ -134,6 +134,26 @@ const AdminFilmes = () => {
 
   const batchActive = !!batchProgress;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !movies) return;
+    const oldIndex = movies.findIndex((m) => m.id === active.id);
+    const newIndex = movies.findIndex((m) => m.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newOrder = arrayMove(movies, oldIndex, newIndex);
+    reorderMovies.mutate(newOrder.map((m) => m.id), {
+      onError: (e: any) => toast.error(e?.message || "Falha ao salvar ordem"),
+      onSuccess: () => toast.success("Ordem atualizada"),
+    });
+  };
+
+
   const handleSearch = () => {
     if (!query.trim()) return;
     setSearched(true);
