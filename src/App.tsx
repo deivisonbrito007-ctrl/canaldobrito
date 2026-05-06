@@ -48,7 +48,7 @@ const App = () => (
               {import.meta.env.DEV && (
                 <Route path="/e2e/modals" element={<E2EModals />} />
               )}
-              <Route path="/admin" element={<AdminLayout />}>
+              <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="banners" element={<AdminBanners />} />
