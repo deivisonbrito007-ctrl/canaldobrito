@@ -111,19 +111,21 @@ const FAQ_ITEMS = [
   { q: "O que acontece se eu indicar amigos?", a: "Você ganha descontos progressivos! 25% OFF na 1ª indicação, 50% OFF na 2ª e 1 mês grátis na 3ª. Após a 3ª, o ciclo recomeça." },
 ];
 
-/** Logo do canal com cadeia de fallback: localLogo → Google Favicons → DuckDuckGo → emoji */
+/** Logo do canal com cadeia de fallback: localLogo → Clearbit → Google Favicons (128) → DuckDuckGo → emoji */
 const ChannelLogo = ({
   localLogo,
   domain,
   emoji,
   alt,
 }: { localLogo?: string; domain?: string; emoji: string; alt: string }) => {
-  const [stage, setStage] = useState<0 | 1 | 2 | 3>(localLogo ? 0 : domain ? 1 : 3);
-  if (stage === 3) return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
+  const initial: 0 | 1 | 2 | 3 | 4 = localLogo ? 0 : domain ? 1 : 4;
+  const [stage, setStage] = useState<0 | 1 | 2 | 3 | 4>(initial);
+  if (stage === 4) return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
   let src = "";
   if (stage === 0 && localLogo) src = localLogo;
-  else if (stage === 1 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-  else if (stage === 2 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  else if (stage === 1 && domain) src = `https://logo.clearbit.com/${domain}?size=128`;
+  else if (stage === 2 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  else if (stage === 3 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
   else return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
   return (
     <img
@@ -135,12 +137,12 @@ const ChannelLogo = ({
       height={48}
       onError={() =>
         setStage((s) => {
-          let next = (s + 1) as 0 | 1 | 2 | 3;
-          if (next === 1 && !domain) next = 3;
+          let next = (s + 1) as 0 | 1 | 2 | 3 | 4;
+          if (next === 1 && !domain) next = 4;
           return next;
         })
       }
-      className="w-full h-full object-contain"
+      className="w-full h-full object-contain p-1.5"
     />
   );
 };
