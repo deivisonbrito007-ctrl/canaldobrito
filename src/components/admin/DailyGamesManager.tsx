@@ -290,19 +290,12 @@ export const DailyGamesManager = () => {
                         <p className="text-[10px] text-muted-foreground/60">
                           📺 {game.channels?.join(", ") || "—"}
                         </p>
-                        {(game.external_id || game.home_score != null) && (
-                          <p className="text-[10px] mt-0.5 flex items-center gap-1.5">
-                            {game.external_id ? (
-                              <span className="text-emerald-400 inline-flex items-center gap-1">
-                                <Link2 className="h-3 w-3" /> TSDB
-                              </span>
-                            ) : null}
-                            {game.home_score != null && game.away_score != null && (
-                              <span className="text-fuchsia-300 font-bold tabular-nums">
-                                {game.home_score} × {game.away_score}
-                                {game.status_short ? ` · ${game.status_short}` : ""}
-                              </span>
-                            )}
+                        {game.home_score != null && game.away_score != null && (
+                          <p className="text-[10px] mt-0.5">
+                            <span className="text-fuchsia-300 font-bold tabular-nums">
+                              {game.home_score} × {game.away_score}
+                              {game.status_short ? ` · ${game.status_short}` : ""}
+                            </span>
                           </p>
                         )}
                       </div>
@@ -318,23 +311,6 @@ export const DailyGamesManager = () => {
                           </Button>
                         ) : (
                           <>
-                            {game.external_id ? (
-                              <button
-                                onClick={() => handleUnlinkTSDB(game.id)}
-                                className="p-1 rounded hover:bg-white/[0.06] text-emerald-400"
-                                title="Desvincular TheSportsDB"
-                              >
-                                <Link2Off className="h-3.5 w-3.5" />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleMatchTSDB(game.id)}
-                                className="p-1 rounded hover:bg-white/[0.06] text-fuchsia-400"
-                                title="Buscar placar (TheSportsDB)"
-                              >
-                                <Radio className="h-3.5 w-3.5" />
-                              </button>
-                            )}
                             <Switch
                               checked={game.active}
                               onCheckedChange={() => handleToggleActive(game.id, game.active)}
