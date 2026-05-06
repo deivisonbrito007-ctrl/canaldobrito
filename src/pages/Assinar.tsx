@@ -35,19 +35,21 @@ type ChannelTileItem = {
   border: string;
 };
 
+// Logos reais buscados via CDN (Clearbit → Google Favicons → DuckDuckGo → emoji).
+// Sem SVGs caseiros: usamos a marca oficial servida pelos próprios sites.
 const DEFAULT_TV_CHANNELS: ChannelTileItem[] = [
-  { name: "ESPN",       domain: "espn.com",           localLogo: "/channels/espn.svg",       emoji: "📺", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "SporTV",     domain: "sportv.globo.com",   localLogo: "/channels/sportv.svg",     emoji: "⚽", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Globo",      domain: "globo.com",          localLogo: "/channels/globo.svg",      emoji: "🌐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg",   emoji: "⭐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "TNT Sports", domain: "tntsports.com.br",   localLogo: "/channels/tnt-sports.svg", emoji: "💥", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Band",       domain: "band.uol.com.br",    localLogo: "/channels/band.svg",       emoji: "📡", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg",     emoji: "🎮", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Record",     domain: "recordtv.r7.com",    localLogo: "/channels/record.svg",     emoji: "📺", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg",       emoji: "🐐", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "Space",      domain: "tntsports.com.br",   localLogo: "/channels/space.svg",      emoji: "🚀", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "DAZN",       domain: "dazn.com",           localLogo: "/channels/dazn.svg",       emoji: "🥊", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
-  { name: "YouTube",    domain: "youtube.com",        localLogo: "/channels/youtube.svg",    emoji: "▶️", bg: "bg-white",          text: "text-foreground/85", border: "border-white/10" },
+  { name: "ESPN",       domain: "espn.com",           emoji: "📺", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "SporTV",     domain: "sportv.globo.com",   emoji: "⚽", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Globo",      domain: "globo.com",          emoji: "🌐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Premiere",   domain: "premiere.globo.com", emoji: "⭐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "TNT Sports", domain: "tntsports.com.br",   emoji: "💥", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Band",       domain: "band.uol.com.br",    emoji: "📡", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "CazéTV",     domain: "cazetv.com.br",      emoji: "🎮", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Record",     domain: "recordtv.r7.com",    emoji: "📺", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Canal GOAT", domain: "canalgoat.com",      emoji: "🐐", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "Space",      domain: "tntsports.com.br",   emoji: "🚀", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "DAZN",       domain: "dazn.com",           emoji: "🥊", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
+  { name: "YouTube",    domain: "youtube.com",        emoji: "▶️", bg: "bg-white", text: "text-foreground/85", border: "border-white/10" },
 ];
 
 const buildMarqueeItems = (channels: ChannelTileItem[]) => {
@@ -109,19 +111,21 @@ const FAQ_ITEMS = [
   { q: "O que acontece se eu indicar amigos?", a: "Você ganha descontos progressivos! 25% OFF na 1ª indicação, 50% OFF na 2ª e 1 mês grátis na 3ª. Após a 3ª, o ciclo recomeça." },
 ];
 
-/** Logo do canal com cadeia de fallback: localLogo → Google Favicons → DuckDuckGo → emoji */
+/** Logo do canal com cadeia de fallback: localLogo → Clearbit → Google Favicons (128) → DuckDuckGo → emoji */
 const ChannelLogo = ({
   localLogo,
   domain,
   emoji,
   alt,
 }: { localLogo?: string; domain?: string; emoji: string; alt: string }) => {
-  const [stage, setStage] = useState<0 | 1 | 2 | 3>(localLogo ? 0 : domain ? 1 : 3);
-  if (stage === 3) return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
+  const initial: 0 | 1 | 2 | 3 | 4 = localLogo ? 0 : domain ? 1 : 4;
+  const [stage, setStage] = useState<0 | 1 | 2 | 3 | 4>(initial);
+  if (stage === 4) return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
   let src = "";
   if (stage === 0 && localLogo) src = localLogo;
-  else if (stage === 1 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-  else if (stage === 2 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  else if (stage === 1 && domain) src = `https://logo.clearbit.com/${domain}?size=128`;
+  else if (stage === 2 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  else if (stage === 3 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
   else return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
   return (
     <img
@@ -133,12 +137,12 @@ const ChannelLogo = ({
       height={48}
       onError={() =>
         setStage((s) => {
-          let next = (s + 1) as 0 | 1 | 2 | 3;
-          if (next === 1 && !domain) next = 3;
+          let next = (s + 1) as 0 | 1 | 2 | 3 | 4;
+          if (next === 1 && !domain) next = 4;
           return next;
         })
       }
-      className="w-full h-full object-contain"
+      className="w-full h-full object-contain p-1.5"
     />
   );
 };
@@ -298,7 +302,7 @@ const Assinar = () => {
                   </div>
                 ) : (
                   <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center overflow-hidden shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
                       <ChannelLogo
                         localLogo={(item as any).localLogo}
                         domain={(item as any).domain}
