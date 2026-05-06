@@ -21,6 +21,11 @@ export interface DailyGame {
   publish_at: string | null;
   sport_type: string;
   created_at: string;
+  external_id?: string | null;
+  home_score?: number | null;
+  away_score?: number | null;
+  live_status?: string | null;
+  live_updated_at?: string | null;
 }
 
 // Sistema 100% manual: somente jogos inseridos via WhatsApp parser são exibidos.
