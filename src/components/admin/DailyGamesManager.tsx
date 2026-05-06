@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Radio, Link2, Link2Off } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,6 +51,52 @@ export const DailyGamesManager = () => {
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
   };
+
+  const handleMatchTSDB = async (gameId: string) => {
+    const t = toast.loading("Buscando placar (TheSportsDB)...");
+    try {
+      const { data, error } = await supabase.functions.invoke("tsdb-match-game", { body: { gameId } });
+      if (error) throw error;
+      if (data?.matched) {
+        toast.success("Vinculado! Placar/tempo serão atualizados em ~1 min.", { id: t });
+        queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+      } else if (data?.candidates?.length) {
+        const top = data.candidates[0];
+        if (confirm(`Sem match automático.\nUsar candidato mais provável?\n\n${top.home} vs ${top.away}\n${top.league} • score ${(top.score * 100).toFixed(0)}%`)) {
+          await supabase.from("daily_games").update({ external_id: `tsdb:${top.id}` }).eq("id", gameId);
+          toast.success("Vinculado manualmente.", { id: t });
+          queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+        } else {
+          toast.dismiss(t);
+        }
+      } else {
+        toast.error("Nenhum candidato encontrado na TheSportsDB", { id: t });
+      }
+    } catch (e: any) {
+      toast.error(`Erro: ${e?.message || e}`, { id: t });
+    }
+  };
+
+  const handleUnlinkTSDB = async (gameId: string) => {
+    await supabase.from("daily_games").update({
+      external_id: null, home_score: null, away_score: null, live_status: null,
+    }).eq("id", gameId);
+    toast.success("Desvinculado");
+    queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+  };
+
+  const handleRefreshLive = async () => {
+    const t = toast.loading("Atualizando placares ao vivo...");
+    try {
+      const { data, error } = await supabase.functions.invoke("tsdb-live-update", { body: {} });
+      if (error) throw error;
+      toast.success(`${data?.updated ?? 0} jogos atualizados`, { id: t });
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (e: any) {
+      toast.error(`Erro: ${e?.message || e}`, { id: t });
+    }
+  };
+
 
   const handleArchiveDay = async () => {
     const nonArchived = games?.filter((g) => !g.archived) || [];
@@ -217,6 +263,9 @@ export const DailyGamesManager = () => {
             {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
             Re-classificar
           </Button>
+          <Button size="sm" variant="ghost" onClick={handleRefreshLive} className="text-xs text-fuchsia-400 hover:text-fuchsia-300">
+            <Radio className="h-3.5 w-3.5 mr-1" /> Atualizar placares
+          </Button>
           <Button size="sm" variant="ghost" onClick={handleCheckDuplicates} disabled={checkingDupes} className="text-xs text-emerald-400 hover:text-emerald-300">
             {checkingDupes ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />}
             Verificar duplicatas
@@ -288,6 +337,21 @@ export const DailyGamesManager = () => {
                         <p className="text-[10px] text-muted-foreground/60">
                           📺 {game.channels?.join(", ") || "—"}
                         </p>
+                        {(game.external_id || game.home_score != null) && (
+                          <p className="text-[10px] mt-0.5 flex items-center gap-1.5">
+                            {game.external_id ? (
+                              <span className="text-emerald-400 inline-flex items-center gap-1">
+                                <Link2 className="h-3 w-3" /> TSDB
+                              </span>
+                            ) : null}
+                            {game.home_score != null && game.away_score != null && (
+                              <span className="text-fuchsia-300 font-bold tabular-nums">
+                                {game.home_score} × {game.away_score}
+                                {game.status_short ? ` · ${game.status_short}` : ""}
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isArchived ? (
@@ -301,6 +365,23 @@ export const DailyGamesManager = () => {
                           </Button>
                         ) : (
                           <>
+                            {game.external_id ? (
+                              <button
+                                onClick={() => handleUnlinkTSDB(game.id)}
+                                className="p-1 rounded hover:bg-white/[0.06] text-emerald-400"
+                                title="Desvincular TheSportsDB"
+                              >
+                                <Link2Off className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleMatchTSDB(game.id)}
+                                className="p-1 rounded hover:bg-white/[0.06] text-fuchsia-400"
+                                title="Buscar placar (TheSportsDB)"
+                              >
+                                <Radio className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                             <Switch
                               checked={game.active}
                               onCheckedChange={() => handleToggleActive(game.id, game.active)}

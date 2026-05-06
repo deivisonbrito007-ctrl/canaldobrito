@@ -145,9 +145,18 @@ const GameCardImpl = ({ game, index }: GameCardProps) => {
                 {game.home_team}
               </p>
               <div className="flex flex-col items-center shrink-0">
-                <TimePill time={game.game_time} live={live} isSoon={isSoon} themeColor={theme.color} />
+                {(live || game.live_status === "finished") && game.home_score != null && game.away_score != null ? (
+                  <ScorePill
+                    home={game.home_score}
+                    away={game.away_score}
+                    live={live}
+                    status={game.status_short}
+                  />
+                ) : (
+                  <TimePill time={game.game_time} live={live} isSoon={isSoon} themeColor={theme.color} />
+                )}
                 <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mt-0.5">
-                  vs
+                  {live || game.live_status === "finished" ? (game.status_short || "vs") : "vs"}
                 </span>
               </div>
               <p
@@ -210,6 +219,31 @@ const TimePill = ({
   >
     <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
     <span className="text-xs sm:text-sm font-bold tracking-wide">{time?.slice(0, 5)}</span>
+  </div>
+);
+
+const ScorePill = ({
+  home,
+  away,
+  live,
+  status,
+}: {
+  home: number;
+  away: number;
+  live: boolean;
+  status?: string | null;
+}) => (
+  <div
+    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 border tabular-nums ${
+      live
+        ? "bg-destructive/15 border-destructive/40 text-destructive"
+        : "bg-card/60 border-border/50 text-foreground"
+    }`}
+    aria-label={`Placar ${home} a ${away}${status ? `, ${status}` : ""}`}
+  >
+    <span className="text-sm sm:text-base font-extrabold">{home}</span>
+    <span className="opacity-50 text-xs">×</span>
+    <span className="text-sm sm:text-base font-extrabold">{away}</span>
   </div>
 );
 

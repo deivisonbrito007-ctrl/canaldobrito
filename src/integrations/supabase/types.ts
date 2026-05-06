@@ -162,6 +162,7 @@ export type Database = {
         Row: {
           active: boolean
           archived: boolean
+          away_score: number | null
           away_team: string
           channels: string[] | null
           competition: string
@@ -169,11 +170,15 @@ export type Database = {
           created_at: string
           date: string
           elapsed_minutes: number | null
+          external_id: string | null
           game_time: string
+          home_score: number | null
           home_team: string
           id: string
           is_live: boolean
           is_womens: boolean
+          live_status: string | null
+          live_updated_at: string | null
           publish_at: string | null
           source: string
           sport_type: string
@@ -182,6 +187,7 @@ export type Database = {
         Insert: {
           active?: boolean
           archived?: boolean
+          away_score?: number | null
           away_team: string
           channels?: string[] | null
           competition?: string
@@ -189,11 +195,15 @@ export type Database = {
           created_at?: string
           date?: string
           elapsed_minutes?: number | null
+          external_id?: string | null
           game_time: string
+          home_score?: number | null
           home_team: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          live_status?: string | null
+          live_updated_at?: string | null
           publish_at?: string | null
           source?: string
           sport_type?: string
@@ -202,6 +212,7 @@ export type Database = {
         Update: {
           active?: boolean
           archived?: boolean
+          away_score?: number | null
           away_team?: string
           channels?: string[] | null
           competition?: string
@@ -209,11 +220,15 @@ export type Database = {
           created_at?: string
           date?: string
           elapsed_minutes?: number | null
+          external_id?: string | null
           game_time?: string
+          home_score?: number | null
           home_team?: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          live_status?: string | null
+          live_updated_at?: string | null
           publish_at?: string | null
           source?: string
           sport_type?: string
