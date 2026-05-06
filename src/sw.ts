@@ -106,11 +106,12 @@ self.addEventListener("notificationclick", (event) => {
 
 // ── Clean stale caches on activate ──────────────────────────────────
 self.addEventListener("activate", (event) => {
+  const KEEP = new Set(["google-fonts", "tmdb-images", "html-shell"]);
   event.waitUntil(
     caches.keys().then((names) =>
       Promise.all(
         names
-          .filter((name) => name !== "google-fonts" && name !== "tmdb-images")
+          .filter((name) => !KEEP.has(name))
           .filter((name) => !name.startsWith("workbox-precache"))
           .map((name) => caches.delete(name))
       )
