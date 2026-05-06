@@ -14,6 +14,7 @@ import {
   type SportType,
 } from "@/lib/gameUtils";
 import { ChannelBadge } from "./ChannelBadge";
+import { getSportTheme, isHighlightCompetition } from "./schedule/GameCardSportTheme";
 import { cn } from "@/lib/utils";
 
 type FilterId = "all" | "football" | "basketball" | "other";
@@ -25,22 +26,7 @@ const FILTERS: { id: FilterId; label: string; emoji: string }[] = [
   { id: "other", label: "Outros", emoji: "🏆" },
 ];
 
-const SPORT_ACCENT: Record<string, string> = {
-  football: "from-destructive to-red-700",
-  basketball: "from-blue-500 to-blue-700",
-  volleyball: "from-purple-500 to-purple-700",
-  tennis: "from-emerald-500 to-emerald-700",
-  f1: "from-amber-500 to-orange-600",
-  mma: "from-orange-500 to-red-600",
-  hockey: "from-sky-500 to-sky-700",
-  baseball: "from-yellow-500 to-yellow-700",
-  rugby: "from-green-600 to-green-800",
-  surf: "from-cyan-500 to-cyan-700",
-  cycling: "from-pink-500 to-pink-700",
-  boxing: "from-red-600 to-red-800",
-  swimming: "from-teal-500 to-teal-700",
-  golf: "from-lime-500 to-lime-700",
-};
+// Sport accents now come from getSportTheme (single source of truth shared with Programação).
 
 const matchesFilter = (st: SportType, f: FilterId): boolean => {
   if (f === "all") return true;
@@ -65,123 +51,157 @@ const LiveClock = () => {
   );
 };
 
-/* ── Live Game Card ── */
+/* ── Live Game Card (matches Programação visual identity) ── */
 const LiveGameCard = ({ game }: { game: DailyGame }) => {
   const sportType = (game.sport_type || "football") as SportType;
   const elapsed = getElapsedMinutes(game.game_time, game.date, sportType);
   const emoji = SPORT_EMOJI[sportType] || "⚽";
-  const accent = SPORT_ACCENT[sportType] || SPORT_ACCENT.football;
+  const sportLabel = SPORT_LABEL[sportType] || "Esporte";
+  const theme = getSportTheme(sportType);
+  const highlight = isHighlightCompetition(game.competition);
   const isEvent = isNonAdversarial(sportType) || !game.away_team || game.away_team === game.home_team;
-  const indicatorColor = isEvent ? "amber-500" : "destructive";
 
   return (
-    <motion.div
+    <motion.article
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.25 }}
-      className={cn(
-        "rounded-2xl bg-card border border-border/60 overflow-hidden",
-        "transition-all duration-300 hover:-translate-y-1 hover:border-destructive/40",
-        "hover:shadow-[0_8px_24px_hsl(0,84%,60%,0.18)] group"
-      )}
+      className="group min-w-0"
     >
-      {/* Accent bar w/ shimmer */}
-      <div className={cn("relative h-1 overflow-hidden bg-gradient-to-r", accent)}>
-        <div className="absolute inset-0 -translate-x-full animate-shimmer-sweep bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-      </div>
-
-      <div className="p-3 space-y-2">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate font-body min-w-0">
-            {emoji} {game.competition}
-            {game.competition_detail && ` · ${game.competition_detail}`}
-          </p>
-          <div className={cn(
-            "inline-flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded-full border",
-            isEvent
-              ? "bg-amber-500/15 border-amber-500/30"
-              : "bg-destructive/15 border-destructive/30"
-          )}>
+      <div
+        className="relative rounded-2xl overflow-hidden bg-card/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5"
+        style={{
+          border: `1px solid hsl(var(--live) / 0.55)`,
+          boxShadow: theme.glow,
+        }}
+      >
+        {/* Sport identity strip */}
+        <div
+          className="flex items-center justify-between px-3 py-1.5 text-foreground"
+          style={{ background: theme.stripGradient }}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[13px] leading-none" aria-hidden>{emoji}</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] truncate">
+              {sportLabel}
+            </span>
+            <span className="text-foreground/40 text-[10px]">·</span>
+            <span className="text-[10px] font-semibold text-foreground/85 truncate max-w-[40vw] sm:max-w-[180px]">
+              {game.competition}
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full bg-destructive/20 border border-destructive/40">
             <span className="relative flex h-1.5 w-1.5">
-              <span className={cn("absolute inline-flex h-full w-full rounded-full animate-ping opacity-70",
-                isEvent ? "bg-amber-500" : "bg-destructive")} />
-              <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5",
-                isEvent ? "bg-amber-500" : "bg-destructive")} />
+              <span className="absolute inline-flex h-full w-full rounded-full motion-safe:animate-ping bg-destructive opacity-70" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
             </span>
-            <span className={cn("text-[9px] font-extrabold tabular-nums font-body",
-              isEvent ? "text-amber-500" : "text-destructive")}>
-              {elapsed !== null ? `${elapsed}'` : "LIVE"}
+            <span className="text-[9px] font-extrabold tabular-nums text-destructive font-body">
+              {elapsed !== null ? `${elapsed}'` : "AO VIVO"}
             </span>
-          </div>
-        </div>
-
-        {/* Teams / Event */}
-        {isEvent ? (
-          <div className="text-center">
-            <p className="text-[13px] font-extrabold text-foreground leading-tight font-body line-clamp-2">
-              {game.home_team}
-              {game.away_team && game.away_team !== game.home_team && ` — ${game.away_team}`}
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <p className="text-[13px] font-extrabold text-foreground flex-1 leading-tight font-body line-clamp-2">
-              {game.home_team}
-            </p>
-            <span className="text-[9px] font-extrabold text-destructive shrink-0 px-1.5 py-0.5 rounded bg-gradient-to-br from-destructive/20 to-destructive/5 border border-destructive/30">
-              VS
-            </span>
-            <p className="text-[13px] font-extrabold text-foreground flex-1 text-right leading-tight font-body line-clamp-2">
-              {game.away_team}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-3 py-2 flex items-center justify-between gap-2 border-t border-border/40 bg-muted/20">
-        <div className="flex items-center gap-1 text-muted-foreground/80 min-w-0">
-          <Clock className="h-3 w-3 shrink-0" />
-          <span className="text-[9px] font-medium tabular-nums font-body truncate">
-            {game.game_time?.slice(0, 5)}
           </span>
         </div>
-        {game.channels && game.channels.length > 0 ? (
-          <div className="flex gap-1 items-center justify-end flex-wrap">
-            {game.channels.slice(0, 2).map((ch) => (
-              <ChannelBadge key={ch} name={ch} size="sm" />
-            ))}
-            {game.channels.length > 2 && (
-              <span className="text-[9px] text-muted-foreground/70 font-bold">
-                +{game.channels.length - 2}
+
+        {/* Watermark */}
+        <span
+          aria-hidden
+          className="pointer-events-none select-none absolute -right-2 -bottom-3 text-[88px] leading-none opacity-[0.05]"
+        >
+          {emoji}
+        </span>
+
+        <div className="relative p-3 space-y-2.5">
+          {game.competition_detail && (
+            <p className="text-[10px] text-muted-foreground/70 font-medium truncate">
+              {game.competition_detail}
+            </p>
+          )}
+
+          {/* Teams / Event */}
+          {isEvent ? (
+            <div className="flex items-center gap-3">
+              <p className="flex-1 text-center text-[13px] sm:text-base font-bold text-foreground leading-tight truncate min-w-0">
+                {game.home_team}
+                {game.away_team && game.away_team !== game.home_team && (
+                  <span className="block text-[11px] font-medium text-muted-foreground/70 mt-0.5 truncate">
+                    {game.away_team}
+                  </span>
+                )}
+              </p>
+              <TimePill time={game.game_time} themeColor={theme.color} />
+            </div>
+          ) : (
+            <div className="flex items-stretch gap-2 min-w-0">
+              <p className="flex-1 text-left text-[13px] sm:text-sm font-bold text-foreground leading-tight truncate min-w-0" title={game.home_team}>
+                {game.home_team}
+              </p>
+              <div className="flex flex-col items-center shrink-0">
+                <TimePill time={game.game_time} themeColor={theme.color} />
+                <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mt-0.5">vs</span>
+              </div>
+              <p className="flex-1 text-right text-[13px] sm:text-sm font-bold text-foreground leading-tight truncate min-w-0" title={game.away_team}>
+                {game.away_team}
+              </p>
+            </div>
+          )}
+
+          {/* Channels — same pattern as Programação */}
+          {game.channels && game.channels.length > 0 ? (
+            <div className="space-y-1.5">
+              <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+                ▶ Onde assistir
               </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">Sem TV</span>
-        )}
+              <div className="flex gap-1.5 flex-wrap">
+                {game.channels.slice(0, 3).map((ch, i) => (
+                  <ChannelBadge key={i} name={ch} />
+                ))}
+                {game.channels.length > 3 && (
+                  <span className="inline-flex items-center text-[10px] font-bold text-muted-foreground/70 bg-card/40 border border-border/30 rounded-md px-2 py-1">
+                    +{game.channels.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60 px-2 py-0.5 rounded border border-border/40 bg-muted/20 self-start inline-block">
+              Sem transmissão confirmada
+            </span>
+          )}
+        </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 };
 
-/* ── Upcoming Card (compact) ── */
+const TimePill = ({ time, themeColor }: { time: string | null | undefined; themeColor: string }) => (
+  <div
+    className="flex items-center gap-1 rounded-lg px-2.5 py-1 border tabular-nums bg-card/50 border-border/40"
+    style={{ color: themeColor }}
+  >
+    <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+    <span className="text-xs sm:text-sm font-bold tracking-wide">{time?.slice(0, 5)}</span>
+  </div>
+);
+
+/* ── Upcoming Card (compact, sport-themed) ── */
 const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: number }) => {
   const sportType = (game.sport_type || "football") as SportType;
   const emoji = SPORT_EMOJI[sportType] || "⚽";
+  const theme = getSportTheme(sportType);
   const isEvent = isNonAdversarial(sportType) || !game.away_team || game.away_team === game.home_team;
   return (
-    <div className="rounded-xl bg-card border border-border/60 p-2 flex items-center gap-2 hover:border-primary/30 transition-colors">
-      <div className="flex flex-col items-center justify-center min-w-[38px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
+    <div
+      className="rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card"
+      style={{ borderLeft: `3px solid ${theme.color}`, border: `1px solid ${theme.border}`, borderLeftWidth: 3 }}
+    >
+      <div className="flex flex-col items-center justify-center min-w-[42px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
         <span className="text-[8px] font-bold text-primary uppercase tracking-wide font-body leading-none">em</span>
         <span className="text-[13px] font-extrabold text-primary tabular-nums font-body leading-none mt-0.5">
           {minutesUntil}m
         </span>
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 space-y-1">
         <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate font-body">
           {emoji} {game.competition}
           {game.competition_detail && ` · ${game.competition_detail}`}
@@ -189,13 +209,21 @@ const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: n
         <p className="text-[12px] font-bold text-foreground leading-tight font-body line-clamp-1">
           {isEvent ? game.home_team : `${game.home_team} vs ${game.away_team}`}
         </p>
+        {game.channels && game.channels.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap pt-0.5">
+            <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground/55 mr-0.5">▶</span>
+            {game.channels.slice(0, 2).map((ch, i) => (
+              <ChannelBadge key={i} name={ch} size="sm" />
+            ))}
+            {game.channels.length > 2 && (
+              <span className="text-[9px] font-bold text-muted-foreground/70">+{game.channels.length - 2}</span>
+            )}
+          </div>
+        )}
       </div>
-      <div className="flex flex-col items-end shrink-0 gap-1">
-        <span className="text-[9px] font-bold text-foreground tabular-nums font-body">
-          {game.game_time?.slice(0, 5)}
-        </span>
-        {game.channels?.[0] && <ChannelBadge name={game.channels[0]} size="sm" />}
-      </div>
+      <span className="text-[10px] font-bold text-foreground tabular-nums font-body shrink-0 self-start">
+        {game.game_time?.slice(0, 5)}
+      </span>
     </div>
   );
 };

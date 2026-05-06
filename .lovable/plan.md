@@ -1,46 +1,64 @@
-## Mudanças solicitadas
+## Objetivo
 
-1. **Remover sino de notificação** dos cards na aba Programação.
-2. **Cards de canal mais profissionais e maiores** — sem abreviar nomes (sem "Param+", "Cazé", "Gplay", "Brito", "Apple", etc.).
+Padronizar todos os cards de jogos do portal (Ao Vivo + Próximo Evento) seguindo o mesmo padrão visual já aplicado na aba Programação: identidade por esporte (faixa colorida + emoji + label), badges de canal grandes com nome completo, e a seção "▶ Onde assistir".
 
-## Plano
+## Problemas detectados
 
-### 1. GameCard — remover lembrete (sino)
-Em `src/components/public/schedule/GameCard.tsx`:
-- Remover import de `Bell`, `BellOff`, `useState`, `useCallback`.
-- Remover funções `getReminders`, `toggleReminder`.
-- Remover bloco do botão de sino (tanto o do header quando há live/isSoon, quanto o absoluto do canto superior direito).
-- Manter o badge de "AO VIVO" / "Começa em X" alinhado à esquerda (em vez de `justify-between`, virar `flex items-center`).
+1. **`LivePageContent.tsx` → `LiveGameCard`**: usa um esquema de cores próprio (`SPORT_ACCENT`), badges `size="sm"`, máximo de 2 canais com `+N`, sem label "Onde assistir", e ainda exibe "VS" e "Sem TV" — inconsistente com Programação.
+2. **`LivePageContent.tsx` → `UpcomingCard`**: mostra apenas 1 canal pequeno, sem label.
+3. **`NextGameHero.tsx`**: mostra os canais sem o cabeçalho "▶ Onde assistir" e usa badges em tamanho default sem padronizar com o GameCard.
+4. Cores por esporte vivem em dois lugares (`SPORT_ACCENT` em LivePageContent e `GameCardSportTheme.ts` em schedule) — fonte de verdade duplicada.
 
-### 2. ChannelBadge — maior e sem abreviações
-Em `src/components/public/ChannelBadge.tsx`:
-- **Tamanhos aumentados** (size `md` é o usado nos cards):
-  - `sm`: text 9px → **10px**, padding mais generoso, ícone 12px → **14px**.
-  - `md`: text 10px → **11px**, padding `px-2.5 py-1.5`, ícone 14px → **16px**.
-  - `lg`: text 11px → **12px**, ícone 16px → **20px**.
-- **Sempre nome completo**: remover lógica `isMobile && config.short ? config.short : name` e parar de usar `short` no nome principal (mantém `short` no tipo só para não quebrar o map, mas não é mais usado para renderizar).
-- **Canal do Brito**: mostrar "Canal do Brito" também em mobile (era "Brito").
-- **Apple TV / Apple TV+ / Paramount+ / Cazé TV** etc. exibidos por extenso.
-- `whitespace-nowrap` adicionado para evitar quebra estranha em palavras curtas como "Prime Video".
+## Plano de implementação
 
-### 3. Ajuste de layout para acomodar badges maiores
-Em `GameCard.tsx`:
-- Container de canais: trocar `slice(0, 3)` para `slice(0, 2)` (badges agora maiores), e ajustar o "+N" para ficar visualmente equilibrado.
-- Em telas ≥sm continua mostrando até 3.
+### 1. Promover o tema de esporte a módulo compartilhado
+- Mover `src/components/public/schedule/GameCardSportTheme.ts` para `src/components/public/shared/sportTheme.ts` (mantendo um re-export no caminho antigo para não quebrar imports).
+- Garantir que `getSportTheme`, `isHighlightCompetition` e tipos sejam reutilizáveis.
 
-### 4. Atualizar testes
-- `GameCard.test.tsx`: remover testes do toggle de reminder + assertion de "+2" troca para "+3" (com 5 canais mostrando 2, sobram 3).
-- `ChannelBadge.test.tsx` (existente, já com 1 falha pré-existente): verificar se passa após nome completo.
+### 2. Criar um card unificado `LiveGameCard` baseado no `GameCard`
+- Reescrever `LiveGameCard` dentro de `LivePageContent.tsx` (ou extrair para `src/components/public/LiveGameCard.tsx`) reaproveitando o layout do `schedule/GameCard`:
+  - Faixa superior com gradiente do esporte + emoji + label do esporte + competição.
+  - Watermark grande do emoji no canto inferior direito (opacity 0.05).
+  - Pill "Ao vivo" (com `elapsed`) substituindo o badge atual.
+  - Times com `TimePill` no centro (mantendo "vs" pequeno como na Programação) ou layout single-event para esportes não adversariais.
+  - Bloco "▶ Onde assistir" com `ChannelBadge` em tamanho default (nomes completos), exibindo até 3 canais + `+N` quando exceder.
+  - Remover as abreviações antigas e o badge "Sem TV" → usar o mesmo "Sem transmissão confirmada" do GameCard.
 
-## Arquivos editados
-- `src/components/public/schedule/GameCard.tsx`
-- `src/components/public/ChannelBadge.tsx`
-- `src/components/public/schedule/__tests__/GameCard.test.tsx`
+### 3. Atualizar `UpcomingCard` (Começam em breve)
+- Manter o formato compacto (lista vertical), mas:
+  - Trocar o canal único pequeno por uma linha "▶ Onde assistir" com até 2 `ChannelBadge` em `size="sm"` e `+N` quando exceder.
+  - Garantir nome completo (sem `short`).
+  - Adicionar borda lateral colorida com a cor do esporte (`theme.color`) para reforçar a identidade.
 
-## Sugestões adicionais (não implemento sem aprovar)
+### 4. Corrigir `NextGameHero`
+- Acima da lista de canais, adicionar o cabeçalho:
+  ```tsx
+  <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
+    ▶ Onde assistir
+  </span>
+  ```
+- Aumentar o limite de 4 → mostrar até 3 canais + `+N`, mantendo `ChannelBadge` no tamanho default (nomes completos).
+- Quando não houver canais, manter a pill "Sem transmissão confirmada" com o mesmo estilo do GameCard.
+- Aplicar a faixa de cor do esporte no topo (substituir o gradiente fixo `from-primary` pela cor do `getSportTheme(sportType)`) para coerência visual com os outros cards.
 
-1. **Logo oficial em vez de favicon**: a maioria dos canais hoje usa favicon do Google (16-32px borrado quando esticado). Posso baixar SVGs/PNGs HD oficiais para os 10 mais comuns (ESPN, SporTV, Premiere, Globo, TNT, Cazé TV, DAZN, Disney+, Prime Video, Max) e colocar em `/public/channels/`. Os SVGs locais já têm prioridade no código.
-2. **Variante "compacta vs completa"**: numa próxima iteração, badge em hover/click expande pro nome completo ainda maior.
-3. **Linha dedicada "Onde assistir"**: separar canais do resto do card com label discreta tipo `▶ ASSISTIR EM:` para hierarquia mais clara.
-4. **Ordenar canais**: priorizar Canal do Brito sempre primeiro, depois canais abertos (Globo/Band/Record), depois fechados, depois streaming.
-5. **Tooltip em desktop** com info do canal ("Disponível na Sky/Claro/Vivo" etc.) — já temos infra de tooltip.
+### 5. Testes
+- Atualizar `src/components/public/__tests__/` (e criar `LiveGameCard.test.tsx` se extraído) cobrindo:
+  - Renderização do label "Onde assistir" no hero e no card ao vivo.
+  - Exibição de nomes completos de canais.
+  - Layout single-event vs adversarial.
+- Rodar `bunx vitest run` e garantir que toda a suíte continua passando.
+
+## Sugestões adicionais (opcionais — peço aprovação antes de aplicar)
+
+1. **Compartilhar `SportIdentityStrip` como subcomponente** reutilizável para qualquer futuro card (ex.: detalhes de jogo, busca).
+2. **Pulse "começou agora"** (item 5 da lista anterior): jogos que entraram em live nos últimos 5 minutos ganham um glow verde extra no card Ao Vivo.
+3. **Resumo dos canais no header da seção "Acontecendo agora"** mostrando os 3 canais com mais jogos no momento (chip clicável que filtra).
+4. **Empty state contextual por filtro**: ao filtrar "Basquete" e não ter jogos, sugerir o próximo basquete via `NextGameHero` reduzido.
+
+## Arquivos afetados
+
+- `src/components/public/LivePageContent.tsx` (reescrita do `LiveGameCard` e `UpcomingCard`)
+- `src/components/public/NextGameHero.tsx` (label "Onde assistir" + tema do esporte)
+- `src/components/public/schedule/GameCardSportTheme.ts` → `src/components/public/shared/sportTheme.ts` (mover + re-export)
+- `src/components/public/schedule/GameCard.tsx` (atualizar import)
+- Novos/atualizados testes em `src/components/public/__tests__/`
