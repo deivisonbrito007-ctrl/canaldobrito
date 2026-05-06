@@ -17,10 +17,13 @@ describe("TrailerModal", () => {
     expect(dialog.className).toMatch(/z-\[100\]/);
   });
 
-  it("mostra iframe do YouTube com a key correta", () => {
+  it("mostra iframe do YouTube com a key correta (nocookie + playsinline)", () => {
     render(<TrailerModal open={true} onClose={() => {}} trailerKey="abc123" />);
     const iframe = document.querySelector("iframe");
-    expect(iframe?.getAttribute("src")).toContain("youtube.com/embed/abc123");
+    const src = iframe?.getAttribute("src") ?? "";
+    expect(src).toContain("youtube-nocookie.com/embed/abc123");
+    expect(src).toContain("playsinline=1");
+    expect(src).toContain("autoplay=1");
   });
 
   it("mostra loader quando loading=true", () => {
