@@ -1,46 +1,41 @@
 ## Objetivo
-Adicionar uma spec E2E **iOS-only** (WebKit em iPhone SE / 13 / 14 Pro Max, com `hasTouch`) garantindo que o **tap no backdrop** fecha **apenas o modal alvo** quando há um único modal aberto e, no cenário empilhado (sheet + trailer), fecha somente o modal de cima.
+Adicionar uma spec E2E **iOS-only** garantindo que, ao abrir o Trailer com o Sheet já aberto, o **z-index, foco e stacking** ficam corretos e nada quebra.
 
-Esses cenários complementam `e2e/modals.spec.ts` (mouse desktop) e `e2e/modals.ios.spec.ts` (snap/rotação) — nenhum deles cobre tap real iOS no backdrop com a granularidade pedida.
+Complementa:
+- `e2e/modals.ios.spec.ts` (snap/rotação)
+- `e2e/modals.ios-backdrop.spec.ts` (tap no backdrop)
+- `e2e/modals.spec.ts` (mouse desktop, sem hit-test stacking)
 
 ## Arquivo a criar
+`e2e/modals.ios-stacking.spec.ts`
 
-`e2e/modals.ios-backdrop.spec.ts`
+Loop em 3 perfis WebKit (`iPhone SE`, `iPhone 13`, `iPhone 14 Pro Max`).
 
-Estrutura:
+### Cenário principal (1 teste)
+1. Abre o sheet, espera animação assentar.
+2. Captura `sheetZ` e `navZ` — espera `sheetZ > navZ`.
+3. Abre o trailer **sem fechar** o sheet.
+4. Verifica:
+   - `trailerZ ≥ sheetZ` e `trailerZ > navZ`.
+   - Ordem no DOM: o `[role="dialog"]` do trailer aparece **depois** do sheet.
+   - Sheet continua `attached` e `visible` (não desmontou).
+   - `document.activeElement` está **dentro do trailer**.
+   - `document.body.style.overflow === "hidden"`.
+   - **Hit-test**: `document.elementFromPoint(centro do trailer)` resolve para um `[role="dialog"]` cujo `aria-label` contém `Trailer`.
+5. ESC fecha **apenas** o trailer; sheet permanece visível e o foco volta para dentro do sheet; body continua travado.
+6. ESC novamente fecha o sheet; `body.overflow === ""`.
 
-```text
-for each iOS profile (SE, 13, 14 Pro Max) {
-  describe("iOS backdrop tap — only correct modal closes") {
-    beforeEach: goto /e2e/modals; aguarda harness
-    test 1: tap backdrop com SÓ o sheet aberto -> sheet fecha; nav permanece
-    test 2: tap backdrop com SÓ o trailer aberto -> trailer fecha
-    test 3: tap DENTRO do conteúdo do sheet (poster/heading) -> NÃO fecha
-    test 4: tap DENTRO do iframe/área do trailer -> NÃO fecha
-    test 5: empilhados (sheet + trailer) — tap no backdrop do trailer fecha
-            APENAS o trailer; sheet continua visível e travando body scroll
-    test 6: depois de (5), tap no backdrop do sheet fecha o sheet;
-            body.overflow restaurado
-  }
-}
-```
+### Cenário extra (1 teste)
+- Abrir sheet → abrir trailer → ESC: confirma que ESC fecha **somente** o trailer (sheet permanece). Garante que o handler do trailer captura o ESC primeiro.
 
 ## Detalhes técnicos
-- `test.use({ ...devices["iPhone X"] })` por bloco, com `hasTouch: true` herdado.
-- Usar `page.touchscreen.tap(x, y)` (gesto real iOS) para o backdrop, em vez de `page.mouse.click`.
-- Backdrop do trailer: primeiro `.fixed.inset-0.bg-black\\/85`. Backdrop do sheet: `.fixed.inset-0.bg-black\\/60`. Coordenadas calculadas a partir do `boundingBox()` do backdrop, garantindo área **fora** do `pointer-events-auto` interno.
-- Validar não-fechamento via `await expect(dialog).toBeVisible()` após 300ms.
-- Validar `document.body.style.overflow === "hidden"` enquanto qualquer modal estiver aberto e `=== ""` ao fim.
-- Reaproveitar `data-testid="open-sheet"` / `open-trailer"` já presentes em `src/pages/E2EModals.tsx`.
-
-## CI
-A spec entra automaticamente nos jobs existentes:
-- `e2e` matriz (perfil "iPhone 13 (WebKit)")
-- `playwright.ci.config.ts` já registra os perfis iOS.
-
-Sem mudanças em `.github/workflows/ci.yml`.
+- `test.use({ ...devices["iPhone X"] })` por bloco (WebKit + hasTouch).
+- Helper `zIndex(page, locator)` via `getComputedStyle(el).zIndex`.
+- Reutiliza `data-testid="open-sheet"` e `open-trailer` do harness `src/pages/E2EModals.tsx`.
+- Sem alterações em `playwright.ci.config.ts` ou `.github/workflows/ci.yml` — a spec entra automaticamente nos jobs `e2e` (perfil iPhone 13 WebKit).
 
 ## Critérios de aceite
-- 6 testes × 3 perfis = 18 execuções, todas verdes localmente e no CI.
-- Em nenhum cenário o tap no backdrop fecha o modal errado.
-- Sheet sob o trailer permanece com foco preso e body lock ativo até seu próprio fechamento.
+- 2 testes × 3 perfis iOS = 6 execuções verdes localmente e no CI.
+- Trailer sempre acima do sheet (z-index e hit-test).
+- Foco rastreado corretamente: trailer ao abrir, sheet ao fechar trailer.
+- Body scroll lock permanece até o último modal fechar.
