@@ -52,6 +52,9 @@ export const NextGameHero = ({ games }: NextGameHeroProps) => {
   }, [games]);
 
   if (!nextGame) return null;
+  // Hide hero if next game is more than 12h away — avoids stale empty mornings
+  const minsCheck = getMinutesUntilStart(nextGame.game_time, nextGame.date);
+  if (minsCheck === null || minsCheck > 12 * 60) return null;
 
   const sportType = (nextGame.sport_type || 'football') as SportType;
   const emoji = SPORT_EMOJI[sportType] || '⚽';
