@@ -120,42 +120,6 @@ const FAQ_ITEMS = [
   { q: "O que acontece se eu indicar amigos?", a: "Você ganha descontos progressivos! 25% OFF na 1ª indicação, 50% OFF na 2ª e 1 mês grátis na 3ª. Após a 3ª, o ciclo recomeça." },
 ];
 
-/** Logo do canal com cadeia de fallback: localLogo → Clearbit → Google Favicons (128) → DuckDuckGo → emoji */
-const ChannelLogo = ({
-  localLogo,
-  domain,
-  emoji,
-  alt,
-}: { localLogo?: string; domain?: string; emoji: string; alt: string }) => {
-  const initial: 0 | 1 | 2 | 3 | 4 = localLogo ? 0 : domain ? 1 : 4;
-  const [stage, setStage] = useState<0 | 1 | 2 | 3 | 4>(initial);
-  if (stage === 4) return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
-  let src = "";
-  if (stage === 0 && localLogo) src = localLogo;
-  else if (stage === 1 && domain) src = `https://logo.clearbit.com/${domain}?size=128`;
-  else if (stage === 2 && domain) src = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-  else if (stage === 3 && domain) src = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-  else return <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>;
-  return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      width={48}
-      height={48}
-      onError={() =>
-        setStage((s) => {
-          let next = (s + 1) as 0 | 1 | 2 | 3 | 4;
-          if (next === 1 && !domain) next = 4;
-          return next;
-        })
-      }
-      className="w-full h-full object-contain p-1.5"
-    />
-  );
-};
-
 const Assinar = () => {
   const { h, m, s } = useCountdown();
   const { data: settings } = useSettings();
@@ -166,15 +130,20 @@ const Assinar = () => {
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length) {
-        return parsed.map((c: Partial<ChannelTileItem>) => ({
-          name: c.name || "",
-          domain: c.domain,
-          localLogo: c.localLogo,
-          emoji: c.emoji || "📺",
-          bg: c.bg || "bg-white",
-          text: c.text || "text-foreground/85",
-          border: c.border || "border-white/10",
-        })).filter(c => c.name);
+        const mapped: ChannelTileItem[] = parsed
+          .map((c: Partial<ChannelTileItem>): ChannelTileItem => ({
+            name: c.name || "",
+            label: c.label || c.name || "",
+            bg: c.bg || "bg-[#0A0A0A]",
+            fg: c.fg || "text-white",
+            size: c.size || "text-[14px]",
+            weight: c.weight || "font-black",
+            italic: c.italic,
+            sub: c.sub,
+            font: c.font,
+          }))
+          .filter((c) => c.name);
+        if (mapped.length) return mapped;
       }
     } catch {/* fallback */}
     return DEFAULT_TV_CHANNELS;
