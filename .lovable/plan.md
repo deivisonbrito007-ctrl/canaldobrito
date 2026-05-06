@@ -1,48 +1,54 @@
-## Diagnóstico
+## O que está ruim hoje
 
-Os bugs que você está vendo (logos sumindo após carregar, "globo borrado" repetido em vários canais, layouts feios) têm 3 causas:
+| Badge atual | Problema |
+|---|---|
+| **B.** (Band) | Sigla "B." parece amador; usuário quer "Band" por extenso |
+| **REC** (Record) | Mesma coisa; "Record" lê melhor |
+| **tnt / SPORTS** | Minúsculo + sub texto fica frágil, sem peso visual |
+| **P!** (Premiere) | Errado: cor errada (deve ser verde) e sigla amadora |
+| **Apps PNG** | Continuam fora de padrão (PNGs de apps vs badges de canais) |
 
-1. **Clearbit Logo API foi descontinuado** (dez/2023) → todas as URLs `logo.clearbit.com/...` retornam 404 depois de uns segundos.
-2. **Google Favicons devolve 16x16 esticado** → aquele "globinho azul borrado" que aparece em CazéTV, Canal GOAT e Space é o favicon genérico do navegador.
-3. **SVGs locais** (`/channels/*.svg`) que tentei desenhar antes ficaram caseiros e inconsistentes.
+## Solução: redesenhar TODOS os badges com nome por extenso
 
-Não existe CDN público confiável que tenha logo oficial de **todos** esses canais brasileiros (ESPN BR, SporTV, Premiere, Canal GOAT, CazéTV, Space).
+Padrão único: **fundo com cor oficial + nome legível com tipografia da marca**. Sem siglas amadoras, sem emojis.
 
-## Solução
+### Canais de TV (12)
 
-**Abandonar completamente a busca de imagem externa para canais de TV.** Renderizar cada canal como **badge tipográfico** com:
+| Canal | Label | Fundo | Texto |
+|---|---|---|---|
+| ESPN | `ESPN` | vermelho `#D9232E` | branco itálico black |
+| SporTV | `sporTV` | gradient verde `#00B04F→#007A35` | branco itálico black |
+| Globo | `globo` | preto `#0A0A0A` | branco bold com kerning apertado |
+| **Premiere** | `PREMIERE` | **gradient verde `#00A859→#007A3D` (verde padrão do canal)** | **branco bold serifa-ish** |
+| TNT Sports | `TNT` em cima + `SPORTS` em baixo | preto `#000` | TNT amarelo `#FFD200` BIG, SPORTS branco menor |
+| Band | `Band` | gradient azul `#0050B3→#003A82` | branco bold com ponto vermelho |
+| CazéTV | `Cazé` | gradient lima `#BEF264→#84CC16` | preto black itálico |
+| Record | `RECORD` | gradient azul `#0073CF→#004A8A` | branco bold |
+| Canal GOAT | `GOAT` | gradient âmbar `#FBBF24→#D97706` | preto black |
+| Space | `SPACE` | gradient cosmos `#3A3A8C→#0A0A2E` | branco com pontinhos estrela |
+| DAZN | `DAZN` | branco `#F8F8F8` | preto black itálico |
+| YouTube | `YouTube` | branco | "You" preto + "Tube" em pill vermelho `#FF0000` |
 
-- Cor de fundo oficial da marca (verde SporTV, vermelho ESPN, preto+amarelo TNT, etc.)
-- Sigla/nome curto em fonte bold/black
-- Gradientes sutis para dar profundidade
+### Apps de streaming (8) — convertidos para badge
 
-Resultado: zero requisições externas, zero flicker, zero 404, visual consistente e profissional.
-
-Os apps de streaming (Netflix, Prime, Disney+, etc.) **continuam usando os PNGs reais** já em `src/assets/app-icons/` — esses são logos oficiais comprovados.
+| App | Label | Fundo | Texto |
+|---|---|---|---|
+| Netflix | `NETFLIX` | preto `#000` | vermelho `#E50914` condensed bold |
+| Prime Video | `prime` + `video` | preto `#0F1111` | branco itálico, "video" em azul `#00A8E1` |
+| Disney+ | `Disney+` | gradient azul `#113CCF→#061A4C` | branco script-bold |
+| HBO Max | `HBO` em cima + `MAX` embaixo | preto `#000` | branco bold |
+| Globoplay | `globoplay` | preto | branco com ponto vermelho |
+| Paramount+ | `Paramount+` | gradient azul `#0066FF→#003D99` | branco bold |
+| Apple TV+ | `tv+` | preto `#000` | branco com  Apple |
+| Starz | `STARZ` | preto `#000` | branco bold com kerning largo |
 
 ## Mudanças em `src/pages/Assinar.tsx`
 
-1. Trocar tipo `ChannelTileItem` para badge: `{ name, label, bg, fg, size, weight, italic, sub }`.
-2. Reescrever `DEFAULT_TV_CHANNELS` com cores oficiais:
-   - **ESPN** → vermelho `#D9232E`, "ESPN" itálico branco
-   - **SporTV** → gradient verde `#00B04F → #007A35`, "sporTV" itálico branco
-   - **Globo** → preto, "GLOBO"
-   - **Premiere** → preto, "P!" dourado `#FFD700`
-   - **TNT Sports** → preto, "tnt" amarelo + sub "SPORTS"
-   - **Band** → gradient azul `#0050B3 → #003A82`, "B."
-   - **CazéTV** → gradient verde-limão `#BEF264 → #84CC16`, "Cazé"
-   - **Record** → gradient azul `#0073CF → #004A8A`, "REC"
-   - **GOAT** → gradient âmbar `#FBBF24 → #D97706`, "GOAT"
-   - **Space** → gradient cosmos `#3A3A8C → #0A0A2E`, "SPACE"
-   - **DAZN** → branco `#F8F8F8`, "DAZN" preto itálico
-   - **YouTube** → vermelho `#FF0000`, "▶" branco
-3. Remover componente `ChannelLogo` (todo o sistema de fallback `localLogo → Clearbit → Google → DuckDuckGo → emoji`).
-4. Substituir o render do tile do canal por um único `<div>` com classes do badge, mostrando `label` (e `sub` opcional embaixo).
-5. Limpar `useSettings`/`tv_channels` parsing — manter compat se admin já salvou JSON, mas sem campos de logo externo.
+1. Remover imports dos 8 PNGs (linhas 8-15).
+2. Unificar `STREAMING_APPS` no mesmo shape de `ChannelTileItem` (sem `icon`, com `label/bg/fg/size/weight/sub`).
+3. Reescrever `DEFAULT_TV_CHANNELS` com os labels acima — **Premiere agora em verde padrão do canal**.
+4. Simplificar `buildMarqueeItems` — remover discriminator `app` vs `channel`, tudo é badge igual. Apps ganham só um pontinho verde "live" no topo para diferenciar levemente.
+5. Render do marquee: um único caminho de badge, sem `<img>`.
+6. Aumentar tamanho do tile mobile de `w-14 h-14` para `w-16 h-16` para acomodar nomes maiores com folga, e em `sm:` ir para `w-[72px]`.
 
-## Limpeza opcional (recomendada)
-
-- Deletar `public/channels/*.svg` (não são mais usados em lugar nenhum).
-- Remover seção "Canais & Streaming" do `AdminConfiguracoes.tsx` (editor JSON virou irrelevante já que tudo é hardcoded com cor da marca).
-
-Posso aplicar a limpeza junto, ou só a correção principal e mantemos o admin como está. Aprova que eu já implemento?
+Aprova que eu já implemento tudo?
