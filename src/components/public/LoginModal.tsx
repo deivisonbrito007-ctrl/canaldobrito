@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { X, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { X, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface LoginModalProps {
