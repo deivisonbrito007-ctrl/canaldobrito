@@ -23,6 +23,7 @@ const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagn
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
+const E2EModals = lazy(() => import("./pages/E2EModals"));
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,9 @@ const App = () => (
               <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
+              {import.meta.env.DEV && (
+                <Route path="/e2e/modals" element={<E2EModals />} />
+              )}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
