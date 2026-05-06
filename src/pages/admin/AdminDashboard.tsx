@@ -238,7 +238,7 @@ const AdminDashboard = () => {
               ) : (
                 <div className="flex flex-col items-center text-center gap-2">
                   <card.icon className={`h-5 w-5 ${card.color}`} />
-                  <p className={`text-2xl font-black ${card.color}`}>{counts[card.key]}</p>
+                  <p className={`text-xl sm:text-2xl font-black tabular-nums ${card.color}`}>{counts[card.key]}</p>
                   <div className="w-full">
                     <p className="text-[10px] text-muted-foreground">{card.label}</p>
                     <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
