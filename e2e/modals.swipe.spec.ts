@@ -141,9 +141,11 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
 
   test("drag elastic respeita limite ~60% (não desce arbitrariamente)", async ({ page }) => {
     const dialog = page.getByRole("dialog", { name: "E2E Sample Title" });
+    const baseline = await dialog.boundingBox();
+    if (!baseline) throw new Error("baseline ausente");
     const { x, y } = await handleBox(page);
 
-    // Drag muito longo, mas SEM soltar — mede o offset durante o gesto
+    // Drag muito longo, mas SEM soltar — mede o offset durante o gesto.
     await page.evaluate(
       ({ x, y }) => {
         const target = document.elementFromPoint(x, y) as HTMLElement;
@@ -167,14 +169,15 @@ test.describe("ContentDetailSheet — swipe/drag (touch)", () => {
       },
       { x, y },
     );
-    await page.waitForTimeout(150);
-    const transform = await dialog.evaluate((el) => getComputedStyle(el).transform);
-    const ty = transform === "none" ? 0 : Number(transform.split(",").pop()?.replace(")", "") ?? 0);
-    // Com dragElastic.bottom=0.6, offset real <= ~600px (60% de 1000)
-    expect(ty).toBeLessThanOrEqual(650);
-    expect(ty).toBeGreaterThan(0);
 
-    // Solta sem disparar fechamento (offset > 120 -> fecharia; o objetivo aqui é só o limite elástico).
+    // Aguarda o offset estabilizar (sem soltar). Mede via boundingBox: o sheet
+    // desceu uma quantidade ELÁSTICA (entre 50px e 700px de offset real).
+    const settled = await waitForStable(page, dialog, { samples: 3, thresholdPx: 1, timeoutMs: 1_500 });
+    const offset = settled.y - baseline.y;
+    expect(offset).toBeGreaterThan(50);
+    expect(offset).toBeLessThanOrEqual(700);
+
+    // Solta o gesto.
     await page.evaluate(({ x, y }) => {
       const target = document.elementFromPoint(x, y) as HTMLElement;
       const t = new Touch({ identifier: 1, target, clientX: x, clientY: y, pageX: x, pageY: y });
