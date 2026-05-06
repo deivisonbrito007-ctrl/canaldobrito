@@ -79,10 +79,12 @@ for (const { name, device } of iosProfiles) {
       const dialog = page.getByRole("dialog", { name: /Trailer/ });
       await expect(dialog).toBeVisible();
 
-      // mesmo com reduced-motion, opacity final = 1 e elemento mensurável
-      await page.waitForTimeout(250);
-      const opacity = await dialog.evaluate((el) => Number(getComputedStyle(el).opacity));
+      // Mesmo com reduced-motion: opacity converge para >= 0.99 sem sleep fixo.
+      const opacity = await waitForOpacity(page, dialog, 0.99, 1_500);
       expect(opacity).toBeGreaterThanOrEqual(0.99);
+      const settled = await waitForStable(page, dialog, { samples: 3, thresholdPx: 0.5, timeoutMs: 1_500 });
+      expect(settled.width).toBeGreaterThan(0);
+      expect(settled.height).toBeGreaterThan(0);
       const box = await dialog.boundingBox();
       expect(box && box.width > 0 && box.height > 0).toBe(true);
 
