@@ -337,6 +337,21 @@ export const DailyGamesManager = () => {
                         <p className="text-[10px] text-muted-foreground/60">
                           📺 {game.channels?.join(", ") || "—"}
                         </p>
+                        {(game.external_id || game.home_score != null) && (
+                          <p className="text-[10px] mt-0.5 flex items-center gap-1.5">
+                            {game.external_id ? (
+                              <span className="text-emerald-400 inline-flex items-center gap-1">
+                                <Link2 className="h-3 w-3" /> TSDB
+                              </span>
+                            ) : null}
+                            {game.home_score != null && game.away_score != null && (
+                              <span className="text-fuchsia-300 font-bold tabular-nums">
+                                {game.home_score} × {game.away_score}
+                                {game.status_short ? ` · ${game.status_short}` : ""}
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isArchived ? (
