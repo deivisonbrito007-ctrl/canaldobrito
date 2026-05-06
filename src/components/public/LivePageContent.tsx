@@ -184,20 +184,24 @@ const TimePill = ({ time, themeColor }: { time: string | null | undefined; theme
   </div>
 );
 
-/* ── Upcoming Card (compact) ── */
+/* ── Upcoming Card (compact, sport-themed) ── */
 const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: number }) => {
   const sportType = (game.sport_type || "football") as SportType;
   const emoji = SPORT_EMOJI[sportType] || "⚽";
+  const theme = getSportTheme(sportType);
   const isEvent = isNonAdversarial(sportType) || !game.away_team || game.away_team === game.home_team;
   return (
-    <div className="rounded-xl bg-card border border-border/60 p-2 flex items-center gap-2 hover:border-primary/30 transition-colors">
-      <div className="flex flex-col items-center justify-center min-w-[38px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
+    <div
+      className="rounded-xl bg-card/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 transition-colors hover:bg-card"
+      style={{ borderLeft: `3px solid ${theme.color}`, border: `1px solid ${theme.border}`, borderLeftWidth: 3 }}
+    >
+      <div className="flex flex-col items-center justify-center min-w-[42px] px-1.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
         <span className="text-[8px] font-bold text-primary uppercase tracking-wide font-body leading-none">em</span>
         <span className="text-[13px] font-extrabold text-primary tabular-nums font-body leading-none mt-0.5">
           {minutesUntil}m
         </span>
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 space-y-1">
         <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate font-body">
           {emoji} {game.competition}
           {game.competition_detail && ` · ${game.competition_detail}`}
@@ -205,13 +209,21 @@ const UpcomingCard = ({ game, minutesUntil }: { game: DailyGame; minutesUntil: n
         <p className="text-[12px] font-bold text-foreground leading-tight font-body line-clamp-1">
           {isEvent ? game.home_team : `${game.home_team} vs ${game.away_team}`}
         </p>
+        {game.channels && game.channels.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap pt-0.5">
+            <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground/55 mr-0.5">▶</span>
+            {game.channels.slice(0, 2).map((ch, i) => (
+              <ChannelBadge key={i} name={ch} size="sm" />
+            ))}
+            {game.channels.length > 2 && (
+              <span className="text-[9px] font-bold text-muted-foreground/70">+{game.channels.length - 2}</span>
+            )}
+          </div>
+        )}
       </div>
-      <div className="flex flex-col items-end shrink-0 gap-1">
-        <span className="text-[9px] font-bold text-foreground tabular-nums font-body">
-          {game.game_time?.slice(0, 5)}
-        </span>
-        {game.channels?.[0] && <ChannelBadge name={game.channels[0]} size="sm" />}
-      </div>
+      <span className="text-[10px] font-bold text-foreground tabular-nums font-body shrink-0 self-start">
+        {game.game_time?.slice(0, 5)}
+      </span>
     </div>
   );
 };
