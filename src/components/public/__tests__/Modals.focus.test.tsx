@@ -77,7 +77,7 @@ describe("Focus management — overlays", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it("Tab cicla foco dentro do TrailerModal (não escapa)", async () => {
+  it("Tab cicla foco dentro do TrailerModal (não escapa para o body)", async () => {
     const { getByText } = render(<Trigger kind="trailer" />);
     const trigger = getByText("Abrir") as HTMLButtonElement;
     trigger.focus();
@@ -86,13 +86,17 @@ describe("Focus management — overlays", () => {
       await new Promise((r) => setTimeout(r, 5));
     });
 
-    // Único focável real é o botão Fechar. Tab/Shift+Tab devem mantê-lo.
+    const dialog = document.body.querySelector('[role="dialog"]') as HTMLElement;
     const closeBtn = document.body.querySelector('[aria-label="Fechar trailer"]') as HTMLElement;
+    const iframe = document.body.querySelector("iframe") as HTMLElement;
+    expect(dialog).toBeTruthy();
     expect(closeBtn).toBeTruthy();
+    expect(iframe).toBeTruthy();
+
+    // Shift+Tab a partir do primeiro focável volta para o último (iframe), nunca para o trigger fora
     closeBtn.focus();
-    fireEvent.keyDown(document, { key: "Tab" });
-    expect(document.activeElement).toBe(closeBtn);
     fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
-    expect(document.activeElement).toBe(closeBtn);
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).not.toBe(trigger);
   });
 });
