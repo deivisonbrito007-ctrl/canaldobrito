@@ -59,6 +59,11 @@ const Index = () => {
       setDirection(nextIdx >= prevIdx ? 1 : -1);
       return next;
     });
+    // Sync URL so refresh stays on the same tab
+    const targetPath = `/${TAB_SLUGS[next]}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.replaceState({}, "", targetPath + window.location.hash);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
