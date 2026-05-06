@@ -1,40 +1,47 @@
 ## Objetivo
-Remover por completo a integração com TheSportsDB (matching automático + atualização de placares ao vivo), voltando ao fluxo 100% manual que estava funcionando antes — sem quebrar nada do app.
+Limpar resíduos visuais e de código do TheSportsDB. Hoje, mesmo sem a API ativa, dois pontos ainda renderizam placar/status como se viessem dela:
 
-## O que será removido
+1. **Card público da Programação** (`GameCard.tsx`): se `live_status === "finished"` e houver `home_score`/`away_score` no banco (de quando a API ainda rodava), mostra o placar antigo no lugar do horário.
+2. **Admin DailyGamesManager** (linhas 293-300): mostra um bloco rosa `home_score × away_score · status_short` em qualquer jogo que tenha esses campos preenchidos.
 
-**1. Edge Functions**
-- Deletar `supabase/functions/tsdb-match-game/`
-- Deletar `supabase/functions/tsdb-live-update/`
-- Chamar `supabase--delete_edge_functions` para `["tsdb-match-game", "tsdb-live-update"]` para tirar do servidor.
+Como a API foi desligada, esses dados ficaram congelados e podem aparecer errados — exatamente o que você está vendo.
 
-**2. Cron job no banco (migration nova)**
-- Rodar `SELECT cron.unschedule('tsdb-live-update-every-min');` para parar o disparo automático a cada minuto.
+## O que será feito
 
-**3. Frontend — `src/components/admin/DailyGamesManager.tsx`**
-- Remover `handleMatchTSDB`, `handleUnlinkTSDB`, `handleMatchAllPending`.
-- Remover botão "Vincular dia (TSDB)" do header.
-- Remover badge "TSDB", botões de vincular/desvincular e ícone `Link2` da linha de cada jogo.
+**1. `src/components/public/schedule/GameCard.tsx`**
+- Remover ramo `(live || game.live_status === "finished") && game.home_score != null && ...` que renderiza `<ScorePill>`.
+- Simplificar para sempre mostrar `<TimePill>` (horário do jogo).
+- Remover `game.live_status === "finished"` do span de label embaixo do horário; voltar a só "vs".
+- Manter `live` (badge AO VIVO) baseado em hora calculada — isso é dinâmico, não vem da API.
 
-**4. Frontend — `src/hooks/useDailyGames.ts`**
-- Remover o bloco de auto-vínculo em background dentro de `useInsertDailyGames` (chamadas a `tsdb-match-game` e `tsdb-live-update`).
+**2. `src/components/admin/DailyGamesManager.tsx`**
+- Remover o bloco `{game.home_score != null && ...}` (linhas 293-300) que mostra o placar fantasma.
+
+**3. `src/hooks/useDailyGames.ts`**
+- **Manter** os campos `external_id`, `home_score`, `away_score`, `live_status`, `live_updated_at` na interface TS (são opcionais, não atrapalham). Tirar agora obrigaria refatorar tipos do Supabase. Custo > benefício.
+
+**4. Migration de limpeza** (`supabase/migrations/...`)
+- `UPDATE public.daily_games SET home_score = NULL, away_score = NULL, live_status = NULL, live_updated_at = NULL, external_id = NULL WHERE home_score IS NOT NULL OR away_score IS NOT NULL OR live_status IS NOT NULL OR external_id IS NOT NULL;`
+- Resetar `status_short` para `'NS'` onde estiver diferente: `UPDATE public.daily_games SET status_short = 'NS' WHERE status_short <> 'NS';`
+- Isso apaga o "lixo" deixado pela API sem mexer em jogos novos manuais.
+
+**5. Secret `THESPORTSDB_KEY`**
+- Remover via `secrets--delete_secret`. Não é mais usado por nenhuma function.
 
 ## O que NÃO será mexido (segurança)
-
-- **Colunas da tabela `daily_games`** (`external_id`, `home_score`, `away_score`, `live_status`, `live_updated_at`) ficam onde estão. Já estão tipadas em `useDailyGames.ts` e podem ser referenciadas em outros componentes (Hero, GameCard etc.). Removê-las exigiria refatoração ampla e poderia quebrar telas — manter como nullable e simplesmente parar de popular é mais seguro.
-- **Secret `THESPORTSDB_KEY`** fica no Vault (inofensivo, ninguém vai mais ler).
-- Nenhuma alteração em `useRealtimeDailyGames`, `LiveNowSection`, `DailyGamesSection`, `ScheduleTab` — eles continuam funcionando lendo o que o admin inserir manualmente.
-- Memória do projeto (`mem://features/thesportsdb-integration`) será atualizada para refletir que a integração foi descontinuada.
+- Colunas do banco continuam existindo (nullable). Permite reativar placar manual no futuro sem migração de schema.
+- Secret `API_FOOTBALL_KEY` fica (você mencionou que pode usar no futuro).
+- Nenhuma alteração em LiveNowSection, NextGameHero, hooks de realtime.
 
 ## Arquivos afetados
-- delete: `supabase/functions/tsdb-match-game/index.ts`
-- delete: `supabase/functions/tsdb-live-update/index.ts`
-- new migration: unschedule do cron
+- edit: `src/components/public/schedule/GameCard.tsx`
 - edit: `src/components/admin/DailyGamesManager.tsx`
-- edit: `src/hooks/useDailyGames.ts`
-- edit: `mem://features/thesportsdb-integration` + `mem://index.md`
+- new migration: limpa colunas `home_score`/`away_score`/`live_status`/`live_updated_at`/`external_id` e reseta `status_short`
+- delete secret: `THESPORTSDB_KEY`
 
-## Sugestões para o futuro (não fazer agora)
-1. **Placar manual rápido**: campo inline no admin (`home_score` / `away_score` + botão "AO VIVO 45'") usando as colunas que ficaram. Você atualiza em 5s sem depender de API.
-2. **Importador de print**: usar a function existente `read-schedule-image` (Lovable AI Vision) para ler placar de print do SofaScore/Globo — zero custo extra, zero dependência de API instável.
-3. Se um dia quiser reativar uma API, **API-Football** (você já tem `API_FOOTBALL_KEY` configurada) tem matching por ID de liga muito mais previsível que a TSDB.
+## Sugestões para depois (não fazer agora)
+1. **Placar manual rápido no admin**: input inline de `home_score`/`away_score` + botão "AO VIVO 45'" que preenche `status_short` e `live_status='live'`. Reaproveita a UI já pronta do GameCard (basta reverter parte do passo 1 quando tiver). Tempo: ~1h.
+2. **Importador de placar via print**: usar a function existente `read-schedule-image` apontando pra um print do SofaScore — IA extrai placar e atualiza o jogo. Zero custo de API extra.
+3. Quando quiser reativar API: **API-Football** com mapa de league IDs fixo é muito mais previsível que a fuzzy-match da TSDB.
+
+Posso aplicar quando aprovar.
