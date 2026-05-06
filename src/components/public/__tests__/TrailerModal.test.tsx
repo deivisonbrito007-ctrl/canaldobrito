@@ -17,10 +17,13 @@ describe("TrailerModal", () => {
     expect(dialog.className).toMatch(/z-\[100\]/);
   });
 
-  it("mostra iframe do YouTube com a key correta", () => {
+  it("mostra iframe do YouTube com a key correta (nocookie + playsinline)", () => {
     render(<TrailerModal open={true} onClose={() => {}} trailerKey="abc123" />);
     const iframe = document.querySelector("iframe");
-    expect(iframe?.getAttribute("src")).toContain("youtube.com/embed/abc123");
+    const src = iframe?.getAttribute("src") ?? "";
+    expect(src).toContain("youtube-nocookie.com/embed/abc123");
+    expect(src).toContain("playsinline=1");
+    expect(src).toContain("autoplay=1");
   });
 
   it("mostra loader quando loading=true", () => {
@@ -28,9 +31,13 @@ describe("TrailerModal", () => {
     expect(document.body.querySelector(".animate-spin")).toBeTruthy();
   });
 
-  it("mostra fallback quando não há trailer", () => {
-    render(<TrailerModal open={true} onClose={() => {}} trailerKey={null} />);
+  it("mostra fallback com link de busca no YouTube quando não há trailer", () => {
+    render(<TrailerModal open={true} onClose={() => {}} trailerKey={null} title="Como Mágica" />);
     expect(screen.getByText("Trailer não disponível")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /Procurar no YouTube/i }) as HTMLAnchorElement;
+    expect(link.href).toContain("youtube.com/results");
+    expect(decodeURIComponent(link.href)).toContain("Como Mágica trailer");
+    expect(link.target).toBe("_blank");
   });
 
   it("dispara onClose ao clicar no botão fechar", () => {

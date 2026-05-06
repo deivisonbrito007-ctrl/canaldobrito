@@ -1,6 +1,6 @@
-import { forwardRef, useEffect } from "react";
+import { forwardRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Youtube, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
@@ -10,10 +10,29 @@ interface TrailerModalProps {
   trailerKey: string | null;
   loading?: boolean;
   title?: string;
+  /** Fallback search query (defaults to title + "trailer") used when trailerKey is unavailable. */
+  fallbackQuery?: string;
 }
 
-export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ open, onClose, trailerKey, loading, title }, ref) => {
+const buildYouTubeEmbedUrl = (key: string) => {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const params = new URLSearchParams({
+    autoplay: "1",
+    rel: "0",
+    modestbranding: "1",
+    playsinline: "1", // iOS Safari: play inline em vez de fullscreen forçado
+    iv_load_policy: "3", // sem anotações
+    fs: "1",
+    color: "white",
+    enablejsapi: "1",
+    ...(origin ? { origin } : {}),
+  });
+  return `https://www.youtube-nocookie.com/embed/${key}?${params.toString()}`;
+};
+
+export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ open, onClose, trailerKey, loading, title, fallbackQuery }, ref) => {
   const trapRef = useFocusTrap<HTMLDivElement>(open);
+
   // ESC closes; lock body scroll while open
   useEffect(() => {
     if (!open) return;
@@ -28,6 +47,12 @@ export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ ope
       document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
+
+  const embedUrl = useMemo(() => (trailerKey ? buildYouTubeEmbedUrl(trailerKey) : null), [trailerKey]);
+  const searchQuery = (fallbackQuery ?? title ?? "").trim();
+  const youtubeSearchUrl = searchQuery
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${searchQuery} trailer`)}`
+    : null;
 
   if (typeof document === "undefined") return null;
 
@@ -52,6 +77,7 @@ export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ ope
             aria-modal="true"
             aria-label={title ? `Trailer — ${title}` : "Trailer"}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none outline-none"
+            style={{ overscrollBehavior: "contain", touchAction: "manipulation" }}
             tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -73,21 +99,38 @@ export const TrailerModal = forwardRef<HTMLDivElement, TrailerModalProps>(({ ope
                 </div>
               )}
 
-              {!loading && trailerKey && (
+              {!loading && embedUrl && (
                 <div className="aspect-video rounded-2xl overflow-hidden border border-border/20 shadow-2xl bg-black">
                   <iframe
-                    src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0`}
+                    src={embedUrl}
                     title={title ? `Trailer — ${title}` : "Trailer"}
                     className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
                 </div>
               )}
 
-              {!loading && !trailerKey && (
-                <div className="aspect-video rounded-2xl bg-card border border-border/20 flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Trailer não disponível</p>
+              {!loading && !embedUrl && (
+                <div className="aspect-video rounded-2xl bg-card border border-border/20 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                  <Youtube className="h-10 w-10 text-muted-foreground/60" />
+                  <p className="text-sm font-bold text-foreground font-body">Trailer não disponível</p>
+                  <p className="text-xs text-muted-foreground font-body max-w-xs">
+                    Não encontramos um trailer oficial para {title ? `“${title}”` : "este conteúdo"}.
+                  </p>
+                  {youtubeSearchUrl && (
+                    <a
+                      href={youtubeSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-1 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 text-primary text-xs font-bold font-body hover:bg-primary/25 transition-colors min-h-[40px]"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Procurar no YouTube
+                    </a>
+                  )}
                 </div>
               )}
             </div>
