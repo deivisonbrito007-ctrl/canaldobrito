@@ -529,6 +529,9 @@ const AdminFilmes = () => {
                       movie={m}
                       refreshingId={refreshingId}
                       batchActive={batchActive}
+                      selected={selectedIds.has(m.id)}
+                      selectionMode={selectionMode}
+                      onSelectChange={toggleSelect}
                       onRefresh={handleRefreshOne}
                       onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
                       onDelete={setPendingDelete}
