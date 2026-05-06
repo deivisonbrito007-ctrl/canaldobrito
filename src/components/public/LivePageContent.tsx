@@ -235,15 +235,19 @@ const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame;
 };
 
 /* ── Notice Banner (dispensável, persiste em localStorage) ── */
-const LIVE_NOTICE_KEY = "live-notice-dismissed-v1";
+const LIVE_NOTICE_KEY = "live-notice-dismissed-v2";
+const LIVE_NOTICE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // reaparece após 7 dias
 const LiveNotice = () => {
   const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem(LIVE_NOTICE_KEY) === "1"; } catch { return false; }
+    try {
+      const ts = Number(localStorage.getItem(LIVE_NOTICE_KEY) || 0);
+      return ts > 0 && Date.now() - ts < LIVE_NOTICE_TTL_MS;
+    } catch { return false; }
   });
   const [expanded, setExpanded] = useState(false);
   if (dismissed) return null;
   const dismiss = () => {
-    try { localStorage.setItem(LIVE_NOTICE_KEY, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(LIVE_NOTICE_KEY, String(Date.now())); } catch { /* ignore */ }
     setDismissed(true);
   };
   return (
