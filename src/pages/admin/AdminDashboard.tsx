@@ -217,7 +217,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Stats grid with micro progress bars */}
-      <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((card, i) => {
           const total = totals[card.key] || 0;
           const active = actives[card.key] || 0;
