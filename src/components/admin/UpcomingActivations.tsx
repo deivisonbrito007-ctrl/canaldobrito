@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCountdown } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Image, Trophy, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 
 interface ScheduledItem {
   id: string;
@@ -67,7 +67,7 @@ const useScheduledItems = () =>
     refetchInterval: 60000,
   });
 
-export const UpcomingActivations = () => {
+export const UpcomingActivations = forwardRef<HTMLDivElement>((_props, ref) => {
   const { data: items, isLoading } = useScheduledItems();
   const [, setTick] = useState(0);
 
@@ -78,7 +78,7 @@ export const UpcomingActivations = () => {
 
   if (isLoading) {
     return (
-      <div className="glass-panel rounded-xl p-4 border border-amber-500/[0.15]">
+      <div ref={ref} className="glass-panel rounded-xl p-4 border border-amber-500/[0.15]">
         <div className="flex items-center gap-2 mb-3">
           <Clock className="h-4 w-4 text-amber-400" />
           <h3 className="text-xs font-bold text-foreground">Próximas Ativações</h3>
@@ -93,7 +93,7 @@ export const UpcomingActivations = () => {
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden border border-amber-500/[0.15] bg-gradient-to-br from-amber-500/[0.06] to-amber-500/[0.01]">
+    <div ref={ref} className="glass-panel rounded-xl overflow-hidden border border-amber-500/[0.15] bg-gradient-to-br from-amber-500/[0.06] to-amber-500/[0.01]">
       <div className="p-4 border-b border-amber-500/10">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-amber-400" />
@@ -137,4 +137,6 @@ export const UpcomingActivations = () => {
       </div>
     </div>
   );
-};
+});
+
+UpcomingActivations.displayName = "UpcomingActivations";
