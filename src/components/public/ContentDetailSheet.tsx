@@ -2,6 +2,7 @@ import { useState, forwardRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/bodyScrollLock";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls, type PanInfo } from "framer-motion";
 
@@ -55,11 +56,10 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
       onClose();
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
+      unlockBodyScroll();
     };
   }, [open, onClose]);
 
