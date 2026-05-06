@@ -236,19 +236,48 @@ const UpcomingCard = ({ game, minutesUntil, isNext = false }: { game: DailyGame;
   );
 };
 
-/* ── Notice Banner (sempre visível) ── */
-const LiveNotice = () => (
-  <div
-    role="status"
-    className="mx-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 border border-amber-500/30 px-3 py-2.5 flex items-start gap-2.5 shadow-[0_0_12px_rgba(245,158,11,0.08)]"
-  >
-    <Info className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
-    <p className="flex-1 text-[11px] sm:text-xs leading-snug text-amber-100/90 font-body">
-      <span className="font-bold text-amber-300 uppercase tracking-wide">Aviso:</span>{" "}
-      Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!
-    </p>
-  </div>
-);
+/* ── Notice Banner (dispensável, persiste em localStorage) ── */
+const LIVE_NOTICE_KEY = "live-notice-dismissed-v1";
+const LiveNotice = () => {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(LIVE_NOTICE_KEY) === "1"; } catch { return false; }
+  });
+  const [expanded, setExpanded] = useState(false);
+  if (dismissed) return null;
+  const dismiss = () => {
+    try { localStorage.setItem(LIVE_NOTICE_KEY, "1"); } catch { /* ignore */ }
+    setDismissed(true);
+  };
+  return (
+    <div
+      role="status"
+      className="mx-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/25 px-2.5 py-1.5 flex items-center gap-2"
+    >
+      <Info className="h-3.5 w-3.5 text-amber-400 shrink-0" aria-hidden="true" />
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex-1 min-w-0 text-left text-[10.5px] leading-snug text-amber-100/85 font-body"
+        aria-expanded={expanded}
+      >
+        <span className="font-bold text-amber-300 uppercase tracking-wide">Aviso:</span>{" "}
+        {expanded ? (
+          "Os canais e horários podem sofrer alterações de última hora sem aviso prévio. Agradecemos a compreensão!"
+        ) : (
+          <span className="truncate inline-block max-w-full align-bottom">Canais e horários sujeitos a alterações.</span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dispensar aviso"
+        className="shrink-0 h-7 w-7 -mr-1 inline-flex items-center justify-center rounded-md text-amber-300/70 hover:text-amber-200 hover:bg-amber-500/10 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+};
 
 /* ── Empty State ── */
 const EmptyLive = () => (
