@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -115,7 +115,45 @@ export const DailyGamesManager = () => {
     }
   };
 
-  const handleClearDay = async () => {
+  const [checkingDupes, setCheckingDupes] = useState(false);
+  const handleCheckDuplicates = async () => {
+    setCheckingDupes(true);
+    try {
+      const { data, error } = await supabase
+        .from("daily_games")
+        .select("id, date, home_team, away_team, game_time, sport_type, created_at")
+        .eq("archived", false)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const seen = new Map<string, string>(); // key -> id of oldest
+      const dupeIds: string[] = [];
+      for (const g of data || []) {
+        const key = gameKey(g as any) + "|" + g.date;
+        if (seen.has(key)) {
+          dupeIds.push(g.id);
+        } else {
+          seen.set(key, g.id);
+        }
+      }
+
+      if (dupeIds.length === 0) {
+        toast.success("Nenhuma duplicata encontrada — banco limpo!");
+        return;
+      }
+
+      if (!confirm(`${dupeIds.length} duplicata(s) encontrada(s). Manter o registro mais antigo e remover os demais?`)) return;
+
+      const { error: delErr } = await supabase.from("daily_games").delete().in("id", dupeIds);
+      if (delErr) throw delErr;
+      toast.success(`${dupeIds.length} duplicata(s) removida(s)!`);
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao verificar duplicatas");
+    } finally {
+      setCheckingDupes(false);
+    }
+  };
     if (!confirm(`Excluir todos os jogos de ${selectedDate}?`)) return;
     try {
       await deleteByDate.mutateAsync(selectedDate);
