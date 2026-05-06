@@ -127,17 +127,14 @@ const Assinar = () => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length) {
         const mapped: ChannelTileItem[] = parsed
-          .map((c: Partial<ChannelTileItem>): ChannelTileItem => ({
-            name: c.name || "",
-            label: c.label || c.name || "",
-            bg: c.bg || "bg-[#0A0A0A]",
-            fg: c.fg || "text-white",
-            size: c.size || "text-[14px]",
-            weight: c.weight || "font-black",
-            italic: c.italic,
-            sub: c.sub,
-            font: c.font,
-          }))
+          .map((c: Partial<ChannelTileItem>): ChannelTileItem => {
+            // Tenta resolver logo a partir do nome no mapa de defaults
+            const fallback = DEFAULT_TV_CHANNELS.find((d) => d.name === c.name);
+            return {
+              name: c.name || "",
+              logo: c.logo || fallback?.logo || globoLogo,
+            };
+          })
           .filter((c) => c.name);
         if (mapped.length) return mapped;
       }
