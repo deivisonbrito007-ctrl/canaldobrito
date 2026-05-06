@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie, useReorderMovies, type FeaturedMovie } from "@/hooks/useMovies";
+import { useRealtimeMovies } from "@/hooks/useRealtimeMovies";
 import {
   DndContext,
   closestCenter,
