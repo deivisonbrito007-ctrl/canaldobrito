@@ -346,6 +346,9 @@ const Assinar = () => {
                 <span className="font-display text-5xl sm:text-6xl text-primary">R$ 35</span>
                 <span className="text-sm text-muted-foreground font-body">/mês</span>
               </div>
+              <p className="text-[11px] text-muted-foreground font-body">
+                Equivale a <span className="text-primary font-bold">R$ 1,17/dia</span> · menos que um café
+              </p>
             </div>
             <span className="inline-block text-[10px] font-body font-bold bg-primary text-primary-foreground rounded-full px-3 py-1">
               Sem fidelidade · Cancele quando quiser
