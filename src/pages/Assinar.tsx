@@ -144,6 +144,29 @@ const ChannelLogo = ({
 
 const Assinar = () => {
   const { h, m, s } = useCountdown();
+  const { data: settings } = useSettings();
+
+  const tvChannels = useMemo<ChannelTileItem[]>(() => {
+    const raw = settings?.tv_channels;
+    if (!raw) return DEFAULT_TV_CHANNELS;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) {
+        return parsed.map((c: Partial<ChannelTileItem>) => ({
+          name: c.name || "",
+          domain: c.domain,
+          localLogo: c.localLogo,
+          emoji: c.emoji || "📺",
+          bg: c.bg || "bg-white",
+          text: c.text || "text-foreground/85",
+          border: c.border || "border-white/10",
+        })).filter(c => c.name);
+      }
+    } catch {/* fallback */}
+    return DEFAULT_TV_CHANNELS;
+  }, [settings?.tv_channels]);
+
+  const marqueeItems = useMemo(() => buildMarqueeItems(tvChannels), [tvChannels]);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
