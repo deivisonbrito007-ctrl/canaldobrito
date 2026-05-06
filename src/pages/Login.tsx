@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, Navigate, Link } from "react-router-dom";
+import { useNavigate, Navigate, Link, useLocation } from "react-router-dom";
 import logo from "@/assets/canal_do_brito_logo.png";
 import { Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 
 const Login = () => {
   const { signIn, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo =
+    (location.state as { from?: string } | null)?.from || "/admin";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +17,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   if (!isLoading && isAdmin) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,7 +26,7 @@ const Login = () => {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-      navigate("/admin");
+      navigate(redirectTo, { replace: true });
     } catch (err: any) {
       setError(err?.message || "Erro ao fazer login");
     } finally {
