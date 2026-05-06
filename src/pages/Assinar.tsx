@@ -298,7 +298,7 @@ const Assinar = () => {
                   </div>
                 ) : (
                   <div key={`ch-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center p-2 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center overflow-hidden shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] ${(item as any).bg} ${(item as any).border}`}>
                       <ChannelLogo
                         localLogo={(item as any).localLogo}
                         domain={(item as any).domain}
