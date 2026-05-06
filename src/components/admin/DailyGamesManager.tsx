@@ -365,6 +365,23 @@ export const DailyGamesManager = () => {
                           </Button>
                         ) : (
                           <>
+                            {game.external_id ? (
+                              <button
+                                onClick={() => handleUnlinkTSDB(game.id)}
+                                className="p-1 rounded hover:bg-white/[0.06] text-emerald-400"
+                                title="Desvincular TheSportsDB"
+                              >
+                                <Link2Off className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleMatchTSDB(game.id)}
+                                className="p-1 rounded hover:bg-white/[0.06] text-fuchsia-400"
+                                title="Buscar placar (TheSportsDB)"
+                              >
+                                <Radio className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                             <Switch
                               checked={game.active}
                               onCheckedChange={() => handleToggleActive(game.id, game.active)}
