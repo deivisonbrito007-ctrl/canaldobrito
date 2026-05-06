@@ -52,6 +52,52 @@ export const DailyGamesManager = () => {
     updateGame.mutate({ id, active: !current });
   };
 
+  const handleMatchTSDB = async (gameId: string) => {
+    const t = toast.loading("Buscando placar (TheSportsDB)...");
+    try {
+      const { data, error } = await supabase.functions.invoke("tsdb-match-game", { body: { gameId } });
+      if (error) throw error;
+      if (data?.matched) {
+        toast.success("Vinculado! Placar/tempo serão atualizados em ~1 min.", { id: t });
+        queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+      } else if (data?.candidates?.length) {
+        const top = data.candidates[0];
+        if (confirm(`Sem match automático.\nUsar candidato mais provável?\n\n${top.home} vs ${top.away}\n${top.league} • score ${(top.score * 100).toFixed(0)}%`)) {
+          await supabase.from("daily_games").update({ external_id: `tsdb:${top.id}` }).eq("id", gameId);
+          toast.success("Vinculado manualmente.", { id: t });
+          queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+        } else {
+          toast.dismiss(t);
+        }
+      } else {
+        toast.error("Nenhum candidato encontrado na TheSportsDB", { id: t });
+      }
+    } catch (e: any) {
+      toast.error(`Erro: ${e?.message || e}`, { id: t });
+    }
+  };
+
+  const handleUnlinkTSDB = async (gameId: string) => {
+    await supabase.from("daily_games").update({
+      external_id: null, home_score: null, away_score: null, live_status: null,
+    }).eq("id", gameId);
+    toast.success("Desvinculado");
+    queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+  };
+
+  const handleRefreshLive = async () => {
+    const t = toast.loading("Atualizando placares ao vivo...");
+    try {
+      const { data, error } = await supabase.functions.invoke("tsdb-live-update", { body: {} });
+      if (error) throw error;
+      toast.success(`${data?.updated ?? 0} jogos atualizados`, { id: t });
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (e: any) {
+      toast.error(`Erro: ${e?.message || e}`, { id: t });
+    }
+  };
+
+
   const handleArchiveDay = async () => {
     const nonArchived = games?.filter((g) => !g.archived) || [];
     if (nonArchived.length === 0) {
