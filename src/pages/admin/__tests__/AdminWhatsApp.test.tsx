@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -24,7 +25,7 @@ import AdminWhatsApp from "../AdminWhatsApp";
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-    {children}
+    <MemoryRouter>{children}</MemoryRouter>
   </QueryClientProvider>
 );
 
@@ -44,9 +45,25 @@ describe("AdminWhatsApp", () => {
     expect(screen.getByText("🔴 Ao Vivo")).toBeInTheDocument();
   });
 
-  it("renders custom message section", () => {
+  it("renders custom message section with link tab toggle", () => {
     render(<AdminWhatsApp />, { wrapper });
     expect(screen.getByText("Mensagem Personalizada")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Digite sua mensagem/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "schedule" })).toBeInTheDocument();
+  });
+
+  it("renders day chips: Hoje, Amanhã, +2 dias", () => {
+    render(<AdminWhatsApp />, { wrapper });
+    expect(screen.getByRole("button", { name: "Hoje" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Amanhã" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+2 dias" })).toBeInTheDocument();
+  });
+
+  it("switches selected day when chip clicked", () => {
+    render(<AdminWhatsApp />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: "Amanhã" }));
+    // Date input reflects chosen date
+    const dateInput = screen.getByLabelText("Escolher data") as HTMLInputElement;
+    expect(dateInput.value).not.toBe("");
   });
 });
