@@ -1,35 +1,25 @@
-## Padronizar logos dos canais via Vite imports (definitivo)
+## Corrigir logo do BandSports + padronização
 
-### 1. Importar todas as logos como módulos Vite
-Em `ChannelBadge.tsx`, importar PNGs/SVGs de `src/assets/brand-logos/` diretamente. Vite gera hash no nome → cache-busting automático eterno, nunca mais "volta pra antiga".
+### Mudanças
 
-```ts
-import bandLogo from "@/assets/brand-logos/band.png";
-import cazetvLogo from "@/assets/brand-logos/cazetv.png";
-// ... etc para todos
-```
+**1. Adicionar logo correta do BandSports**
+- Copiar `user-uploads://Screenshot_20260507_014357_Chrome.jpg` para `src/assets/brand-logos/bandsports.png`.
+- Importar via Vite em `ChannelBadge.tsx` como `bandsportsLogo`.
+- Atualizar mapeamento `bandsports` para usar `bandsportsLogo` (em vez de reaproveitar `bandLogo`).
 
-### 2. Remover fallback automático para favicons
-Hoje quando o local falha, busca favicon do Google (logo antiga da Band veio dali). Nova cadeia: `localLogo → emoji`. Determinístico.
+**2. Padronização das logos (continuação)**
+- Remover `bg-white/95` do wrapper → fundo sempre transparente.
+- Remover flag `darkBg` (não faz mais sentido sem branco padrão).
+- Wrapper unificado quadrado: `sm h-5 w-5`, `md h-7 w-7`, `lg h-9 w-9` — `object-contain` mantém logos largas proporcionais.
+- Para logos com fundo claro/transparente que ficam ilegíveis no tema dark (Globo preta, Record, Premiere): aplicar leve `bg-white/10 rounded` via flag `lightChip: true`.
 
-### 3. Garantir localLogo para todos os canais mapeados
-Adicionar imports e `localLogo` para: Disney+, Netflix, Prime Video, Max/HBO, Apple TV, Globoplay, Paramount+, SporTV, Space, YouTube, ESPN, TNT Sports, Premiere, Record, GOAT, DAZN, Globo, Band, CazéTV, X Sports.
+**3. Limpeza de mapeamentos errados**
+- `Canal do Benja` → remover `localLogo: youtubeLogo` (não é YouTube oficial), volta para emoji 🎙️.
+- `BandPlay` e `Esporte na Band` → mantém `bandLogo` (mesma marca-mãe correta).
 
-Para canais sem PNG bom (SBT, NSports, Combate, Benja, OneFootball, RedeTV, NBA, TV Aratu, TV Jornal, Bandsports, Bandplay, Esporte na Band, GE TV) → mantém só emoji (sem favicon externo).
+### Arquivo editado
+- `src/components/public/ChannelBadge.tsx` — novo import, mapping atualizado, wrapper sem fundo branco, tamanho quadrado unificado.
+- Novo asset: `src/assets/brand-logos/bandsports.png`.
 
-### 4. Wrapper retangular maior e mais profissional
-- `sm`: `h-5 w-7` (era `h-5 w-5`)
-- `md`: `h-6 w-9` (era `h-6 w-6`)
-- `lg`: `h-8 w-12` (era `h-7 w-7`)
-- Padding interno reduzido: `p-[2px]`
-- `object-contain` mantido — sem distorção
-
-### 5. Logo da Band correta
-Usar `src/assets/brand-logos/band.png` (versão nova já enviada). Vite gera hash, não precisa renomear nada.
-
-### Arquivos editados
-- `src/components/public/ChannelBadge.tsx` — imports Vite, novo wrapper, sem fallback de favicon
-- (opcional cleanup) — `public/channels/*.png` deixam de ser referenciados; podem ficar ou ser removidos depois
-
-### Sugestão extra
-Após esta refatoração: para trocar qualquer logo no futuro, basta substituir o arquivo em `src/assets/brand-logos/` — o Vite gera novo hash, todos os clients pegam a nova versão automaticamente, sem PWA cache, sem renome manual.
+### Sugestão
+Se você tiver as logos oficiais (PNG transparente em alta) de **BandPlay**, **Esporte na Band**, **Canal do Benja**, **NSports**, **SBT**, **Combate**, **OneFootball**, **NBA League Pass**, **TV Aratu** e **TV Jornal**, me envie em lote — substituo todas de uma vez e o app fica 100% com identidade oficial. Por enquanto vou usar emoji nos canais sem PNG bom (mais limpo que placeholder genérico).
