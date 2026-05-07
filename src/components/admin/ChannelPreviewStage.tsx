@@ -37,8 +37,13 @@ const buildMockGame = (channels: string[]): DailyGame => ({
   created_at: new Date().toISOString(),
 });
 
-export function ChannelPreviewStage({ initialChannel = "" }: Props) {
-  const [channel, setChannel] = useState(initialChannel);
+export function ChannelPreviewStage({ initialChannel = "", value, onChange }: Props) {
+  const [internalChannel, setInternalChannel] = useState(initialChannel);
+  const channel = value !== undefined ? value : internalChannel;
+  const setChannel = (v: string) => {
+    if (onChange) onChange(v);
+    else setInternalChannel(v);
+  };
   const [extra, setExtra] = useState("");
   const channels = [channel, extra].map((c) => c.trim()).filter(Boolean);
   const mockGame = buildMockGame(channels.length ? channels : ["Canal Exemplo"]);
