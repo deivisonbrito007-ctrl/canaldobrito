@@ -36,28 +36,35 @@ export function ChannelAliasesEditor({ mappingId }: Props) {
 
     setSaving(true);
     try {
-      // Pré-checa colisão para mensagem clara
-      const { data: clash } = await supabase
+      // Verifica se já está cadastrado neste mesmo mapping
+      const { data: ownClash } = await supabase
         .from("channel_aliases")
-        .select("id, alias, mapping_id")
+        .select("id")
+        .eq("mapping_id", mappingId)
         .eq("alias_normalized", normalized)
         .maybeSingle();
-      if (clash) {
-        if (clash.mapping_id === mappingId) {
-          toast.info("Esse alias já está cadastrado aqui.");
-        } else {
-          toast.error(`Alias "${clash.alias}" já pertence a outro canal.`);
-        }
+      if (ownClash) {
+        toast.info("Esse alias já está cadastrado aqui.");
         return;
       }
-      // Também checa se colide com um nome principal
-      const { data: nameClash } = await supabase
-        .from("channel_logo_mappings")
-        .select("id, name")
-        .eq("name_normalized", normalized)
-        .maybeSingle();
-      if (nameClash && nameClash.id !== mappingId) {
-        toast.error(`"${nameClash.name}" já é o nome de outro mapeamento.`);
+
+      // Validação backend: detecta colisão com nome principal ou alias de outro canal
+      const { data: collisions, error: collErr } = await supabase.rpc(
+        "check_alias_collision",
+        { _alias: trimmed, _exclude_mapping_id: mappingId }
+      );
+      if (collErr) throw collErr;
+      const collision = (collisions ?? [])[0];
+      if (collision) {
+        if (collision.collision_type === "name") {
+          toast.error(
+            `"${collision.conflicting_value}" já é o nome principal de outro canal.`
+          );
+        } else {
+          toast.error(
+            `Alias "${collision.conflicting_value}" já pertence a "${collision.mapping_name}".`
+          );
+        }
         return;
       }
 
