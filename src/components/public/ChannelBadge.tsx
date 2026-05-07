@@ -127,11 +127,22 @@ const ChannelIcon = ({
   emoji,
   size,
   alt,
-}: { logoKey?: LogoKey; emoji: string; size: BadgeSize; alt: string }) => {
+  customUrl,
+  forceLightChip,
+}: {
+  logoKey?: LogoKey;
+  emoji: string;
+  size: BadgeSize;
+  alt: string;
+  customUrl?: string | null;
+  forceLightChip?: boolean;
+}) => {
   const [failed, setFailed] = useState(false);
-  const entry = logoKey && logoKey !== "none" ? LOGO_REGISTRY[logoKey] : undefined;
+  const registryEntry = logoKey && logoKey !== "none" ? LOGO_REGISTRY[logoKey] : undefined;
+  const src = customUrl || registryEntry?.src;
+  const lightChip = forceLightChip ?? registryEntry?.lightChip;
 
-  if (!entry || failed) {
+  if (!src || failed) {
     return (
       <span
         className={cn(
