@@ -125,6 +125,39 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_logo_mappings: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          logo_key: string
+          name: string
+          name_normalized: string
+          short: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          logo_key?: string
+          name: string
+          name_normalized: string
+          short?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          logo_key?: string
+          name?: string
+          name_normalized?: string
+          short?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_banner: {
         Row: {
           active: boolean

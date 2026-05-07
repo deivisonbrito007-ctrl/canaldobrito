@@ -23,6 +23,7 @@ const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
@@ -67,6 +68,7 @@ const App = () => (
                 <Route path="auditoria" element={<AdminAudit />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
+                <Route path="canais-logos" element={<AdminCanaisLogos />} />
                 {/* Redirects de rotas antigas removidas */}
                 <Route path="api-sync" element={<Navigate to="/admin/whatsapp" replace />} />
                 <Route path="sync-stats" element={<Navigate to="/admin/dashboard" replace />} />
