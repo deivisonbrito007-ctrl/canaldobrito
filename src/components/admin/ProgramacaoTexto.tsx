@@ -215,7 +215,7 @@ function collectMetadata(lines: string[], startIdx: number): {
       // Also check if line has 📺 (old format all-in-one)
       if (/📺/.test(ml)) {
         const afterTv = ml.split("📺").pop() || "";
-        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+        channels = splitChannels(afterTv);
       }
     }
     // 📍 → competition detail
@@ -237,7 +237,7 @@ function collectMetadata(lines: string[], startIdx: number): {
     // 📺 → channels
     else if (/^📺/.test(ml)) {
       const afterTv = ml.replace(/^📺\s*/, "");
-      channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+      channels = splitChannels(afterTv);
     }
 
     consumed++;
@@ -342,7 +342,7 @@ export function parseScheduleText(
         const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
         if (channelLine.includes("📺")) {
           const afterTv = channelLine.split("📺").pop() || "";
-          meta.channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+          meta.channels = splitChannels(afterTv);
           meta.linesConsumed = 2;
         }
       }
