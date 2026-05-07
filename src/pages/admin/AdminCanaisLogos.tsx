@@ -292,8 +292,7 @@ const AdminCanaisLogos = () => {
     onError: (e: any) => toast.error(e.message ?? "Erro ao vincular alias"),
   });
 
-
-    const { active, over } = e;
+  const handleDragEnd = (e: DragEndEvent) => {
     if (!over || active.id === over.id || !rows) return;
     const ids = rows.map((r) => r.id);
     const oldIdx = ids.indexOf(active.id as string);
