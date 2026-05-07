@@ -264,13 +264,13 @@ const Assinar = () => {
             <div ref={trackRef} className="marquee-track flex gap-3 w-max">
               {marqueeItems.map((item, i) => (
                 <div key={`tile-${item.name}-${i}`} className="flex flex-col items-center gap-2 shrink-0">
-                  <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative bg-white/5">
+                  <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl border border-white/10 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.6)] overflow-hidden relative bg-white flex items-center justify-center">
                     <img
                       src={item.logo}
                       alt={`Logo ${item.name}`}
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-contain block p-1"
+                      className="max-w-[80%] max-h-[80%] w-auto h-auto object-contain block"
                     />
                   </div>
                   <span className="text-[9px] font-body font-semibold text-center w-16 sm:w-[72px] leading-tight text-muted-foreground">
