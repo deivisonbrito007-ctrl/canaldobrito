@@ -143,6 +143,57 @@ Flamengo x Palmeiras
   });
 });
 
+describe("splitChannels — separadores múltiplos", () => {
+  it("separa canais por '/' (Globo / Paramount+)", () => {
+    const text = `Time A x Time B
+🏆 Liga / ⏰ 21h00
+📺 Globo / Paramount+`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].channels).toEqual(["Globo", "Paramount+"]);
+  });
+
+  it("separa canais por '|' (ESPN | SporTV)", () => {
+    const text = `Time A x Time B
+🏆 Liga / ⏰ 21h00
+📺 ESPN | SporTV`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games[0].channels).toEqual(["ESPN", "SporTV"]);
+  });
+
+  it("separa canais por ',' e ' e ' juntos", () => {
+    const text = `Time A x Time B
+🏆 Liga / ⏰ 21h00
+📺 Globo, Premiere e SporTV`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games[0].channels).toEqual(["Globo", "Premiere", "SporTV"]);
+  });
+
+  it("mistura todos os separadores: '/', '|', ',' e ' e '", () => {
+    const text = `Time A x Time B
+🏆 Liga / ⏰ 21h00
+📺 Globo / Paramount+, ESPN | SporTV e Premiere`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games[0].channels).toEqual(["Globo", "Paramount+", "ESPN", "SporTV", "Premiere"]);
+  });
+
+  it("preserva canais únicos sem separadores", () => {
+    const text = `Time A x Time B
+🏆 Liga / ⏰ 21h00
+📺 Premiere`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games[0].channels).toEqual(["Premiere"]);
+  });
+
+  it("ignora espaços extras e itens vazios", () => {
+    const text = `Time A x Time B
+🏆 Liga / ⏰ 21h00
+📺 Globo /  / Paramount+ ,  ESPN`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games[0].channels).toEqual(["Globo", "Paramount+", "ESPN"]);
+  });
+});
+
 describe("Auto-bump date for dawn games (00:00–04:59) — opt-in via flag", () => {
   const BUMP = { autoBumpMidnight: true };
 
