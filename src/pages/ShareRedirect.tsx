@@ -1,17 +1,22 @@
 import { useEffect, useMemo } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { SLUG_TO_TAB, TAB_SLUGS } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
 const ATTRIBUTION_KEY = "cdb:attribution";
+const CONTENT_RE = /^[a-z0-9-]{1,80}$/;
 
 /**
  * Internal short-link redirector.
- * URL: /s/<slug>  →  registers landing_with_utm + redirects to /<slug>
+ * URL: /s/<slug>[?c=<tag>]  →  registers landing_with_utm + redirects to /<slug>
  * Keeps shared links short and clean while preserving CTR/Conversion analytics.
  */
 export default function ShareRedirect() {
   const { slug = "" } = useParams<{ slug: string }>();
+  const [params] = useSearchParams();
+  const rawContent = (params.get("c") ?? "").toLowerCase();
+  const content = CONTENT_RE.test(rawContent) ? rawContent : null;
+
   const target = useMemo(() => {
     const tab = SLUG_TO_TAB[slug.toLowerCase()];
     return tab ? `/${TAB_SLUGS[tab]}` : "/";
@@ -33,6 +38,7 @@ export default function ShareRedirect() {
       utm_source: "whatsapp",
       utm_medium: "status",
       utm_campaign: `share-${tabSlug}`,
+      utm_content: content,
     };
     const payload = {
       ...utms,
@@ -45,7 +51,7 @@ export default function ShareRedirect() {
     };
     try { sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(payload)); } catch { /* noop */ }
     track("landing_with_utm", payload);
-  }, [slug]);
+  }, [slug, content]);
 
   return <Navigate to={target} replace />;
 }
