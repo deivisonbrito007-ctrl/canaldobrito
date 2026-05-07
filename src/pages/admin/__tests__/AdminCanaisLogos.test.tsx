@@ -68,7 +68,7 @@ describe("AdminCanaisLogos", () => {
     renderPage();
     expect(screen.getByText("Canais & Logos")).toBeInTheDocument();
     expect(screen.getByText("Detectados (30d)")).toBeInTheDocument();
-    expect(screen.getByText("Sem logo")).toBeInTheDocument();
+    expect(screen.getAllByText("Sem logo").length).toBeGreaterThan(0);
   });
 
   it("opens new mapping modal when clicking Novo", async () => {
