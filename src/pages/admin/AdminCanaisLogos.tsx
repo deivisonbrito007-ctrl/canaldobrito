@@ -398,7 +398,7 @@ const AdminCanaisLogos = () => {
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="all">Todos detectados</TabsTrigger>
+                <TabsTrigger value="all">Com logo</TabsTrigger>
                 <TabsTrigger value="custom">Personalizados</TabsTrigger>
                 <TabsTrigger value="builtin">Built-in</TabsTrigger>
               </TabsList>
