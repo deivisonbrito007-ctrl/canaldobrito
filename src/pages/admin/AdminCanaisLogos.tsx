@@ -68,6 +68,7 @@ const AdminCanaisLogos = () => {
       const { data, error } = await supabase
         .from("channel_logo_mappings")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("name");
       if (error) throw error;
       return (data ?? []) as ChannelMapping[];
