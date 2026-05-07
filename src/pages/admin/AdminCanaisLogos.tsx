@@ -35,6 +35,7 @@ import { useChannelMatchSuggestions, type ChannelMatchSuggestion } from "@/hooks
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
 import { ChannelPreviewStage } from "@/components/admin/ChannelPreviewStage";
 import { ChannelAliasesEditor } from "@/components/admin/ChannelAliasesEditor";
+import { ChannelMappingsBackup } from "@/components/admin/ChannelMappingsBackup";
 import {
   DndContext,
   closestCenter,
@@ -470,7 +471,8 @@ const AdminCanaisLogos = () => {
             Painel central de canais detectados, com upload de logo direto da tela.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ChannelMappingsBackup />
           <Button
             variant="outline"
             size="sm"
