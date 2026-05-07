@@ -315,14 +315,25 @@ const AdminCanaisLogos = () => {
     []
   );
 
+  const suggestions = useChannelMatchSuggestions(discovered.orphans, rows, builtinList);
+  const highConfidencePairs = useMemo<AutoLinkPair[]>(() => {
+    const out: AutoLinkPair[] = [];
+    for (const o of discovered.orphans) {
+      const s = suggestions.get(o.normalized);
+      if (s && s.confidence === "high") out.push({ orphan: o, suggestion: s });
+    }
+    return out;
+  }, [discovered.orphans, suggestions]);
+
   const stats = useMemo(() => {
     return {
       mapped: rows?.length ?? 0,
       orphans: discovered.orphans.length,
       builtin: builtinList.length,
       discovered: discovered.all.length,
+      suggested: suggestions.size,
     };
-  }, [rows, discovered, builtinList]);
+  }, [rows, discovered, builtinList, suggestions]);
 
   const openEdit = (r: ChannelMapping) => {
     setForm({
