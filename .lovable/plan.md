@@ -1,46 +1,45 @@
 ## Objetivo
+Restaurar o acesso ao painel `/admin` (que está bloqueando você por causa de uma recursão de RLS introduzida na migration de segurança) e melhorar a tela de "Acesso Restrito".
 
-Hoje já existe `/admin/canais-logos` com upload, mapeamento, detecção automática de órfãos e preview do `ChannelBadge` em três tamanhos. Falta o que você pediu agora: **ordenar canais** e **ver como ficam no carrossel e na programação real**, sem sair do admin.
+## 1. Migration: corrigir `has_role`
 
-## O que vou entregar
+Voltar a função para `SECURITY DEFINER` (padrão recomendado para checagem de roles, evita recursão na policy de `user_roles`). EXECUTE permanece restrito a usuários autenticados.
 
-### 1. Ordenação dos canais (drag-and-drop)
-- Migração: adicionar `sort_order integer not null default 0` em `channel_logo_mappings` + índice.
-- UI: na aba **Personalizados** (única que faz sentido ordenar), grid vira lista arrastável com `@dnd-kit/sortable` (já bate com o padrão do projeto). Cada card mostra um handle ⋮⋮ à esquerda.
-- Salvamento: ao soltar, atualiza `sort_order` em lote (uma chamada `upsert`) e invalida `CHANNEL_MAPPINGS_QK`.
-- A ordem influencia onde houver lista de canais (ex.: badges em GameCard quando há vários canais para o mesmo jogo). Hoje a ordem vem do array do parser; passamos a reordenar usando o `sort_order` quando houver mapping.
+```sql
+CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
 
-### 2. Preview ao vivo no carrossel e na programação
-Nova seção **"Como vai aparecer"** abaixo do "Teste de matching", com 3 abas:
-
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
 ```
-[ Chip puro ]  [ Card da Programação ]  [ Carrossel ao vivo ]
-```
 
-- **Chip puro**: o que já existe (sm/md/lg lado a lado).
-- **Card da Programação**: monta um `GameCard` fake (Flamengo x Palmeiras, 21:30, hoje) injetando o canal selecionado no array `channels`. Reaproveita o componente real, então qualquer mudança visual aparece automaticamente.
-- **Carrossel ao vivo**: renderiza o trecho do `LiveNowSection` (versão isolada com 1 jogo mock) usando o mesmo `ChannelBadge size="sm"`. Mostra como fica no glassmorphism dos cartões "AO VIVO".
+O linter vai voltar a mostrar 1 warning ("authenticated can execute SECURITY DEFINER") — vou marcá-lo como **aceito** com justificativa (a função só retorna boolean, não vaza dados, e é o padrão oficial Supabase para evitar recursão). Atualizo também o `@security-memory` registrando isso.
 
-Cada aba tem um seletor de canal no topo (autocomplete com a lista de mappings + órfãos), assim você pode testar qualquer canal — incluindo um recém-cadastrado — sem precisar abrir um jogo real.
+## 2. Melhorias de UX na tela de Acesso Restrito
 
-### 3. Atalho contextual
-- No card de cada canal (todas as abas), botão extra **"Ver na programação"** que abre direto a aba de preview já com aquele canal selecionado.
+Em `src/components/admin/RequireAdmin.tsx` e `src/contexts/AuthContext.tsx`:
 
-## Arquivos
+- **Loading state correto**: adicionar flag `roleChecked` no `AuthContext` para que `RequireAdmin` mostre um skeleton/spinner enquanto a checagem de role está em andamento, em vez de mostrar "Acesso Restrito" por uma fração de segundo.
+- **Mensagem mais útil**: exibir o e-mail logado (`Conta: solutionsbrito@gmail.com`) para confirmar qual usuário foi autenticado.
+- **Botão "Tentar novamente"**: re-executa `checkAdmin(user.id)` sem precisar deslogar (útil quando o role acabou de ser concedido).
+- Manter os botões existentes "Voltar ao site" e "Trocar de conta".
 
-| Arquivo | Ação |
-|---|---|
-| `supabase/migrations/<novo>.sql` | `ALTER TABLE channel_logo_mappings ADD COLUMN sort_order` + índice |
-| `src/hooks/useChannelMappings.ts` | incluir `sort_order` no tipo |
-| `src/pages/admin/AdminCanaisLogos.tsx` | adicionar drag-and-drop + nova seção de preview com 3 abas |
-| `src/components/admin/ChannelPreviewStage.tsx` (novo) | mock do GameCard + mini LiveNow para preview isolado |
-| `src/components/public/schedule/GameCard.tsx` | usar `sort_order` quando houver mapping (ordenação estável dos badges) |
-| `package.json` | adicionar `@dnd-kit/core` + `@dnd-kit/sortable` se ainda não estiverem |
+## Arquivos afetados
+- `supabase/migrations/<nova>.sql` (nova migration)
+- `src/contexts/AuthContext.tsx` (expor `roleChecked` + função `recheckAdmin`)
+- `src/components/admin/RequireAdmin.tsx` (loading + UI melhorada)
+- `@security-memory` (registrar warning aceito)
 
-## Observações
-- Mantém todo o sistema atual (auto-discovery, upload, fundo claro, abreviação) — é só adição.
-- Sem mudanças em RLS: `sort_order` segue as políticas existentes da tabela.
-- Mobile-first preservado: drag-and-drop com long-press de 250ms para não conflitar com scroll.
-- Acessibilidade: handle do drag tem `aria-label` e suporta teclado (setas) via `@dnd-kit`.
-
-Posso aplicar agora se aprovar.
+## Resultado esperado
+- `/admin` libera novamente para sua conta.
+- Sem warnings críticos do linter; o único warning restante fica documentado e justificado.
+- Tela de bloqueio mais informativa nos casos legítimos.
