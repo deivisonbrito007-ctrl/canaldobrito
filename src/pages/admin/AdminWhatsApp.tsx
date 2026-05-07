@@ -317,7 +317,7 @@ const AdminWhatsApp = () => {
 
   const handleCustomKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && customMsg.trim()) {
-      openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, action: "open" });
+      openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, utm_content: `custom-${linkTab}`, action: "open" });
     }
   };
 
@@ -499,12 +499,12 @@ const AdminWhatsApp = () => {
           <CopyButton
             text={customFinal || siteUrl}
             label="Copiar"
-            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-custom", tab: linkTab, action: "copy" })}
+            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-custom", tab: linkTab, utm_content: `custom-${linkTab}`, action: "copy" })}
           />
           <Button
             size="sm"
             disabled={!customMsg.trim()}
-            onClick={() => openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, action: "open" })}
+            onClick={() => openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, utm_content: `custom-${linkTab}`, action: "open" })}
             className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[44px]"
           >
             <MessageCircle className="h-3.5 w-3.5" />
