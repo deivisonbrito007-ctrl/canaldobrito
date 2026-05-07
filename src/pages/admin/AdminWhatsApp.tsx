@@ -18,6 +18,7 @@ import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 import { trackShare, type ShareProps } from "@/lib/analytics";
 import { buildDayText, validateDay, safeCopy, offsetDateStr } from "@/lib/whatsappText";
 import { ABTemplateLab } from "@/components/admin/whatsapp/ABTemplateLab";
+import { useShareLandingCounts } from "@/hooks/useShareLandingCounts";
 
 type DeepTab = PublicTab;
 
