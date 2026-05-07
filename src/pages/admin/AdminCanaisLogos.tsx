@@ -25,12 +25,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye, BellOff } from "lucide-react";
+import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye, BellOff, Link2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { LOGO_OPTIONS, LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "@/components/public/channelLogos";
 import { ChannelBadge, BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
-import { CHANNEL_MAPPINGS_QK, type ChannelMapping } from "@/hooks/useChannelMappings";
+import { CHANNEL_MAPPINGS_QK, CHANNEL_ALIASES_QK, type ChannelMapping } from "@/hooks/useChannelMappings";
 import { useDiscoveredChannels, type DiscoveredChannel } from "@/hooks/useDiscoveredChannels";
+import { useChannelMatchSuggestions, type ChannelMatchSuggestion } from "@/hooks/useChannelMatchSuggestion";
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
 import { ChannelPreviewStage } from "@/components/admin/ChannelPreviewStage";
 import { ChannelAliasesEditor } from "@/components/admin/ChannelAliasesEditor";
@@ -71,7 +72,12 @@ const EMPTY_FORM: FormState = {
   light_chip: false,
 };
 
-type ConfirmState = { kind: "delete-mapping"; id: string; name: string } | { kind: "bulk-silence"; count: number } | null;
+type AutoLinkPair = { orphan: DiscoveredChannel; suggestion: ChannelMatchSuggestion };
+type ConfirmState =
+  | { kind: "delete-mapping"; id: string; name: string }
+  | { kind: "bulk-silence"; count: number }
+  | { kind: "bulk-autolink"; pairs: AutoLinkPair[] }
+  | null;
 
 const AdminCanaisLogos = () => {
   const qc = useQueryClient();
@@ -208,6 +214,84 @@ const AdminCanaisLogos = () => {
     onError: (e: any) => toast.error(e.message ?? "Erro ao silenciar"),
   });
 
+  const linkAsAlias = useMutation({
+    mutationFn: async (pairs: AutoLinkPair[]) => {
+      // 1) ensure target mapping exists for builtin targets (create on the fly)
+      const builtinPairs = pairs.filter((p) => p.suggestion.target.kind === "builtin");
+      const builtinByNorm = new Map<string, { name: string; logoKey: LogoKey }>();
+      for (const p of builtinPairs) {
+        if (p.suggestion.target.kind !== "builtin") continue;
+        builtinByNorm.set(p.suggestion.target.normalized, {
+          name: p.suggestion.target.builtinName,
+          logoKey: p.suggestion.target.logoKey,
+        });
+      }
+      const builtinNorms = Array.from(builtinByNorm.keys());
+      const created = new Map<string, string>(); // normalized -> mapping id
+      if (builtinNorms.length) {
+        const { data: existing, error: exErr } = await supabase
+          .from("channel_logo_mappings")
+          .select("id, name_normalized")
+          .in("name_normalized", builtinNorms);
+        if (exErr) throw exErr;
+        for (const r of (existing ?? []) as Array<{ id: string; name_normalized: string }>) {
+          created.set(r.name_normalized, r.id);
+        }
+        const missing = builtinNorms.filter((n) => !created.has(n));
+        if (missing.length) {
+          const insertPayload = missing.map((n) => {
+            const b = builtinByNorm.get(n)!;
+            return {
+              name: b.name,
+              name_normalized: n,
+              logo_key: b.logoKey,
+              active: true,
+              light_chip: false,
+            };
+          });
+          const { data: inserted, error: insErr } = await supabase
+            .from("channel_logo_mappings")
+            .insert(insertPayload)
+            .select("id, name_normalized");
+          if (insErr) throw insErr;
+          for (const r of (inserted ?? []) as Array<{ id: string; name_normalized: string }>) {
+            created.set(r.name_normalized, r.id);
+          }
+        }
+      }
+
+      // 2) build alias rows
+      const aliasRows = pairs
+        .map((p) => {
+          let mappingId: string | undefined;
+          if (p.suggestion.target.kind === "mapping") mappingId = p.suggestion.target.mapping.id;
+          else mappingId = created.get(p.suggestion.target.normalized);
+          if (!mappingId) return null;
+          return {
+            mapping_id: mappingId,
+            alias: p.orphan.name,
+            alias_normalized: p.orphan.normalized,
+          };
+        })
+        .filter((x): x is { mapping_id: string; alias: string; alias_normalized: string } => !!x);
+
+      if (!aliasRows.length) return { inserted: 0 };
+      const { error } = await supabase
+        .from("channel_aliases")
+        .upsert(aliasRows, { onConflict: "alias_normalized" });
+      if (error) throw error;
+      return { inserted: aliasRows.length };
+    },
+    onSuccess: ({ inserted }) => {
+      toast.success(`${inserted} canal${inserted > 1 ? "is" : ""} vinculado${inserted > 1 ? "s" : ""} como alias`);
+      qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+      qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK });
+      qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao vincular alias"),
+  });
+
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id || !rows) return;
@@ -231,14 +315,25 @@ const AdminCanaisLogos = () => {
     []
   );
 
+  const suggestions = useChannelMatchSuggestions(discovered.orphans, rows, builtinList);
+  const highConfidencePairs = useMemo<AutoLinkPair[]>(() => {
+    const out: AutoLinkPair[] = [];
+    for (const o of discovered.orphans) {
+      const s = suggestions.get(o.normalized);
+      if (s && s.confidence === "high") out.push({ orphan: o, suggestion: s });
+    }
+    return out;
+  }, [discovered.orphans, suggestions]);
+
   const stats = useMemo(() => {
     return {
       mapped: rows?.length ?? 0,
       orphans: discovered.orphans.length,
       builtin: builtinList.length,
       discovered: discovered.all.length,
+      suggested: suggestions.size,
     };
-  }, [rows, discovered, builtinList]);
+  }, [rows, discovered, builtinList, suggestions]);
 
   const openEdit = (r: ChannelMapping) => {
     setForm({
@@ -349,6 +444,7 @@ const AdminCanaisLogos = () => {
           value={stats.orphans}
           highlight={stats.orphans > 0}
           onClick={() => setTab("orphans")}
+          sub={stats.suggested > 0 ? `${stats.suggested} provável${stats.suggested > 1 ? "is" : ""} variante${stats.suggested > 1 ? "s" : ""}` : undefined}
         />
       </div>
 
@@ -416,6 +512,23 @@ const AdminCanaisLogos = () => {
           </div>
 
           <TabsContent value={tab} className="mt-4">
+            {tab === "orphans" && highConfidencePairs.length > 0 && !search && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <div className="text-xs text-emerald-100">
+                  ✨ <span className="font-bold">{highConfidencePairs.length}</span> variante{highConfidencePairs.length > 1 ? "s" : ""} provável{highConfidencePairs.length > 1 ? "is" : ""} de canais já cadastrados.
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setConfirm({ kind: "bulk-autolink", pairs: highConfidencePairs })}
+                  disabled={linkAsAlias.isPending}
+                  className="gap-2 min-h-10 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Auto-vincular {highConfidencePairs.length}
+                </Button>
+              </div>
+            )}
+
             {tab === "orphans" && discovered.orphans.length > 0 && !search && (
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/40 bg-card/30 p-3">
                 <div className="text-xs text-muted-foreground">
@@ -476,26 +589,39 @@ const AdminCanaisLogos = () => {
               </DndContext>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {visibleCards.map((c) => (
-                  <ChannelCard
-                    key={c.normalized + (c.mapping?.id ?? "")}
-                    channel={c}
-                    onEdit={() => (c.mapping ? openEdit(c.mapping) : openNew(c.name))}
-                    onDelete={() => {
-                      if (c.mapping) {
-                        setConfirm({
-                          kind: "delete-mapping",
-                          id: c.mapping.id,
-                          name: c.mapping.name,
-                        });
+                {visibleCards.map((c) => {
+                  const sg = c.isOrphan ? suggestions.get(c.normalized) : undefined;
+                  return (
+                    <ChannelCard
+                      key={c.normalized + (c.mapping?.id ?? "")}
+                      channel={c}
+                      suggestion={sg}
+                      onLinkAlias={
+                        sg
+                          ? () =>
+                              setConfirm({
+                                kind: "bulk-autolink",
+                                pairs: [{ orphan: c, suggestion: sg }],
+                              })
+                          : undefined
                       }
-                    }}
-                    onPreview={() => {
-                      setPreviewChannel(c.name);
-                      document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                  />
-                ))}
+                      onEdit={() => (c.mapping ? openEdit(c.mapping) : openNew(c.name))}
+                      onDelete={() => {
+                        if (c.mapping) {
+                          setConfirm({
+                            kind: "delete-mapping",
+                            id: c.mapping.id,
+                            name: c.mapping.name,
+                          });
+                        }
+                      }}
+                      onPreview={() => {
+                        setPreviewChannel(c.name);
+                        document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    />
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -658,12 +784,33 @@ const AdminCanaisLogos = () => {
             <AlertDialogTitle>
               {confirm?.kind === "delete-mapping" && `Remover "${confirm.name}"?`}
               {confirm?.kind === "bulk-silence" && `Silenciar ${confirm.count} canais?`}
+              {confirm?.kind === "bulk-autolink" &&
+                `Vincular ${confirm.pairs.length} canal${confirm.pairs.length > 1 ? "is" : ""} como alias?`}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirm?.kind === "delete-mapping" &&
-                "O canal voltará a usar a logo padrão (built-in) ou o emoji genérico se não houver fallback."}
-              {confirm?.kind === "bulk-silence" &&
-                "Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois."}
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                {confirm?.kind === "delete-mapping" && (
+                  <p>O canal voltará a usar a logo padrão (built-in) ou o emoji genérico se não houver fallback.</p>
+                )}
+                {confirm?.kind === "bulk-silence" && (
+                  <p>Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois.</p>
+                )}
+                {confirm?.kind === "bulk-autolink" && (
+                  <>
+                    <p>Cada canal abaixo passará a usar a mesma logo do canal principal.</p>
+                    <ul className="max-h-56 overflow-y-auto rounded border border-border/40 bg-card/30 p-2 text-xs space-y-1">
+                      {confirm.pairs.map((p) => (
+                        <li key={p.orphan.normalized} className="flex items-center justify-between gap-2">
+                          <span className="truncate">{p.orphan.name}</span>
+                          <span className="text-muted-foreground shrink-0">
+                            → {p.suggestion.target.displayName}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -676,6 +823,8 @@ const AdminCanaisLogos = () => {
                   if (open) setOpen(false);
                 } else if (confirm?.kind === "bulk-silence") {
                   bulkSilence.mutate(discovered.orphans);
+                } else if (confirm?.kind === "bulk-autolink") {
+                  linkAsAlias.mutate(confirm.pairs);
                 }
                 setConfirm(null);
               }}
@@ -695,12 +844,14 @@ const StatCard = ({
   value,
   highlight,
   onClick,
+  sub,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   highlight?: boolean;
   onClick?: () => void;
+  sub?: string;
 }) => {
   const Comp: any = onClick ? "button" : "div";
   return (
@@ -717,20 +868,25 @@ const StatCard = ({
         {label}
       </div>
       <div className="mt-1 font-display text-2xl font-bold">{value}</div>
+      {sub && <div className="text-[10px] text-emerald-300 mt-0.5">↳ {sub}</div>}
     </Comp>
   );
 };
 
 const ChannelCard = ({
   channel,
+  suggestion,
   onEdit,
   onDelete,
   onPreview,
+  onLinkAlias,
 }: {
   channel: DiscoveredChannel;
+  suggestion?: ChannelMatchSuggestion;
   onEdit: () => void;
   onDelete: () => void;
   onPreview?: () => void;
+  onLinkAlias?: () => void;
 }) => {
   const m = channel.mapping;
   const tag = channel.isOrphan
@@ -740,6 +896,12 @@ const ChannelCard = ({
     : channel.isBuiltin
     ? { label: "Built-in", cls: "bg-sky-500/20 text-sky-200" }
     : { label: "—", cls: "bg-muted/40 text-muted-foreground" };
+
+  const confColor: Record<string, string> = {
+    high: "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
+    medium: "border-sky-500/40 bg-sky-500/10 text-sky-100",
+    low: "border-muted-foreground/30 bg-muted/30 text-muted-foreground",
+  };
 
   return (
     <div className="rounded-lg border border-border/50 bg-card/40 p-3 space-y-2">
@@ -783,9 +945,32 @@ const ChannelCard = ({
         </div>
       </div>
       <ChannelBadge name={channel.name} size="md" />
+      {channel.isOrphan && suggestion && onLinkAlias && (
+        <div className={`rounded-md border px-2 py-1.5 text-[11px] ${confColor[suggestion.confidence]}`}>
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              {suggestion.confidence === "high" ? "Provavelmente " : "Talvez "}
+              {suggestion.reason}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={onLinkAlias}
+            className="w-full gap-1 mt-1.5 h-8 text-xs bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+          >
+            <Link2 className="h-3 w-3" /> Vincular como alias
+          </Button>
+        </div>
+      )}
       {channel.isOrphan && (
-        <Button size="sm" variant="outline" onClick={onEdit} className="w-full gap-1 mt-1 h-9 text-xs">
-          <Plus className="h-3 w-3" /> Adicionar logo
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onEdit}
+          className="w-full gap-1 mt-1 h-9 text-xs"
+        >
+          <Plus className="h-3 w-3" /> {suggestion ? "Cadastrar como canal novo" : "Adicionar logo"}
         </Button>
       )}
     </div>
