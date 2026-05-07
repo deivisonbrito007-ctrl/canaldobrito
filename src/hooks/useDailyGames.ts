@@ -119,6 +119,29 @@ const DAILY_GAMES_COLUMNS = new Set([
   "status_short", "elapsed_minutes", "publish_at", "sport_type",
 ]);
 
+/** Split a combined channel string ("Globo / SporTV, ESPN e TNT") into individual entries. */
+export function normalizeChannelsList(input: unknown): string[] {
+  if (input == null) return [];
+  const arr = Array.isArray(input) ? input : [input];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of arr) {
+    if (typeof raw !== "string") continue;
+    const parts = raw
+      .split(/[,/|;]+/)
+      .flatMap((p) => p.split(/\s+(?:e|&|\+)\s+(?=[A-Za-z0-9])/i))
+      .map((p) => sanitizeGameStr(p))
+      .filter(Boolean);
+    for (const p of parts) {
+      const k = p.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(p);
+    }
+  }
+  return out;
+}
+
 function sanitizeGame(game: Record<string, any>): Record<string, any> {
   const out: Record<string, any> = {};
   for (const [key, value] of Object.entries(game)) {
@@ -129,8 +152,8 @@ function sanitizeGame(game: Record<string, any>): Record<string, any> {
       out[key] = value;
     }
   }
-  if (Array.isArray(out.channels)) {
-    out.channels = out.channels.map((c: any) => typeof c === "string" ? sanitizeGameStr(c) : c);
+  if ("channels" in out) {
+    out.channels = normalizeChannelsList(out.channels);
   }
   return out;
 }
