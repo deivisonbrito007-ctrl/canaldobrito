@@ -16,6 +16,17 @@ const TMDB_IMG = "https://image.tmdb.org/t/p/w780";
 const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
 
 type FilterMode = "all" | "movie" | "series" | "inactive" | "no_genre";
+type SortMode = "manual" | "newest" | "oldest" | "title_asc" | "title_desc" | "rating_desc" | "rating_asc";
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: "manual", label: "Ordem manual" },
+  { value: "newest", label: "Mais novos" },
+  { value: "oldest", label: "Mais antigos" },
+  { value: "title_asc", label: "Título (A-Z)" },
+  { value: "title_desc", label: "Título (Z-A)" },
+  { value: "rating_desc", label: "Nota (maior)" },
+  { value: "rating_asc", label: "Nota (menor)" },
+];
 
 const BADGE_OPTIONS = [
   { value: "novidade", label: "🔥 Novidade" },
