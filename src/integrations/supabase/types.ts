@@ -586,6 +586,15 @@ export type Database = {
         Args: { _endpoint: string; _game_id: string }
         Returns: undefined
       }
+      check_alias_collision: {
+        Args: { _alias: string; _exclude_mapping_id?: string }
+        Returns: {
+          collision_type: string
+          conflicting_value: string
+          mapping_id: string
+          mapping_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
