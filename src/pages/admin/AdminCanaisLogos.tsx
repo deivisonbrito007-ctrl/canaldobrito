@@ -482,23 +482,9 @@ const AdminCanaisLogos = () => {
                 qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK, refetchType: "active" }),
                 qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK }),
               ]);
-              const res = await discovered.refetch();
-              const raw = res.data as Map<string, { name: string; count: number }> | undefined;
-              let orphanCount = 0;
-              if (raw) {
-                for (const [norm] of raw) {
-                  const m = mappings?.get?.(norm);
-                  const isBuiltin = BUILTIN_CHANNEL_MAP[norm as keyof typeof BUILTIN_CHANNEL_MAP];
-                  const hasLogo = !!m?.custom_logo_url || (m && m.logo_key !== "none") || !!isBuiltin;
-                  if (!hasLogo) orphanCount += 1;
-                }
-              }
+              await discovered.refetch();
               setTab("orphans");
-              toast.success(
-                orphanCount > 0
-                  ? `${orphanCount} canal${orphanCount === 1 ? "" : "is"} sem logo`
-                  : "Tudo mapeado — nenhum órfão"
-              );
+              toast.success("Lista atualizada");
             }}
             disabled={discovered.isLoading}
             className="gap-2 flex-1 sm:flex-none min-h-11"
