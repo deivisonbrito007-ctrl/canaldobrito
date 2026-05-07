@@ -868,13 +868,15 @@ const AdminCanaisLogos = () => {
 
       {/* AlertDialog de confirmação */}
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirm?.kind === "delete-mapping" && `Remover "${confirm.name}"?`}
               {confirm?.kind === "bulk-silence" && `Silenciar ${confirm.count} canais?`}
               {confirm?.kind === "bulk-autolink" &&
                 `Vincular ${confirm.pairs.length} canal${confirm.pairs.length > 1 ? "is" : ""} como alias?`}
+              {confirm?.kind === "undo-autolink" &&
+                `Desfazer vínculo de ${confirm.inserted} canal${confirm.inserted > 1 ? "is" : ""}?`}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
@@ -901,7 +903,7 @@ const AdminCanaisLogos = () => {
                             >
                               {p.suggestion.confidence === "high" ? "alta" : "média"}
                             </span>
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground truncate max-w-[40vw]">
                               → {p.suggestion.target.displayName}
                             </span>
                           </span>
@@ -915,13 +917,37 @@ const AdminCanaisLogos = () => {
                     )}
                   </>
                 )}
+                {confirm?.kind === "undo-autolink" && (
+                  <>
+                    <p>
+                      Isso removerá <strong>{confirm.aliasIds.length}</strong>{" "}
+                      alias{confirm.aliasIds.length === 1 ? "" : "es"}
+                      {confirm.createdMappingIds.length > 0 && (
+                        <>
+                          {" "}e <strong>{confirm.createdMappingIds.length}</strong> mapeamento
+                          {confirm.createdMappingIds.length === 1 ? "" : "s"} criado
+                          {confirm.createdMappingIds.length === 1 ? "" : "s"} automaticamente
+                        </>
+                      )}
+                      .
+                    </p>
+                    <p className="text-[11px] text-amber-300/90">
+                      ⚠ Esta ação não pode ser revertida.
+                    </p>
+                  </>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="min-h-11">Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+            <AlertDialogCancel className="min-h-11 mt-0">Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              className="min-h-11"
+              className={
+                "min-h-11 " +
+                (confirm?.kind === "delete-mapping" || confirm?.kind === "undo-autolink"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : "")
+              }
               onClick={() => {
                 if (confirm?.kind === "delete-mapping") {
                   remove.mutate(confirm.id);
@@ -930,11 +956,13 @@ const AdminCanaisLogos = () => {
                   bulkSilence.mutate(discovered.orphans);
                 } else if (confirm?.kind === "bulk-autolink") {
                   linkAsAlias.mutate(confirm.pairs);
+                } else if (confirm?.kind === "undo-autolink") {
+                  void undoAutolink(confirm.aliasIds, confirm.createdMappingIds);
                 }
                 setConfirm(null);
               }}
             >
-              Confirmar
+              {confirm?.kind === "undo-autolink" ? "Desfazer" : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
