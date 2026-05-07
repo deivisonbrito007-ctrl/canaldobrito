@@ -1,80 +1,65 @@
-# Auditoria — Aba WhatsApp (Admin)
+## Objetivo
 
-## Estado atual
-- **Arquivo**: `src/pages/admin/AdminWhatsApp.tsx` (458 linhas, monolítico).
-- **Testes**: `AdminWhatsApp.test.tsx` ✅ 3/3 (cobertura rasa: só renderização de header/templates/textarea).
-- **Funções**: Header · Link do Site · Links rápidos por aba · Preview do dia (Hoje) com validação · Mensagem personalizada · 5 textos prontos.
+1. Trocar os links longos com `?utm_*` do Laboratório A/B por **links curtos** (`/s/<slug>?c=<tag>`), iguais aos demais links da aba.
+2. Garantir que **cada acesso** seja contabilizado por template+variante (e também pelos links rápidos e templates prontos existentes).
+3. Mostrar acessos por link diretamente na UI do admin.
 
-## Issues encontrados
+## Mudanças
 
-| # | Sev | Problema |
-|---|---|---|
-| 1 | 🔴 alto | `navigator.clipboard.writeText` sem fallback nem try/catch — quebra em iOS sem HTTPS/PWA e contextos sem permissão; toast "Copiado!" mente em caso de erro. |
-| 2 | 🔴 alto | Só pré-visualiza **hoje**. Sem opção de "Amanhã" / dia específico — fluxo recorrente do admin é mandar à noite a programação do dia seguinte. |
-| 3 | 🟠 médio | Texto WhatsApp não escapa caracteres problemáticos do markdown (`*` no nome do time quebra negrito). |
-| 4 | 🟠 médio | Validação só conta — não lista quais jogos têm problema (admin precisa abrir Programação para descobrir). |
-| 5 | 🟠 médio | "Links rápidos" e "Textos Prontos" duplicam funcionalidade (live/novidades/schedule aparecem 2x). |
-| 6 | 🟠 médio | Botão "Status" no Quick Tab é confuso — abre WhatsApp normal, não o Status. Renomear "Enviar". |
-| 7 | 🟠 médio | Mobile 320–375px: header das `DayPreviewCard` faz wrap feio quando tem ícone + título + subtítulo; chips de validação podem estourar. |
-| 8 | 🟡 baixo | `pre` da preview com `max-h-[140px]/[320px]` e fonte 11px é difícil de ler no mobile; sem botão "expandir". |
-| 9 | 🟡 baixo | Sem indicador "última atualização da programação" — admin não sabe se os jogos exibidos são os mais recentes. |
-| 10 | 🟡 baixo | Mensagem personalizada não aceita placeholder `{LINK}` para posicionar o link no meio do texto — sempre vai no fim. |
-| 11 | 🟡 baixo | `useMemo` de `templates` calcula `new Date()` 1x na montagem — após meia-noite mostra a data do dia anterior até refresh. |
-| 12 | 🟡 baixo | Sem contador de templates copiados/enviados na sessão (feedback de produtividade). |
-| 13 | 🟡 baixo | Sem testes para `buildDayText`, `validateDay`, fluxo de copy, `MessageCard` e Quick Tab. |
-| 14 | 🟡 baixo | `console.log` (não há, ✅) — porém também não há tratamento de erro para `window.open` bloqueado por popup blocker. |
+### 1. `src/lib/utils.ts` — `buildDeepLink`
+- Aceitar `opts.content` mesmo quando `short: true`.
+- Formato resultante: `https://canaldobrito.site/s/ao-vivo?c=ab-jogos-a` (ou `tpl-geral`, `quick-live`, etc.).
+- Mantém retrocompatibilidade: sem `content`, retorna `/s/<slug>` puro.
 
-## Plano de implementação
+### 2. `src/pages/ShareRedirect.tsx`
+- Ler `?c=` da query string.
+- Incluir no payload de `landing_with_utm`: `utm_content = c`.
+- Sanitizar (regex `^[a-z0-9-]{1,80}$`) e descartar valores inválidos.
+- Redirect preserva o `?c=` no destino apenas para debugging interno (opcional — por padrão limpo).
 
-### A. Robustez & UX core (alto impacto)
-- **Clipboard com fallback**: helper `safeCopy(text)` com try/catch + fallback `document.execCommand('copy')` em textarea oculto; toast só aparece em sucesso real, `toast.error` em falha.
-- **Seletor de dia** no card de preview: chips "Hoje · Amanhã · +2d · Personalizado (date input)". Hook usa `useAllDailyGames(selectedStr)` reativo.
-- **Lista de problemas detalhada**: dentro do `DayPreviewCard`, accordion "Ver problemas" listando jogos com `sem canal / 00:00 / duplicados` (link clicável que dispara navegação para `/admin/programacao`).
-- **Sanitização de markdown WhatsApp**: escapar `*`, `_`, `~`, `` ` `` em nomes de times/competições antes de envolver com `*…*`.
+### 3. `src/components/admin/whatsapp/ABTemplateLab.tsx`
+- Construir links via `buildDeepLink(siteUrl, t.tab, { short: true, content: abUtmContent(t.id, v) })`.
+- Remover concatenação manual de `?utm_content=`.
+- Resultado: `…/s/<slug>?c=ab-<id>-<a|b>` — curto, legível.
 
-### B. Mobile-first
-- Reduzir padding interno dos cards em `<sm` (`p-3` em vez de `p-4`), header das DayPreviewCard com `flex-wrap` e ícone alinhado.
-- Chips de validação: `truncate` + `whitespace-nowrap` + container `overflow-x-auto scrollbar-none`.
-- Aumentar `pre` para `max-h-[60vh]` em mobile com botão "Expandir/Recolher".
-- Garantir 44px mínimo no botão "Enviar" do Quick Tab (atualmente 36px).
+### 4. `src/pages/admin/AdminWhatsApp.tsx` — Links rápidos + Textos prontos
+- **Links rápidos por aba**: passar `content: "quick-<tab>"`.
+- **Textos prontos (MessageCard)**: passar `content: "tpl-<id>"`.
+- **Mensagem personalizada**: passar `content: "custom-<linkTab>"`.
+- Cada um vira: `…/s/programacao?c=quick-schedule`, `…/s/ao-vivo?c=tpl-aovivo`, etc.
 
-### C. Limpeza e consolidação
-- Mesclar **Quick Tab Links** + **Textos Prontos** em **uma seção única** "Compartilhar por aba" com 2 modos (link curto / mensagem completa) via toggle.
-- Renomear botão "Status" → "WhatsApp" (não abre Status, abre share normal).
-- Mostrar "Atualizado há Xs" no card de preview com `useLiveTick(60_000)`.
-- Recalcular `todayStr` a cada minuto via `useLiveTick` para corrigir mudança de dia sem refresh.
+### 5. Contadores de acesso na UI
 
-### D. Mensagem personalizada
-- Suportar placeholder `{LINK}` no corpo: se presente, substitui pela URL; se ausente, anexa no final (comportamento atual).
-- Toggle "qual aba linkar?" (live/novidades/schedule/home) — gera link curto rastreado.
-- Salvar último rascunho em `localStorage("admin:wppDraft")`.
+Novo hook `useShareLandingCounts(contents: string[], windowDays)`:
+- Consulta `analytics_events` filtrando `event = 'landing_with_utm'`, `utm_content IN (...)`, `created_at >= since`.
+- Retorna `Map<content, number>`.
 
-### E. Testes (cobrir lógica crítica)
-Expandir `AdminWhatsApp.test.tsx` e adicionar `__tests__/whatsapp.text.test.ts` com:
-- `buildDayText`: jogos vazios → null; ordena por esporte e horário; agrupa por sport detectado vs salvo; escapa markdown.
-- `validateDay`: detecta `noChannel`, `zeroTime`, `duplicates` corretamente.
-- `safeCopy`: sucesso, falha, fallback execCommand.
-- Seletor de dia muda hook `useAllDailyGames(date)`.
-- Botão Enviar dispara `trackShare` com payload correto.
-- Sanitização: `"FC *Star*"` vira `FC \*Star\*`.
+Aplicar em três lugares:
+- **A/B Lab**: já mostra Envios/Aterrissagens/CTR — manter, agora os números virão consistentemente do mesmo `utm_content`.
+- **Links rápidos**: chip `· 12 acessos` ao lado do label.
+- **Textos prontos**: chip `· 3 acessos (7d)` no header de cada `MessageCard`.
 
-### F. Sugestões opcionais (a confirmar)
-- **F1**: Botão "Copiar como imagem" (canvas → PNG da preview) para stories.
-- **F2**: Histórico das últimas 10 mensagens enviadas (localStorage), com 1-clique para reenviar.
-- **F3**: Atalho de teclado `Ctrl/Cmd+Enter` na textarea para enviar.
-- **F4**: Pré-agendar mensagem (gera `<noticia>` e salva em `audit_logs` para envio manual depois).
-- **F5**: Variantes A/B do texto com tracking via `utm_content`.
+### 6. Testes
+- Atualizar `src/lib/__tests__/utils.test.ts` (se existir) para cobrir `short + content`.
+- Atualizar `whatsappText.test.ts` se algum snapshot mudar (gera link na assinatura).
 
-## Arquivos
-- `src/pages/admin/AdminWhatsApp.tsx` — refator (extrair `DayPreviewCard`, `MessageCard`, `QuickShareList` para `src/components/admin/whatsapp/`).
-- `src/components/admin/whatsapp/DayPreviewCard.tsx` — **novo**.
-- `src/components/admin/whatsapp/QuickShareList.tsx` — **novo** (consolida Quick + Textos).
-- `src/components/admin/whatsapp/CustomMessageBox.tsx` — **novo**.
-- `src/lib/whatsappText.ts` — **novo** (`buildDayText`, `validateDay`, `escapeWppMarkdown`, `safeCopy`).
-- `src/lib/__tests__/whatsappText.test.ts` — **novo**.
-- `src/pages/admin/__tests__/AdminWhatsApp.test.tsx` — expandir.
+## Sugestões adicionais
 
-## Para confirmar
-1. Quais itens da seção **F** incluir? (imagem, histórico, atalho, agendar, A/B)
-2. Manter os 5 templates atuais ou reduzir para 3 (Geral, Jogos, Entretenimento)?
-3. Posso rodar a suíte completa (`vitest`) ao final para validar que nada quebrou?
+- **Botão "Copiar link curto"** isolado em cada card (separado de "Copiar texto") — útil para colar fora do WhatsApp.
+- **QR code on-demand** para cada link curto (modal com `qrcode.react` já presente? checar) — facilita compartilhar em TV/print.
+- **Janela de 24h** além de 7d/30d — pico imediato após envio.
+- **Export CSV** dos acessos por template (download `/mnt/documents`-style do lado cliente).
+- **Auto-pausar variante perdedora**: após N envios e diferença >X%, esconder a variante perdedora com badge "pausada".
+
+Posso seguir só com itens 1–6 ou incluir as sugestões — qual prefere?
+
+## Arquivos afetados
+
+```text
+src/lib/utils.ts                                  (buildDeepLink: short+content)
+src/pages/ShareRedirect.tsx                        (ler ?c=)
+src/components/admin/whatsapp/ABTemplateLab.tsx    (links curtos)
+src/pages/admin/AdminWhatsApp.tsx                  (content nos links + chips de acesso)
+src/hooks/useShareLandingCounts.ts                 (novo)
+src/lib/__tests__/utils.test.ts                    (se existir)
+```

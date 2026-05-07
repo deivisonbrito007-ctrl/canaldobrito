@@ -274,15 +274,8 @@ export const ABTemplateLab = () => {
       </div>
 
       {templates.map((t) => {
-        const link = buildDeepLink(siteUrl, t.tab, {
-          utm: true,
-          source: "whatsapp",
-          medium: "ab",
-          campaign: t.tab ? `share-${TAB_SLUGS[t.tab]}` : "share-home",
-          // utm_content is set per-variant below; here we still embed a generic tag for fallback
-        });
-        const linkA = `${link}${link.includes("?") ? "&" : "?"}utm_content=${abUtmContent(t.id, "A")}`;
-        const linkB = `${link}${link.includes("?") ? "&" : "?"}utm_content=${abUtmContent(t.id, "B")}`;
+        const linkA = buildDeepLink(siteUrl, t.tab, { short: true, content: abUtmContent(t.id, "A") });
+        const linkB = buildDeepLink(siteUrl, t.tab, { short: true, content: abUtmContent(t.id, "B") });
         const rowA = funnel.find((r) => r.template_id === t.id && r.variant === "A");
         const rowB = funnel.find((r) => r.template_id === t.id && r.variant === "B");
         const winner = winners[t.id];

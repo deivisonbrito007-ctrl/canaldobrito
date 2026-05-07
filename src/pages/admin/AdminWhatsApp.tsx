@@ -18,6 +18,7 @@ import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 import { trackShare, type ShareProps } from "@/lib/analytics";
 import { buildDayText, validateDay, safeCopy, offsetDateStr } from "@/lib/whatsappText";
 import { ABTemplateLab } from "@/components/admin/whatsapp/ABTemplateLab";
+import { useShareLandingCounts } from "@/hooks/useShareLandingCounts";
 
 type DeepTab = PublicTab;
 
@@ -56,14 +57,15 @@ const openWhatsApp = (text: string, share: ShareProps) => {
   if (!win) toast.error("Popup bloqueado. Permita pop-ups para enviar.");
 };
 
-const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
-  const link = buildDeepLink(siteUrl, template.tab, { short: true });
+const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string; accessCount?: number }) => {
+  const link = buildDeepLink(siteUrl, template.tab, { short: true, content: `tpl-${template.id}` });
   const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
   const shareMeta: ShareProps = {
     surface: "admin-whatsapp-template",
     tab: template.tab ?? null,
     utm_campaign: template.tab ? `share-${TAB_SLUGS[template.tab]}` : null,
+    utm_content: `tpl-${template.id}`,
     action: "open",
   };
 
@@ -71,11 +73,18 @@ const MessageCard = ({ template, siteUrl }: { template: { id: string; label: str
     <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-bold text-foreground">{template.label}</span>
-        {template.tab && (
-          <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
-            ?tab={template.tab}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {typeof accessCount === "number" && accessCount > 0 && (
+            <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5">
+              {accessCount} acesso{accessCount === 1 ? "" : "s"}
+            </span>
+          )}
+          {template.tab && (
+            <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
+              ?tab={template.tab}
+            </span>
+          )}
+        </div>
       </div>
       <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
         {finalText}
@@ -270,7 +279,7 @@ const AdminWhatsApp = () => {
   const dayText = useMemo(() => buildDayText(dayGames ?? [], selectedDate, siteUrl), [dayGames, selectedDate, siteUrl]);
   const dayValidation = useMemo(() => validateDay(dayGames ?? []), [dayGames]);
 
-  const customLink = buildDeepLink(siteUrl, linkTab, { short: true });
+  const customLink = buildDeepLink(siteUrl, linkTab, { short: true, content: `custom-${linkTab}` });
   const customFinal = customMsg.trim()
     ? customMsg.includes("{LINK}")
       ? customMsg.replace(/\{LINK\}/g, customLink).trim()
@@ -299,9 +308,16 @@ const AdminWhatsApp = () => {
     { value: dayAfterStr, label: "+2 dias" },
   ];
 
+  // Access counts (last 7d) for quick links + templates
+  const trackedContents = useMemo(() => [
+    "quick-live", "quick-novidades", "quick-schedule",
+    ...templates.map((t) => `tpl-${t.id}`),
+  ], [templates]);
+  const { counts: landingCounts } = useShareLandingCounts(trackedContents, 7);
+
   const handleCustomKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && customMsg.trim()) {
-      openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, action: "open" });
+      openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, utm_content: `custom-${linkTab}`, action: "open" });
     }
   };
 
@@ -355,22 +371,29 @@ const AdminWhatsApp = () => {
             { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
-            const link = buildDeepLink(siteUrl, tab, { short: true });
+            const content = `quick-${tab}`;
+            const link = buildDeepLink(siteUrl, tab, { short: true, content });
             const text = `${msg}\n\n${link}`;
+            const accesses = landingCounts[content] ?? 0;
             return (
               <div key={tab} className="flex items-center gap-2 rounded-lg border border-border/30 bg-background/40 px-2.5 py-2 flex-wrap sm:flex-nowrap">
                 <span className="text-sm font-bold text-foreground truncate flex-1 min-w-0" title={link}>
                   <span aria-hidden>{emoji}</span> {label}
                 </span>
+                {accesses > 0 && (
+                  <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5 shrink-0">
+                    {accesses} acesso{accesses === 1 ? "" : "s"}
+                  </span>
+                )}
                 <div className="flex gap-2 w-full sm:w-auto">
                   <CopyButton
                     text={link}
                     label="Copiar"
-                    onAfterCopy={() => trackShare({ surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, action: "copy" })}
+                    onAfterCopy={() => trackShare({ surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, utm_content: content, action: "copy" })}
                   />
                   <Button
                     size="sm"
-                    onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, action: "open" })}
+                    onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, utm_content: content, action: "open" })}
                     className="gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[44px] px-3"
                     aria-label={`Enviar ${label} no WhatsApp`}
                   >
@@ -476,12 +499,12 @@ const AdminWhatsApp = () => {
           <CopyButton
             text={customFinal || siteUrl}
             label="Copiar"
-            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-custom", tab: linkTab, action: "copy" })}
+            onAfterCopy={() => trackShare({ surface: "admin-whatsapp-custom", tab: linkTab, utm_content: `custom-${linkTab}`, action: "copy" })}
           />
           <Button
             size="sm"
             disabled={!customMsg.trim()}
-            onClick={() => openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, action: "open" })}
+            onClick={() => openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, utm_content: `custom-${linkTab}`, action: "open" })}
             className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[44px]"
           >
             <MessageCircle className="h-3.5 w-3.5" />
@@ -500,7 +523,7 @@ const AdminWhatsApp = () => {
         </div>
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
           {templates.map((t) => (
-            <MessageCard key={t.id} template={t} siteUrl={siteUrl} />
+            <MessageCard key={t.id} template={t} siteUrl={siteUrl} accessCount={landingCounts[`tpl-${t.id}`] ?? 0} />
           ))}
       </div>
 

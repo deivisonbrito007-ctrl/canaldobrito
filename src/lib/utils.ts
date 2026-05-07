@@ -62,7 +62,15 @@ export function buildDeepLink(base: string, tab?: PublicTab, opts: DeepLinkOptio
   // Preferred sharing format: /s/<slug> — short, clean, analytics handled by ShareRedirect
   if (opts.short) {
     const slug = tab ? TAB_SLUGS[tab] : "home";
-    return `${cleanBase}/s/${slug}`;
+    const path = `${cleanBase}/s/${slug}`;
+    if (opts.content) {
+      const tabPrefix = tab ? `${TAB_SLUGS[tab]}-` : "";
+      const c = slugifyUtm(opts.content);
+      const tagged = c.startsWith(tabPrefix) || /^(ab|tpl|quick|custom)-/.test(c)
+        ? c : `${tabPrefix}${c}`;
+      return `${path}?c=${tagged}`;
+    }
+    return path;
   }
 
   const path = tab ? `${cleanBase}/${TAB_SLUGS[tab]}` : (cleanBase || base);
