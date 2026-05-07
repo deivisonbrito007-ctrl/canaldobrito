@@ -77,6 +77,12 @@ type ConfirmState =
   | { kind: "delete-mapping"; id: string; name: string }
   | { kind: "bulk-silence"; count: number }
   | { kind: "bulk-autolink"; pairs: AutoLinkPair[] }
+  | {
+      kind: "undo-autolink";
+      aliasIds: string[];
+      createdMappingIds: string[];
+      inserted: number;
+    }
   | null;
 
 const AdminCanaisLogos = () => {
