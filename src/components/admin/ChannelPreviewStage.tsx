@@ -9,6 +9,10 @@ import { Clock } from "lucide-react";
 interface Props {
   /** Optional initial channel preselected (e.g. when "Ver na programação" is clicked) */
   initialChannel?: string;
+  /** Controlled value (preferred). If provided, ChannelPreviewStage will reflect this value. */
+  value?: string;
+  /** onChange for controlled mode. */
+  onChange?: (next: string) => void;
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -33,8 +37,13 @@ const buildMockGame = (channels: string[]): DailyGame => ({
   created_at: new Date().toISOString(),
 });
 
-export function ChannelPreviewStage({ initialChannel = "" }: Props) {
-  const [channel, setChannel] = useState(initialChannel);
+export function ChannelPreviewStage({ initialChannel = "", value, onChange }: Props) {
+  const [internalChannel, setInternalChannel] = useState(initialChannel);
+  const channel = value !== undefined ? value : internalChannel;
+  const setChannel = (v: string) => {
+    if (onChange) onChange(v);
+    else setInternalChannel(v);
+  };
   const [extra, setExtra] = useState("");
   const channels = [channel, extra].map((c) => c.trim()).filter(Boolean);
   const mockGame = buildMockGame(channels.length ? channels : ["Canal Exemplo"]);

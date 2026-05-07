@@ -1,45 +1,75 @@
-## Objetivo
-Restaurar o acesso ao painel `/admin` (que está bloqueando você por causa de uma recursão de RLS introduzida na migration de segurança) e melhorar a tela de "Acesso Restrito".
+## Auditoria da aba Admin → Canais & Logos
 
-## 1. Migration: corrigir `has_role`
+Fluxo revisado: `AdminCanaisLogos.tsx`, `ChannelLogoUpload.tsx`, `ChannelPreviewStage.tsx`, `useChannelMappings.ts`, `useDiscoveredChannels.ts`. Tabela `channel_logo_mappings` com RLS de admin OK, bucket `channel-logos` público OK.
 
-Voltar a função para `SECURITY DEFINER` (padrão recomendado para checagem de roles, evita recursão na policy de `user_roles`). EXECUTE permanece restrito a usuários autenticados.
+### Problemas encontrados
 
-```sql
-CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
-RETURNS boolean
-LANGUAGE sql STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = _role
-  )
-$$;
+1. **A11y**: o `DialogContent` "Editar/Novo mapeamento" não tem `DialogDescription` → warning no console (`Missing Description or aria-describedby`).
+2. **Mobile (≤430px)**:
+   - Header com "Detectar agora" + "Novo" estoura em telas estreitas.
+   - `TabsList` com 4 abas (`Sem logo / Todos / Personalizados / Built-in`) + `Input` de busca colado ao lado quebra mal; tabs ficam cortadas, busca vira full-width sem rótulo.
+   - Botões grip / ações com `h-7 w-7` ficam abaixo do mínimo 44px de toque.
+   - Modal com `flex-col sm:flex-row` no footer empurra "Excluir" pro topo no mobile — ordem fica confusa.
+3. **UX**:
+   - `confirm()` nativo (3 lugares) bloqueia, não combina com tema dark e quebra no iOS PWA → trocar por `AlertDialog`.
+   - "Detectar agora" não mostra loading; se `isFetching`, deveria spinar.
+   - Busca não filtra pelo nome normalizado (ex: digitar "band sports" não acha "BandSports").
+   - Toggle "Fundo claro" não tem preview imediato no chip do form.
+   - Sem ação em massa para canais sem logo (ex: marcar todos como `none + ativo` para sair da fila).
+   - Built-in lista todos sempre, sem indicador de quantos já têm jogos detectados nos últimos 30d.
+   - `key={previewChannel}` no `ChannelPreviewStage` desmonta tudo a cada clique no olhinho — perde os campos digitados ali.
+4. **Performance**: `reorder` dispara N `UPDATE` em paralelo. Para >20 itens, melhor um RPC `reorder_channel_mappings(uuid[])`.
+5. **Testes**: nenhum teste para `AdminCanaisLogos`, `ChannelLogoUpload`, `useDiscoveredChannels`. `ChannelBadge` já tem.
 
-REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
-GRANT  EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
-```
+### Plano de implementação
 
-O linter vai voltar a mostrar 1 warning ("authenticated can execute SECURITY DEFINER") — vou marcá-lo como **aceito** com justificativa (a função só retorna boolean, não vaza dados, e é o padrão oficial Supabase para evitar recursão). Atualizo também o `@security-memory` registrando isso.
+**1. UX / A11y do modal**
+- Adicionar `DialogDescription` ao Dialog (some o warning).
+- Trocar `confirm(...)` por `AlertDialog` com tema (3 ocorrências: delete row, delete card, delete dentro do modal).
+- Footer do modal: ordem `[Excluir | Cancelar | Salvar]` → empilhar como `[Salvar, Cancelar, Excluir]` no mobile (Salvar primeiro = polegar).
+- Toggle "Fundo claro" injetar preview ao vivo (já temos, só precisa reagir ao `light_chip` via prop opcional no `ChannelBadge` quando custom).
 
-## 2. Melhorias de UX na tela de Acesso Restrito
+**2. Mobile-first**
+- Header: empilhar verticalmente <sm e usar botões `flex-1` (Detectar / Novo).
+- `TabsList`: usar scroll horizontal com `overflow-x-auto`, badges menores, e mover busca para LINHA SEPARADA com ícone embutido.
+- Botões de ação dos cards: subir para `h-9 w-9` (≥36px com padding interno alcança 44px).
+- Grip handle do dnd: aumentar área de toque com `p-3 -m-2`.
+- Garantir `safe-area-inset-bottom` no footer do Dialog (já fica acima por causa do max-h, ok, mas adicionar `pb-[env(safe-area-inset-bottom)]`).
 
-Em `src/components/admin/RequireAdmin.tsx` e `src/contexts/AuthContext.tsx`:
+**3. Funcionalidades**
+- "Detectar agora": usar `discovered.isFetching` para girar o ícone + desabilitar.
+- Busca: incluir `normalizeChannelName(query)` no filtro.
+- Bulk action na aba "Sem logo": botão "Marcar X como sem logo (silenciar alerta)" criando mapping com `logo_key='none', active:true`.
+- Trocar `key={previewChannel}` por prop controlada no `ChannelPreviewStage` (`value`/`onChange`).
+- "Detectados (30d)" na StatCard vira clicável → muda pra aba `all`.
 
-- **Loading state correto**: adicionar flag `roleChecked` no `AuthContext` para que `RequireAdmin` mostre um skeleton/spinner enquanto a checagem de role está em andamento, em vez de mostrar "Acesso Restrito" por uma fração de segundo.
-- **Mensagem mais útil**: exibir o e-mail logado (`Conta: solutionsbrito@gmail.com`) para confirmar qual usuário foi autenticado.
-- **Botão "Tentar novamente"**: re-executa `checkAdmin(user.id)` sem precisar deslogar (útil quando o role acabou de ser concedido).
-- Manter os botões existentes "Voltar ao site" e "Trocar de conta".
+**4. Backend**
+- Migration: criar `public.reorder_channel_mappings(_ids uuid[])` `SECURITY DEFINER` chequeando `has_role(auth.uid(),'admin')` e atualizando `sort_order` em batch.
+- Substituir o loop de updates por `supabase.rpc('reorder_channel_mappings', { _ids: orderedIds })`.
 
-## Arquivos afetados
-- `supabase/migrations/<nova>.sql` (nova migration)
-- `src/contexts/AuthContext.tsx` (expor `roleChecked` + função `recheckAdmin`)
-- `src/components/admin/RequireAdmin.tsx` (loading + UI melhorada)
-- `@security-memory` (registrar warning aceito)
+**5. Testes (vitest)**
+- `useDiscoveredChannels.test.ts`: agrupa por normalized, conta ocorrências, marca isOrphan/isBuiltin corretamente (mockando supabase).
+- `ChannelLogoUpload.test.tsx`: rejeita tipo inválido, rejeita >400KB, dispara `onUploaded` no sucesso (mock supabase.storage).
+- `AdminCanaisLogos.test.tsx`: render básico, troca de tab, busca filtra, abre modal "Novo", abre modal de edição com prefill.
+- Rodar suíte completa via vitest e reportar resultados.
 
-## Resultado esperado
-- `/admin` libera novamente para sua conta.
-- Sem warnings críticos do linter; o único warning restante fica documentado e justificado.
-- Tela de bloqueio mais informativa nos casos legítimos.
+**6. Linter / Auditoria final**
+- Rodar `supabase--linter` para confirmar que nada novo foi introduzido com a nova função RPC.
+- Rodar testes com vitest.
+- Smoke test no preview mobile (390x844) via browser.
+
+### Arquivos afetados
+- `src/pages/admin/AdminCanaisLogos.tsx` (refactor UX/mobile, AlertDialog, DialogDescription, RPC reorder, busca normalizada, bulk action, header responsivo).
+- `src/components/admin/ChannelPreviewStage.tsx` (props controladas).
+- `src/components/admin/ChannelLogoUpload.tsx` (a11y label + safe area).
+- `src/components/public/ChannelBadge.tsx` (suporte a `forceLightChip` no preview do form — já existe, só usar).
+- Nova migration: `reorder_channel_mappings` RPC.
+- Novos testes: `src/hooks/__tests__/useDiscoveredChannels.test.ts`, `src/components/admin/__tests__/ChannelLogoUpload.test.tsx`, `src/pages/admin/__tests__/AdminCanaisLogos.test.tsx`.
+
+### Sugestões extras (opcionais, não no escopo a menos que aprove)
+- Exportar/importar mapeamentos como JSON (backup).
+- Auditoria: registrar em `audit_logs` quando mapping é criado/editado/removido (trigger).
+- Aviso no card quando custom_logo_url retorna 404 (HEAD check com cache curto).
+- Atalho de teclado `n` para abrir "Novo" nessa página.
+
+Confirma que sigo com tudo de 1 a 6? Se quiser cortar algo (ex: pular RPC e manter loop atual), me avisa.
