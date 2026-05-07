@@ -278,16 +278,7 @@ const AdminCanaisLogos = () => {
         .filter((x): x is { mapping_id: string; alias: string; alias_normalized: string } => !!x);
 
       if (!aliasRows.length) return { inserted: 0, aliasIds: [] as string[], createdMappingIds: [] as string[] };
-      // Track which mappings were freshly created so we can roll them back on undo.
-      const preExistingMappingIds = new Set<string>();
-      if (builtinNorms.length) {
-        // 'created' contains both pre-existing and freshly-inserted; we re-fetch to know which were pre-existing.
-        // Simpler: compare — anything not in 'missing' list above was pre-existing.
-      }
-      const createdMappingIds = Array.from(created.entries())
-        .filter(([norm]) => builtinByNorm.has(norm))
-        .map(([, id]) => id)
-        .filter((id) => !preExistingMappingIds.has(id));
+      const createdMappingIds = freshlyCreatedIds;
 
       const { data: insertedAliases, error } = await supabase
         .from("channel_aliases")
