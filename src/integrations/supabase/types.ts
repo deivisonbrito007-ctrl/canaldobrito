@@ -129,7 +129,9 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          custom_logo_url: string | null
           id: string
+          light_chip: boolean
           logo_key: string
           name: string
           name_normalized: string
@@ -139,7 +141,9 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          custom_logo_url?: string | null
           id?: string
+          light_chip?: boolean
           logo_key?: string
           name: string
           name_normalized: string
@@ -149,7 +153,9 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          custom_logo_url?: string | null
           id?: string
+          light_chip?: boolean
           logo_key?: string
           name?: string
           name_normalized?: string

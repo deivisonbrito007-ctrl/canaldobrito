@@ -127,11 +127,22 @@ const ChannelIcon = ({
   emoji,
   size,
   alt,
-}: { logoKey?: LogoKey; emoji: string; size: BadgeSize; alt: string }) => {
+  customUrl,
+  forceLightChip,
+}: {
+  logoKey?: LogoKey;
+  emoji: string;
+  size: BadgeSize;
+  alt: string;
+  customUrl?: string | null;
+  forceLightChip?: boolean;
+}) => {
   const [failed, setFailed] = useState(false);
-  const entry = logoKey && logoKey !== "none" ? LOGO_REGISTRY[logoKey] : undefined;
+  const registryEntry = logoKey && logoKey !== "none" ? LOGO_REGISTRY[logoKey] : undefined;
+  const src = customUrl || registryEntry?.src;
+  const lightChip = forceLightChip ?? registryEntry?.lightChip;
 
-  if (!entry || failed) {
+  if (!src || failed) {
     return (
       <span
         className={cn(
@@ -150,11 +161,11 @@ const ChannelIcon = ({
       className={cn(
         "inline-flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-white/10",
         ICON_WRAP[size],
-        entry.lightChip ? "bg-white/95" : "bg-white/5"
+        lightChip ? "bg-white/95" : "bg-white/5"
       )}
     >
       <img
-        src={entry.src}
+        src={src}
         alt={alt}
         loading="lazy"
         decoding="async"
@@ -215,6 +226,8 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
           emoji={config.emoji}
           size={size}
           alt={`${name} logo`}
+          customUrl={override?.custom_logo_url}
+          forceLightChip={override?.light_chip}
         />
         {name}
       </span>
