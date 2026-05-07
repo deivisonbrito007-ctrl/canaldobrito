@@ -44,7 +44,7 @@ export function ChannelLogoUpload({ channelName, currentUrl, onUploaded, onClear
       const path = `${slugify(channelName || "canal")}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("channel-logos")
-        .upload(path, file, { contentType: file.type, cacheControl: "3600", upsert: false });
+        .upload(path, file, { contentType: file.type, cacheControl: "60", upsert: false });
       if (error) throw error;
       const { data } = supabase.storage.from("channel-logos").getPublicUrl(path);
       onUploaded(data.publicUrl);

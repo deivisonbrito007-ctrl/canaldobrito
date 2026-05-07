@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
+import { withCacheBust } from "@/lib/cacheBust";
 import { LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "./channelLogos";
 import { useChannelMappings } from "@/hooks/useChannelMappings";
+
+declare const __APP_VERSION__: string;
 
 type ChannelConfig = {
   emoji: string;
