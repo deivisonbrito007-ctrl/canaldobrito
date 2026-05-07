@@ -783,12 +783,33 @@ const AdminCanaisLogos = () => {
             <AlertDialogTitle>
               {confirm?.kind === "delete-mapping" && `Remover "${confirm.name}"?`}
               {confirm?.kind === "bulk-silence" && `Silenciar ${confirm.count} canais?`}
+              {confirm?.kind === "bulk-autolink" &&
+                `Vincular ${confirm.pairs.length} canal${confirm.pairs.length > 1 ? "is" : ""} como alias?`}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirm?.kind === "delete-mapping" &&
-                "O canal voltará a usar a logo padrão (built-in) ou o emoji genérico se não houver fallback."}
-              {confirm?.kind === "bulk-silence" &&
-                "Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois."}
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                {confirm?.kind === "delete-mapping" && (
+                  <p>O canal voltará a usar a logo padrão (built-in) ou o emoji genérico se não houver fallback.</p>
+                )}
+                {confirm?.kind === "bulk-silence" && (
+                  <p>Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois.</p>
+                )}
+                {confirm?.kind === "bulk-autolink" && (
+                  <>
+                    <p>Cada canal abaixo passará a usar a mesma logo do canal principal.</p>
+                    <ul className="max-h-56 overflow-y-auto rounded border border-border/40 bg-card/30 p-2 text-xs space-y-1">
+                      {confirm.pairs.map((p) => (
+                        <li key={p.orphan.normalized} className="flex items-center justify-between gap-2">
+                          <span className="truncate">{p.orphan.name}</span>
+                          <span className="text-muted-foreground shrink-0">
+                            → {p.suggestion.target.displayName}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -801,6 +822,8 @@ const AdminCanaisLogos = () => {
                   if (open) setOpen(false);
                 } else if (confirm?.kind === "bulk-silence") {
                   bulkSilence.mutate(discovered.orphans);
+                } else if (confirm?.kind === "bulk-autolink") {
+                  linkAsAlias.mutate(confirm.pairs);
                 }
                 setConfirm(null);
               }}
