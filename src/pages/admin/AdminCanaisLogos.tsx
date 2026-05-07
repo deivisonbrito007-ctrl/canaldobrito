@@ -610,6 +610,12 @@ const AdminCanaisLogos = () => {
               />
             </div>
 
+            {form.id && (
+              <div className="rounded-md border border-border/40 bg-card/40 p-3">
+                <ChannelAliasesEditor mappingId={form.id} />
+              </div>
+            )}
+
             {form.name.trim() && (
               <div className="rounded-md border border-border/40 bg-card/40 p-3 space-y-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
