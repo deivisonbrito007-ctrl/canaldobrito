@@ -162,6 +162,16 @@ function isSectionHeader(line: string, nextLine?: string): boolean {
   return false;
 }
 
+/** Split a channel list string by `,`, `/`, ` | `, ` e ` into individual channels.
+ *  Ex: "Globo / Paramount+, ESPN e SporTV" -> ["Globo","Paramount+","ESPN","SporTV"] */
+function splitChannels(raw: string): string[] {
+  return raw
+    .split(/[,/|]/)
+    .flatMap((part) => part.split(/ e (?=[A-Za-z0-9])/))
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
 /** Collect metadata from lines following a game title */
 function collectMetadata(lines: string[], startIdx: number): {
   competition: string;
@@ -205,7 +215,7 @@ function collectMetadata(lines: string[], startIdx: number): {
       // Also check if line has 📺 (old format all-in-one)
       if (/📺/.test(ml)) {
         const afterTv = ml.split("📺").pop() || "";
-        channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+        channels = splitChannels(afterTv);
       }
     }
     // 📍 → competition detail
@@ -227,7 +237,7 @@ function collectMetadata(lines: string[], startIdx: number): {
     // 📺 → channels
     else if (/^📺/.test(ml)) {
       const afterTv = ml.replace(/^📺\s*/, "");
-      channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+      channels = splitChannels(afterTv);
     }
 
     consumed++;
@@ -332,7 +342,7 @@ export function parseScheduleText(
         const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
         if (channelLine.includes("📺")) {
           const afterTv = channelLine.split("📺").pop() || "";
-          meta.channels = afterTv.split(",").flatMap((part) => part.split(/ e (?=[A-Z])/)).map((c) => c.trim()).filter(Boolean);
+          meta.channels = splitChannels(afterTv);
           meta.linesConsumed = 2;
         }
       }
@@ -1246,7 +1256,7 @@ const EditGameForm = ({
               competition: comp,
               competition_detail: detail,
               game_time: time,
-              channels: channels.split(",").map((c) => c.trim()).filter(Boolean),
+              channels: splitChannels(channels),
               sport_type: sportType,
             })
           }
