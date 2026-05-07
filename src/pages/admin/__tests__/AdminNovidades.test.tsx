@@ -101,7 +101,7 @@ describe("AdminNovidades", () => {
       baseItem({ id: "2", tmdb_id: 2, title: "Y", content_type: "series", genres: null, display_order: 1 }),
     ];
     wrap(<AdminNovidades />);
-    expect(screen.getByText(/Atualizar 2/)).toBeInTheDocument();
+    expect(screen.getByText("Atualizar 2 sem gênero")).toBeInTheDocument();
     expect(screen.getAllByText("sem gênero").length).toBe(2);
   });
 
