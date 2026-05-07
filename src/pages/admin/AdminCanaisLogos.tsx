@@ -377,6 +377,18 @@ const AdminCanaisLogos = () => {
     }
     return out;
   }, [discovered.orphans, suggestions]);
+  const mediumConfidencePairs = useMemo<AutoLinkPair[]>(() => {
+    const out: AutoLinkPair[] = [];
+    for (const o of discovered.orphans) {
+      const s = suggestions.get(o.normalized);
+      if (s && s.confidence === "medium") out.push({ orphan: o, suggestion: s });
+    }
+    return out;
+  }, [discovered.orphans, suggestions]);
+  const allConfidencePairs = useMemo<AutoLinkPair[]>(
+    () => [...highConfidencePairs, ...mediumConfidencePairs],
+    [highConfidencePairs, mediumConfidencePairs]
+  );
 
   const stats = useMemo(() => {
     return {
@@ -565,20 +577,39 @@ const AdminCanaisLogos = () => {
           </div>
 
           <TabsContent value={tab} className="mt-4">
-            {tab === "orphans" && highConfidencePairs.length > 0 && !search && (
+            {tab === "orphans" && (highConfidencePairs.length > 0 || mediumConfidencePairs.length > 0) && !search && (
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
                 <div className="text-xs text-emerald-100">
-                  ✨ <span className="font-bold">{highConfidencePairs.length}</span> variante{highConfidencePairs.length > 1 ? "s" : ""} provável{highConfidencePairs.length > 1 ? "is" : ""} de canais já cadastrados.
+                  ✨ <span className="font-bold">{highConfidencePairs.length}</span> alta confiança
+                  {mediumConfidencePairs.length > 0 && (
+                    <> · <span className="font-bold">{mediumConfidencePairs.length}</span> média confiança</>
+                  )}
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => setConfirm({ kind: "bulk-autolink", pairs: highConfidencePairs })}
-                  disabled={linkAsAlias.isPending}
-                  className="gap-2 min-h-10 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
-                >
-                  <Wand2 className="h-3.5 w-3.5" />
-                  Auto-vincular {highConfidencePairs.length}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {highConfidencePairs.length > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={() => setConfirm({ kind: "bulk-autolink", pairs: highConfidencePairs })}
+                      disabled={linkAsAlias.isPending}
+                      className="gap-2 min-h-10 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      Auto-vincular {highConfidencePairs.length} (alta)
+                    </Button>
+                  )}
+                  {mediumConfidencePairs.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirm({ kind: "bulk-autolink", pairs: allConfidencePairs })}
+                      disabled={linkAsAlias.isPending}
+                      className="gap-2 min-h-10 border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/10"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      Incluir média ({allConfidencePairs.length})
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -855,12 +886,28 @@ const AdminCanaisLogos = () => {
                       {confirm.pairs.map((p) => (
                         <li key={p.orphan.normalized} className="flex items-center justify-between gap-2">
                           <span className="truncate">{p.orphan.name}</span>
-                          <span className="text-muted-foreground shrink-0">
-                            → {p.suggestion.target.displayName}
+                          <span className="shrink-0 flex items-center gap-1.5">
+                            <span
+                              className={
+                                p.suggestion.confidence === "high"
+                                  ? "text-[10px] uppercase font-bold text-emerald-400"
+                                  : "text-[10px] uppercase font-bold text-amber-400"
+                              }
+                            >
+                              {p.suggestion.confidence === "high" ? "alta" : "média"}
+                            </span>
+                            <span className="text-muted-foreground">
+                              → {p.suggestion.target.displayName}
+                            </span>
                           </span>
                         </li>
                       ))}
                     </ul>
+                    {confirm.pairs.some((p) => p.suggestion.confidence === "medium") && (
+                      <p className="text-[11px] text-amber-300/90">
+                        ⚠ Alguns vínculos têm confiança <strong>média</strong>. Revise antes de confirmar — você pode desfazer com 1 clique no toast.
+                      </p>
+                    )}
                   </>
                 )}
               </div>
