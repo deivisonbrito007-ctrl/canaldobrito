@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import GameCard from "@/components/public/schedule/GameCard";
+import { GameCard } from "@/components/public/schedule/GameCard";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { Clock } from "lucide-react";
 
