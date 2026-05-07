@@ -326,6 +326,32 @@ const AdminCanaisLogos = () => {
                   ? "🎉 Todos os canais detectados têm logo!"
                   : "Nenhum canal encontrado."}
               </div>
+            ) : tab === "custom" ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={(rows ?? []).map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {visibleCards.map((c) =>
+                      c.mapping ? (
+                        <SortableChannelRow
+                          key={c.mapping.id}
+                          id={c.mapping.id}
+                          channel={c}
+                          onEdit={() => openEdit(c.mapping!)}
+                          onDelete={() => {
+                            if (confirm(`Remover mapeamento "${c.mapping!.name}"?`)) {
+                              remove.mutate(c.mapping!.id);
+                            }
+                          }}
+                          onPreview={() => {
+                            setPreviewChannel(c.name);
+                            document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                        />
+                      ) : null
+                    )}
+                  </div>
+                </SortableContext>
+              </DndContext>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {visibleCards.map((c) => (
@@ -337,6 +363,10 @@ const AdminCanaisLogos = () => {
                       if (c.mapping && confirm(`Remover mapeamento "${c.mapping.name}"?`)) {
                         remove.mutate(c.mapping.id);
                       }
+                    }}
+                    onPreview={() => {
+                      setPreviewChannel(c.name);
+                      document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
                     }}
                   />
                 ))}
