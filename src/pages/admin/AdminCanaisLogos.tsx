@@ -163,7 +163,7 @@ const AdminCanaisLogos = () => {
       return filterByQuery(list);
     }
     return filterByQuery(
-      builtinList.map((b) => ({
+      builtinList.map<DiscoveredChannel>((b) => ({
         name: b.name,
         normalized: normalizeChannelName(b.name),
         count: discovered.all.find((d) => d.normalized === normalizeChannelName(b.name))?.count ?? 0,
