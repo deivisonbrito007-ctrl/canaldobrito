@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease, useUpdateNewsRelease, type NewsRelease } from "@/hooks/useNewsReleases";
 import { useAuth } from "@/contexts/AuthContext";
