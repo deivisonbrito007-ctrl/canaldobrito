@@ -208,7 +208,7 @@ const AdminNovidades = () => {
 
   const filteredItems = useMemo(() => {
     if (!items) return [];
-    return items.filter((m) => {
+    const filtered = items.filter((m) => {
       if (filter === "movie" && m.content_type !== "movie") return false;
       if (filter === "series" && m.content_type !== "series" && m.content_type !== "tv") return false;
       if (filter === "inactive" && m.active) return false;
@@ -219,7 +219,20 @@ const AdminNovidades = () => {
       }
       return true;
     });
-  }, [items, filter, debouncedSearch]);
+    if (sortMode === "manual") return filtered;
+    const sorted = [...filtered];
+    const t = (s: string | null | undefined) => (s || "").toLocaleLowerCase("pt-BR");
+    const d = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);
+    switch (sortMode) {
+      case "newest": sorted.sort((a, b) => d(b.created_at) - d(a.created_at)); break;
+      case "oldest": sorted.sort((a, b) => d(a.created_at) - d(b.created_at)); break;
+      case "title_asc": sorted.sort((a, b) => t(a.title).localeCompare(t(b.title), "pt-BR")); break;
+      case "title_desc": sorted.sort((a, b) => t(b.title).localeCompare(t(a.title), "pt-BR")); break;
+      case "rating_desc": sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1)); break;
+      case "rating_asc": sorted.sort((a, b) => (a.rating ?? Infinity) - (b.rating ?? Infinity)); break;
+    }
+    return sorted;
+  }, [items, filter, debouncedSearch, sortMode]);
 
   const missingGenreCount = items?.filter((m) => !m.genres).length || 0;
 
