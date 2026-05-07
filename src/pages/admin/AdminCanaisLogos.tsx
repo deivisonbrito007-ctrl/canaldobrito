@@ -848,14 +848,18 @@ const StatCard = ({
 
 const ChannelCard = ({
   channel,
+  suggestion,
   onEdit,
   onDelete,
   onPreview,
+  onLinkAlias,
 }: {
   channel: DiscoveredChannel;
+  suggestion?: ChannelMatchSuggestion;
   onEdit: () => void;
   onDelete: () => void;
   onPreview?: () => void;
+  onLinkAlias?: () => void;
 }) => {
   const m = channel.mapping;
   const tag = channel.isOrphan
@@ -865,6 +869,12 @@ const ChannelCard = ({
     : channel.isBuiltin
     ? { label: "Built-in", cls: "bg-sky-500/20 text-sky-200" }
     : { label: "—", cls: "bg-muted/40 text-muted-foreground" };
+
+  const confColor: Record<string, string> = {
+    high: "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
+    medium: "border-sky-500/40 bg-sky-500/10 text-sky-100",
+    low: "border-muted-foreground/30 bg-muted/30 text-muted-foreground",
+  };
 
   return (
     <div className="rounded-lg border border-border/50 bg-card/40 p-3 space-y-2">
@@ -908,9 +918,32 @@ const ChannelCard = ({
         </div>
       </div>
       <ChannelBadge name={channel.name} size="md" />
+      {channel.isOrphan && suggestion && onLinkAlias && (
+        <div className={`rounded-md border px-2 py-1.5 text-[11px] ${confColor[suggestion.confidence]}`}>
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              {suggestion.confidence === "high" ? "Provavelmente " : "Talvez "}
+              {suggestion.reason}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={onLinkAlias}
+            className="w-full gap-1 mt-1.5 h-8 text-xs bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+          >
+            <Link2 className="h-3 w-3" /> Vincular como alias
+          </Button>
+        </div>
+      )}
       {channel.isOrphan && (
-        <Button size="sm" variant="outline" onClick={onEdit} className="w-full gap-1 mt-1 h-9 text-xs">
-          <Plus className="h-3 w-3" /> Adicionar logo
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onEdit}
+          className="w-full gap-1 mt-1 h-9 text-xs"
+        >
+          <Plus className="h-3 w-3" /> {suggestion ? "Cadastrar como canal novo" : "Adicionar logo"}
         </Button>
       )}
     </div>
