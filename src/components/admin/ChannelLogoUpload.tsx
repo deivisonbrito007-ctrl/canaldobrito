@@ -115,7 +115,7 @@ export function ChannelLogoUpload({ channelName, currentUrl, onUploaded, onClear
               <div className="font-medium text-foreground">
                 {busy ? "Enviando…" : "Arraste um arquivo ou clique"}
               </div>
-              <div>PNG · SVG · WEBP · até 400 KB</div>
+              <div>PNG · SVG · WEBP · até 400 KB · auto-recorte e centralização</div>
             </div>
           </>
         )}
