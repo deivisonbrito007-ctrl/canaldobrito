@@ -844,12 +844,14 @@ const StatCard = ({
   value,
   highlight,
   onClick,
+  sub,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   highlight?: boolean;
   onClick?: () => void;
+  sub?: string;
 }) => {
   const Comp: any = onClick ? "button" : "div";
   return (
@@ -866,6 +868,7 @@ const StatCard = ({
         {label}
       </div>
       <div className="mt-1 font-display text-2xl font-bold">{value}</div>
+      {sub && <div className="text-[10px] text-emerald-300 mt-0.5">↳ {sub}</div>}
     </Comp>
   );
 };
