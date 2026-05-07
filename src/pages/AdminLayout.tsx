@@ -14,6 +14,7 @@ const adminTabs = [
   { value: "analytics", label: "Analytics", icon: BarChart3, path: "/admin/analytics", color: "text-cyan-400", activeBg: "bg-cyan-500/[0.08]", activeBorder: "border-b-cyan-400" },
   { value: "auditoria", label: "Auditoria", icon: ScrollText, path: "/admin/auditoria", color: "text-orange-400", activeBg: "bg-orange-500/[0.08]", activeBorder: "border-b-orange-400" },
   { value: "diagnostico-github", label: "GitHub", icon: Github, path: "/admin/diagnostico-github", color: "text-sky-400", activeBg: "bg-sky-500/[0.08]", activeBorder: "border-b-sky-400" },
+  { value: "canais-logos", label: "Canais", icon: Tv, path: "/admin/canais-logos", color: "text-pink-400", activeBg: "bg-pink-500/[0.08]", activeBorder: "border-b-pink-400" },
   { value: "configuracoes", label: "Config", icon: Settings, path: "/admin/configuracoes", color: "text-muted-foreground", activeBg: "bg-white/[0.06]", activeBorder: "border-b-muted-foreground" },
 ];
 
