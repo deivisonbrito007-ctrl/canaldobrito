@@ -144,7 +144,7 @@ describe("AdminNovidades", () => {
     wrap(<AdminNovidades />);
     fireEvent.click(screen.getByLabelText(/Adicionar Novo Filme/));
     await waitFor(() => expect(addMutateAsync).toHaveBeenCalled());
-    const payload = addMutateAsync.mock.calls[0][0];
+    const payload: any = (addMutateAsync.mock.calls as any[])[0][0];
     expect(payload.tmdb_id).toBe(555);
     expect(payload.title).toBe("Novo Filme");
     expect(payload.content_type).toBe("movie");
