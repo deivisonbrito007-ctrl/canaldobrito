@@ -371,22 +371,29 @@ const AdminWhatsApp = () => {
             { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
-            const link = buildDeepLink(siteUrl, tab, { short: true });
+            const content = `quick-${tab}`;
+            const link = buildDeepLink(siteUrl, tab, { short: true, content });
             const text = `${msg}\n\n${link}`;
+            const accesses = landingCounts[content] ?? 0;
             return (
               <div key={tab} className="flex items-center gap-2 rounded-lg border border-border/30 bg-background/40 px-2.5 py-2 flex-wrap sm:flex-nowrap">
                 <span className="text-sm font-bold text-foreground truncate flex-1 min-w-0" title={link}>
                   <span aria-hidden>{emoji}</span> {label}
                 </span>
+                {accesses > 0 && (
+                  <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5 shrink-0">
+                    {accesses} acesso{accesses === 1 ? "" : "s"}
+                  </span>
+                )}
                 <div className="flex gap-2 w-full sm:w-auto">
                   <CopyButton
                     text={link}
                     label="Copiar"
-                    onAfterCopy={() => trackShare({ surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, action: "copy" })}
+                    onAfterCopy={() => trackShare({ surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, utm_content: content, action: "copy" })}
                   />
                   <Button
                     size="sm"
-                    onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, action: "open" })}
+                    onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-quick", tab, utm_campaign: `share-${TAB_SLUGS[tab]}`, utm_content: content, action: "open" })}
                     className="gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[44px] px-3"
                     aria-label={`Enviar ${label} no WhatsApp`}
                   >
