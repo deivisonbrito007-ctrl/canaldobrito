@@ -91,9 +91,15 @@ const SIZE_CLASSES: Record<BadgeSize, string> = {
 };
 
 const ICON_SIZE: Record<BadgeSize, string> = {
-  sm: "h-3.5 w-3.5",
-  md: "h-4 w-4",
-  lg: "h-5 w-5",
+  sm: "h-4 w-4",
+  md: "h-[18px] w-[18px]",
+  lg: "h-6 w-6",
+};
+
+const ICON_WRAP: Record<BadgeSize, string> = {
+  sm: "h-5 w-5 p-[2px] rounded-[5px]",
+  md: "h-6 w-6 p-[3px] rounded-md",
+  lg: "h-7 w-7 p-[3px] rounded-md",
 };
 
 interface ChannelBadgeProps {
@@ -124,19 +130,20 @@ const ChannelIcon = ({
   else return <span className="leading-none">{emoji}</span>;
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      onError={() => setStage((s) => {
-        // Skip stages that have no source available
-        let next = (s + 1) as 0 | 1 | 2 | 3;
-        if (next === 1 && !domain) next = 3;
-        return next;
-      })}
-      className={cn("rounded-sm object-contain shrink-0", ICON_SIZE[size])}
-    />
+    <span className={cn("inline-flex items-center justify-center bg-white/95 shrink-0", ICON_WRAP[size])}>
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onError={() => setStage((s) => {
+          let next = (s + 1) as 0 | 1 | 2 | 3;
+          if (next === 1 && !domain) next = 3;
+          return next;
+        })}
+        className={cn("object-contain", ICON_SIZE[size])}
+      />
+    </span>
   );
 };
 
