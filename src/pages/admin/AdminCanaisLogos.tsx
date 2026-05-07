@@ -228,6 +228,7 @@ const AdminCanaisLogos = () => {
       }
       const builtinNorms = Array.from(builtinByNorm.keys());
       const created = new Map<string, string>(); // normalized -> mapping id
+      const freshlyCreatedIds: string[] = [];
       if (builtinNorms.length) {
         const { data: existing, error: exErr } = await supabase
           .from("channel_logo_mappings")
@@ -256,6 +257,7 @@ const AdminCanaisLogos = () => {
           if (insErr) throw insErr;
           for (const r of (inserted ?? []) as Array<{ id: string; name_normalized: string }>) {
             created.set(r.name_normalized, r.id);
+            freshlyCreatedIds.push(r.id);
           }
         }
       }
