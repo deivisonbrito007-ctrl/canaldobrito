@@ -588,26 +588,39 @@ const AdminCanaisLogos = () => {
               </DndContext>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {visibleCards.map((c) => (
-                  <ChannelCard
-                    key={c.normalized + (c.mapping?.id ?? "")}
-                    channel={c}
-                    onEdit={() => (c.mapping ? openEdit(c.mapping) : openNew(c.name))}
-                    onDelete={() => {
-                      if (c.mapping) {
-                        setConfirm({
-                          kind: "delete-mapping",
-                          id: c.mapping.id,
-                          name: c.mapping.name,
-                        });
+                {visibleCards.map((c) => {
+                  const sg = c.isOrphan ? suggestions.get(c.normalized) : undefined;
+                  return (
+                    <ChannelCard
+                      key={c.normalized + (c.mapping?.id ?? "")}
+                      channel={c}
+                      suggestion={sg}
+                      onLinkAlias={
+                        sg
+                          ? () =>
+                              setConfirm({
+                                kind: "bulk-autolink",
+                                pairs: [{ orphan: c, suggestion: sg }],
+                              })
+                          : undefined
                       }
-                    }}
-                    onPreview={() => {
-                      setPreviewChannel(c.name);
-                      document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                  />
-                ))}
+                      onEdit={() => (c.mapping ? openEdit(c.mapping) : openNew(c.name))}
+                      onDelete={() => {
+                        if (c.mapping) {
+                          setConfirm({
+                            kind: "delete-mapping",
+                            id: c.mapping.id,
+                            name: c.mapping.name,
+                          });
+                        }
+                      }}
+                      onPreview={() => {
+                        setPreviewChannel(c.name);
+                        document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    />
+                  );
+                })}
               </div>
             )}
           </TabsContent>
