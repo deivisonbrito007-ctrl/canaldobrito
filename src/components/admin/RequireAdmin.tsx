@@ -1,34 +1,31 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, RefreshCw } from "lucide-react";
 
 interface RequireAdminProps {
   children: ReactNode;
 }
 
-/**
- * Route-level guard for admin pages.
- * - Shows a spinner while auth is resolving.
- * - Redirects unauthenticated users to /login (preserving intended destination).
- * - Blocks authenticated non-admins with a 403-style screen + toast.
- */
 const RequireAdmin = ({ children }: RequireAdminProps) => {
-  const { session, isAdmin, isLoading } = useAuth();
+  const { session, user, isAdmin, isLoading, roleChecked, recheckAdmin, signOut } = useAuth();
   const location = useLocation();
   const warned = useRef(false);
+  const [rechecking, setRechecking] = useState(false);
+
+  const stillResolving = isLoading || (session && !roleChecked);
 
   useEffect(() => {
-    if (!isLoading && session && !isAdmin && !warned.current) {
+    if (!stillResolving && session && !isAdmin && !warned.current) {
       warned.current = true;
       toast.error("Acesso negado", {
         description: "Sua conta não possui permissão de administrador.",
       });
     }
-  }, [isLoading, session, isAdmin]);
+  }, [stillResolving, session, isAdmin]);
 
-  if (isLoading) {
+  if (stillResolving) {
     return (
       <div
         role="status"
@@ -52,6 +49,20 @@ const RequireAdmin = ({ children }: RequireAdminProps) => {
   }
 
   if (!isAdmin) {
+    const handleRetry = async () => {
+      setRechecking(true);
+      try {
+        await recheckAdmin();
+      } finally {
+        setRechecking(false);
+      }
+    };
+
+    const handleSwitch = async () => {
+      await signOut();
+      window.location.assign("/login");
+    };
+
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
         <div className="max-w-md w-full rounded-2xl border border-border bg-card/80 backdrop-blur-xl p-6 sm:p-8 text-center space-y-4">
@@ -62,22 +73,41 @@ const RequireAdmin = ({ children }: RequireAdminProps) => {
             Acesso restrito
           </h1>
           <p className="text-sm text-muted-foreground">
-            Sua conta está autenticada, mas não possui o papel de administrador
-            necessário para acessar esta área.
+            Sua conta está autenticada, mas não possui o papel de
+            administrador necessário para acessar esta área.
           </p>
+          {user?.email && (
+            <p className="text-xs text-muted-foreground/80">
+              Conta logada:{" "}
+              <span className="font-mono text-foreground/90">{user.email}</span>
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={rechecking}
+              className="min-h-[44px] inline-flex items-center justify-center gap-2 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95 transition disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${rechecking ? "animate-spin" : ""}`}
+                aria-hidden
+              />
+              {rechecking ? "Verificando…" : "Tentar novamente"}
+            </button>
             <a
               href="/"
-              className="min-h-[44px] inline-flex items-center justify-center px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95 transition"
+              className="min-h-[44px] inline-flex items-center justify-center px-4 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-white/[0.04] transition"
             >
               Voltar ao site
             </a>
-            <a
-              href="/login"
+            <button
+              type="button"
+              onClick={handleSwitch}
               className="min-h-[44px] inline-flex items-center justify-center px-4 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-white/[0.04] transition"
             >
               Trocar de conta
-            </a>
+            </button>
           </div>
         </div>
       </div>
