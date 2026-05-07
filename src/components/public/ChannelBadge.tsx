@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 
 // ── Vite-imported logos: hashed filenames → cache-busting permanente.
-// Trocar uma logo? Substitua o arquivo em src/assets/brand-logos/ — Vite gera novo hash automaticamente.
 import bandLogo from "@/assets/brand-logos/band.png";
+import bandsportsLogo from "@/assets/brand-logos/bandsports.png";
 import cazetvLogo from "@/assets/brand-logos/cazetv.png";
 import daznLogo from "@/assets/brand-logos/dazn.png";
 import disneyLogo from "@/assets/brand-logos/disneyplus.png";
@@ -33,44 +33,44 @@ type ChannelConfig = {
   short?: string;
   /** Imported logo asset (Vite-hashed). Priority over emoji. */
   localLogo?: string;
-  /** When true, render logo without white background (for already-light or white logos). */
-  darkBg?: boolean;
+  /** Para logos que precisam de chip claro p/ contraste no tema dark. */
+  lightChip?: boolean;
 };
 
 const CHANNEL_MAP: Record<string, ChannelConfig> = {
   espn:         { emoji: "📺", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]",  localLogo: espnLogo },
   sportv:       { emoji: "⚽", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-600/30 to-emerald-700/20", glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", localLogo: sportvLogo },
-  globo:        { emoji: "🌐", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-300/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", localLogo: globoLogo },
+  globo:        { emoji: "🌐", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-300/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", localLogo: globoLogo, lightChip: true },
   premiere:     { emoji: "⭐", text: "text-yellow-300",  border: "border-yellow-500/40",  gradient: "from-yellow-500/30 to-amber-600/20",    glow: "shadow-[0_0_14px_rgba(234,179,8,0.25)]", localLogo: premiereLogo },
-  "disney+":    { emoji: "✨", text: "text-blue-300",    border: "border-blue-600/40",    gradient: "from-blue-700/35 to-indigo-800/25",     glow: "shadow-[0_0_12px_rgba(29,78,216,0.2)]",  localLogo: disneyLogo, darkBg: true },
+  "disney+":    { emoji: "✨", text: "text-blue-300",    border: "border-blue-600/40",    gradient: "from-blue-700/35 to-indigo-800/25",     glow: "shadow-[0_0_12px_rgba(29,78,216,0.2)]",  localLogo: disneyLogo },
   cazétv:       { emoji: "🎮", text: "text-lime-300",    border: "border-lime-500/40",    gradient: "from-lime-500/30 to-green-600/20",      glow: "shadow-[0_0_12px_rgba(132,204,22,0.2)]", short: "Cazé", localLogo: cazetvLogo },
   cazetv:       { emoji: "🎮", text: "text-lime-300",    border: "border-lime-500/40",    gradient: "from-lime-500/30 to-green-600/20",      glow: "shadow-[0_0_12px_rgba(132,204,22,0.2)]", short: "Cazé", localLogo: cazetvLogo },
   tnt:          { emoji: "💥", text: "text-fuchsia-300", border: "border-fuchsia-500/40", gradient: "from-fuchsia-600/30 to-purple-700/20",  glow: "shadow-[0_0_12px_rgba(217,70,239,0.2)]", localLogo: tntLogo },
-  "prime video":{ emoji: "▶️", text: "text-sky-300",     border: "border-sky-500/40",     gradient: "from-sky-500/30 to-blue-600/20",        glow: "shadow-[0_0_12px_rgba(14,165,233,0.2)]", short: "Prime", localLogo: primeLogo, darkBg: true },
-  paramount:    { emoji: "⛰️", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-600/30 to-indigo-700/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "Param+", localLogo: paramountLogo, darkBg: true },
-  "paramount+": { emoji: "⛰️", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-600/30 to-indigo-700/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "Param+", localLogo: paramountLogo, darkBg: true },
-  netflix:      { emoji: "🎞️", text: "text-red-300",     border: "border-red-600/40",     gradient: "from-red-700/30 to-red-900/20",         glow: "shadow-[0_0_12px_rgba(220,38,38,0.25)]", localLogo: netflixLogo, darkBg: true },
-  apple:        { emoji: "🍎", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-200/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", short: "Apple TV", localLogo: appletvLogo, darkBg: true },
-  "apple tv":   { emoji: "🍎", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-200/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", short: "Apple", localLogo: appletvLogo, darkBg: true },
-  globoplay:    { emoji: "▶️", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-rose-700/20",        glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]", short: "Gplay", localLogo: globoplayLogo, darkBg: true },
+  "prime video":{ emoji: "▶️", text: "text-sky-300",     border: "border-sky-500/40",     gradient: "from-sky-500/30 to-blue-600/20",        glow: "shadow-[0_0_12px_rgba(14,165,233,0.2)]", short: "Prime", localLogo: primeLogo },
+  paramount:    { emoji: "⛰️", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-600/30 to-indigo-700/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "Param+", localLogo: paramountLogo },
+  "paramount+": { emoji: "⛰️", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-600/30 to-indigo-700/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", short: "Param+", localLogo: paramountLogo },
+  netflix:      { emoji: "🎞️", text: "text-red-300",     border: "border-red-600/40",     gradient: "from-red-700/30 to-red-900/20",         glow: "shadow-[0_0_12px_rgba(220,38,38,0.25)]", localLogo: netflixLogo },
+  apple:        { emoji: "🍎", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-200/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", short: "Apple TV", localLogo: appletvLogo },
+  "apple tv":   { emoji: "🍎", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-200/20 to-slate-400/10",   glow: "shadow-[0_0_10px_rgba(226,232,240,0.15)]", short: "Apple", localLogo: appletvLogo },
+  globoplay:    { emoji: "▶️", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-rose-700/20",        glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]", short: "Gplay", localLogo: globoplayLogo },
   band:         { emoji: "📡", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-500/30 to-teal-600/20",    glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", localLogo: bandLogo },
-  bandsports:   { emoji: "📡", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-500/30 to-teal-600/20",    glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", short: "BandSp", localLogo: bandLogo },
+  bandsports:   { emoji: "📡", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.2)]", short: "BandSp", localLogo: bandsportsLogo },
   bandplay:     { emoji: "📡", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-500/30 to-teal-600/20",    glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", localLogo: bandLogo },
-  max:          { emoji: "🎬", text: "text-purple-300",  border: "border-purple-500/40",  gradient: "from-purple-700/30 to-violet-800/20",   glow: "shadow-[0_0_12px_rgba(147,51,234,0.2)]", localLogo: maxLogo, darkBg: true },
-  "hbo max":    { emoji: "🎬", text: "text-purple-300",  border: "border-purple-500/40",  gradient: "from-purple-700/30 to-violet-800/20",   glow: "shadow-[0_0_12px_rgba(147,51,234,0.2)]", short: "HBO", localLogo: maxLogo, darkBg: true },
+  max:          { emoji: "🎬", text: "text-purple-300",  border: "border-purple-500/40",  gradient: "from-purple-700/30 to-violet-800/20",   glow: "shadow-[0_0_12px_rgba(147,51,234,0.2)]", localLogo: maxLogo },
+  "hbo max":    { emoji: "🎬", text: "text-purple-300",  border: "border-purple-500/40",  gradient: "from-purple-700/30 to-violet-800/20",   glow: "shadow-[0_0_12px_rgba(147,51,234,0.2)]", short: "HBO", localLogo: maxLogo },
   record:       { emoji: "📺", text: "text-blue-300",    border: "border-blue-500/40",    gradient: "from-blue-500/30 to-indigo-600/20",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.2)]", localLogo: recordLogo },
   sbt:          { emoji: "📺", text: "text-pink-300",    border: "border-pink-500/40",    gradient: "from-pink-500/30 to-fuchsia-600/20",    glow: "shadow-[0_0_12px_rgba(236,72,153,0.2)]" },
   "canal goat": { emoji: "🐐", text: "text-amber-300",   border: "border-amber-500/40",   gradient: "from-amber-500/30 to-orange-600/20",    glow: "shadow-[0_0_12px_rgba(245,158,11,0.2)]", short: "GOAT", localLogo: goatLogo },
   "ge tv":      { emoji: "📱", text: "text-orange-300",  border: "border-orange-500/40",  gradient: "from-orange-500/30 to-amber-600/20",    glow: "shadow-[0_0_12px_rgba(249,115,22,0.2)]", short: "ge" },
-  space:        { emoji: "🚀", text: "text-indigo-300",  border: "border-indigo-500/40",  gradient: "from-indigo-500/30 to-purple-600/20",   glow: "shadow-[0_0_12px_rgba(99,102,241,0.2)]", localLogo: spaceLogo, darkBg: true },
+  space:        { emoji: "🚀", text: "text-indigo-300",  border: "border-indigo-500/40",  gradient: "from-indigo-500/30 to-purple-600/20",   glow: "shadow-[0_0_12px_rgba(99,102,241,0.2)]", localLogo: spaceLogo },
   "esporte na band": { emoji: "📡", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-500/30 to-teal-600/20", glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", short: "Band YT", localLogo: bandLogo },
   youtube:      { emoji: "▶️", text: "text-red-300",     border: "border-red-500/40",     gradient: "from-red-600/30 to-red-700/20",         glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]", short: "YT", localLogo: youtubeLogo },
-  dazn:         { emoji: "🥊", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-700/40 to-slate-900/30",   glow: "shadow-[0_0_12px_rgba(148,163,184,0.2)]", localLogo: daznLogo, darkBg: true },
+  dazn:         { emoji: "🥊", text: "text-foreground/90", border: "border-foreground/20", gradient: "from-slate-700/40 to-slate-900/30",   glow: "shadow-[0_0_12px_rgba(148,163,184,0.2)]", localLogo: daznLogo },
   nsports:      { emoji: "🏆", text: "text-cyan-300",    border: "border-cyan-500/40",    gradient: "from-cyan-500/30 to-sky-600/20",        glow: "shadow-[0_0_12px_rgba(6,182,212,0.2)]" },
-  "x sports":   { emoji: "❌", text: "text-red-400",     border: "border-red-500/40",     gradient: "from-red-600/30 to-rose-700/20",        glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]",  short: "X Sports", localLogo: xsportsLogo, darkBg: true },
-  xsports:      { emoji: "❌", text: "text-red-400",     border: "border-red-500/40",     gradient: "from-red-600/30 to-rose-700/20",        glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]",  short: "X Sports", localLogo: xsportsLogo, darkBg: true },
+  "x sports":   { emoji: "❌", text: "text-red-400",     border: "border-red-500/40",     gradient: "from-red-600/30 to-rose-700/20",        glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]",  short: "X Sports", localLogo: xsportsLogo },
+  xsports:      { emoji: "❌", text: "text-red-400",     border: "border-red-500/40",     gradient: "from-red-600/30 to-rose-700/20",        glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]",  short: "X Sports", localLogo: xsportsLogo },
   combate:      { emoji: "🥋", text: "text-red-300",     border: "border-red-600/40",     gradient: "from-red-700/30 to-rose-800/20",        glow: "shadow-[0_0_12px_rgba(220,38,38,0.25)]" },
-  "canal do benja": { emoji: "🎙️", text: "text-orange-300", border: "border-orange-500/40", gradient: "from-orange-500/30 to-amber-600/20", glow: "shadow-[0_0_12px_rgba(249,115,22,0.2)]", short: "Benja", localLogo: youtubeLogo },
+  "canal do benja": { emoji: "🎙️", text: "text-orange-300", border: "border-orange-500/40", gradient: "from-orange-500/30 to-amber-600/20", glow: "shadow-[0_0_12px_rgba(249,115,22,0.2)]", short: "Benja" },
   onefootball:  { emoji: "⚽", text: "text-emerald-300", border: "border-emerald-500/40", gradient: "from-emerald-600/30 to-teal-700/20",    glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]", short: "OneFt" },
   redetv:       { emoji: "📺", text: "text-rose-300",    border: "border-rose-500/40",    gradient: "from-rose-500/30 to-red-600/20",        glow: "shadow-[0_0_12px_rgba(244,63,94,0.2)]", short: "RedeTV" },
   "redetv!":    { emoji: "📺", text: "text-rose-300",    border: "border-rose-500/40",    gradient: "from-rose-500/30 to-red-600/20",        glow: "shadow-[0_0_12px_rgba(244,63,94,0.2)]", short: "RedeTV" },
@@ -124,16 +124,11 @@ const SIZE_CLASSES: Record<BadgeSize, string> = {
   lg: "text-xs px-3 py-2 gap-2 rounded-lg",
 };
 
-const ICON_SIZE: Record<BadgeSize, string> = {
-  sm: "h-4 w-6",
-  md: "h-5 w-8",
-  lg: "h-7 w-11",
-};
-
+// Wrapper unificado QUADRADO — todas as logos ocupam o mesmo bounding-box.
 const ICON_WRAP: Record<BadgeSize, string> = {
-  sm: "h-5 w-7 p-[2px] rounded-[5px]",
-  md: "h-6 w-9 p-[2px] rounded-md",
-  lg: "h-8 w-12 p-[2px] rounded-md",
+  sm: "h-5 w-5 rounded-[5px]",
+  md: "h-7 w-7 rounded-md",
+  lg: "h-9 w-9 rounded-md",
 };
 
 interface ChannelBadgeProps {
@@ -148,8 +143,8 @@ const ChannelIcon = ({
   emoji,
   size,
   alt,
-  darkBg,
-}: { localLogo?: string; emoji: string; size: BadgeSize; alt: string; darkBg?: boolean }) => {
+  lightChip,
+}: { localLogo?: string; emoji: string; size: BadgeSize; alt: string; lightChip?: boolean }) => {
   const [failed, setFailed] = useState(false);
 
   if (!localLogo || failed) {
@@ -159,9 +154,9 @@ const ChannelIcon = ({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center shrink-0",
+        "inline-flex items-center justify-center shrink-0 overflow-hidden",
         ICON_WRAP[size],
-        darkBg ? "bg-transparent" : "bg-white/95"
+        lightChip ? "bg-white/10" : "bg-transparent"
       )}
     >
       <img
@@ -170,7 +165,7 @@ const ChannelIcon = ({
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        className={cn("object-contain", ICON_SIZE[size])}
+        className="h-full w-full object-contain"
       />
     </span>
   );
@@ -191,11 +186,13 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
             className
           )}
         >
-          <img
-            src="/canal_do_brito_logo.png"
-            alt="Canal do Brito"
-            className={cn("rounded-sm object-contain shrink-0", ICON_SIZE[size])}
-          />
+          <span className={cn("inline-flex items-center justify-center shrink-0 overflow-hidden", ICON_WRAP[size])}>
+            <img
+              src="/canal_do_brito_logo.png"
+              alt="Canal do Brito"
+              className="h-full w-full object-contain"
+            />
+          </span>
           Canal do Brito
         </span>
       );
@@ -221,7 +218,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
           emoji={config.emoji}
           size={size}
           alt={`${name} logo`}
-          darkBg={config.darkBg}
+          lightChip={config.lightChip}
         />
         {name}
       </span>
