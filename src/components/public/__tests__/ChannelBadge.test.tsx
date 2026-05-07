@@ -1,6 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ChannelBadge } from "../ChannelBadge";
+
+vi.mock("@/hooks/useChannelMappings", () => ({
+  useChannelMappings: () => ({ data: new Map() }),
+  CHANNEL_MAPPINGS_QK: ["channel_logo_mappings"] as const,
+}));
 
 describe("ChannelBadge", () => {
   it("renders known channel name", () => {
