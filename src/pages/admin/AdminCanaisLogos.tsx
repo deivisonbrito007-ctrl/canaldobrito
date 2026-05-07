@@ -61,6 +61,12 @@ const AdminCanaisLogos = () => {
   const [testName, setTestName] = useState("");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"orphans" | "all" | "custom" | "builtin">("orphans");
+  const [previewChannel, setPreviewChannel] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["channel_logo_mappings_admin"],
