@@ -293,6 +293,7 @@ const AdminCanaisLogos = () => {
   });
 
   const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
     if (!over || active.id === over.id || !rows) return;
     const ids = rows.map((r) => r.id);
     const oldIdx = ids.indexOf(active.id as string);
