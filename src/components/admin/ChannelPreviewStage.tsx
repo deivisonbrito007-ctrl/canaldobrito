@@ -9,6 +9,10 @@ import { Clock } from "lucide-react";
 interface Props {
   /** Optional initial channel preselected (e.g. when "Ver na programação" is clicked) */
   initialChannel?: string;
+  /** Controlled value (preferred). If provided, ChannelPreviewStage will reflect this value. */
+  value?: string;
+  /** onChange for controlled mode. */
+  onChange?: (next: string) => void;
 }
 
 const today = new Date().toISOString().slice(0, 10);
