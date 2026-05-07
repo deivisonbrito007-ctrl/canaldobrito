@@ -209,7 +209,7 @@ export const ABTemplateLab = () => {
         });
         if (!cancelled) setFunnel(rows);
       } catch (e) {
-        console.warn("[ABLab] failed to load funnel", e);
+        if (import.meta.env.DEV) console.debug("[ABLab] funnel unavailable", e);
       } finally {
         if (!cancelled) setLoading(false);
       }
