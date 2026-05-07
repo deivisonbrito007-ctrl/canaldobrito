@@ -502,8 +502,11 @@ const AdminWhatsApp = () => {
           {templates.map((t) => (
             <MessageCard key={t.id} template={t} siteUrl={siteUrl} />
           ))}
-        </div>
       </div>
+
+      {/* A/B Template Lab */}
+      <ABTemplateLab />
+    </div>
     </div>
   );
 };
