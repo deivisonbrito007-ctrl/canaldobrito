@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease, useUpdateNewsRelease, type NewsRelease } from "@/hooks/useNewsReleases";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,11 +73,30 @@ const AdminNovidades = () => {
   const [listSearch, setListSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<NewsRelease | null>(null);
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(listSearch.trim().toLowerCase()), 250);
     return () => clearTimeout(t);
   }, [listSearch]);
+
+  // Reset pagination when filters/search/sort change
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, debouncedSearch, sortMode]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        setVisibleCount((c) => c + PAGE_SIZE);
+      }
+    }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filter, debouncedSearch, sortMode, items?.length]);
 
   const handleBadgeTypeChange = (v: string) => {
     setBadgeType(v);
@@ -403,7 +422,7 @@ const AdminNovidades = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredItems.map((m) => {
+              {filteredItems.slice(0, visibleCount).map((m) => {
                 const idx = items.indexOf(m);
                 return (
                   <div key={m.id} className="rounded-lg glass-panel p-3 transition-all duration-200 space-y-2">
@@ -477,6 +496,17 @@ const AdminNovidades = () => {
                   </div>
                 );
               })}
+              {visibleCount < filteredItems.length && (
+                <div ref={sentinelRef} className="py-4 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Carregando mais ({visibleCount}/{filteredItems.length})...
+                </div>
+              )}
+              {visibleCount >= filteredItems.length && filteredItems.length > PAGE_SIZE && (
+                <p className="py-3 text-center text-[11px] text-muted-foreground/60">
+                  {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"} carregado{filteredItems.length === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
           )}
         </div>
