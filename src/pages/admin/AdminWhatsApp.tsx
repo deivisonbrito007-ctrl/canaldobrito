@@ -64,6 +64,7 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
     surface: "admin-whatsapp-template",
     tab: template.tab ?? null,
     utm_campaign: template.tab ? `share-${TAB_SLUGS[template.tab]}` : null,
+    utm_content: `tpl-${template.id}`,
     action: "open",
   };
 
@@ -71,11 +72,18 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
     <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-bold text-foreground">{template.label}</span>
-        {template.tab && (
-          <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
-            ?tab={template.tab}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {typeof accessCount === "number" && accessCount > 0 && (
+            <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5">
+              {accessCount} acesso{accessCount === 1 ? "" : "s"}
+            </span>
+          )}
+          {template.tab && (
+            <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
+              ?tab={template.tab}
+            </span>
+          )}
+        </div>
       </div>
       <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
         {finalText}
