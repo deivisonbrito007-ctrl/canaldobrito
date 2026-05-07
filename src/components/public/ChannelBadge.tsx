@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
+import { withCacheBust } from "@/lib/cacheBust";
 import { LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "./channelLogos";
 import { useChannelMappings } from "@/hooks/useChannelMappings";
+
+declare const __APP_VERSION__: string;
 
 type ChannelConfig = {
   emoji: string;
@@ -129,6 +132,7 @@ const ChannelIcon = ({
   alt,
   customUrl,
   forceLightChip,
+  version,
 }: {
   logoKey?: LogoKey;
   emoji: string;
@@ -136,10 +140,18 @@ const ChannelIcon = ({
   alt: string;
   customUrl?: string | null;
   forceLightChip?: boolean;
+  version?: string | null;
 }) => {
   const [failed, setFailed] = useState(false);
   const registryEntry = logoKey && logoKey !== "none" ? LOGO_REGISTRY[logoKey] : undefined;
-  const src = customUrl || registryEntry?.src;
+  const rawSrc = customUrl || registryEntry?.src;
+  // Cache-bust: custom uploads use the row's updated_at so changes propagate
+  // without a manual refresh; built-in assets use the build-time version
+  // stamp so a deploy invalidates aggressively cached entries.
+  const stamp = customUrl
+    ? version
+    : (typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : null);
+  const src = withCacheBust(rawSrc, stamp) ?? undefined;
   const lightChip = forceLightChip ?? registryEntry?.lightChip;
 
   if (!src || failed) {
@@ -228,6 +240,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
           alt={`${name} logo`}
           customUrl={override?.custom_logo_url}
           forceLightChip={override?.light_chip}
+          version={override?.updated_at}
         />
         {name}
       </span>
