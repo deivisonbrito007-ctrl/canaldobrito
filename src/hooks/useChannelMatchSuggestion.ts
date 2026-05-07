@@ -16,7 +16,22 @@ export type ChannelMatchSuggestion = {
   reason: string;
 };
 
-const VARIANT_SUFFIXES = ["hd", "sd", "fhd", "uhd", "4k", "2", "3", "4", "5", "plus", "sp", "rj", "mg", "rs", "br", "brasil"];
+const VARIANT_SUFFIXES = [
+  // qualidade
+  "hd", "sd", "fhd", "uhd", "4k", "8k",
+  // numéricos
+  "2", "3", "4", "5", "6", "7", "8", "9",
+  // tier
+  "plus", "premium", "gold", "extra", "alt", "alternativo", "alternativa",
+  // estados BR
+  "sp", "rj", "mg", "rs", "pr", "sc", "ba", "pe", "ce", "df", "go", "es", "pa", "am",
+  // país / idioma
+  "br", "brasil", "brazil", "pt", "ptbr", "br2", "brasil2",
+  // streaming/online
+  "online", "live", "ao-vivo", "aovivo", "stream", "web",
+  // canais sport extras
+  "sports", "sport", "news", "max",
+];
 
 /** Levenshtein simples (capped). */
 function distance(a: string, b: string, max = 3): number {
