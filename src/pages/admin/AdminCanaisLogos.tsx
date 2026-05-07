@@ -72,7 +72,12 @@ const EMPTY_FORM: FormState = {
   light_chip: false,
 };
 
-type ConfirmState = { kind: "delete-mapping"; id: string; name: string } | { kind: "bulk-silence"; count: number } | null;
+type AutoLinkPair = { orphan: DiscoveredChannel; suggestion: ChannelMatchSuggestion };
+type ConfirmState =
+  | { kind: "delete-mapping"; id: string; name: string }
+  | { kind: "bulk-silence"; count: number }
+  | { kind: "bulk-autolink"; pairs: AutoLinkPair[] }
+  | null;
 
 const AdminCanaisLogos = () => {
   const qc = useQueryClient();
