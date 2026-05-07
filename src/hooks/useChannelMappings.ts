@@ -11,6 +11,7 @@ export type ChannelMapping = {
   active: boolean;
   custom_logo_url?: string | null;
   light_chip?: boolean;
+  sort_order?: number;
 };
 
 export const CHANNEL_MAPPINGS_QK = ["channel_logo_mappings"] as const;

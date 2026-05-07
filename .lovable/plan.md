@@ -1,103 +1,46 @@
-## Admin de Canais & Logos — versão profissional
+## Objetivo
 
-Hoje o admin (`/admin/canais-logos`) só permite mapear nomes para logos já embutidas no código. Vou transformá-lo num **painel central** que:
+Hoje já existe `/admin/canais-logos` com upload, mapeamento, detecção automática de órfãos e preview do `ChannelBadge` em três tamanhos. Falta o que você pediu agora: **ordenar canais** e **ver como ficam no carrossel e na programação real**, sem sair do admin.
 
-1. Lista **todos** os canais conhecidos (built-in + DB + descobertos automaticamente nos jogos).
-2. Detecta canais novos vindos do parser do WhatsApp e mostra um alerta "X canais sem logo".
-3. Permite **fazer upload de uma logo nova direto pela tela** (sem precisar mexer no código).
-4. Mantém preview ao vivo do `ChannelBadge` para cada canal.
+## O que vou entregar
 
----
+### 1. Ordenação dos canais (drag-and-drop)
+- Migração: adicionar `sort_order integer not null default 0` em `channel_logo_mappings` + índice.
+- UI: na aba **Personalizados** (única que faz sentido ordenar), grid vira lista arrastável com `@dnd-kit/sortable` (já bate com o padrão do projeto). Cada card mostra um handle ⋮⋮ à esquerda.
+- Salvamento: ao soltar, atualiza `sort_order` em lote (uma chamada `upsert`) e invalida `CHANNEL_MAPPINGS_QK`.
+- A ordem influencia onde houver lista de canais (ex.: badges em GameCard quando há vários canais para o mesmo jogo). Hoje a ordem vem do array do parser; passamos a reordenar usando o `sort_order` quando houver mapping.
 
-### 1. Storage para logos enviadas pelo admin
+### 2. Preview ao vivo no carrossel e na programação
+Nova seção **"Como vai aparecer"** abaixo do "Teste de matching", com 3 abas:
 
-Criar bucket público `channel-logos` com policies:
-- SELECT: público
-- INSERT/UPDATE/DELETE: apenas `has_role(auth.uid(),'admin')`
-
-### 2. Migração do schema
-
-Adicionar à tabela `channel_logo_mappings`:
-- `custom_logo_url text` — URL pública da logo enviada pelo admin (quando preenchida, tem prioridade sobre `logo_key`).
-- `light_chip boolean default false` — força fundo branco no chip se a logo for escura.
-- Índice único em `name_normalized`.
-
-### 3. Auto-descoberta de canais
-
-Novo hook `useDiscoveredChannels()` que:
-- Busca `daily_games.channels` (array) dos últimos 30 dias.
-- Faz `flat()` + `normalizeChannelName()` para deduplicar.
-- Cruza com built-in + mappings do DB.
-- Retorna 3 listas: **mapeados**, **built-in**, **órfãos** (canais que aparecem nos jogos mas caem no fallback 📺).
-
-### 4. UI do `AdminCanaisLogos` reformulada
-
-```text
-┌─ Canais & Logos ─────────────────────────────┐
-│ [stats] 42 mapeados · 9 órfãos · 23 built-in │
-│ ⚠️ 9 canais novos no sistema sem logo →     │
-├──────────────────────────────────────────────┤
-│ [🔍 Teste de matching] preview live          │
-├──────────────────────────────────────────────┤
-│ Tabs: [Todos] [Órfãos] [Personalizados]     │
-│       [Built-in]                             │
-├──────────────────────────────────────────────┤
-│ Grid responsivo de cards. Cada card:        │
-│   ┌────────────────────────────┐            │
-│   │ [logo 48x48] Nome do canal │            │
-│   │ Aparece em N jogos · DB    │            │
-│   │ [Editar] [Upload logo]     │            │
-│   └────────────────────────────┘            │
-└──────────────────────────────────────────────┘
+```
+[ Chip puro ]  [ Card da Programação ]  [ Carrossel ao vivo ]
 ```
 
-**Modal de edição** (substitui o atual):
-- Campo: nome do canal (com normalizado abaixo).
-- **Tabs internos**:
-  - **Logo do registry**: select com preview de cada logo built-in (atual).
-  - **Upload personalizado**: dropzone + input file → envia para `channel-logos/<slug>.png` no Storage e salva URL em `custom_logo_url`. Mostra preview imediato.
-- Switch "Fundo claro" (lightChip).
-- Campo abreviação opcional.
-- Switch ativo/inativo.
-- **Preview live** do `ChannelBadge` em sm/md/lg lado a lado.
-- Botões: Cancelar · Salvar · (se editando) Excluir.
+- **Chip puro**: o que já existe (sm/md/lg lado a lado).
+- **Card da Programação**: monta um `GameCard` fake (Flamengo x Palmeiras, 21:30, hoje) injetando o canal selecionado no array `channels`. Reaproveita o componente real, então qualquer mudança visual aparece automaticamente.
+- **Carrossel ao vivo**: renderiza o trecho do `LiveNowSection` (versão isolada com 1 jogo mock) usando o mesmo `ChannelBadge size="sm"`. Mostra como fica no glassmorphism dos cartões "AO VIVO".
 
-**Card de órfão** tem botão de atalho **"Adicionar logo"** que abre o modal já com o nome preenchido e foco na aba Upload.
+Cada aba tem um seletor de canal no topo (autocomplete com a lista de mappings + órfãos), assim você pode testar qualquer canal — incluindo um recém-cadastrado — sem precisar abrir um jogo real.
 
-### 5. ChannelBadge: suportar `custom_logo_url`
+### 3. Atalho contextual
+- No card de cada canal (todas as abas), botão extra **"Ver na programação"** que abre direto a aba de preview já com aquele canal selecionado.
 
-Em `useChannelMappings` incluir `custom_logo_url` e `light_chip`. No `ChannelBadge`, prioridade:
-1. `custom_logo_url` do DB (se houver) → renderiza `<img>` direto.
-2. `logo_key` do DB → registry.
-3. Built-in `CHANNEL_MAP[logoKey]`.
-4. Fallback emoji.
+## Arquivos
 
-Mantém o wrapper padronizado (mesma classe `ICON_WRAP` da última iteração) para garantir alinhamento entre logos do registry e logos enviadas.
+| Arquivo | Ação |
+|---|---|
+| `supabase/migrations/<novo>.sql` | `ALTER TABLE channel_logo_mappings ADD COLUMN sort_order` + índice |
+| `src/hooks/useChannelMappings.ts` | incluir `sort_order` no tipo |
+| `src/pages/admin/AdminCanaisLogos.tsx` | adicionar drag-and-drop + nova seção de preview com 3 abas |
+| `src/components/admin/ChannelPreviewStage.tsx` (novo) | mock do GameCard + mini LiveNow para preview isolado |
+| `src/components/public/schedule/GameCard.tsx` | usar `sort_order` quando houver mapping (ordenação estável dos badges) |
+| `package.json` | adicionar `@dnd-kit/core` + `@dnd-kit/sortable` se ainda não estiverem |
 
-### 6. Atalho na barra do admin
+## Observações
+- Mantém todo o sistema atual (auto-discovery, upload, fundo claro, abreviação) — é só adição.
+- Sem mudanças em RLS: `sort_order` segue as políticas existentes da tabela.
+- Mobile-first preservado: drag-and-drop com long-press de 250ms para não conflitar com scroll.
+- Acessibilidade: handle do drag tem `aria-label` e suporta teclado (setas) via `@dnd-kit`.
 
-Adicionar badge vermelho com contador no item "Canais" do `AdminLayout` quando houver órfãos (`useDiscoveredChannels().orphans.length > 0`).
-
----
-
-### Detalhes técnicos
-
-- **Arquivos**:
-  - `src/pages/admin/AdminCanaisLogos.tsx` — refeito.
-  - `src/hooks/useDiscoveredChannels.ts` — novo.
-  - `src/hooks/useChannelMappings.ts` — adiciona `custom_logo_url`, `light_chip` ao tipo.
-  - `src/components/public/ChannelBadge.tsx` — branch para custom URL.
-  - `src/components/admin/ChannelLogoUpload.tsx` — dropzone reutilizável (sanitize do nome → slug, valida ≤ 200 KB, força PNG/SVG/WEBP, sobe via `supabase.storage.from('channel-logos').upload`).
-  - `src/pages/AdminLayout.tsx` — badge de pendências.
-  - Migração: ALTER TABLE + bucket + policies.
-- **Validações no upload**: tipo `image/png|svg+xml|webp`, tamanho máximo 300 KB, dimensão sugerida 200x200, gera nome `<slug>-<timestamp>.<ext>` para invalidar cache.
-- **React Query**: invalida `CHANNEL_MAPPINGS_QK` e `["channel_logo_mappings_admin"]` após qualquer escrita; mostra toasts.
-- **Acessibilidade**: dropzone aceita teclado (Enter abre file picker), `aria-label` em tudo, foco volta para o card editado ao fechar modal.
-
-### Sugestões extras (opcionais, posso incluir se aprovar)
-- **Botão "Detectar agora"** que força refetch dos jogos.
-- **Exportar/Importar JSON** dos mapeamentos para backup.
-- **Drag-and-drop** entre cards para reordenar prioridade quando houver duplicatas.
-- **Sugerir logo via IA** (Lovable AI Gateway com `gemini-2.5-flash-image`) gerando placeholder estilizado quando o admin não tem PNG oficial.
-
-Posso aplicar com ou sem essas sugestões — me diga se quer alguma e eu já implemento tudo de uma vez.
+Posso aplicar agora se aprovar.

@@ -1,0 +1,2 @@
+ALTER TABLE public.channel_logo_mappings ADD COLUMN IF NOT EXISTS sort_order integer NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_channel_logo_mappings_sort_order ON public.channel_logo_mappings (sort_order, name);

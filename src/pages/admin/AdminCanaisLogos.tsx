@@ -8,13 +8,31 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles } from "lucide-react";
+import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { LOGO_OPTIONS, LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "@/components/public/channelLogos";
 import { ChannelBadge, BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
 import { CHANNEL_MAPPINGS_QK, type ChannelMapping } from "@/hooks/useChannelMappings";
 import { useDiscoveredChannels, type DiscoveredChannel } from "@/hooks/useDiscoveredChannels";
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
+import { ChannelPreviewStage } from "@/components/admin/ChannelPreviewStage";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type FormState = {
   id?: string;
@@ -43,6 +61,12 @@ const AdminCanaisLogos = () => {
   const [testName, setTestName] = useState("");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"orphans" | "all" | "custom" | "builtin">("orphans");
+  const [previewChannel, setPreviewChannel] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["channel_logo_mappings_admin"],
@@ -50,6 +74,7 @@ const AdminCanaisLogos = () => {
       const { data, error } = await supabase
         .from("channel_logo_mappings")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("name");
       if (error) throw error;
       return (data ?? []) as ChannelMapping[];
@@ -105,6 +130,37 @@ const AdminCanaisLogos = () => {
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao remover"),
   });
+
+  const reorder = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const updates = orderedIds.map((id, idx) =>
+        supabase.from("channel_logo_mappings").update({ sort_order: idx }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const firstErr = results.find((r) => r.error);
+      if (firstErr?.error) throw firstErr.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao reordenar"),
+  });
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id || !rows) return;
+    const ids = rows.map((r) => r.id);
+    const oldIdx = ids.indexOf(active.id as string);
+    const newIdx = ids.indexOf(over.id as string);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const newOrder = arrayMove(ids, oldIdx, newIdx);
+    qc.setQueryData<ChannelMapping[]>(["channel_logo_mappings_admin"], (old) => {
+      if (!old) return old;
+      return arrayMove(old, oldIdx, newIdx);
+    });
+    reorder.mutate(newOrder);
+  };
 
   const builtinList = useMemo(
     () =>
@@ -234,7 +290,10 @@ const AdminCanaisLogos = () => {
         </div>
       </div>
 
-      {/* Tabs + Search */}
+      {/* Preview ao vivo */}
+      <div id="preview-stage">
+        <ChannelPreviewStage initialChannel={previewChannel} key={previewChannel} />
+      </div>
       <div className="space-y-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <div className="flex flex-wrap items-center gap-2 justify-between">
@@ -270,6 +329,32 @@ const AdminCanaisLogos = () => {
                   ? "🎉 Todos os canais detectados têm logo!"
                   : "Nenhum canal encontrado."}
               </div>
+            ) : tab === "custom" ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={(rows ?? []).map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {visibleCards.map((c) =>
+                      c.mapping ? (
+                        <SortableChannelRow
+                          key={c.mapping.id}
+                          id={c.mapping.id}
+                          channel={c}
+                          onEdit={() => openEdit(c.mapping!)}
+                          onDelete={() => {
+                            if (confirm(`Remover mapeamento "${c.mapping!.name}"?`)) {
+                              remove.mutate(c.mapping!.id);
+                            }
+                          }}
+                          onPreview={() => {
+                            setPreviewChannel(c.name);
+                            document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                        />
+                      ) : null
+                    )}
+                  </div>
+                </SortableContext>
+              </DndContext>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {visibleCards.map((c) => (
@@ -281,6 +366,10 @@ const AdminCanaisLogos = () => {
                       if (c.mapping && confirm(`Remover mapeamento "${c.mapping.name}"?`)) {
                         remove.mutate(c.mapping.id);
                       }
+                    }}
+                    onPreview={() => {
+                      setPreviewChannel(c.name);
+                      document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
                     }}
                   />
                 ))}
@@ -464,10 +553,12 @@ const ChannelCard = ({
   channel,
   onEdit,
   onDelete,
+  onPreview,
 }: {
   channel: DiscoveredChannel;
   onEdit: () => void;
   onDelete: () => void;
+  onPreview?: () => void;
 }) => {
   const m = channel.mapping;
   const tag = channel.isOrphan
@@ -498,6 +589,11 @@ const ChannelCard = ({
           )}
         </div>
         <div className="flex gap-1 shrink-0">
+          {onPreview && (
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onPreview} aria-label="Visualizar">
+              <Eye className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onEdit} aria-label="Editar">
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -520,6 +616,70 @@ const ChannelCard = ({
           <Plus className="h-3 w-3" /> Adicionar logo
         </Button>
       )}
+    </div>
+  );
+};
+
+const SortableChannelRow = ({
+  id,
+  channel,
+  onEdit,
+  onDelete,
+  onPreview,
+}: {
+  id: string;
+  channel: DiscoveredChannel;
+  onEdit: () => void;
+  onDelete: () => void;
+  onPreview: () => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  const m = channel.mapping;
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/40 p-2 sm:p-3"
+    >
+      <button
+        type="button"
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 -m-1"
+        aria-label="Arrastar para reordenar"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <ChannelBadge name={channel.name} size="md" />
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-sm truncate">{channel.name}</div>
+        <div className="text-[10px] text-muted-foreground flex gap-2">
+          {channel.count > 0 && <span>{channel.count} jogo{channel.count > 1 ? "s" : ""}</span>}
+          {m && !m.active && <span className="text-amber-300">Inativo</span>}
+        </div>
+      </div>
+      <div className="flex gap-1 shrink-0">
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onPreview} aria-label="Visualizar">
+          <Eye className="h-3.5 w-3.5" />
+        </Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit} aria-label="Editar">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-destructive hover:text-destructive"
+          onClick={onDelete}
+          aria-label="Excluir"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </div>
   );
 };
