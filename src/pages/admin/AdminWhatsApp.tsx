@@ -278,7 +278,7 @@ const AdminWhatsApp = () => {
   const dayText = useMemo(() => buildDayText(dayGames ?? [], selectedDate, siteUrl), [dayGames, selectedDate, siteUrl]);
   const dayValidation = useMemo(() => validateDay(dayGames ?? []), [dayGames]);
 
-  const customLink = buildDeepLink(siteUrl, linkTab, { short: true });
+  const customLink = buildDeepLink(siteUrl, linkTab, { short: true, content: `custom-${linkTab}` });
   const customFinal = customMsg.trim()
     ? customMsg.includes("{LINK}")
       ? customMsg.replace(/\{LINK\}/g, customLink).trim()
