@@ -274,7 +274,7 @@ const AdminCanaisLogos = () => {
       q ? arr.filter((i) => matches(i.name)) : arr;
 
     if (tab === "orphans") return filterByQuery(discovered.orphans);
-    if (tab === "all") return filterByQuery(discovered.all);
+    if (tab === "all") return filterByQuery(discovered.all.filter((i) => !i.isOrphan));
     if (tab === "custom") {
       const list: DiscoveredChannel[] = (rows ?? []).map((r) => ({
         name: r.name,
@@ -398,7 +398,7 @@ const AdminCanaisLogos = () => {
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="all">Todos detectados</TabsTrigger>
+                <TabsTrigger value="all">Com logo</TabsTrigger>
                 <TabsTrigger value="custom">Personalizados</TabsTrigger>
                 <TabsTrigger value="builtin">Built-in</TabsTrigger>
               </TabsList>
