@@ -104,9 +104,9 @@ describe("safeCopy", () => {
       value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
       configurable: true,
     });
-    const exec = vi.spyOn(document, "execCommand").mockReturnValue(true);
+    (document as any).execCommand = vi.fn().mockReturnValue(true);
     expect(await safeCopy("fallback")).toBe(true);
-    expect(exec).toHaveBeenCalledWith("copy");
+    expect((document as any).execCommand).toHaveBeenCalledWith("copy");
   });
 });
 
