@@ -377,6 +377,18 @@ const AdminCanaisLogos = () => {
     }
     return out;
   }, [discovered.orphans, suggestions]);
+  const mediumConfidencePairs = useMemo<AutoLinkPair[]>(() => {
+    const out: AutoLinkPair[] = [];
+    for (const o of discovered.orphans) {
+      const s = suggestions.get(o.normalized);
+      if (s && s.confidence === "medium") out.push({ orphan: o, suggestion: s });
+    }
+    return out;
+  }, [discovered.orphans, suggestions]);
+  const allConfidencePairs = useMemo<AutoLinkPair[]>(
+    () => [...highConfidencePairs, ...mediumConfidencePairs],
+    [highConfidencePairs, mediumConfidencePairs]
+  );
 
   const stats = useMemo(() => {
     return {
