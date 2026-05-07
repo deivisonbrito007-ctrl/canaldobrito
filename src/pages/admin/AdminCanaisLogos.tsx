@@ -886,12 +886,28 @@ const AdminCanaisLogos = () => {
                       {confirm.pairs.map((p) => (
                         <li key={p.orphan.normalized} className="flex items-center justify-between gap-2">
                           <span className="truncate">{p.orphan.name}</span>
-                          <span className="text-muted-foreground shrink-0">
-                            → {p.suggestion.target.displayName}
+                          <span className="shrink-0 flex items-center gap-1.5">
+                            <span
+                              className={
+                                p.suggestion.confidence === "high"
+                                  ? "text-[10px] uppercase font-bold text-emerald-400"
+                                  : "text-[10px] uppercase font-bold text-amber-400"
+                              }
+                            >
+                              {p.suggestion.confidence === "high" ? "alta" : "média"}
+                            </span>
+                            <span className="text-muted-foreground">
+                              → {p.suggestion.target.displayName}
+                            </span>
                           </span>
                         </li>
                       ))}
                     </ul>
+                    {confirm.pairs.some((p) => p.suggestion.confidence === "medium") && (
+                      <p className="text-[11px] text-amber-300/90">
+                        ⚠ Alguns vínculos têm confiança <strong>média</strong>. Revise antes de confirmar — você pode desfazer com 1 clique no toast.
+                      </p>
+                    )}
                   </>
                 )}
               </div>
