@@ -280,3 +280,32 @@ Formula E - GP de Miami - Treino
     expect(result[0].dateBumped).toBeFalsy();
   });
 });
+
+describe("parseScheduleText - separadores de canais", () => {
+  it("divide canais separados por '/' (Globo / Paramount+)", () => {
+    const text = `Flamengo x Palmeiras
+⚽ Brasileirão / ⏰ 16h00
+📺 Globo / Paramount+`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].channels).toEqual(["Globo", "Paramount+"]);
+  });
+
+  it("divide canais separados por '|'", () => {
+    const text = `Lakers x Warriors
+🏀 NBA / ⏰ 22h00
+📺 ESPN | NBA League Pass`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].channels).toEqual(["ESPN", "NBA League Pass"]);
+  });
+
+  it("divide canais combinando ',' '/' e ' e '", () => {
+    const text = `Time A x Time B
+⚽ Liga / ⏰ 20h00
+📺 Globo / SporTV, ESPN e TNT`;
+    const games = parseScheduleText(text, "2026-04-01");
+    expect(games).toHaveLength(1);
+    expect(games[0].channels).toEqual(["Globo", "SporTV", "ESPN", "TNT"]);
+  });
+});
