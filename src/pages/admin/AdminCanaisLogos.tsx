@@ -161,6 +161,8 @@ const AdminCanaisLogos = () => {
     });
     reorder.mutate(newOrder);
   };
+
+  const builtinList = useMemo(
     () =>
       Object.entries(BUILTIN_CHANNEL_MAP)
         .filter(([, v]) => v.logoKey)
