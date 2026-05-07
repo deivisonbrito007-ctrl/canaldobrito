@@ -20,6 +20,11 @@ vi.mock("@/integrations/supabase/client", () => ({
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastMock }));
 
+// jsdom lacks createImageBitmap/canvas — pass through original file.
+vi.mock("@/lib/normalizeLogo", () => ({
+  normalizeLogoFile: vi.fn(async (f: File) => f),
+}));
+
 describe("ChannelLogoUpload", () => {
   beforeEach(() => {
     mocks.upload.mockClear();

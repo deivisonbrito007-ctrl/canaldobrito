@@ -1,75 +1,82 @@
-## Problema
+## Auditoria — Aba Admin → Analytics
 
-Quando uma logo é trocada (ex.: CazéTV via upload personalizado, ou trocando o asset built-in), os usuários continuam vendo a versão antiga porque:
+### Como funciona hoje
+- Página: `src/pages/admin/AdminAnalytics.tsx` (rota `/admin/analytics`).
+- Fontes de dados:
+  - **Local (`localStorage`)** — `readEventsLog()` lê `cb:events_log` (até 500 eventos). Usado para os blocos "Eventos / Visitantes / Sessões", "Por utm_campaign" e "Por tab_view".
+  - **Remoto (`analytics_events`)** — query no Supabase com limite de 5000, filtrada pela união dos períodos A+B. Usado para "Funil WhatsApp", "Tendência diária" e "Funil por aba".
+- Eventos atualmente registrados (verificado no banco): `tab_view` (606), `landing_with_utm` (34), `link_share` (14). Sem `content_card_click` populado — a função existe mas só dispara se a sessão tem UTM, e nada nos resultados ainda.
+- Comparador A vs B funcional, presets 24h/7d/30d/90d, gráfico Recharts, deltas % com setas.
 
-- **Logos personalizadas (`custom_logo_url`)**: a URL pública do Supabase Storage não muda quando o arquivo é substituído, e o browser/CDN serve a versão em cache (`cacheControl: "3600"`).
-- **Logos built-in importadas (`@/assets/brand-logos/*.png|svg`)**: já recebem hash via Vite no build, então só "ficam velhas" quando o service worker entrega bundle antigo — esse caso já é coberto por `useVersionCheck`. O ponto fraco real é o `custom_logo_url`.
+### Problemas encontrados
 
-Hoje cada upload novo gera path único (`slug-Date.now().ext`), o que ajuda apenas uploads NOVOS. Quem já tinha logo personalizada continua com URL antiga sem busting; e quando alguém substitui via outro caminho, o browser cacheia.
+**Bugs / Inconsistências**
+1. **Mistura de fontes de dados** confunde o usuário: KPIs do topo + tabela de campanhas/abas vêm do localStorage (parcial, no máx. 500 eventos do navegador atual), mas Funil/Tendência/Funil-por-aba vêm do banco. Resultado: números diferentes para a mesma campanha em duas seções.
+2. **`computeDaily` quebra ao virar mês**: o `while` incrementa `Date` com `setHours(12,...)` e compara strings ISO; em janelas longas (90d) que cruzam horário de verão fictício isso seria um problema — embora o projeto trave UTC-3 sem DST, a conversão `new Date(d - 3h).toISOString()` entrega o dia em SP corretamente, mas pode pular o último dia se `to` estiver às 23:59 e `cursor.setHours(12)` ficar antes. (Ver memória "Temporal Sync Logic".)
+3. **Limite de 5000 eventos** sem aviso. Em 90d isso pode estourar silenciosamente e mostrar números errados.
+4. **`window.confirm`** em "Limpar" — substituir por `AlertDialog` para coerência com Canais & Logos.
+5. **Tipagem do client Supabase** com cast manual gigante (linhas 340–352). Já existe tipo gerado.
+6. **Sem realtime/auto-refresh** — admin precisa clicar manualmente em "Atualizar".
+7. **`content_card_click` zerado** — payload do evento tem dados ricos (surface/content_type/content_title/position) mas a aba não tem nenhuma seção para visualizá-los.
+8. **Teste falhando**: `ChannelLogoUpload.test.tsx` quebrou após a normalização de logo (jsdom não tem `createImageBitmap`/canvas). Precisa mockar `@/lib/normalizeLogo` no teste — já passou em 330/331, falta esse 1.
 
-## Solução
+**Compatibilidade Mobile (320–430px)**
+9. Container usa `max-w-5xl mx-auto p-4 sm:p-6` ✓ ok.
+10. **Tabelas com `overflow-x-auto`** ✓ funcionam, mas em 320px o usuário precisa scroll horizontal sem indicação visual. Falta scroll-snap ou hint.
+11. **Botões "Atualizar/Limpar"** no header não têm `min-h-11` — abaixo do mínimo de 44px da memória de UX.
+12. **Presets em `min-h-[36px]`** — também abaixo de 44px.
+13. **Calendar Popover** desktop-first — em telas estreitas o picker estoura à esquerda quando aberto no campo "→". Precisa `align="end"` no segundo botão.
+14. **Gráfico `h-56`** com legend de 10px — ok, mas eixo Y `tickFormatter` pode cortar `100%`. `-ml-2` força conteúdo a colidir com a borda do Card em telas pequenas.
+15. **Sem safe-area inset-bottom** no rodapé (memória Core).
 
-Versionar a URL exibida pela `ChannelBadge` adicionando um query param `?v=<stamp>` derivado do registro do banco. O stamp vem de `channel_logo_mappings.updated_at` — sempre que o admin salva (incluindo trocar a logo), o timestamp muda → URL muda → browser invalida cache automaticamente.
+**UX / Visual**
+16. Sem tab/segmentação interna entre "Eventos locais" vs "Banco de dados" — dois conjuntos de cards/tabelas misturados verticalmente.
+17. Sem CTA para exportar CSV dos dados filtrados (útil para análise externa).
+18. Sem indicador de "última atualização".
+19. Sem busca/filtro por campanha/aba na tabela "Por utm_campaign" (já tem dropdown só no gráfico).
+20. Sem skeleton durante `loadingRemote` (fica em branco).
 
-Para built-ins, mantém o hash do Vite (já funciona) e adicionalmente um stamp global de build, garantindo que após cada deploy o `<img>` reidrate com URL nova mesmo se cache do navegador for agressivo.
+### Plano de melhorias
 
-### Mudanças
+#### A. Correções críticas
+- **Fix do teste quebrado**: adicionar `vi.mock("@/lib/normalizeLogo")` em `ChannelLogoUpload.test.tsx` para devolver o file original (jsdom não suporta canvas).
+- **Substituir `window.confirm`** por `AlertDialog` na ação Limpar (consistência + acessibilidade).
+- **Aviso de limite**: se a query bater 5000 linhas, mostrar banner âmbar "Limite atingido — encurte o período ou habilite paginação".
 
-1. **`src/hooks/useChannelMappings.ts`**
-   - Adicionar `updated_at?: string | null` ao tipo `ChannelMapping`.
-   - Já vem do `select("*")`; sem mudança de query.
+#### B. Unificar fonte de dados
+- Migrar KPIs do topo + tabela "Por utm_campaign" + tabela "Por tab_view" para o **banco** (`analytics_events`), descartando a leitura do `localStorage` no Admin (mantém o log local só como fallback de debug, escondido atrás de um expander "Log local (debug)").
+- Resultado: todos os números batem entre seções.
 
-2. **`src/lib/cacheBust.ts`** (novo)
-   - Helper `withCacheBust(url, stamp)`:
-     - Se `url` é falsy → retorna `url`.
-     - Se `url` já é blob/data → retorna intacto.
-     - Converte `stamp` (ISO ou número) em hash curto (ex.: `Date.parse(stamp).toString(36)`).
-     - Acrescenta `?v=...` ou `&v=...` conforme tiver query.
+#### C. UX/Mobile
+- Header: `min-h-11`, botões 44px, "Atualizar" mostra timestamp ("atualizado há 2min").
+- Presets: `min-h-11` e `aria-pressed` no preset ativo.
+- Segundo `DateButton` com `align="end"` para não estourar à esquerda no mobile.
+- Tabelas com sticky-first-column ou um chip "deslize →" quando há overflow.
+- Skeletons shimmer (memória Core) durante `loadingRemote`.
+- Aplicar `pb-[env(safe-area-inset-bottom)]` no container.
+- Remover `-ml-2` do gráfico, usar `pl-0` no Card e `margin.left=8`.
 
-3. **`src/components/public/ChannelBadge.tsx`**
-   - Em `ChannelIcon`, derivar `src` final:
-     - Para `customUrl`: `withCacheBust(customUrl, override.updated_at)`.
-     - Para registry built-in: `withCacheBust(registryEntry.src, __APP_VERSION__)` (build stamp já existente em `vite.config.ts`).
-   - Passar `override.updated_at` para `ChannelIcon` via prop nova `version`.
+#### D. Funcionalidades novas
+- **Botão Exportar CSV** (mesmo padrão de "Exportar JSON" de Canais): exporta os eventos filtrados do período A.
+- **Seção "Top conteúdo clicado"**: agrupa `content_card_click` por `content_title` + `surface` (vai ficar útil quando esse evento começar a popular).
+- **Auto-refresh opcional**: switch "Tempo real" — usa Supabase Realtime em `analytics_events` para invalidar/recalcular sem clicar.
+- **Quick-filter por aba** dentro da tabela de campanhas (chips clicáveis para filtrar a tabela inteira).
+- **Cards de "Saúde do tracking"**: mostra contagem de `link_share` sem `tab_slug`, `landing_with_utm` sem `utm_campaign`, etc — diagnóstico para identificar pixel/UTM mal-configurado.
 
-4. **`src/components/admin/ChannelLogoUpload.tsx`**
-   - Trocar `cacheControl: "3600"` por `cacheControl: "60"` no upload — mesmo com cache-bust por query, isso reduz janela em CDNs que ignoram query string.
-   - Manter o path único `slug-Date.now().ext` (continua útil como fallback).
+#### E. Verificação
+- Rodar `bunx vitest run` e garantir 331/331 verdes.
+- Browser test pós-implementação: navegar `/admin/analytics` em viewport 390×844, validar render, presets, troca de período, gráfico, comparação A/B, export CSV, scroll horizontal das tabelas.
 
-5. **`src/pages/admin/AdminCanaisLogos.tsx`**
-   - Após salvar (mutation `upsert`/`onSuccess`), além de invalidar `CHANNEL_MAPPINGS_QK`, também invalidar com `refetchType: "active"` para forçar re-render imediato dos badges em uso.
-   - Se `custom_logo_url` mudou, fazer `URL.createObjectURL` preview opcional para feedback instantâneo no modal (nice-to-have, sem custo extra).
+### Resultados da suíte de testes (rodada agora)
+- **330 passing / 1 failing** (44 arquivos):
+  - ❌ `src/components/admin/__tests__/ChannelLogoUpload.test.tsx` → "uploads valid PNG and emits public URL" (quebrou após auto-normalize: jsdom sem `createImageBitmap`).
+  - Será corrigido no item A.
 
-6. **`src/pages/admin/AdminConfiguracoes.tsx`** (referência ao `cazetv-v2.png`)
-   - Sem mudança de código — apenas confirmar que o asset estático em `public/channels/cazetv-v2.png` segue versionado por nome (`-v2`) caso exista. Se for referenciado em algum `<img>` direto, aplicar `withCacheBust(path, __APP_VERSION__)`.
+### Sugestões adicionais (fora do escopo se quiser priorizar)
+- **GA4 / PostHog**: o código já dispara para `gtag/posthog/plausible` se presentes. Plugar PostHog dá retenção/funil real sem precisar reinventar — deixaria o Admin focado em "tracking de campanhas WhatsApp".
+- **Retention/cohort por anon_id**: requer view materializada no banco; adiciono migration depois se topar.
+- **Heatmap por hora do dia**: matriz 24×7 de tab_view — mostra melhores horários para mandar a campanha no Whats.
 
-### Como o cache-bust funciona
+---
 
-```text
-Antes:  https://...supabase.../channel-logos/cazetv-1714.png
-        → CDN devolve cópia em cache, não nota substituição
-
-Depois: https://...supabase.../channel-logos/cazetv-1714.png?v=1abx5y
-                                                              ^^^^^^
-                                                              hash de updated_at
-
-        Admin troca a logo / salva → updated_at muda
-        → ?v=novohash → URL nova → fetch novo, sem refresh manual
-```
-
-### Arquivos alterados
-
-- `src/lib/cacheBust.ts` (novo, ~15 linhas)
-- `src/hooks/useChannelMappings.ts` (1 campo no tipo)
-- `src/components/public/ChannelBadge.tsx` (aplicar `withCacheBust` no `<img>`)
-- `src/components/admin/ChannelLogoUpload.tsx` (cacheControl "60")
-- `src/pages/admin/AdminCanaisLogos.tsx` (invalidate com `refetchType: "active"`)
-- `src/lib/__tests__/cacheBust.test.ts` (novo, 4–5 casos: url vazia, sem query, com query, blob/data, stamp falsy)
-
-### Observações
-
-- Não exige migração de banco — `updated_at` já existe em `channel_logo_mappings` e dispara via trigger `update_updated_at_column`.
-- Compatível com PWA: o service worker faz cache por URL exata; mudar query invalida automaticamente a entrada antiga.
-- Sem impacto em performance: o stamp é computado no render (custo desprezível) e o React Query já cacheia o map de overrides por 5 min.
-
-Posso seguir com a implementação?
+Posso seguir com **A + B + C + D (export CSV + saúde do tracking)** numa única passada? Realtime/PostHog ficam para depois conforme aprovar.
