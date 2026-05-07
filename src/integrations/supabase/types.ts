@@ -569,6 +569,7 @@ export type Database = {
         Args: { _endpoint: string; _game_id: string }
         Returns: undefined
       }
+      reorder_channel_mappings: { Args: { _ids: string[] }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
