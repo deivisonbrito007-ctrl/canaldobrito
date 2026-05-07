@@ -17,6 +17,7 @@ import { getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
 import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 import { trackShare, type ShareProps } from "@/lib/analytics";
 import { buildDayText, validateDay, safeCopy, offsetDateStr } from "@/lib/whatsappText";
+import { ABTemplateLab } from "@/components/admin/whatsapp/ABTemplateLab";
 
 type DeepTab = PublicTab;
 
@@ -501,8 +502,11 @@ const AdminWhatsApp = () => {
           {templates.map((t) => (
             <MessageCard key={t.id} template={t} siteUrl={siteUrl} />
           ))}
-        </div>
       </div>
+
+      {/* A/B Template Lab */}
+      <ABTemplateLab />
+    </div>
     </div>
   );
 };

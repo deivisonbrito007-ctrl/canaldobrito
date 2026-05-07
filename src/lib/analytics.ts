@@ -239,7 +239,7 @@ export function trackContentClick(props: ContentClickProps): void {
 
 export interface ShareProps {
   /** Where in the admin the share happened. */
-  surface: "admin-whatsapp-quick" | "admin-whatsapp-day" | "admin-whatsapp-template" | "admin-whatsapp-custom";
+  surface: "admin-whatsapp-quick" | "admin-whatsapp-day" | "admin-whatsapp-template" | "admin-whatsapp-custom" | "admin-whatsapp-ab";
   /** Tab targeted by the shared link, if any. */
   tab?: PublicTab | null;
   /** utm_campaign that was embedded in the shared link, if any. */
