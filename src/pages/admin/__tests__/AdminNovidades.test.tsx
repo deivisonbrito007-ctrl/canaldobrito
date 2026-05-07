@@ -125,7 +125,7 @@ describe("AdminNovidades", () => {
       baseItem({ id: "2", title: "Sem gênero item", genres: null, display_order: 1 }),
     ];
     wrap(<AdminNovidades />);
-    fireEvent.click(screen.getByRole("button", { name: /Sem gênero/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Sem gênero · 1$/ }));
     expect(screen.getByText("Sem gênero item")).toBeInTheDocument();
     expect(screen.queryByText("Com gênero")).not.toBeInTheDocument();
   });
