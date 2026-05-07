@@ -422,7 +422,7 @@ const AdminNovidades = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredItems.map((m) => {
+              {filteredItems.slice(0, visibleCount).map((m) => {
                 const idx = items.indexOf(m);
                 return (
                   <div key={m.id} className="rounded-lg glass-panel p-3 transition-all duration-200 space-y-2">
