@@ -12,6 +12,7 @@ export type ChannelMapping = {
   custom_logo_url?: string | null;
   light_chip?: boolean;
   sort_order?: number;
+  updated_at?: string | null;
 };
 
 export type ChannelAlias = {
