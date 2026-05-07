@@ -234,7 +234,8 @@ export const useUpdateDailyGame = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<DailyGame> & { id: string }) => {
-      const { error } = await supabase.from("daily_games").update(updates as any).eq("id", id);
+      const sanitized = sanitizeGame(updates as Record<string, any>);
+      const { error } = await supabase.from("daily_games").update(sanitized as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["daily_games"] }),
