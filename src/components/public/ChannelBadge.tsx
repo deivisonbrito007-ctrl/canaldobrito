@@ -111,9 +111,9 @@ const SIZE_CLASSES: Record<BadgeSize, string> = {
 };
 
 const ICON_WRAP: Record<BadgeSize, string> = {
-  sm: "h-5 w-5 rounded-[5px]",
-  md: "h-7 w-7 rounded-md",
-  lg: "h-9 w-9 rounded-md",
+  sm: "h-5 w-5 rounded-[5px] p-[2px]",
+  md: "h-7 w-7 rounded-md p-[3px]",
+  lg: "h-9 w-9 rounded-md p-1",
 };
 
 interface ChannelBadgeProps {
@@ -132,15 +132,25 @@ const ChannelIcon = ({
   const entry = logoKey && logoKey !== "none" ? LOGO_REGISTRY[logoKey] : undefined;
 
   if (!entry || failed) {
-    return <span className="leading-none">{emoji}</span>;
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center justify-center shrink-0 leading-none",
+          ICON_WRAP[size]
+        )}
+        aria-hidden
+      >
+        {emoji}
+      </span>
+    );
   }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center shrink-0 overflow-hidden",
+        "inline-flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-white/10",
         ICON_WRAP[size],
-        entry.lightChip ? "bg-white/10" : "bg-transparent"
+        entry.lightChip ? "bg-white/95" : "bg-white/5"
       )}
     >
       <img
@@ -149,7 +159,8 @@ const ChannelIcon = ({
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        className="h-full w-full object-contain"
+        className="max-h-full max-w-full object-contain"
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
       />
     </span>
   );
