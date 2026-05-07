@@ -131,7 +131,36 @@ const AdminCanaisLogos = () => {
     onError: (e: any) => toast.error(e.message ?? "Erro ao remover"),
   });
 
-  const builtinList = useMemo(
+  const reorder = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const updates = orderedIds.map((id, idx) =>
+        supabase.from("channel_logo_mappings").update({ sort_order: idx }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const firstErr = results.find((r) => r.error);
+      if (firstErr?.error) throw firstErr.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao reordenar"),
+  });
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id || !rows) return;
+    const ids = rows.map((r) => r.id);
+    const oldIdx = ids.indexOf(active.id as string);
+    const newIdx = ids.indexOf(over.id as string);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const newOrder = arrayMove(ids, oldIdx, newIdx);
+    qc.setQueryData<ChannelMapping[]>(["channel_logo_mappings_admin"], (old) => {
+      if (!old) return old;
+      return arrayMove(old, oldIdx, newIdx);
+    });
+    reorder.mutate(newOrder);
+  };
     () =>
       Object.entries(BUILTIN_CHANNEL_MAP)
         .filter(([, v]) => v.logoKey)
