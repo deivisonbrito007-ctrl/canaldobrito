@@ -84,6 +84,11 @@ const AdminNovidades = () => {
     try { localStorage.setItem("admin:lastBadgeType", v); } catch { /* ignore */ }
   };
 
+  const handleSortChange = (v: SortMode) => {
+    setSortMode(v);
+    try { localStorage.setItem("admin:novidadesSort", v); } catch { /* ignore */ }
+  };
+
   const handleSearch = () => {
     if (query.trim()) search(searchType === "movie" ? "search_movie" : "search_tv", query);
   };
