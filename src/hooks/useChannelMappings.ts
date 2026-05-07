@@ -9,6 +9,8 @@ export type ChannelMapping = {
   logo_key: LogoKey;
   short: string | null;
   active: boolean;
+  custom_logo_url?: string | null;
+  light_chip?: boolean;
 };
 
 export const CHANNEL_MAPPINGS_QK = ["channel_logo_mappings"] as const;
