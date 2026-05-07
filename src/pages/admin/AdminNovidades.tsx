@@ -16,6 +16,17 @@ const TMDB_IMG = "https://image.tmdb.org/t/p/w780";
 const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
 
 type FilterMode = "all" | "movie" | "series" | "inactive" | "no_genre";
+type SortMode = "manual" | "newest" | "oldest" | "title_asc" | "title_desc" | "rating_desc" | "rating_asc";
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: "manual", label: "Ordem manual" },
+  { value: "newest", label: "Mais novos" },
+  { value: "oldest", label: "Mais antigos" },
+  { value: "title_asc", label: "Título (A-Z)" },
+  { value: "title_desc", label: "Título (Z-A)" },
+  { value: "rating_desc", label: "Nota (maior)" },
+  { value: "rating_asc", label: "Nota (menor)" },
+];
 
 const BADGE_OPTIONS = [
   { value: "novidade", label: "🔥 Novidade" },
@@ -55,6 +66,10 @@ const AdminNovidades = () => {
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [filter, setFilter] = useState<FilterMode>("all");
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    if (typeof window === "undefined") return "manual";
+    return (localStorage.getItem("admin:novidadesSort") as SortMode) || "manual";
+  });
   const [listSearch, setListSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<NewsRelease | null>(null);
@@ -67,6 +82,11 @@ const AdminNovidades = () => {
   const handleBadgeTypeChange = (v: string) => {
     setBadgeType(v);
     try { localStorage.setItem("admin:lastBadgeType", v); } catch { /* ignore */ }
+  };
+
+  const handleSortChange = (v: SortMode) => {
+    setSortMode(v);
+    try { localStorage.setItem("admin:novidadesSort", v); } catch { /* ignore */ }
   };
 
   const handleSearch = () => {
@@ -188,7 +208,7 @@ const AdminNovidades = () => {
 
   const filteredItems = useMemo(() => {
     if (!items) return [];
-    return items.filter((m) => {
+    const filtered = items.filter((m) => {
       if (filter === "movie" && m.content_type !== "movie") return false;
       if (filter === "series" && m.content_type !== "series" && m.content_type !== "tv") return false;
       if (filter === "inactive" && m.active) return false;
@@ -199,7 +219,20 @@ const AdminNovidades = () => {
       }
       return true;
     });
-  }, [items, filter, debouncedSearch]);
+    if (sortMode === "manual") return filtered;
+    const sorted = [...filtered];
+    const t = (s: string | null | undefined) => (s || "").toLocaleLowerCase("pt-BR");
+    const d = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);
+    switch (sortMode) {
+      case "newest": sorted.sort((a, b) => d(b.created_at) - d(a.created_at)); break;
+      case "oldest": sorted.sort((a, b) => d(a.created_at) - d(b.created_at)); break;
+      case "title_asc": sorted.sort((a, b) => t(a.title).localeCompare(t(b.title), "pt-BR")); break;
+      case "title_desc": sorted.sort((a, b) => t(b.title).localeCompare(t(a.title), "pt-BR")); break;
+      case "rating_desc": sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1)); break;
+      case "rating_asc": sorted.sort((a, b) => (a.rating ?? Infinity) - (b.rating ?? Infinity)); break;
+    }
+    return sorted;
+  }, [items, filter, debouncedSearch, sortMode]);
 
   const missingGenreCount = items?.filter((m) => !m.genres).length || 0;
 
@@ -333,6 +366,16 @@ const AdminNovidades = () => {
               </button>
             )}
           </div>
+          <div className="flex items-center gap-2">
+            <Select value={sortMode} onValueChange={(v) => handleSortChange(v as SortMode)}>
+              <SelectTrigger className="h-9 text-[11px] glass-panel border-white/[0.08] flex-1 sm:flex-none sm:w-44" aria-label="Ordenar por">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
             <FilterChip value="all" label="Todos" count={items?.length} />
             <FilterChip value="movie" label="🎬 Filmes" count={items?.filter((i) => i.content_type === "movie").length} />
@@ -411,10 +454,10 @@ const AdminNovidades = () => {
                     {/* Bottom row: controls */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === 0 || filter !== "all" || debouncedSearch !== ""} onClick={() => handleReorder(idx, "up")} aria-label={`Mover ${m.title} para cima`}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === 0 || filter !== "all" || debouncedSearch !== "" || sortMode !== "manual"} onClick={() => handleReorder(idx, "up")} aria-label={`Mover ${m.title} para cima`}>
                           <ArrowUp className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === items.length - 1 || filter !== "all" || debouncedSearch !== ""} onClick={() => handleReorder(idx, "down")} aria-label={`Mover ${m.title} para baixo`}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === items.length - 1 || filter !== "all" || debouncedSearch !== "" || sortMode !== "manual"} onClick={() => handleReorder(idx, "down")} aria-label={`Mover ${m.title} para baixo`}>
                           <ArrowDown className="h-4 w-4" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md text-muted-foreground hover:text-amber-400" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)} aria-label={`Atualizar dados de ${m.title}`}>
