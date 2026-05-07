@@ -23,6 +23,7 @@ const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagnostico"));
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
