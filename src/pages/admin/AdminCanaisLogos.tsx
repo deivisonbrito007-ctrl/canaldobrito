@@ -303,6 +303,16 @@ const AdminCanaisLogos = () => {
           action: {
             label: "Desfazer",
             onClick: async () => {
+              const total = aliasIds.length + createdMappingIds.length;
+              const ok = window.confirm(
+                `Desfazer vínculo de ${inserted} canal${inserted > 1 ? "is" : ""}?\n\n` +
+                  `Isso removerá ${aliasIds.length} alias${aliasIds.length === 1 ? "" : "es"}` +
+                  (createdMappingIds.length
+                    ? ` e ${createdMappingIds.length} mapeamento${createdMappingIds.length === 1 ? "" : "s"} criado${createdMappingIds.length === 1 ? "" : "s"} automaticamente`
+                    : "") +
+                  ".\n\nEsta ação não pode ser revertida."
+              );
+              if (!ok || total === 0) return;
               try {
                 if (aliasIds.length) {
                   const { error: delErr } = await supabase
