@@ -366,6 +366,16 @@ const AdminNovidades = () => {
               </button>
             )}
           </div>
+          <div className="flex items-center gap-2">
+            <Select value={sortMode} onValueChange={(v) => handleSortChange(v as SortMode)}>
+              <SelectTrigger className="h-9 text-[11px] glass-panel border-white/[0.08] flex-1 sm:flex-none sm:w-44" aria-label="Ordenar por">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
             <FilterChip value="all" label="Todos" count={items?.length} />
             <FilterChip value="movie" label="🎬 Filmes" count={items?.filter((i) => i.content_type === "movie").length} />
