@@ -25,12 +25,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye, BellOff } from "lucide-react";
+import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye, BellOff, Link2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { LOGO_OPTIONS, LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "@/components/public/channelLogos";
 import { ChannelBadge, BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
-import { CHANNEL_MAPPINGS_QK, type ChannelMapping } from "@/hooks/useChannelMappings";
+import { CHANNEL_MAPPINGS_QK, CHANNEL_ALIASES_QK, type ChannelMapping } from "@/hooks/useChannelMappings";
 import { useDiscoveredChannels, type DiscoveredChannel } from "@/hooks/useDiscoveredChannels";
+import { useChannelMatchSuggestions, type ChannelMatchSuggestion } from "@/hooks/useChannelMatchSuggestion";
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
 import { ChannelPreviewStage } from "@/components/admin/ChannelPreviewStage";
 import { ChannelAliasesEditor } from "@/components/admin/ChannelAliasesEditor";
