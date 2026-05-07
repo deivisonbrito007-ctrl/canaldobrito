@@ -444,6 +444,7 @@ const AdminCanaisLogos = () => {
           value={stats.orphans}
           highlight={stats.orphans > 0}
           onClick={() => setTab("orphans")}
+          sub={stats.suggested > 0 ? `${stats.suggested} provável${stats.suggested > 1 ? "is" : ""} variante${stats.suggested > 1 ? "s" : ""}` : undefined}
         />
       </div>
 
