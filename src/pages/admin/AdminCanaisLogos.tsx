@@ -33,6 +33,7 @@ import { CHANNEL_MAPPINGS_QK, type ChannelMapping } from "@/hooks/useChannelMapp
 import { useDiscoveredChannels, type DiscoveredChannel } from "@/hooks/useDiscoveredChannels";
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
 import { ChannelPreviewStage } from "@/components/admin/ChannelPreviewStage";
+import { ChannelAliasesEditor } from "@/components/admin/ChannelAliasesEditor";
 import {
   DndContext,
   closestCenter,
@@ -608,6 +609,12 @@ const AdminCanaisLogos = () => {
                 onCheckedChange={(v) => setForm((f) => ({ ...f, active: v }))}
               />
             </div>
+
+            {form.id && (
+              <div className="rounded-md border border-border/40 bg-card/40 p-3">
+                <ChannelAliasesEditor mappingId={form.id} />
+              </div>
+            )}
 
             {form.name.trim() && (
               <div className="rounded-md border border-border/40 bg-card/40 p-3 space-y-2">

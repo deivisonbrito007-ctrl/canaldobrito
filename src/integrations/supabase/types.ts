@@ -125,6 +125,38 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_aliases: {
+        Row: {
+          alias: string
+          alias_normalized: string
+          created_at: string
+          id: string
+          mapping_id: string
+        }
+        Insert: {
+          alias: string
+          alias_normalized: string
+          created_at?: string
+          id?: string
+          mapping_id: string
+        }
+        Update: {
+          alias?: string
+          alias_normalized?: string
+          created_at?: string
+          id?: string
+          mapping_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_aliases_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "channel_logo_mappings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_logo_mappings: {
         Row: {
           active: boolean
