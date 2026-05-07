@@ -1,75 +1,92 @@
-## Auditoria da aba Admin → Canais & Logos
+## Problema
 
-Fluxo revisado: `AdminCanaisLogos.tsx`, `ChannelLogoUpload.tsx`, `ChannelPreviewStage.tsx`, `useChannelMappings.ts`, `useDiscoveredChannels.ts`. Tabela `channel_logo_mappings` com RLS de admin OK, bucket `channel-logos` público OK.
+Canais órfãos como "Globo HD", "Globo SP", "ESPN 2", "SporTV 3", "Premiere 2" aparecem em **Sem logo** mesmo já existindo um mapping principal ("Globo", "ESPN", "SporTV", "Premiere"). A logo seria a mesma — falta apenas registrar como alias.
 
-### Problemas encontrados
+Hoje o admin precisa: abrir modal do mapping principal → expandir aliases → digitar manualmente. Repetir para cada variante.
 
-1. **A11y**: o `DialogContent` "Editar/Novo mapeamento" não tem `DialogDescription` → warning no console (`Missing Description or aria-describedby`).
-2. **Mobile (≤430px)**:
-   - Header com "Detectar agora" + "Novo" estoura em telas estreitas.
-   - `TabsList` com 4 abas (`Sem logo / Todos / Personalizados / Built-in`) + `Input` de busca colado ao lado quebra mal; tabs ficam cortadas, busca vira full-width sem rótulo.
-   - Botões grip / ações com `h-7 w-7` ficam abaixo do mínimo 44px de toque.
-   - Modal com `flex-col sm:flex-row` no footer empurra "Excluir" pro topo no mobile — ordem fica confusa.
-3. **UX**:
-   - `confirm()` nativo (3 lugares) bloqueia, não combina com tema dark e quebra no iOS PWA → trocar por `AlertDialog`.
-   - "Detectar agora" não mostra loading; se `isFetching`, deveria spinar.
-   - Busca não filtra pelo nome normalizado (ex: digitar "band sports" não acha "BandSports").
-   - Toggle "Fundo claro" não tem preview imediato no chip do form.
-   - Sem ação em massa para canais sem logo (ex: marcar todos como `none + ativo` para sair da fila).
-   - Built-in lista todos sempre, sem indicador de quantos já têm jogos detectados nos últimos 30d.
-   - `key={previewChannel}` no `ChannelPreviewStage` desmonta tudo a cada clique no olhinho — perde os campos digitados ali.
-4. **Performance**: `reorder` dispara N `UPDATE` em paralelo. Para >20 itens, melhor um RPC `reorder_channel_mappings(uuid[])`.
-5. **Testes**: nenhum teste para `AdminCanaisLogos`, `ChannelLogoUpload`, `useDiscoveredChannels`. `ChannelBadge` já tem.
+## Solução: sugestão automática de vínculo
 
-### Plano de implementação
+### 1. Hook `useChannelMatchSuggestion`
+Para cada órfão, encontra o melhor candidato entre `mappings` + built-ins, usando heurísticas em ordem:
 
-**1. UX / A11y do modal**
-- Adicionar `DialogDescription` ao Dialog (some o warning).
-- Trocar `confirm(...)` por `AlertDialog` com tema (3 ocorrências: delete row, delete card, delete dentro do modal).
-- Footer do modal: ordem `[Excluir | Cancelar | Salvar]` → empilhar como `[Salvar, Cancelar, Excluir]` no mobile (Salvar primeiro = polegar).
-- Toggle "Fundo claro" injetar preview ao vivo (já temos, só precisa reagir ao `light_chip` via prop opcional no `ChannelBadge` quando custom).
+1. **Prefixo forte**: órfão começa com nome de mapping (ex: "globo-hd" começa com "globo") → confiança **alta**.
+2. **Substring**: nome do mapping está contido no órfão (ex: "tv-globo-sp" contém "globo") → confiança **média**.
+3. **Token comum + número**: órfão = mapping + sufixo numérico/UF (`hd|sd|4k|sp|rj|2|3|plus|\+`) → confiança **alta**.
+4. **Levenshtein ≤ 2** sobre normalized → confiança **baixa** (só sugere, não auto-vincula).
 
-**2. Mobile-first**
-- Header: empilhar verticalmente <sm e usar botões `flex-1` (Detectar / Novo).
-- `TabsList`: usar scroll horizontal com `overflow-x-auto`, badges menores, e mover busca para LINHA SEPARADA com ícone embutido.
-- Botões de ação dos cards: subir para `h-9 w-9` (≥36px com padding interno alcança 44px).
-- Grip handle do dnd: aumentar área de toque com `p-3 -m-2`.
-- Garantir `safe-area-inset-bottom` no footer do Dialog (já fica acima por causa do max-h, ok, mas adicionar `pb-[env(safe-area-inset-bottom)]`).
+Retorna `{ mapping, confidence: 'high' | 'medium' | 'low' }` ou `null`.
 
-**3. Funcionalidades**
-- "Detectar agora": usar `discovered.isFetching` para girar o ícone + desabilitar.
-- Busca: incluir `normalizeChannelName(query)` no filtro.
-- Bulk action na aba "Sem logo": botão "Marcar X como sem logo (silenciar alerta)" criando mapping com `logo_key='none', active:true`.
-- Trocar `key={previewChannel}` por prop controlada no `ChannelPreviewStage` (`value`/`onChange`).
-- "Detectados (30d)" na StatCard vira clicável → muda pra aba `all`.
+### 2. UI no card de órfão (aba "Sem logo")
 
-**4. Backend**
-- Migration: criar `public.reorder_channel_mappings(_ids uuid[])` `SECURITY DEFINER` chequeando `has_role(auth.uid(),'admin')` e atualizando `sort_order` em batch.
-- Substituir o loop de updates por `supabase.rpc('reorder_channel_mappings', { _ids: orderedIds })`.
+Quando há sugestão:
 
-**5. Testes (vitest)**
-- `useDiscoveredChannels.test.ts`: agrupa por normalized, conta ocorrências, marca isOrphan/isBuiltin corretamente (mockando supabase).
-- `ChannelLogoUpload.test.tsx`: rejeita tipo inválido, rejeita >400KB, dispara `onUploaded` no sucesso (mock supabase.storage).
-- `AdminCanaisLogos.test.tsx`: render básico, troca de tab, busca filtra, abre modal "Novo", abre modal de edição com prefill.
-- Rodar suíte completa via vitest e reportar resultados.
+```text
+┌─────────────────────────────────────────┐
+│ Globo HD              detectado 12x     │
+│ ⚠ Sem logo                              │
+│                                         │
+│ 💡 Parece variante de [Globo] (logo ✓) │
+│ [ Vincular como alias de Globo ]        │
+│ [ Cadastrar como canal novo ]           │
+└─────────────────────────────────────────┘
+```
 
-**6. Linter / Auditoria final**
-- Rodar `supabase--linter` para confirmar que nada novo foi introduzido com a nova função RPC.
-- Rodar testes com vitest.
-- Smoke test no preview mobile (390x844) via browser.
+- Botão primário "Vincular como alias" → insere em `channel_aliases` com 1 clique, sem abrir modal.
+- Botão secundário mantém fluxo atual (novo mapping).
 
-### Arquivos afetados
-- `src/pages/admin/AdminCanaisLogos.tsx` (refactor UX/mobile, AlertDialog, DialogDescription, RPC reorder, busca normalizada, bulk action, header responsivo).
-- `src/components/admin/ChannelPreviewStage.tsx` (props controladas).
-- `src/components/admin/ChannelLogoUpload.tsx` (a11y label + safe area).
-- `src/components/public/ChannelBadge.tsx` (suporte a `forceLightChip` no preview do form — já existe, só usar).
-- Nova migration: `reorder_channel_mappings` RPC.
-- Novos testes: `src/hooks/__tests__/useDiscoveredChannels.test.ts`, `src/components/admin/__tests__/ChannelLogoUpload.test.tsx`, `src/pages/admin/__tests__/AdminCanaisLogos.test.tsx`.
+### 3. Ação em massa: "Auto-vincular"
 
-### Sugestões extras (opcionais, não no escopo a menos que aprove)
-- Exportar/importar mapeamentos como JSON (backup).
-- Auditoria: registrar em `audit_logs` quando mapping é criado/editado/removido (trigger).
-- Aviso no card quando custom_logo_url retorna 404 (HEAD check com cache curto).
-- Atalho de teclado `n` para abrir "Novo" nessa página.
+Acima da grade de órfãos, novo botão:
 
-Confirma que sigo com tudo de 1 a 6? Se quiser cortar algo (ex: pular RPC e manter loop atual), me avisa.
+```text
+[ ✨ Auto-vincular N variantes detectadas ]
+```
+
+Roda apenas em órfãos com confiança **alta**. Pré-visualiza em modal:
+
+```text
+Vincular como alias:
+  • Globo HD       → Globo
+  • Globo SP       → Globo
+  • ESPN 2         → ESPN
+  • SporTV 3       → SporTV
+  • Premiere 2     → Premiere
+[ Confirmar 5 ] [ Cancelar ]
+```
+
+Após confirmar: `INSERT` em batch em `channel_aliases`, invalida `CHANNEL_ALIASES_QK` + `CHANNEL_MAPPINGS_QK` + `discovered-channels`. Os canais saem da lista de órfãos automaticamente (o `useChannelMappings` já merge aliases no Map).
+
+### 4. Indicação no StatCard
+
+Mudar o card "Sem logo" para mostrar sub-rótulo quando houver sugestões:
+
+```text
+Sem logo: 8
+↳ 5 prováveis variantes
+```
+
+### 5. Built-ins também contam
+
+Hoje built-ins (Globo, ESPN, SporTV, Premiere, DAZN, etc.) não têm linha em `channel_logo_mappings` por padrão. Para vincular alias a um built-in, o auto-vínculo precisa **primeiro criar o mapping principal** (logo_key correspondente, active:true) e em seguida o alias. Faço isso transparente — o usuário só vê "vinculado a Globo".
+
+## Arquivos a alterar
+
+- **novo**: `src/hooks/useChannelMatchSuggestion.ts` — heurísticas + retorna sugestões.
+- `src/pages/admin/AdminCanaisLogos.tsx`:
+  - `ChannelCard`: receber `suggestion`, renderizar botão "Vincular como alias" no estado órfão.
+  - Nova mutation `linkAsAlias(orphan, targetMapping)`.
+  - Novo botão de bulk auto-vincular + AlertDialog de preview.
+  - StatCard "Sem logo" com sub-contagem.
+- **novo**: `src/components/admin/AutoLinkPreviewDialog.tsx` — lista a aplicar.
+- **novos testes**:
+  - `src/hooks/__tests__/useChannelMatchSuggestion.test.ts` — cobre sufixos HD/SP/2/3, prefixo, Levenshtein, sem match.
+  - `src/pages/admin/__tests__/AdminCanaisLogos.autolink.test.tsx` — render do botão "Vincular como alias", confirmação do bulk preview.
+
+## Sugestões extras (opcionais)
+
+1. **Modo "sempre auto"**: setting `auto_link_high_confidence_orphans=true` que roda no save do parser e silenciosamente cria aliases para variantes claras (Globo HD, ESPN 2). Reduz alertas no admin sem intervenção.
+2. **Whitelist de sufixos**: tabela `channel_variant_suffixes` (`hd, sd, 4k, sp, rj, mg, 2, 3, plus`) administrável, em vez de hardcoded.
+3. **Botão "Ignorar variante"** no card: marca como "não é variante" (cria mapping com `logo_key='none'`) — fluxo já existe via "Silenciar", só precisa aparecer junto da sugestão.
+4. **Histórico de auto-vínculos** em `audit_logs` (action=`auto_link_alias`) para auditar falsos positivos.
+
+Confirma seguir com itens 1–5 (núcleo)? Se quiser, já incluo a sugestão extra **#1 (auto-link no parser)** ou **#3 (botão ignorar)** no mesmo passe — só avisar.
