@@ -68,11 +68,23 @@ const FALLBACK: ChannelConfig = {
   glow: "",
 };
 
+const normalizeKey = (s: string) =>
+  s.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s\-_!+]/g, "")
+    .trim();
+
+const NORMALIZED_MAP: Record<string, ChannelConfig> = Object.fromEntries(
+  Object.entries(CHANNEL_MAP).map(([k, v]) => [normalizeKey(k), v])
+);
+
 function matchChannel(name: string): ChannelConfig {
-  const key = name.toLowerCase().trim();
-  if (CHANNEL_MAP[key]) return CHANNEL_MAP[key];
-  for (const [k, v] of Object.entries(CHANNEL_MAP)) {
-    if (key.includes(k)) return v;
+  const key = normalizeKey(name);
+  if (!key) return FALLBACK;
+  if (NORMALIZED_MAP[key]) return NORMALIZED_MAP[key];
+  for (const [k, v] of Object.entries(NORMALIZED_MAP)) {
+    if (key.includes(k) || k.includes(key)) return v;
   }
   return FALLBACK;
 }
