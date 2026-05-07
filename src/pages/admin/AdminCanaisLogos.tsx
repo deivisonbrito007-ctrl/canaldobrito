@@ -511,6 +511,23 @@ const AdminCanaisLogos = () => {
           </div>
 
           <TabsContent value={tab} className="mt-4">
+            {tab === "orphans" && highConfidencePairs.length > 0 && !search && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <div className="text-xs text-emerald-100">
+                  ✨ <span className="font-bold">{highConfidencePairs.length}</span> variante{highConfidencePairs.length > 1 ? "s" : ""} provável{highConfidencePairs.length > 1 ? "is" : ""} de canais já cadastrados.
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setConfirm({ kind: "bulk-autolink", pairs: highConfidencePairs })}
+                  disabled={linkAsAlias.isPending}
+                  className="gap-2 min-h-10 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Auto-vincular {highConfidencePairs.length}
+                </Button>
+              </div>
+            )}
+
             {tab === "orphans" && discovered.orphans.length > 0 && !search && (
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/40 bg-card/30 p-3">
                 <div className="text-xs text-muted-foreground">
