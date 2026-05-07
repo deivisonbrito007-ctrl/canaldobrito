@@ -523,7 +523,7 @@ const AdminWhatsApp = () => {
         </div>
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
           {templates.map((t) => (
-            <MessageCard key={t.id} template={t} siteUrl={siteUrl} />
+            <MessageCard key={t.id} template={t} siteUrl={siteUrl} accessCount={landingCounts[`tpl-${t.id}`] ?? 0} />
           ))}
       </div>
 
