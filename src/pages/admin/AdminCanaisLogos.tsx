@@ -105,17 +105,33 @@ const AdminCanaisLogos = () => {
 
   const upsert = useMutation({
     mutationFn: async (f: FormState) => {
+      const trimmedName = f.name.trim();
+      const nameNorm = normalizeChannelName(f.name);
+      if (!trimmedName) throw new Error("Nome obrigatório");
+      if (!nameNorm) throw new Error("Nome inválido (após normalização ficou vazio)");
+
+      // Pré-checa colisão de name_normalized para dar mensagem clara
+      // (em vez do erro genérico 23505 do Postgres).
+      const { data: clash } = await supabase
+        .from("channel_logo_mappings")
+        .select("id, name")
+        .eq("name_normalized", nameNorm)
+        .maybeSingle();
+      if (clash && clash.id !== f.id) {
+        throw new Error(
+          `Já existe um mapeamento com o mesmo nome normalizado ("${clash.name}"). Use outro nome ou edite o existente.`
+        );
+      }
+
       const payload = {
-        name: f.name.trim(),
-        name_normalized: normalizeChannelName(f.name),
+        name: trimmedName,
+        name_normalized: nameNorm,
         logo_key: f.logo_key,
         short: f.short.trim() || null,
         active: f.active,
         custom_logo_url: f.custom_logo_url,
         light_chip: f.light_chip,
       };
-      if (!payload.name) throw new Error("Nome obrigatório");
-      if (!payload.name_normalized) throw new Error("Nome inválido");
       if (f.id) {
         const { error } = await supabase.from("channel_logo_mappings").update(payload).eq("id", f.id);
         if (error) throw error;
@@ -134,7 +150,11 @@ const AdminCanaisLogos = () => {
       setOpen(false);
       setForm(EMPTY_FORM);
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
+    onError: (e: any) => {
+      const msg = e?.message || e?.details || e?.hint || "Erro ao salvar";
+      console.error("[AdminCanaisLogos] upsert error", e);
+      toast.error(msg);
+    },
   });
 
   const remove = useMutation({
