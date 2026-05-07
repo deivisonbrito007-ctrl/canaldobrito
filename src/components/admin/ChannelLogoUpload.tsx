@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { normalizeLogoFile } from "@/lib/normalizeLogo";
 
 const MAX_BYTES = 400 * 1024;
 const ACCEPTED = ["image/png", "image/svg+xml", "image/webp"];
@@ -40,15 +41,22 @@ export function ChannelLogoUpload({ channelName, currentUrl, onUploaded, onClear
     }
     setBusy(true);
     try {
-      const ext = file.type === "image/svg+xml" ? "svg" : file.type === "image/webp" ? "webp" : "png";
+      // Auto-trim + center + reescala para 256x256 PNG transparente.
+      // SVG passa direto (vetorial, já normalizado pelo viewBox).
+      const normalized = await normalizeLogoFile(file, { size: 256, padding: 0.08 });
+      const ext = normalized.type === "image/svg+xml" ? "svg" : "png";
       const path = `${slugify(channelName || "canal")}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("channel-logos")
-        .upload(path, file, { contentType: file.type, cacheControl: "60", upsert: false });
+        .upload(path, normalized, {
+          contentType: normalized.type,
+          cacheControl: "60",
+          upsert: false,
+        });
       if (error) throw error;
       const { data } = supabase.storage.from("channel-logos").getPublicUrl(path);
       onUploaded(data.publicUrl);
-      toast.success("Logo enviada");
+      toast.success("Logo enviada e normalizada");
     } catch (e: any) {
       toast.error(e.message ?? "Erro no upload");
     } finally {
@@ -107,7 +115,7 @@ export function ChannelLogoUpload({ channelName, currentUrl, onUploaded, onClear
               <div className="font-medium text-foreground">
                 {busy ? "Enviando…" : "Arraste um arquivo ou clique"}
               </div>
-              <div>PNG · SVG · WEBP · até 400 KB</div>
+              <div>PNG · SVG · WEBP · até 400 KB · auto-recorte e centralização</div>
             </div>
           </>
         )}
