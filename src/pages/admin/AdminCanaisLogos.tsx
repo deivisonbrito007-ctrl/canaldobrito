@@ -33,6 +33,7 @@ import { CHANNEL_MAPPINGS_QK, type ChannelMapping } from "@/hooks/useChannelMapp
 import { useDiscoveredChannels, type DiscoveredChannel } from "@/hooks/useDiscoveredChannels";
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
 import { ChannelPreviewStage } from "@/components/admin/ChannelPreviewStage";
+import { ChannelAliasesEditor } from "@/components/admin/ChannelAliasesEditor";
 import {
   DndContext,
   closestCenter,
