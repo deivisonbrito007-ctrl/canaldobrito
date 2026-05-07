@@ -56,8 +56,8 @@ const openWhatsApp = (text: string, share: ShareProps) => {
   if (!win) toast.error("Popup bloqueado. Permita pop-ups para enviar.");
 };
 
-const MessageCard = ({ template, siteUrl }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string }) => {
-  const link = buildDeepLink(siteUrl, template.tab, { short: true });
+const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string; accessCount?: number }) => {
+  const link = buildDeepLink(siteUrl, template.tab, { short: true, content: `tpl-${template.id}` });
   const finalText = template.text.replace("LINK_PLACEHOLDER", link);
 
   const shareMeta: ShareProps = {
