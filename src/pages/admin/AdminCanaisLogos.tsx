@@ -476,12 +476,27 @@ const AdminCanaisLogos = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => discovered.refetch()}
+            onClick={async () => {
+              await Promise.all([
+                qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] }),
+                qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK, refetchType: "active" }),
+                qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK }),
+              ]);
+              const res = await discovered.refetch();
+              const orphanCount = res.data?.orphans.length ?? 0;
+              setTab("orphans");
+              toast.success(
+                orphanCount > 0
+                  ? `${orphanCount} canal${orphanCount === 1 ? "" : "is"} sem logo`
+                  : "Tudo mapeado — nenhum órfão"
+              );
+            }}
             disabled={discovered.isLoading}
             className="gap-2 flex-1 sm:flex-none min-h-11"
+            aria-label="Detectar canais sem logo agora"
           >
             <RefreshCcw className={`h-4 w-4 ${discovered.isLoading ? "animate-spin" : ""}`} />{" "}
-            Detectar
+            Detectar agora
           </Button>
           <Button onClick={() => openNew()} className="gap-2 flex-1 sm:flex-none min-h-11">
             <Plus className="h-4 w-4" /> Novo
