@@ -162,6 +162,16 @@ function isSectionHeader(line: string, nextLine?: string): boolean {
   return false;
 }
 
+/** Split a channel list string by `,`, `/`, ` | `, ` e ` into individual channels.
+ *  Ex: "Globo / Paramount+, ESPN e SporTV" -> ["Globo","Paramount+","ESPN","SporTV"] */
+function splitChannels(raw: string): string[] {
+  return raw
+    .split(/[,/|]/)
+    .flatMap((part) => part.split(/ e (?=[A-Za-z0-9])/))
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
 /** Collect metadata from lines following a game title */
 function collectMetadata(lines: string[], startIdx: number): {
   competition: string;
