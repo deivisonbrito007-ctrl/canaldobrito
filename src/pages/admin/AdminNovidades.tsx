@@ -496,6 +496,17 @@ const AdminNovidades = () => {
                   </div>
                 );
               })}
+              {visibleCount < filteredItems.length && (
+                <div ref={sentinelRef} className="py-4 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Carregando mais ({visibleCount}/{filteredItems.length})...
+                </div>
+              )}
+              {visibleCount >= filteredItems.length && filteredItems.length > PAGE_SIZE && (
+                <p className="py-3 text-center text-[11px] text-muted-foreground/60">
+                  {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"} carregado{filteredItems.length === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
           )}
         </div>
