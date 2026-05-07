@@ -577,20 +577,39 @@ const AdminCanaisLogos = () => {
           </div>
 
           <TabsContent value={tab} className="mt-4">
-            {tab === "orphans" && highConfidencePairs.length > 0 && !search && (
+            {tab === "orphans" && (highConfidencePairs.length > 0 || mediumConfidencePairs.length > 0) && !search && (
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
                 <div className="text-xs text-emerald-100">
-                  ✨ <span className="font-bold">{highConfidencePairs.length}</span> variante{highConfidencePairs.length > 1 ? "s" : ""} provável{highConfidencePairs.length > 1 ? "is" : ""} de canais já cadastrados.
+                  ✨ <span className="font-bold">{highConfidencePairs.length}</span> alta confiança
+                  {mediumConfidencePairs.length > 0 && (
+                    <> · <span className="font-bold">{mediumConfidencePairs.length}</span> média confiança</>
+                  )}
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => setConfirm({ kind: "bulk-autolink", pairs: highConfidencePairs })}
-                  disabled={linkAsAlias.isPending}
-                  className="gap-2 min-h-10 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
-                >
-                  <Wand2 className="h-3.5 w-3.5" />
-                  Auto-vincular {highConfidencePairs.length}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {highConfidencePairs.length > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={() => setConfirm({ kind: "bulk-autolink", pairs: highConfidencePairs })}
+                      disabled={linkAsAlias.isPending}
+                      className="gap-2 min-h-10 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      Auto-vincular {highConfidencePairs.length} (alta)
+                    </Button>
+                  )}
+                  {mediumConfidencePairs.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirm({ kind: "bulk-autolink", pairs: allConfidencePairs })}
+                      disabled={linkAsAlias.isPending}
+                      className="gap-2 min-h-10 border-emerald-500/40 text-emerald-100 hover:bg-emerald-500/10"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      Incluir média ({allConfidencePairs.length})
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
