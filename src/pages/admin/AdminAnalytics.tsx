@@ -590,7 +590,7 @@ export default function AdminAnalytics() {
       {loadingRemote && remote.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[0, 1, 2].map((i) => (
-            <Card key={i} className="p-4 h-[72px] shimmer rounded-md" />
+            <Card key={i} className="p-4 h-[72px] skeleton-shimmer rounded-md" />
           ))}
         </div>
       ) : (
