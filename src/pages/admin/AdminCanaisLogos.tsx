@@ -158,9 +158,8 @@ const AdminCanaisLogos = () => {
     onSuccess: () => {
       toast.success("Mapeamento salvo");
       qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
-      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK, refetchType: "active" });
       qc.invalidateQueries({ queryKey: ["discovered-channels"] });
-      setOpen(false);
       setForm(EMPTY_FORM);
     },
     onError: (e: any) => {
