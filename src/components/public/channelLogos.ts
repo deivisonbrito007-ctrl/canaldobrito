@@ -4,7 +4,9 @@
 // 3. Adicione ao LOGO_REGISTRY com label e (opcional) lightChip
 import bandLogo from "@/assets/brand-logos/band.png";
 import bandsportsLogo from "@/assets/brand-logos/bandsports.png";
+import benjaLogo from "@/assets/brand-logos/canaldobenja.png";
 import cazetvLogo from "@/assets/brand-logos/cazetv.png";
+import combateLogo from "@/assets/brand-logos/combate.png";
 import daznLogo from "@/assets/brand-logos/dazn.png";
 import disneyLogo from "@/assets/brand-logos/disneyplus.png";
 import espnLogo from "@/assets/brand-logos/espn.png";
@@ -12,11 +14,17 @@ import globoLogo from "@/assets/brand-logos/globo.png";
 import globoplayLogo from "@/assets/brand-logos/globoplay.png";
 import goatLogo from "@/assets/brand-logos/goat.png";
 import maxLogo from "@/assets/brand-logos/max.png";
+import nbalpLogo from "@/assets/brand-logos/nbaleaguepass.png";
 import netflixLogo from "@/assets/brand-logos/netflix.png";
+import nsportsLogo from "@/assets/brand-logos/nsports.png";
+import onefootballLogo from "@/assets/brand-logos/onefootball.png";
 import paramountLogo from "@/assets/brand-logos/paramountplus.png";
 import premiereLogo from "@/assets/brand-logos/premiere.png";
 import primeLogo from "@/assets/brand-logos/primevideo.png";
 import recordLogo from "@/assets/brand-logos/record.png";
+import redetvLogo from "@/assets/brand-logos/redetv.png";
+import sbtLogo from "@/assets/brand-logos/sbt.png";
+import snetLogo from "@/assets/brand-logos/snet.png";
 import spaceLogo from "@/assets/brand-logos/space.png";
 import sportvLogo from "@/assets/brand-logos/sportv.png";
 import tntLogo from "@/assets/brand-logos/tntsports.png";
@@ -29,7 +37,9 @@ export type LogoEntry = { src: string; label: string; lightChip?: boolean };
 export const LOGO_REGISTRY: Record<string, LogoEntry> = {
   band:       { src: bandLogo,       label: "Band" },
   bandsports: { src: bandsportsLogo, label: "BandSports" },
+  benja:      { src: benjaLogo,      label: "Canal do Benja", lightChip: true },
   cazetv:     { src: cazetvLogo,     label: "Cazé TV" },
+  combate:    { src: combateLogo,    label: "Combate", lightChip: true },
   dazn:       { src: daznLogo,       label: "DAZN" },
   disney:     { src: disneyLogo,     label: "Disney+" },
   espn:       { src: espnLogo,       label: "ESPN" },
