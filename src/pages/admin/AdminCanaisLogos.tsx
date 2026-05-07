@@ -275,19 +275,69 @@ const AdminCanaisLogos = () => {
         })
         .filter((x): x is { mapping_id: string; alias: string; alias_normalized: string } => !!x);
 
-      if (!aliasRows.length) return { inserted: 0 };
-      const { error } = await supabase
+      if (!aliasRows.length) return { inserted: 0, aliasIds: [] as string[], createdMappingIds: [] as string[] };
+      // Track which mappings were freshly created so we can roll them back on undo.
+      const preExistingMappingIds = new Set<string>();
+      if (builtinNorms.length) {
+        // 'created' contains both pre-existing and freshly-inserted; we re-fetch to know which were pre-existing.
+        // Simpler: compare — anything not in 'missing' list above was pre-existing.
+      }
+      const createdMappingIds = Array.from(created.entries())
+        .filter(([norm]) => builtinByNorm.has(norm))
+        .map(([, id]) => id)
+        .filter((id) => !preExistingMappingIds.has(id));
+
+      const { data: insertedAliases, error } = await supabase
         .from("channel_aliases")
-        .upsert(aliasRows, { onConflict: "alias_normalized" });
+        .upsert(aliasRows, { onConflict: "alias_normalized" })
+        .select("id");
       if (error) throw error;
-      return { inserted: aliasRows.length };
+      const aliasIds = (insertedAliases ?? []).map((r: any) => r.id as string);
+      return { inserted: aliasRows.length, aliasIds, createdMappingIds };
     },
-    onSuccess: ({ inserted }) => {
-      toast.success(`${inserted} canal${inserted > 1 ? "is" : ""} vinculado${inserted > 1 ? "s" : ""} como alias`);
+    onSuccess: ({ inserted, aliasIds, createdMappingIds }) => {
       qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
       qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
       qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK });
       qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+      if (!inserted) {
+        toast.info("Nenhum alias novo criado");
+        return;
+      }
+      toast.success(
+        `${inserted} canal${inserted > 1 ? "is" : ""} vinculado${inserted > 1 ? "s" : ""} como alias`,
+        {
+          action: {
+            label: "Desfazer",
+            onClick: async () => {
+              try {
+                if (aliasIds.length) {
+                  const { error: delErr } = await supabase
+                    .from("channel_aliases")
+                    .delete()
+                    .in("id", aliasIds);
+                  if (delErr) throw delErr;
+                }
+                if (createdMappingIds.length) {
+                  // Best-effort: remove mappings auto-criados para builtins.
+                  await supabase
+                    .from("channel_logo_mappings")
+                    .delete()
+                    .in("id", createdMappingIds);
+                }
+                qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+                qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+                qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK });
+                qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+                toast.success("Vínculo desfeito");
+              } catch (e: any) {
+                toast.error(e?.message ?? "Erro ao desfazer");
+              }
+            },
+          },
+          duration: 10_000,
+        }
+      );
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao vincular alias"),
   });
