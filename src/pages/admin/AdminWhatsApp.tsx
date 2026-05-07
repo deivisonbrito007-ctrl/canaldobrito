@@ -308,6 +308,13 @@ const AdminWhatsApp = () => {
     { value: dayAfterStr, label: "+2 dias" },
   ];
 
+  // Access counts (last 7d) for quick links + templates
+  const trackedContents = useMemo(() => [
+    "quick-live", "quick-novidades", "quick-schedule",
+    ...templates.map((t) => `tpl-${t.id}`),
+  ], [templates]);
+  const { counts: landingCounts } = useShareLandingCounts(trackedContents, 7);
+
   const handleCustomKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && customMsg.trim()) {
       openWhatsApp(customFinal, { surface: "admin-whatsapp-custom", tab: linkTab, action: "open" });
