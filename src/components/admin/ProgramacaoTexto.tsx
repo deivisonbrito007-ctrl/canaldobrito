@@ -1256,7 +1256,7 @@ const EditGameForm = ({
               competition: comp,
               competition_detail: detail,
               game_time: time,
-              channels: channels.split(",").map((c) => c.trim()).filter(Boolean),
+              channels: splitChannels(channels),
               sport_type: sportType,
             })
           }
