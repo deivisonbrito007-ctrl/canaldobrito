@@ -454,10 +454,10 @@ const AdminNovidades = () => {
                     {/* Bottom row: controls */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === 0 || filter !== "all" || debouncedSearch !== ""} onClick={() => handleReorder(idx, "up")} aria-label={`Mover ${m.title} para cima`}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === 0 || filter !== "all" || debouncedSearch !== "" || sortMode !== "manual"} onClick={() => handleReorder(idx, "up")} aria-label={`Mover ${m.title} para cima`}>
                           <ArrowUp className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === items.length - 1 || filter !== "all" || debouncedSearch !== ""} onClick={() => handleReorder(idx, "down")} aria-label={`Mover ${m.title} para baixo`}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === items.length - 1 || filter !== "all" || debouncedSearch !== "" || sortMode !== "manual"} onClick={() => handleReorder(idx, "down")} aria-label={`Mover ${m.title} para baixo`}>
                           <ArrowDown className="h-4 w-4" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md text-muted-foreground hover:text-amber-400" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)} aria-label={`Atualizar dados de ${m.title}`}>
