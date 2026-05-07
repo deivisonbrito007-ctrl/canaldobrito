@@ -82,6 +82,22 @@ const AdminNovidades = () => {
     return () => clearTimeout(t);
   }, [listSearch]);
 
+  // Reset pagination when filters/search/sort change
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, debouncedSearch, sortMode]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        setVisibleCount((c) => c + PAGE_SIZE);
+      }
+    }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filter, debouncedSearch, sortMode, items?.length]);
+
   const handleBadgeTypeChange = (v: string) => {
     setBadgeType(v);
     try { localStorage.setItem("admin:lastBadgeType", v); } catch { /* ignore */ }
