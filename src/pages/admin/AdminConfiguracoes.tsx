@@ -15,7 +15,7 @@ const DEFAULT_TV_CHANNELS_JSON = JSON.stringify(
     { name: "Premiere",   domain: "premiere.globo.com", localLogo: "/channels/premiere.svg" },
     { name: "TNT Sports", domain: "tntsports.com.br",   localLogo: "/channels/tnt-sports.svg" },
     { name: "Band",       domain: "band.uol.com.br",    localLogo: "/channels/band.svg" },
-    { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv.svg" },
+    { name: "CazéTV",     domain: "cazetv.com.br",      localLogo: "/channels/cazetv-v2.png" },
     { name: "Record",     domain: "recordtv.r7.com",    localLogo: "/channels/record.svg" },
     { name: "Canal GOAT", domain: "canalgoat.com",      localLogo: "/channels/goat.svg" },
     { name: "Space",      domain: "tntsports.com.br",   localLogo: "/channels/space.svg" },
