@@ -66,6 +66,10 @@ const AdminNovidades = () => {
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [filter, setFilter] = useState<FilterMode>("all");
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    if (typeof window === "undefined") return "manual";
+    return (localStorage.getItem("admin:novidadesSort") as SortMode) || "manual";
+  });
   const [listSearch, setListSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<NewsRelease | null>(null);
