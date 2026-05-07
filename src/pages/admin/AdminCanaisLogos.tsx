@@ -5,10 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye } from "lucide-react";
+import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye, BellOff } from "lucide-react";
 import { toast } from "sonner";
 import { LOGO_OPTIONS, LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "@/components/public/channelLogos";
 import { ChannelBadge, BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
@@ -53,6 +70,8 @@ const EMPTY_FORM: FormState = {
   light_chip: false,
 };
 
+type ConfirmState = { kind: "delete-mapping"; id: string; name: string } | { kind: "bulk-silence"; count: number } | null;
+
 const AdminCanaisLogos = () => {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -62,6 +81,7 @@ const AdminCanaisLogos = () => {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"orphans" | "all" | "custom" | "builtin">("orphans");
   const [previewChannel, setPreviewChannel] = useState("");
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -133,18 +153,38 @@ const AdminCanaisLogos = () => {
 
   const reorder = useMutation({
     mutationFn: async (orderedIds: string[]) => {
-      const updates = orderedIds.map((id, idx) =>
-        supabase.from("channel_logo_mappings").update({ sort_order: idx }).eq("id", id)
-      );
-      const results = await Promise.all(updates);
-      const firstErr = results.find((r) => r.error);
-      if (firstErr?.error) throw firstErr.error;
+      const { error } = await supabase.rpc("reorder_channel_mappings", { _ids: orderedIds });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
       qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao reordenar"),
+  });
+
+  const bulkSilence = useMutation({
+    mutationFn: async (orphans: DiscoveredChannel[]) => {
+      const payload = orphans.map((o) => ({
+        name: o.name,
+        name_normalized: o.normalized,
+        logo_key: "none" as LogoKey,
+        active: true,
+        light_chip: false,
+      }));
+      if (!payload.length) return;
+      const { error } = await supabase
+        .from("channel_logo_mappings")
+        .upsert(payload, { onConflict: "name_normalized" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Canais silenciados");
+      qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+      qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao silenciar"),
   });
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -202,8 +242,15 @@ const AdminCanaisLogos = () => {
   // Filtered list for current tab
   const visibleCards = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const qNorm = normalizeChannelName(search);
+    const matches = (s: string) => {
+      if (!q) return true;
+      const lower = s.toLowerCase();
+      const norm = normalizeChannelName(s);
+      return lower.includes(q) || (qNorm && norm.includes(qNorm));
+    };
     const filterByQuery = <T extends { name: string }>(arr: T[]) =>
-      q ? arr.filter((i) => i.name.toLowerCase().includes(q)) : arr;
+      q ? arr.filter((i) => matches(i.name)) : arr;
 
     if (tab === "orphans") return filterByQuery(discovered.orphans);
     if (tab === "all") return filterByQuery(discovered.all);
@@ -230,8 +277,8 @@ const AdminCanaisLogos = () => {
   }, [tab, search, discovered, rows, builtinList]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6 pb-[env(safe-area-inset-bottom)]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Canais & Logos</h1>
           <p className="text-sm text-muted-foreground">
@@ -239,10 +286,17 @@ const AdminCanaisLogos = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => discovered.refetch()} className="gap-2">
-            <RefreshCcw className="h-4 w-4" /> Detectar agora
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => discovered.refetch()}
+            disabled={discovered.isLoading}
+            className="gap-2 flex-1 sm:flex-none min-h-11"
+          >
+            <RefreshCcw className={`h-4 w-4 ${discovered.isLoading ? "animate-spin" : ""}`} />{" "}
+            Detectar
           </Button>
-          <Button onClick={() => openNew()} className="gap-2">
+          <Button onClick={() => openNew()} className="gap-2 flex-1 sm:flex-none min-h-11">
             <Plus className="h-4 w-4" /> Novo
           </Button>
         </div>
@@ -250,21 +304,37 @@ const AdminCanaisLogos = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard icon={<Sparkles className="h-4 w-4" />} label="Detectados (30d)" value={stats.discovered} />
-        <StatCard icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" />} label="Personalizados" value={stats.mapped} />
-        <StatCard icon={<CheckCircle2 className="h-4 w-4 text-sky-400" />} label="Built-in" value={stats.builtin} />
+        <StatCard
+          icon={<Sparkles className="h-4 w-4" />}
+          label="Detectados (30d)"
+          value={stats.discovered}
+          onClick={() => setTab("all")}
+        />
+        <StatCard
+          icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+          label="Personalizados"
+          value={stats.mapped}
+          onClick={() => setTab("custom")}
+        />
+        <StatCard
+          icon={<CheckCircle2 className="h-4 w-4 text-sky-400" />}
+          label="Built-in"
+          value={stats.builtin}
+          onClick={() => setTab("builtin")}
+        />
         <StatCard
           icon={<AlertTriangle className="h-4 w-4 text-amber-400" />}
           label="Sem logo"
           value={stats.orphans}
           highlight={stats.orphans > 0}
+          onClick={() => setTab("orphans")}
         />
       </div>
 
       {stats.orphans > 0 && (
         <button
           onClick={() => setTab("orphans")}
-          className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left text-sm text-amber-200 hover:bg-amber-500/15 transition"
+          className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left text-sm text-amber-200 hover:bg-amber-500/15 transition min-h-11"
         >
           <span className="font-bold">⚠ {stats.orphans} canal{stats.orphans > 1 ? "is" : ""} sem logo</span>{" "}
           aparece{stats.orphans > 1 ? "m" : ""} nos jogos. Toque para resolver →
@@ -292,33 +362,59 @@ const AdminCanaisLogos = () => {
 
       {/* Preview ao vivo */}
       <div id="preview-stage">
-        <ChannelPreviewStage initialChannel={previewChannel} key={previewChannel} />
+        <ChannelPreviewStage value={previewChannel} onChange={setPreviewChannel} />
       </div>
       <div className="space-y-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <div className="flex flex-wrap items-center gap-2 justify-between">
-            <TabsList>
-              <TabsTrigger value="orphans" className="gap-2">
-                Sem logo
-                {stats.orphans > 0 && (
-                  <span className="rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-bold px-1.5">
-                    {stats.orphans}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="all">Todos detectados</TabsTrigger>
-              <TabsTrigger value="custom">Personalizados</TabsTrigger>
-              <TabsTrigger value="builtin">Built-in</TabsTrigger>
-            </TabsList>
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar canal…"
-              className="max-w-xs h-9"
-            />
+          <div className="flex flex-col gap-2">
+            <div className="-mx-1 overflow-x-auto px-1">
+              <TabsList className="w-max">
+                <TabsTrigger value="orphans" className="gap-2">
+                  Sem logo
+                  {stats.orphans > 0 && (
+                    <span className="rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-bold px-1.5">
+                      {stats.orphans}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="all">Todos detectados</TabsTrigger>
+                <TabsTrigger value="custom">Personalizados</TabsTrigger>
+                <TabsTrigger value="builtin">Built-in</TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar canal…"
+                className="pl-9 h-10"
+                aria-label="Buscar canal"
+              />
+            </div>
           </div>
 
           <TabsContent value={tab} className="mt-4">
+            {tab === "orphans" && discovered.orphans.length > 0 && !search && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/40 bg-card/30 p-3">
+                <div className="text-xs text-muted-foreground">
+                  Não vai usar logo nesses canais? Silencie todos de uma vez.
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setConfirm({ kind: "bulk-silence", count: discovered.orphans.length })
+                  }
+                  disabled={bulkSilence.isPending}
+                  className="gap-2 min-h-10"
+                >
+                  <BellOff className="h-3.5 w-3.5" />
+                  Silenciar {discovered.orphans.length}
+                </Button>
+              </div>
+            )}
+
             {(tab === "orphans" || tab === "all") && discovered.isLoading ? (
               <div className="text-sm text-muted-foreground">Carregando canais detectados…</div>
             ) : tab === "custom" && isLoading ? (
@@ -340,11 +436,13 @@ const AdminCanaisLogos = () => {
                           id={c.mapping.id}
                           channel={c}
                           onEdit={() => openEdit(c.mapping!)}
-                          onDelete={() => {
-                            if (confirm(`Remover mapeamento "${c.mapping!.name}"?`)) {
-                              remove.mutate(c.mapping!.id);
-                            }
-                          }}
+                          onDelete={() =>
+                            setConfirm({
+                              kind: "delete-mapping",
+                              id: c.mapping!.id,
+                              name: c.mapping!.name,
+                            })
+                          }
                           onPreview={() => {
                             setPreviewChannel(c.name);
                             document.getElementById("preview-stage")?.scrollIntoView({ behavior: "smooth" });
@@ -363,8 +461,12 @@ const AdminCanaisLogos = () => {
                     channel={c}
                     onEdit={() => (c.mapping ? openEdit(c.mapping) : openNew(c.name))}
                     onDelete={() => {
-                      if (c.mapping && confirm(`Remover mapeamento "${c.mapping.name}"?`)) {
-                        remove.mutate(c.mapping.id);
+                      if (c.mapping) {
+                        setConfirm({
+                          kind: "delete-mapping",
+                          id: c.mapping.id,
+                          name: c.mapping.name,
+                        });
                       }
                     }}
                     onPreview={() => {
@@ -381,9 +483,12 @@ const AdminCanaisLogos = () => {
 
       {/* Modal */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
           <DialogHeader>
             <DialogTitle>{form.id ? "Editar mapeamento" : "Novo mapeamento"}</DialogTitle>
+            <DialogDescription>
+              Associe uma logo (da biblioteca ou upload) a um nome de canal usado nos jogos.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -497,28 +602,62 @@ const AdminCanaisLogos = () => {
               </div>
             )}
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
             {form.id && (
               <Button
                 variant="ghost"
-                className="text-destructive hover:text-destructive sm:mr-auto"
-                onClick={() => {
-                  if (confirm(`Remover "${form.name}"?`)) {
-                    remove.mutate(form.id!);
-                    setOpen(false);
-                  }
-                }}
+                className="text-destructive hover:text-destructive sm:mr-auto min-h-11"
+                onClick={() =>
+                  setConfirm({ kind: "delete-mapping", id: form.id!, name: form.name })
+                }
               >
                 <Trash2 className="h-4 w-4 mr-1" /> Excluir
               </Button>
             )}
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => upsert.mutate(form)} disabled={upsert.isPending}>
+            <Button variant="ghost" onClick={() => setOpen(false)} className="min-h-11">
+              Cancelar
+            </Button>
+            <Button onClick={() => upsert.mutate(form)} disabled={upsert.isPending} className="min-h-11">
               {upsert.isPending ? "Salvando…" : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog de confirmação */}
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm?.kind === "delete-mapping" && `Remover "${confirm.name}"?`}
+              {confirm?.kind === "bulk-silence" && `Silenciar ${confirm.count} canais?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirm?.kind === "delete-mapping" &&
+                "O canal voltará a usar a logo padrão (built-in) ou o emoji genérico se não houver fallback."}
+              {confirm?.kind === "bulk-silence" &&
+                "Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="min-h-11"
+              onClick={() => {
+                if (confirm?.kind === "delete-mapping") {
+                  remove.mutate(confirm.id);
+                  if (open) setOpen(false);
+                } else if (confirm?.kind === "bulk-silence") {
+                  bulkSilence.mutate(discovered.orphans);
+                }
+                setConfirm(null);
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -528,26 +667,32 @@ const StatCard = ({
   label,
   value,
   highlight,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   highlight?: boolean;
-}) => (
-  <div
-    className={`rounded-lg border p-3 ${
-      highlight
-        ? "border-amber-500/40 bg-amber-500/10"
-        : "border-border/50 bg-card/40"
-    }`}
-  >
-    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-      {icon}
-      {label}
-    </div>
-    <div className="mt-1 font-display text-2xl font-bold">{value}</div>
-  </div>
-);
+  onClick?: () => void;
+}) => {
+  const Comp: any = onClick ? "button" : "div";
+  return (
+    <Comp
+      onClick={onClick}
+      className={`rounded-lg border p-3 text-left transition ${
+        highlight
+          ? "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/15"
+          : "border-border/50 bg-card/40 hover:bg-card/60"
+      } ${onClick ? "cursor-pointer" : ""}`}
+    >
+      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-1 font-display text-2xl font-bold">{value}</div>
+    </Comp>
+  );
+};
 
 const ChannelCard = ({
   channel,
@@ -590,29 +735,29 @@ const ChannelCard = ({
         </div>
         <div className="flex gap-1 shrink-0">
           {onPreview && (
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onPreview} aria-label="Visualizar">
-              <Eye className="h-3.5 w-3.5" />
+            <Button size="icon" variant="ghost" className="h-9 w-9" onClick={onPreview} aria-label="Visualizar">
+              <Eye className="h-4 w-4" />
             </Button>
           )}
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onEdit} aria-label="Editar">
-            <Pencil className="h-3.5 w-3.5" />
+          <Button size="icon" variant="ghost" className="h-9 w-9" onClick={onEdit} aria-label="Editar">
+            <Pencil className="h-4 w-4" />
           </Button>
           {m && (
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7 text-destructive hover:text-destructive"
+              className="h-9 w-9 text-destructive hover:text-destructive"
               onClick={onDelete}
               aria-label="Excluir"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
       </div>
       <ChannelBadge name={channel.name} size="md" />
       {channel.isOrphan && (
-        <Button size="sm" variant="outline" onClick={onEdit} className="w-full gap-1 mt-1 h-8 text-xs">
+        <Button size="sm" variant="outline" onClick={onEdit} className="w-full gap-1 mt-1 h-9 text-xs">
           <Plus className="h-3 w-3" /> Adicionar logo
         </Button>
       )}
@@ -648,7 +793,7 @@ const SortableChannelRow = ({
     >
       <button
         type="button"
-        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 -m-1"
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-3 -m-2"
         aria-label="Arrastar para reordenar"
         {...attributes}
         {...listeners}
@@ -664,20 +809,20 @@ const SortableChannelRow = ({
         </div>
       </div>
       <div className="flex gap-1 shrink-0">
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onPreview} aria-label="Visualizar">
-          <Eye className="h-3.5 w-3.5" />
+        <Button size="icon" variant="ghost" className="h-9 w-9" onClick={onPreview} aria-label="Visualizar">
+          <Eye className="h-4 w-4" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit} aria-label="Editar">
-          <Pencil className="h-3.5 w-3.5" />
+        <Button size="icon" variant="ghost" className="h-9 w-9" onClick={onEdit} aria-label="Editar">
+          <Pencil className="h-4 w-4" />
         </Button>
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 text-destructive hover:text-destructive"
+          className="h-9 w-9 text-destructive hover:text-destructive"
           onClick={onDelete}
           aria-label="Excluir"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
     </div>
