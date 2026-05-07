@@ -214,7 +214,85 @@ const AdminCanaisLogos = () => {
     onError: (e: any) => toast.error(e.message ?? "Erro ao silenciar"),
   });
 
-  const handleDragEnd = (e: DragEndEvent) => {
+  const linkAsAlias = useMutation({
+    mutationFn: async (pairs: AutoLinkPair[]) => {
+      // 1) ensure target mapping exists for builtin targets (create on the fly)
+      const builtinPairs = pairs.filter((p) => p.suggestion.target.kind === "builtin");
+      const builtinByNorm = new Map<string, { name: string; logoKey: LogoKey }>();
+      for (const p of builtinPairs) {
+        if (p.suggestion.target.kind !== "builtin") continue;
+        builtinByNorm.set(p.suggestion.target.normalized, {
+          name: p.suggestion.target.builtinName,
+          logoKey: p.suggestion.target.logoKey,
+        });
+      }
+      const builtinNorms = Array.from(builtinByNorm.keys());
+      const created = new Map<string, string>(); // normalized -> mapping id
+      if (builtinNorms.length) {
+        const { data: existing, error: exErr } = await supabase
+          .from("channel_logo_mappings")
+          .select("id, name_normalized")
+          .in("name_normalized", builtinNorms);
+        if (exErr) throw exErr;
+        for (const r of (existing ?? []) as Array<{ id: string; name_normalized: string }>) {
+          created.set(r.name_normalized, r.id);
+        }
+        const missing = builtinNorms.filter((n) => !created.has(n));
+        if (missing.length) {
+          const insertPayload = missing.map((n) => {
+            const b = builtinByNorm.get(n)!;
+            return {
+              name: b.name,
+              name_normalized: n,
+              logo_key: b.logoKey,
+              active: true,
+              light_chip: false,
+            };
+          });
+          const { data: inserted, error: insErr } = await supabase
+            .from("channel_logo_mappings")
+            .insert(insertPayload)
+            .select("id, name_normalized");
+          if (insErr) throw insErr;
+          for (const r of (inserted ?? []) as Array<{ id: string; name_normalized: string }>) {
+            created.set(r.name_normalized, r.id);
+          }
+        }
+      }
+
+      // 2) build alias rows
+      const aliasRows = pairs
+        .map((p) => {
+          let mappingId: string | undefined;
+          if (p.suggestion.target.kind === "mapping") mappingId = p.suggestion.target.mapping.id;
+          else mappingId = created.get(p.suggestion.target.normalized);
+          if (!mappingId) return null;
+          return {
+            mapping_id: mappingId,
+            alias: p.orphan.name,
+            alias_normalized: p.orphan.normalized,
+          };
+        })
+        .filter((x): x is { mapping_id: string; alias: string; alias_normalized: string } => !!x);
+
+      if (!aliasRows.length) return { inserted: 0 };
+      const { error } = await supabase
+        .from("channel_aliases")
+        .upsert(aliasRows, { onConflict: "alias_normalized" });
+      if (error) throw error;
+      return { inserted: aliasRows.length };
+    },
+    onSuccess: ({ inserted }) => {
+      toast.success(`${inserted} canal${inserted > 1 ? "is" : ""} vinculado${inserted > 1 ? "s" : ""} como alias`);
+      qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+      qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK });
+      qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao vincular alias"),
+  });
+
+
     const { active, over } = e;
     if (!over || active.id === over.id || !rows) return;
     const ids = rows.map((r) => r.id);
