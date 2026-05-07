@@ -290,7 +290,10 @@ const AdminCanaisLogos = () => {
         </div>
       </div>
 
-      {/* Tabs + Search */}
+      {/* Preview ao vivo */}
+      <div id="preview-stage">
+        <ChannelPreviewStage initialChannel={previewChannel} key={previewChannel} />
+      </div>
       <div className="space-y-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <div className="flex flex-wrap items-center gap-2 justify-between">
