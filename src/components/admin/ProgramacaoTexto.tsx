@@ -342,6 +342,7 @@ export function preprocessInlineFormatC(text: string): string {
       const headerName = sport.rest.split(EM_DASH_SPLIT_RE)[0].replace(/\s*\(.*?\)\s*/g, "").trim();
       currentCompetition = headerName;
       currentEvent = headerName;
+      currentDetail = "";
       continue;
     }
 
