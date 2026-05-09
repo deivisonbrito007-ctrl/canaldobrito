@@ -319,26 +319,28 @@ export function preprocessInlineFormatC(text: string): string {
     if (/^📞/.test(line)) continue;
 
     // Section header with leading sport emoji (may carry a date in parens)
+    // e.g. "🏀 Basquete — Jogos do Dia (09/05)" or "🥊 Combate"
     const sport = startsWithSportEmoji(line);
     const isFormatALikeMeta = isMetadataLine(line);
+    const looksLikeSectionHeader =
+      !!sport &&
+      !TIME_ANYWHERE_RE.test(line) &&
+      !line.includes("/") &&
+      !/\sx\s/i.test(line) &&
+      (EM_DASH_TEST_RE.test(line) || SECTION_DATE_RE.test(line) || sport.rest.length <= 30);
 
-    if (sport && !isFormatALikeMeta) {
-      // Looks like a section header e.g. "🏀 Basquete — Jogos do Dia (09/05)"
-      // Only treat as header if it has NO time token (otherwise it's a metadata line)
-      if (!TIME_ANYWHERE_RE.test(line)) {
-        currentSportEmoji = normalizeSportEmoji(sport.emoji);
-        const dateM = line.match(SECTION_DATE_RE);
-        if (dateM) {
-          const day = dateM[1].padStart(2, "0");
-          const month = dateM[2].padStart(2, "0");
-          emitDateIfNeeded(`${day}/${month}`);
-        }
-        // Use the text after the emoji (before any " — ") as the section name
-        const headerName = sport.rest.split(EM_DASH_SPLIT_RE)[0].replace(/\s*\(.*?\)\s*/g, "").trim();
-        currentCompetition = headerName;
-        currentEvent = headerName;
-        continue;
+    if (looksLikeSectionHeader && sport) {
+      currentSportEmoji = normalizeSportEmoji(sport.emoji);
+      const dateM = line.match(SECTION_DATE_RE);
+      if (dateM) {
+        const day = dateM[1].padStart(2, "0");
+        const month = dateM[2].padStart(2, "0");
+        emitDateIfNeeded(`${day}/${month}`);
       }
+      const headerName = sport.rest.split(EM_DASH_SPLIT_RE)[0].replace(/\s*\(.*?\)\s*/g, "").trim();
+      currentCompetition = headerName;
+      currentEvent = headerName;
+      continue;
     }
 
     // Pass Format A metadata lines through untouched
