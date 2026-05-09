@@ -43,61 +43,60 @@ Identificação de esportes:
 - Para Fórmula 1, automobilismo e motovelocidade (F1, GP, Grande Prêmio, MotoGP, Moto2, Moto3, Formula E, E-Prix, IndyCar, Stock Car, Automobilismo), use 🏎️ antes da competição → FORMATO B
 - Para MMA e luta (UFC, Bellator, PFL, Boxing, Boxe), use 🥊 antes da competição → FORMATO B
 - Para vôlei (Superliga, Liga das Nações, Champions), use 🏐 antes da competição → FORMATO A
-- Para futebol, use 🏆 normalmente (padrão) → FORMATO A
+- Para futebol, use 🏆 normalmente (padrão) → FORMATO A`;
 
-Exemplos formato A:
-Flamengo x Palmeiras
-🏆 Brasileirão (oitavas de final) / ⏰ 19h00
-📺 Sportv
+const DEFAULT_MODEL = "google/gemini-2.5-flash";
+const MAX_PAYLOAD_BYTES = 8 * 1024 * 1024; // 8MB base64
+const TIMEOUT_MS = 45_000;
 
-Lakers x Celtics
-🏀 NBA (Playoffs - 1ª rodada) / ⏰ 22h00
-📺 ESPN
-
-Exemplos formato B:
-ATP e WTA
-🎾 Tênis (Indian Wells - 3ª rodada) / ⏰ 20h00
-📺 ESPN 2
-
-GP da Arábia Saudita
-🏎️ Fórmula 1 (Classificação) / ⏰ 13h00
-📺 Band, BandSports
-
-UFC 315
-🥊 MMA (Card Principal) / ⏰ 23h00
-📺 Combate`;
+const json = (status: number, body: Record<string, unknown>) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startedAt = Date.now();
+  let stage = "parse_body";
+
   try {
-    const body = await req.json();
-    const { image, text } = body;
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return json(400, { error: "Body inválido. Envie JSON com 'image' (base64) ou 'text'." });
+    }
+
+    const { image, text, model } = body as { image?: string; text?: string; model?: string };
 
     if (!image && !text) {
-      return new Response(JSON.stringify({ error: "Campo 'image' (base64) ou 'text' é obrigatório" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return json(400, { error: "Campo 'image' (base64) ou 'text' é obrigatório" });
+    }
+
+    // Size guard (base64 length is a good proxy for payload bytes)
+    const payloadBytes = (image?.length ?? 0) + (text?.length ?? 0);
+    if (payloadBytes > MAX_PAYLOAD_BYTES) {
+      return json(413, {
+        error: `Imagem muito grande para a IA (${(payloadBytes / 1024 / 1024).toFixed(1)}MB). Reduza para no máximo 8MB.`,
       });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error(JSON.stringify({ stage: "config", error: "LOVABLE_API_KEY missing" }));
+      return json(500, { error: "Serviço de IA não configurado. Contate o administrador." });
     }
 
-    // Build user message content
-    const userContent: any[] = [];
-
+    stage = "build_request";
+    const userContent: Array<Record<string, unknown>> = [];
     if (text) {
       userContent.push({
         type: "text",
         text: `Formate esta programação esportiva no formato correto. Corrija erros de formatação, remova "x ?" e aplique FORMATO B para esportes individuais:\n\n${text}`,
       });
     }
-
     if (image) {
       userContent.push(
         { type: "text", text: "Extraia a programação esportiva desta imagem:" },
@@ -105,53 +104,72 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userContent },
-        ],
-      }),
-    });
+    stage = "ai_gateway";
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos em Settings > Workspace > Usage." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Erro ao processar com IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let response: Response;
+    try {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: model || DEFAULT_MODEL,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userContent },
+          ],
+        }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      console.error(JSON.stringify({ stage, ms: Date.now() - startedAt, error: String(err), abort: isAbort }));
+      return json(isAbort ? 504 : 502, {
+        error: isAbort
+          ? "Tempo esgotado lendo a imagem (>45s). Tente uma imagem menor ou mais nítida."
+          : "Falha de rede ao contatar o serviço de IA.",
       });
     }
+    clearTimeout(timeout);
 
+    if (!response.ok) {
+      const errBody = await response.text().catch(() => "");
+      console.error(JSON.stringify({ stage, status: response.status, ms: Date.now() - startedAt, body: errBody.slice(0, 500) }));
+
+      if (response.status === 429) {
+        return json(429, { error: "Muitas requisições à IA. Aguarde alguns segundos e tente novamente." });
+      }
+      if (response.status === 402) {
+        return json(402, { error: "Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage." });
+      }
+      return json(502, { error: `Erro do serviço de IA (${response.status}). Tente novamente.` });
+    }
+
+    stage = "parse_response";
     const data = await response.json();
-    const resultText = data.choices?.[0]?.message?.content || "";
+    const resultText = (data?.choices?.[0]?.message?.content ?? "").toString().trim();
 
-    return new Response(JSON.stringify({ text: resultText }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (!resultText) {
+      console.warn(JSON.stringify({ stage, ms: Date.now() - startedAt, msg: "empty content" }));
+      return json(200, { text: "", warning: "A IA não retornou texto. Tente outra imagem." });
+    }
+
+    console.log(JSON.stringify({
+      stage: "ok",
+      ms: Date.now() - startedAt,
+      bytes: payloadBytes,
+      model: model || DEFAULT_MODEL,
+      chars: resultText.length,
+    }));
+
+    return json(200, { text: resultText });
   } catch (e) {
-    console.error("read-schedule-image error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error(JSON.stringify({ stage, ms: Date.now() - startedAt, error: e instanceof Error ? e.message : String(e) }));
+    return json(500, { error: e instanceof Error ? e.message : "Erro desconhecido" });
   }
 });
