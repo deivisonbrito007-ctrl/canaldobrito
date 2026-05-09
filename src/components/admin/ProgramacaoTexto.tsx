@@ -1186,6 +1186,20 @@ export const ProgramacaoTexto = () => {
               )}
               {readingImage ? "Lendo..." : "📷 Ler Imagem"}
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleNormalizeWithAI}
+              disabled={normalizing || !text.trim()}
+              className="text-muted-foreground min-h-[44px]"
+              title="Reformata qualquer texto livre no padrão canônico usando IA"
+            >
+              {normalizing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4 mr-2" />
+              )}
+              {normalizing ? "Normalizando..." : "Normalizar com IA"}
+            </Button>
             <input
               ref={fileInputRef}
               type="file"
