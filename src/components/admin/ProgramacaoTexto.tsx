@@ -428,6 +428,7 @@ export function preprocessInlineFormatC(text: string): string {
       if (isKnown || looksLikeLabel) {
         currentCompetition = line.replace(/^[#*\s]+/, "").trim();
         currentEvent = currentCompetition;
+        currentDetail = "";
         continue;
       }
     }
