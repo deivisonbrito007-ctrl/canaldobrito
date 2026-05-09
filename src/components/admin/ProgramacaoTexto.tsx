@@ -856,6 +856,7 @@ export const ProgramacaoTexto = () => {
     return () => clearTimeout(t);
   }, [text, selectedDate, autoBumpMidnight]);
 
+  const isDateInPast = (dateStr: string): boolean => {
     const midnight = midnightInSaoPaulo(dateStr);
     return midnight.getTime() <= Date.now();
   };
