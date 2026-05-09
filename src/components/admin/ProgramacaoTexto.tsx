@@ -399,8 +399,9 @@ export function preprocessInlineFormatC(text: string): string {
         const time = `${firstTime[1].padStart(2, "0")}h${firstTime[2]}`;
         const channel = parts.slice(1).join(" — ");
         out.push(currentEvent);
-        const comp = currentCompetition || currentEvent;
-        out.push(`${currentSportEmoji} ${comp} / ⏰ ${time}`);
+        const baseComp = currentCompetition || currentEvent;
+        const compFull = currentDetail ? `${baseComp} (${currentDetail})` : baseComp;
+        out.push(`${currentSportEmoji} ${compFull} / ⏰ ${time}`);
         out.push(`📺 ${channel}`);
         out.push("");
         producedAnyGame = true;
@@ -412,6 +413,7 @@ export function preprocessInlineFormatC(text: string): string {
       if (!TIME_ANYWHERE_RE.test(line)) {
         currentCompetition = parts[0];
         currentEvent = parts[0];
+        currentDetail = parts.slice(1).join(" — ");
         continue;
       }
     }
