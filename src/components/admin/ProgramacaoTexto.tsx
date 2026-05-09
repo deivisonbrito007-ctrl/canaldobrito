@@ -662,6 +662,7 @@ export const ProgramacaoTexto = () => {
     return localStorage.getItem("admin_auto_bump_midnight") === "true";
   });
   const [readingImage, setReadingImage] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const insertGames = useInsertDailyGames();
