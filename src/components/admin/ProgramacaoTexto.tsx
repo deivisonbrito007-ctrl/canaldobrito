@@ -295,6 +295,7 @@ export function preprocessInlineFormatC(text: string): string {
   let currentSportEmoji = "🏆";
   let currentCompetition = "";
   let currentEvent = "";
+  let currentDetail = "";
   let lastDateEmitted = "";
   let producedAnyGame = false;
 
