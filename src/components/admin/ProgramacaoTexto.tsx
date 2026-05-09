@@ -1230,27 +1230,30 @@ export const ProgramacaoTexto = () => {
               onClick={() => fileInputRef.current?.click()}
               disabled={readingImage}
               className="text-muted-foreground min-h-[44px]"
+              title="Seleciona uma imagem e usa IA para extrair o texto (consome créditos)"
             >
               {readingImage ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Camera className="h-4 w-4 mr-2" />
               )}
-              {readingImage ? "Lendo..." : "📷 Ler Imagem"}
+              {readingImage ? "Lendo..." : "Ler Imagem"}
+              <Badge variant="outline" className="ml-2 h-4 px-1 border-amber-500/30 text-amber-400 text-[8px] font-bold">IA</Badge>
             </Button>
             <Button
               variant="outline"
               onClick={handleNormalizeWithAI}
               disabled={normalizing || !text.trim()}
               className="text-muted-foreground min-h-[44px]"
-              title="Reformata qualquer texto livre no padrão canônico usando IA"
+              title="Reformata qualquer texto livre no padrão canônico usando IA (consome créditos)"
             >
               {normalizing ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Wand2 className="h-4 w-4 mr-2" />
               )}
-              {normalizing ? "Normalizando..." : "Normalizar com IA"}
+              {normalizing ? "Normalizando..." : "Normalizar"}
+              <Badge variant="outline" className="ml-2 h-4 px-1 border-amber-500/30 text-amber-400 text-[8px] font-bold">IA</Badge>
             </Button>
             <input
               ref={fileInputRef}
