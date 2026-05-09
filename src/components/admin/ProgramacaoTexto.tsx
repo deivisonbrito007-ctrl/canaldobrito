@@ -537,6 +537,37 @@ export const ProgramacaoTexto = () => {
     toast.info("Texto de exemplo preenchido");
   };
 
+  const compressImage = async (file: File, maxDim = 1600, quality = 0.82): Promise<string> => {
+    // Always returns a JPEG data URL, downsized so the longest side ≤ maxDim
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Skip canvas re-encode for already-small images
+    if (file.size < 800 * 1024) return dataUrl;
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = dataUrl;
+    });
+
+    const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.round(img.width * ratio);
+    const h = Math.round(img.height * ratio);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", quality);
+  };
+
   const handleReadImage = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Selecione um arquivo de imagem");
@@ -548,32 +579,44 @@ export const ProgramacaoTexto = () => {
     }
 
     setReadingImage(true);
+    const toastId = toast.loading("Preparando imagem…");
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const base64 = await compressImage(file);
+      toast.loading("Lendo com IA…", { id: toastId });
 
       const { data, error } = await supabase.functions.invoke("read-schedule-image", {
         body: { image: base64 },
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // supabase-js wraps non-2xx as `error` but keeps the JSON body in `data`
+      const friendly =
+        (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) ||
+        (error && (error as { message?: string }).message) ||
+        null;
 
-      const extracted = data?.text?.trim();
+      if (error || (data && typeof data === "object" && "error" in data)) {
+        console.error("read-schedule-image failed:", { error, data });
+        throw new Error(friendly || "Edge function retornou erro");
+      }
+
+      const extracted = (data?.text ?? "").trim();
       if (!extracted) {
-        toast.error("Não foi possível extrair texto da imagem");
+        toast.error(data?.warning || "Não foi possível extrair texto da imagem", { id: toastId });
         return;
       }
 
       setText((prev) => (prev ? prev + "\n\n" + extracted : extracted));
-      toast.success("Programação extraída da imagem!");
-    } catch (err: any) {
+      toast.success("Programação extraída da imagem!", { id: toastId });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao ler imagem";
       console.error("Image read error:", err);
-      toast.error(err.message || "Erro ao ler imagem");
+      toast.error(msg, {
+        id: toastId,
+        action: {
+          label: "Tentar novamente",
+          onClick: () => handleReadImage(file),
+        },
+      });
     } finally {
       setReadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
