@@ -309,3 +309,143 @@ describe("parseScheduleText - separadores de canais", () => {
     expect(games[0].channels).toEqual(["Globo", "SporTV", "ESPN", "TNT"]);
   });
 });
+
+describe("parseScheduleText - Formato C (inline com travessão)", () => {
+  it("detecta jogo de basquete inline 'Time x Time — Canal — HH:MM'", () => {
+    const text = `🏀 Basquete — Jogos do Dia (09/05)
+
+WNBA
+
+Dallas Wings x Indiana Fever — ESPN 3 — 14:00`;
+    const games = parseScheduleText(text, "2026-05-09");
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("Dallas Wings");
+    expect(games[0].away_team).toBe("Indiana Fever");
+    expect(games[0].competition).toBe("WNBA");
+    expect(games[0].game_time).toBe("14:00");
+    expect(games[0].channels).toEqual(["ESPN 3"]);
+    expect(games[0].sport_type).toBe("basketball");
+    expect(games[0].date).toBe("2026-05-09");
+  });
+
+  it("captura data do cabeçalho de seção (09/05)", () => {
+    const text = `🏀 Basquete — Jogos do Dia (09/05)
+NBA
+Lakers x Warriors — ESPN 2 — 21:30`;
+    const games = parseScheduleText(text, "2026-01-01");
+    expect(games[0].date).toMatch(/-05-09$/);
+  });
+
+  it("detecta evento sem adversário com detalhe (MotoGP Sprint Race)", () => {
+    const text = `🏁 Automobilismo — Agenda (09/05)
+MotoGP
+GP da França — Sprint Race — ESPN 4 — 10:00`;
+    const games = parseScheduleText(text, "2026-05-09");
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("GP da França");
+    expect(games[0].away_team).toBe("");
+    expect(games[0].competition).toBe("MotoGP");
+    expect(games[0].competition_detail).toBe("Sprint Race");
+    expect(games[0].game_time).toBe("10:00");
+    expect(games[0].channels).toEqual(["ESPN 4"]);
+  });
+
+  it("detecta múltiplas sessões de um mesmo evento (Italian Open)", () => {
+    const text = `🎾 Tênis — Agenda (09/05)
+Italian Open
+06:00 — ESPN 2
+10:00 — ESPN 2`;
+    const games = parseScheduleText(text, "2026-05-09");
+    expect(games).toHaveLength(2);
+    expect(games[0].home_team).toBe("Italian Open");
+    expect(games[0].game_time).toBe("06:00");
+    expect(games[1].game_time).toBe("10:00");
+    expect(games[0].sport_type).toBe("tennis");
+  });
+
+  it("detecta luta de boxe inline", () => {
+    const text = `🥊 Combate
+Boxe
+Angelo Leo x Ra'eese Aleem — ESPN 3 — 21:00`;
+    const games = parseScheduleText(text, "2026-05-09");
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("Angelo Leo");
+    expect(games[0].away_team).toContain("Aleem");
+    expect(games[0].competition).toBe("Boxe");
+    expect(games[0].game_time).toBe("21:00");
+  });
+
+  it("preserva formato A puro inalterado", () => {
+    const text = `📅**Dia 20/03**
+
+Flamengo x Palmeiras
+🏆 Brasileirão / ⏰ 19h00
+📺 SporTV`;
+    const games = parseScheduleText(text, "2026-03-20");
+    expect(games).toHaveLength(1);
+    expect(games[0].home_team).toBe("Flamengo");
+    expect(games[0].away_team).toBe("Palmeiras");
+    expect(games[0].competition).toBe("Brasileirão");
+  });
+
+  it("processa o texto completo do usuário (basquete+moto+boxe+tênis+golfe)", () => {
+    const text = `🏀 Basquete — Jogos do Dia (09/05)
+
+WNBA
+Dallas Wings x Indiana Fever — ESPN 3 — 14:00
+Phoenix Mercury x Las Vegas Aces — Disney+ — 16:30
+
+NBA
+Detroit Pistons x Cleveland Cavaliers — ESPN 4 — 16:00
+Oklahoma City Thunder x Los Angeles Lakers — ESPN 2 — 21:30
+
+NBB
+Corinthians x Minas — ESPN 4 — 19:00
+
+---
+
+🏁 Automobilismo — Agenda (09/05)
+Moto3
+GP da França — Free Practice — ESPN 4 — 03:35
+
+MotoGP
+GP da França — Free Practice — ESPN 4 — 05:10
+GP da França — Qualificação — ESPN 4 — 05:50
+GP da França — Sprint Race — ESPN 4 — 10:00
+
+Moto2
+GP da França — Qualificação — ESPN 4 — 08:40
+
+---
+
+🥊 Combate
+Boxe
+Angelo Leo x Ra'eese Aleem — ESPN 3 — 21:00
+
+---
+
+🎾 Tênis — Agenda (09/05)
+Italian Open
+06:00 — ESPN 2
+10:00 — ESPN 2
+
+---
+
+⛳ Golfe
+PGA Tour — Terceira Rodada
+14:00 — ESPN 3
+16:00 — ESPN 3
+
+📞 Contato: (11) 94075-9046`;
+    const games = parseScheduleText(text, "2026-05-09");
+    // 5 basquete + 5 motos + 1 boxe + 2 tênis + 2 golfe = 15
+    expect(games.length).toBeGreaterThanOrEqual(14);
+    const sports = new Set(games.map(g => g.sport_type));
+    expect(sports.has("basketball")).toBe(true);
+    expect(sports.has("tennis")).toBe(true);
+    expect(sports.has("golf")).toBe(true);
+    // PGA Tour event has detail
+    const pga = games.find(g => g.home_team === "PGA Tour");
+    expect(pga?.competition_detail).toBe("Terceira Rodada");
+  });
+});
