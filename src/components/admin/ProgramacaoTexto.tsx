@@ -254,13 +254,194 @@ function bumpDate(dateStr: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+// ============================================================
+// FORMAT C — inline pre-processor
+// Converts WhatsApp messages that look like:
+//   🏀 Basquete — Jogos do Dia (09/05)
+//   WNBA
+//   Dallas Wings x Indiana Fever — ESPN 3 — 14:00
+// into the canonical Format A that parseScheduleText already understands.
+// ============================================================
+
+const EM_DASH_SPLIT_RE = /\s+[—–]\s+/;
+const EM_DASH_TEST_RE = /\s+[—–]\s+/;
+const SECTION_DATE_RE = /\((\d{1,2})\/(\d{1,2})\)/;
+const TIME_TOKEN_RE = /^(\d{1,2})[h:](\d{2})$/;
+const TIME_ANYWHERE_RE = /\b(\d{1,2})[h:](\d{2})\b/;
+
+const KNOWN_SUBSECTIONS_RE =
+  /^(WNBA|NBA|NBB|NBL|EuroLeague|MotoGP|Moto2|Moto3|F1|Fórmula 1|Formula 1|IndyCar|Stock Car|Formula E|UFC|Bellator|Boxe|Boxing|MMA|ATP|WTA|PGA Tour|LPGA|Italian Open|Roland Garros|Wimbledon|US Open|Australian Open|Masters|Brasileir[aã]o(?: Feminino)?|Champions League|Premier League|La Liga|Bundesliga|Serie A|Libertadores|Sul-Americana|Copa do Brasil|Eurocopa|Liga das Na[çc][oõ]es)$/i;
+
+const SPORT_EMOJI_LIST = ["🏀", "🎾", "🏎️", "🏎", "🥊", "🏐", "🏒", "⚾", "🏉", "🏄", "🚴", "⛳", "🏊", "🏆", "🏁", "⚽"];
+
+function startsWithSportEmoji(s: string): { emoji: string; rest: string } | null {
+  for (const e of SPORT_EMOJI_LIST) {
+    if (s.startsWith(e)) return { emoji: e, rest: s.slice(e.length).trim() };
+  }
+  return null;
+}
+
+function normalizeSportEmoji(e: string): string {
+  // Map flag/automobilismo emoji to the canonical 🏎️
+  if (e === "🏁" || e === "🏎") return "🏎️";
+  if (e === "⚽") return "🏆";
+  return e;
+}
+
+export function preprocessInlineFormatC(text: string): string {
+  const rawLines = text.split("\n");
+  const out: string[] = [];
+
+  let currentSportEmoji = "🏆";
+  let currentCompetition = "";
+  let currentEvent = "";
+  let lastDateEmitted = "";
+  let producedAnyGame = false;
+
+  const emitDateIfNeeded = (dayMonth: string) => {
+    if (lastDateEmitted !== dayMonth) {
+      if (out.length > 0) out.push("");
+      out.push(`📅**Dia ${dayMonth}**`);
+      out.push("");
+      lastDateEmitted = dayMonth;
+    }
+  };
+
+  for (const raw of rawLines) {
+    const line = raw.trim();
+    if (!line) {
+      out.push("");
+      continue;
+    }
+
+    // Strip dividers and WhatsApp footer noise
+    if (/^[-—–=*_]{3,}$/.test(line)) continue;
+    if (/^📞/.test(line)) continue;
+
+    // Section header with leading sport emoji (may carry a date in parens)
+    const sport = startsWithSportEmoji(line);
+    const isFormatALikeMeta = isMetadataLine(line);
+
+    if (sport && !isFormatALikeMeta) {
+      // Looks like a section header e.g. "🏀 Basquete — Jogos do Dia (09/05)"
+      // Only treat as header if it has NO time token (otherwise it's a metadata line)
+      if (!TIME_ANYWHERE_RE.test(line)) {
+        currentSportEmoji = normalizeSportEmoji(sport.emoji);
+        const dateM = line.match(SECTION_DATE_RE);
+        if (dateM) {
+          const day = dateM[1].padStart(2, "0");
+          const month = dateM[2].padStart(2, "0");
+          emitDateIfNeeded(`${day}/${month}`);
+        }
+        // Use the text after the emoji (before any " — ") as the section name
+        const headerName = sport.rest.split(EM_DASH_SPLIT_RE)[0].replace(/\s*\(.*?\)\s*/g, "").trim();
+        currentCompetition = headerName;
+        currentEvent = headerName;
+        continue;
+      }
+    }
+
+    // Pass Format A metadata lines through untouched
+    if (isFormatALikeMeta) {
+      out.push(line);
+      continue;
+    }
+
+    // Inline em-dash lines = Format C candidates
+    if (EM_DASH_TEST_RE.test(line)) {
+      const parts = line.split(EM_DASH_SPLIT_RE).map((p) => p.trim()).filter(Boolean);
+
+      // Time as the LAST segment
+      const last = parts[parts.length - 1];
+      const lastTime = last.match(TIME_TOKEN_RE);
+
+      if (lastTime && parts.length >= 2) {
+        const time = `${lastTime[1].padStart(2, "0")}h${lastTime[2]}`;
+        const middle = parts.slice(0, -1);
+
+        let title = middle[0];
+        let detail = "";
+        let channel = "";
+
+        if (middle.length >= 2) {
+          channel = middle[middle.length - 1];
+          if (middle.length >= 3) {
+            detail = middle.slice(1, -1).join(" — ");
+          }
+        } else {
+          // Only [title, time] — no channel info
+          channel = "";
+        }
+
+        const isMatch = /\sx\s/i.test(title);
+        const compName = currentCompetition || (isMatch ? "" : title);
+        const compFull = detail ? (compName ? `${compName} (${detail})` : `(${detail})`) : compName;
+
+        out.push(title);
+        const compLine = compFull
+          ? `${currentSportEmoji} ${compFull} / ⏰ ${time}`
+          : `${currentSportEmoji} ⏰ ${time}`;
+        out.push(compLine);
+        if (channel) out.push(`📺 ${channel}`);
+        out.push("");
+
+        if (!isMatch) currentEvent = title;
+        producedAnyGame = true;
+        continue;
+      }
+
+      // Time as the FIRST segment, e.g. "06:00 — ESPN 2"
+      const firstTime = parts[0].match(TIME_TOKEN_RE);
+      if (firstTime && parts.length >= 2 && currentEvent) {
+        const time = `${firstTime[1].padStart(2, "0")}h${firstTime[2]}`;
+        const channel = parts.slice(1).join(" — ");
+        out.push(currentEvent);
+        const comp = currentCompetition || currentEvent;
+        out.push(`${currentSportEmoji} ${comp} / ⏰ ${time}`);
+        out.push(`📺 ${channel}`);
+        out.push("");
+        producedAnyGame = true;
+        continue;
+      }
+
+      // Em-dash line with no time → competition / event header with detail
+      // e.g. "PGA Tour — Terceira Rodada"
+      if (!TIME_ANYWHERE_RE.test(line)) {
+        currentCompetition = parts[0];
+        currentEvent = parts[0];
+        continue;
+      }
+    }
+
+    // Plain subsection competition (no separator, no time, no " x ")
+    if (!EM_DASH_TEST_RE.test(line) && !/\sx\s/i.test(line) && !TIME_ANYWHERE_RE.test(line)) {
+      // Known competition or short-ish title-case label
+      const isKnown = KNOWN_SUBSECTIONS_RE.test(line);
+      const looksLikeLabel = line.length <= 40 && /^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .'+\-/]*$/.test(line);
+      if (isKnown || looksLikeLabel) {
+        currentCompetition = line.replace(/^[#*\s]+/, "").trim();
+        currentEvent = currentCompetition;
+        continue;
+      }
+    }
+
+    // Default: keep line as-is
+    out.push(line);
+  }
+
+  // If no Format C games were produced, return the original text unchanged
+  // so we don't risk breaking pure Format A inputs.
+  return producedAnyGame ? out.join("\n") : text;
+}
+
 export function parseScheduleText(
   text: string,
   fallbackDate: string,
   options: { autoBumpMidnight?: boolean } = {}
 ): ParsedGame[] {
   const { autoBumpMidnight = false } = options;
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const preprocessed = preprocessInlineFormatC(text);
+  const lines = preprocessed.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
   let dateFromHeader = false; // track if currentDate came from a 📅 header
