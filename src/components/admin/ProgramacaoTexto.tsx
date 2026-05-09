@@ -1122,6 +1122,44 @@ export const ProgramacaoTexto = () => {
             <h3 className="text-sm font-bold text-foreground">Texto da Programação</h3>
           </div>
 
+          {pendingImage && (
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06]">
+              <img
+                src={pendingImage.preview}
+                alt="Imagem colada"
+                className="h-12 w-12 rounded object-cover border border-white/10 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-foreground">📷 Imagem pronta para extrair</p>
+                <p className="text-[9px] text-muted-foreground leading-tight">
+                  Nada foi enviado ainda. Clique em "Extrair com IA" para processar (consome créditos).
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const f = pendingImage.file;
+                  setPendingImage(null);
+                  handleReadImage(f);
+                }}
+                disabled={readingImage}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] h-9 shrink-0"
+              >
+                {readingImage ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Wand2 className="h-3 w-3 mr-1" />}
+                Extrair com IA
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setPendingImage(null)}
+                className="h-9 w-9 p-0 text-muted-foreground shrink-0"
+                aria-label="Descartar imagem"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -1133,8 +1171,13 @@ export const ProgramacaoTexto = () => {
                   e.preventDefault();
                   const file = items[i].getAsFile();
                   if (file) {
-                    toast.info("📷 Imagem detectada, processando...");
-                    handleReadImage(file);
+                    // Não chama IA automaticamente — só prepara para confirmação explícita.
+                    const preview = URL.createObjectURL(file);
+                    setPendingImage((prev) => {
+                      if (prev?.preview) URL.revokeObjectURL(prev.preview);
+                      return { file, preview };
+                    });
+                    toast.info("Imagem colada — clique em 'Extrair com IA' para processar");
                   }
                   return;
                 }
@@ -1145,7 +1188,7 @@ export const ProgramacaoTexto = () => {
             disabled={readingImage}
           />
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] text-muted-foreground/60">💡 Cole uma imagem (Ctrl+V) ou texto do WhatsApp para extrair a programação</p>
+            <p className="text-[10px] text-muted-foreground/60">💡 Cole texto do WhatsApp, ou cole/selecione uma imagem (a IA só roda se você clicar)</p>
             {liveCount > 0 && (
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] shrink-0">
                 {liveCount} jogo{liveCount !== 1 ? "s" : ""} detectado{liveCount !== 1 ? "s" : ""}
