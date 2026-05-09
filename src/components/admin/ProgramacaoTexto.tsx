@@ -804,7 +804,58 @@ export const ProgramacaoTexto = () => {
     }
   };
 
-  const isDateInPast = (dateStr: string): boolean => {
+  const [normalizing, setNormalizing] = useState(false);
+  const handleNormalizeWithAI = async () => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      toast.error("Cole um texto primeiro");
+      return;
+    }
+    setNormalizing(true);
+    const toastId = toast.loading("Normalizando com IA…");
+    try {
+      const { data, error } = await supabase.functions.invoke("read-schedule-image", {
+        body: { text: trimmed },
+      });
+      const friendly =
+        (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) ||
+        (error && (error as { message?: string }).message) ||
+        null;
+      if (error || (data && typeof data === "object" && "error" in data)) {
+        throw new Error(friendly || "Edge function retornou erro");
+      }
+      const formatted = (data?.text ?? "").trim();
+      if (!formatted) {
+        toast.error(data?.warning || "A IA não retornou texto", { id: toastId });
+        return;
+      }
+      setText(formatted);
+      toast.success("Texto normalizado! Clique em Processar.", { id: toastId });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao normalizar";
+      console.error("Normalize error:", err);
+      toast.error(msg, {
+        id: toastId,
+        action: { label: "Tentar novamente", onClick: () => handleNormalizeWithAI() },
+      });
+    } finally {
+      setNormalizing(false);
+    }
+  };
+
+  // Live preview counter — debounced parse to show "X jogos detectados" as user types/pastes
+  const [liveCount, setLiveCount] = useState(0);
+  useEffect(() => {
+    if (!text.trim()) { setLiveCount(0); return; }
+    const t = setTimeout(() => {
+      try {
+        const games = parseScheduleText(text, selectedDate, { autoBumpMidnight });
+        setLiveCount(games.length);
+      } catch { setLiveCount(0); }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [text, selectedDate, autoBumpMidnight]);
+
     const midnight = midnightInSaoPaulo(dateStr);
     return midnight.getTime() <= Date.now();
   };
