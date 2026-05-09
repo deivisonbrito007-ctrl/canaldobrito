@@ -322,10 +322,11 @@ export function preprocessInlineFormatC(text: string): string {
     // e.g. "🏀 Basquete — Jogos do Dia (09/05)" or "🥊 Combate"
     const sport = startsWithSportEmoji(line);
     const isFormatALikeMeta = isMetadataLine(line);
+    const lineWithoutDate = line.replace(SECTION_DATE_RE, "");
     const looksLikeSectionHeader =
       !!sport &&
       !TIME_ANYWHERE_RE.test(line) &&
-      !line.includes("/") &&
+      !lineWithoutDate.includes("/") &&
       !/\sx\s/i.test(line) &&
       (EM_DASH_TEST_RE.test(line) || SECTION_DATE_RE.test(line) || sport.rest.length <= 30);
 
