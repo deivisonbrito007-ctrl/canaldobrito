@@ -1,77 +1,47 @@
-## Diagnóstico
+## Objetivo
 
-Seu texto usa um **terceiro formato** que o parser nativo não reconhece. Ele só entende:
+Garantir que **nenhuma chamada à IA** aconteça na aba Banners → Programação sem o usuário pedir explicitamente.
 
-- **Formato A** (multi-linha com 🏆/📍/⏰/📺)
-- **Formato A inline** (com `/ ⏰` na mesma linha)
+## Onde a IA é disparada hoje
 
-O texto enviado segue o padrão **inline com travessão**:
+1. **Colar imagem (Ctrl+V) no textarea** → dispara `handleReadImage` automaticamente, que chama a edge function `read-schedule-image` (IA). ❌ Não solicitado.
+2. **Selecionar arquivo via "📷 Ler Imagem"** → chama `handleReadImage` (IA). ✅ Já é ação explícita.
+3. **Botão "Normalizar com IA"** → IA. ✅ Já é ação explícita.
+4. **OCR de imagem em `ImageUpload`/banner upload** (se existir) → verificar.
 
-```
-🏀 Basquete — Jogos do Dia (09/05)         ← cabeçalho com esporte + data
-WNBA                                        ← competição (subseção)
-Dallas Wings x Indiana Fever — ESPN 3 — 14:00   ← jogo numa única linha
-```
+## Mudanças propostas
 
-E ainda variantes:
-- Evento sem adversário: `GP da França — Free Practice — ESPN 4 — 03:35`
-- Sessões soltas sob um evento: `06:00 — ESPN 2` (Italian Open / PGA Tour)
+### 1. Colar imagem deixa de chamar IA automaticamente
 
-Por isso os jogos não são detectados.
+No `onPaste` do textarea: quando uma imagem é detectada, **não** chamar `handleReadImage` direto. Em vez disso:
+- Guardar o arquivo em `pendingImage` (state).
+- Mostrar um banner discreto acima do textarea: *"📷 Imagem colada — pronta para extrair com IA"* + dois botões: **"Extrair com IA"** (dispara `handleReadImage`) e **"Descartar"**.
+- Nada é enviado para o backend até o clique.
 
-## Solução em duas camadas
+### 2. Renomear "📷 Ler Imagem" → "📷 Ler Imagem (IA)"
 
-### Camada 1 — Parser nativo: novo "Formato C" (inline com `—`)
+Deixa explícito ao usuário que esse botão consome IA/créditos. Mesmo comportamento, só rótulo + tooltip *"Usa IA para extrair texto da imagem"*.
 
-Estender `parseScheduleText` para reconhecer:
+### 3. Remover o auto-toast "📷 Imagem detectada, processando..."
 
-1. **Cabeçalho de seção com esporte + data**
-   `🏀 Basquete — Jogos do Dia (09/05)` → captura sport + data via regex `\((\d{1,2})\/(\d{1,2})\)`.
+Era a confirmação de que estava chamando IA sem pedir. Não faz mais sentido.
 
-2. **Subseção como competição** (WNBA, NBA, NBB, Moto3, MotoGP, Boxe…)
-   Linhas curtas em maiúsculas/título sem `—` viram `currentCompetition`.
+### 4. Verificação extra
 
-3. **Linha de jogo inline** com 2 ou 3 segmentos separados por `—`/`-`/`–`:
-   - `Dallas Wings x Indiana Fever — ESPN 3 — 14:00`
-     → home/away + canal + horário
-   - `GP da França — Free Practice — ESPN 4 — 03:35`
-     → evento (sem `x`) + detail + canal + horário
-   - `06:00 — ESPN 2` (sob `Italian Open`)
-     → reusa o último `currentEventTitle` como home_team
+Auditar `src/components/admin/AdminBanners.tsx`, `BannerUpload`, e qualquer outro componente da aba Banners para confirmar que nenhum upload de banner também chama IA silenciosamente. Se chamar, aplicar o mesmo padrão (pedir confirmação).
 
-4. Aceitar travessões `—`, `–`, `-` e horários `HH:MM` ou `HHhMM`.
+## Sugestões adicionais
 
-5. Ignorar separadores `---`, `📞 Contato:`, linhas só com emoji.
+- **Indicador de custo**: badge "IA" cinza nos dois botões que consomem créditos (📷 Ler Imagem e Normalizar com IA), para reforçar visualmente.
+- **Atalho de teclado**: `Ctrl+Shift+I` para extrair a `pendingImage` sem precisar clicar — mantém produtividade para quem quer.
+- **Preferência persistida** (opcional, OFF por default): toggle em Configuração *"Auto-extrair imagens coladas com IA"*. Quem realmente quer o comportamento antigo pode reativar. Salva em `localStorage`.
 
-### Camada 2 — Botão "Normalizar com IA" (fallback universal)
+## Arquivos afetados
 
-A edge function `read-schedule-image` já aceita `text` no body e usa o Lovable AI Gateway para devolver o formato canônico. Vou adicionar um botão **🪄 Normalizar com IA** ao lado de "Detectar jogos" que:
+- `src/components/admin/ProgramacaoTexto.tsx` — alterar `onPaste`, adicionar UI de confirmação, renomear botão, novo state `pendingImage`.
+- (verificar) `src/components/admin/AdminBanners.tsx` e correlatos.
 
-- Envia o conteúdo do textarea para a função
-- Substitui o texto pelo retorno formatado (Formato A canônico)
-- Mostra estado "Normalizando…" e respeita os toasts já melhorados
+## Confirmações que preciso
 
-Assim, qualquer formato que o parser nativo não pegar pode ser convertido com 1 toque.
-
-### Camada 3 — Testes
-
-Adicionar em `sports_parser.test.ts`:
-- WNBA/NBA/NBB inline `Time x Time — Canal — HH:MM`
-- MotoGP `GP da França — Sprint Race — ESPN 4 — 10:00` (evento + detail)
-- Boxe `Angelo Leo x Ra'eese Aleem — ESPN 3 — 21:00`
-- Tênis Italian Open com múltiplas sessões `06:00 — ESPN 2`
-- Data extraída de `(09/05)` no cabeçalho de seção
-- Convivência: texto novo + texto antigo no mesmo input
-
-### Arquivos afetados
-
-- `src/components/admin/ProgramacaoTexto.tsx` — parser (Formato C) + botão "Normalizar com IA"
-- `src/components/admin/__tests__/sports_parser.test.ts` — novos testes
-- (sem mudança no edge function — já suporta `text`)
-
-### Sugestões extras
-
-- **Pré-preview ao colar**: já que o parser passa a entender mais formatos, posso fazer ele rodar automaticamente (debounce 400ms) ao colar no textarea, mostrando contagem em tempo real ("12 jogos detectados").
-- **Diagnóstico inline**: linhas que parecem jogo mas falharam na detecção poderiam aparecer numa seção "Não reconhecidas — clique para corrigir" abaixo do preview.
-
-Confirma seguir com **Camada 1 + 2 + 3** + a primeira sugestão extra (preview automático)?
+1. Quer incluir o **toggle "Auto-extrair colando imagem"** (default OFF) ou prefere manter sempre manual?
+2. Quer o **atalho Ctrl+Shift+I** para extração rápida da imagem pendente?
