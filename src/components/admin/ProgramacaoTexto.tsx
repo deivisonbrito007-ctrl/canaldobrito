@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { detectSportType, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { gameKey } from "@/lib/dedup";
 import { getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
