@@ -1135,7 +1135,14 @@ export const ProgramacaoTexto = () => {
             className="min-h-[200px] bg-secondary/30 border-border/30 text-sm font-mono"
             disabled={readingImage}
           />
-          <p className="text-[10px] text-muted-foreground/60">💡 Cole uma imagem (Ctrl+V) ou texto do WhatsApp para extrair a programação</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] text-muted-foreground/60">💡 Cole uma imagem (Ctrl+V) ou texto do WhatsApp para extrair a programação</p>
+            {liveCount > 0 && (
+              <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px] shrink-0">
+                {liveCount} jogo{liveCount !== 1 ? "s" : ""} detectado{liveCount !== 1 ? "s" : ""}
+              </Badge>
+            )}
+          </div>
 
           <div className="flex flex-wrap gap-2">
             <Button
