@@ -25,6 +25,7 @@ const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
+const AgendaPublica = lazy(() => import("./pages/AgendaPublica"));
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
 const UpdateAvailableBanner = lazy(() => import("./components/UpdateAvailableBanner"));
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/filmes" element={<Index />} />
               <Route path="/series" element={<Index />} />
               <Route path="/programacao" element={<Index />} />
+              <Route path="/agenda" element={<AgendaPublica />} />
               <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
