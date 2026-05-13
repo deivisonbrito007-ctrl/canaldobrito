@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Copy, Share2, MessageCircle, Tv, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Share2, MessageCircle, ArrowLeft } from "lucide-react";
+import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   SPORT_EMOJI,
@@ -336,10 +337,11 @@ const AgendaPublica = () => {
                               </p>
                             )}
                             {g.channels && g.channels.length > 0 && (
-                              <p className="text-xs text-white/70 mt-1 flex items-start gap-1">
-                                <Tv className="w-3 h-3 mt-0.5 shrink-0" />
-                                <span className="break-words">{g.channels.join(", ")}</span>
-                              </p>
+                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                {g.channels.map((ch, i) => (
+                                  <ChannelBadge key={`${g.id}-ch-${i}`} name={ch} size="sm" />
+                                ))}
+                              </div>
                             )}
                           </div>
                           {live && (

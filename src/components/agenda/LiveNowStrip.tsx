@@ -1,5 +1,6 @@
 import { useEffect, useState, forwardRef } from "react";
-import { Tv, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
+import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, detectSportType } from "@/lib/gameUtils";
 import type { DailyGame } from "@/hooks/useDailyGames";
 
@@ -98,9 +99,13 @@ const LiveNowStrip = forwardRef<HTMLElement, Props>(({ games, onJumpTo }, ref) =
                 <span className="truncate">{SPORT_LABEL[sport] ?? sport}</span>
               </div>
               {g.channels && g.channels.length > 0 && (
-                <div className="mt-1 flex items-center gap-1 text-[11px] text-white/70">
-                  <Tv className="w-3 h-3 shrink-0" />
-                  <span className="truncate">{g.channels.join(", ")}</span>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {g.channels.slice(0, 2).map((ch, i) => (
+                    <ChannelBadge key={`${g.id}-lch-${i}`} name={ch} size="sm" />
+                  ))}
+                  {g.channels.length > 2 && (
+                    <span className="text-[10px] text-white/50 self-center">+{g.channels.length - 2}</span>
+                  )}
                 </div>
               )}
             </button>
