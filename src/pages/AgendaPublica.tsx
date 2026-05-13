@@ -343,21 +343,6 @@ const AgendaPublica = () => {
         </div>
       </div>
 
-      {/* Sticky share bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#07080a]/95 backdrop-blur"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="mx-auto max-w-[460px] px-3 py-3">
-          <button
-            onClick={handleWhatsApp}
-            className="w-full h-12 rounded-xl bg-[#25d366] hover:bg-[#1ebe5a] active:scale-95 transition flex items-center justify-center gap-2 text-sm font-bold text-white"
-            aria-label="Compartilhar no WhatsApp"
-          >
-            <MessageCircle className="w-4 h-4" /> WhatsApp
-          </button>
-        </div>
-      </div>
 
       <style>{`
         @keyframes shimmer {
