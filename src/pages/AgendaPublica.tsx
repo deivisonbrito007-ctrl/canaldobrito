@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, MessageCircle, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
@@ -14,8 +14,7 @@ import {
   isGameCurrentlyLive,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
-import { buildDayText, offsetDateStr } from "@/lib/whatsappText";
-import { toast } from "sonner";
+import { offsetDateStr } from "@/lib/whatsappText";
 import logo from "@/assets/canal_do_brito_logo.png";
 import LiveNowStrip from "@/components/agenda/LiveNowStrip";
 
@@ -139,16 +138,6 @@ const AgendaPublica = () => {
     else next.set("date", newDate);
     setActiveFilter(null);
     setParams(next, { replace: true });
-  };
-
-  const handleWhatsApp = () => {
-    const text = buildDayText(games, date, SITE_URL);
-    if (!text) {
-      toast.error("Nenhum jogo para compartilhar");
-      return;
-    }
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const visibleSports = activeFilter ? [activeFilter] : sportsSorted;
@@ -343,21 +332,6 @@ const AgendaPublica = () => {
         </div>
       </div>
 
-      {/* Sticky share bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#07080a]/95 backdrop-blur"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="mx-auto max-w-[460px] px-3 py-3">
-          <button
-            onClick={handleWhatsApp}
-            className="w-full h-12 rounded-xl bg-[#25d366] hover:bg-[#1ebe5a] active:scale-95 transition flex items-center justify-center gap-2 text-sm font-bold text-white"
-            aria-label="Compartilhar no WhatsApp"
-          >
-            <MessageCircle className="w-4 h-4" /> WhatsApp
-          </button>
-        </div>
-      </div>
 
       <style>{`
         @keyframes shimmer {
