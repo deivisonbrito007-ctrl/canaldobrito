@@ -1,206 +1,104 @@
+## Página pública de Programação Diária
 
-## Objetivo
+Nova rota leve, focada em compartilhamento via WhatsApp/Stories — sem header/footer/bottom-nav do app, layout vertical limpo, pronta pra screenshot ou link direto.
 
-Definir um **formato canônico único** que o parser de Programação (`parseScheduleText` em `src/components/admin/ProgramacaoTexto.tsx`) reconhece com 100% de confiabilidade, mais um **prompt para GPT** que sempre produz texto neste formato — eliminando os erros de leitura.
+### Rota
 
----
+`/programacao` hoje cai dentro do `<Index />` (com bottom-nav, abas, etc). Vou criar uma rota **paralela e dedicada**:
 
-## Diagnóstico do parser atual
+- **`/agenda`** — versão pública compartilhável, standalone (sem nav, sem abas).
+- Aceita `?date=YYYY-MM-DD` pra compartilhar a agenda de um dia específico (default = hoje em America/Sao_Paulo).
 
-O parser entende dois formatos:
-
-- **Formato A (canônico, blocos com emojis):** linha do confronto seguida de linhas-metadata começando por `🏆`, `⏰`, `📺`. **É o caminho mais robusto.**
-- **Formato C (inline):** `Time A x Time B — Canal — HH:MM` em uma única linha — passa por um pré-processador que converte para o Formato A.
-
-Falhas observadas no Formato C:
-- Linhas sem `—` (em-dash) ou misturando `-` e `—` quebram o split.
-- Datas só no cabeçalho (ex.: `Jogos do Dia (09/05)`) às vezes não propagam para subseções.
-- Eventos solo (Tênis/Golfe/F1) sem `x` viram seções fantasma.
-- Caracteres invisíveis colados do WhatsApp (NBSP, ZWSP) bagunçam regex.
-- Competições multi-linha (ex.: `PGA Tour — Terceira Rodada` + horários soltos abaixo) perdem o `competition_detail`.
-
-**Solução:** padronizar tudo no **Formato A** (blocos com emoji), que não depende de em-dash nem de inferência contextual.
-
----
-
-## Formato canônico proposto (Formato A — à prova de falhas)
-
-Estrutura rígida, uma linha por campo, sempre nesta ordem:
+### Estrutura visual da página (mobile-first, 320–430px)
 
 ```text
-📅 DD/MM
-
-[EMOJI ESPORTE] NOME DO ESPORTE
-
-Time A x Time B
-🏆 Competição (Detalhe opcional)
-⏰ HH:MM
-📺 Canal1, Canal2
-
-Time C x Time D
-🏆 Competição
-⏰ HH:MM
-📺 Canal
+┌──────────────────────────────────┐
+│ [Logo Canal do Brito]            │  ← header mínimo (clicável → /)
+│ AGENDA DE HOJE                   │  ← Bebas Neue, accent #00ff87
+│ Quarta, 13 de maio · 24 jogos    │  ← data PT-BR + total
+├──────────────────────────────────┤
+│ Resumo por esporte (chips)       │
+│ ⚽ 14  🏀 4  🥊 2  🎾 2  🏎️ 1  ⛳ 1│  ← clicáveis = filtra
+├──────────────────────────────────┤
+│ ⚽ FUTEBOL — 14 jogos             │  ← header de grupo
+│ ┌────────────────────────────┐   │
+│ │ 16:00  Flamengo x Palmeiras│   │
+│ │        Brasileirão         │   │
+│ │        📺 Globo, Premiere  │   │
+│ │        🔴 AO VIVO          │   │  ← se live agora
+│ └────────────────────────────┘   │
+│ … demais cards de futebol …      │
+├──────────────────────────────────┤
+│ 🏀 BASQUETE — 4 jogos             │
+│ … cards …                         │
+├──────────────────────────────────┤
+│ … demais esportes …               │
+├──────────────────────────────────┤
+│ [📋 Copiar texto]  [📲 WhatsApp] │  ← barra fixa no rodapé
+│ [📸 Salvar imagem]                │
+│ canaldobrito.site                 │
+└──────────────────────────────────┘
 ```
 
-Regras obrigatórias:
+### Features de compartilhamento
 
-1. **Data:** primeira linha de cada bloco de dia, `📅 DD/MM` (ano = ano atual).
-2. **Cabeçalho de esporte:** emoji + nome em **MAIÚSCULAS** (`⚽ FUTEBOL`, `🏀 BASQUETE`, `🏎️ AUTOMOBILISMO`, `🥊 COMBATE`, `🎾 TÊNIS`, `⛳ GOLFE`, `🏐 VÔLEI`, `🏈 NFL`, `⚾ BEISEBOL`, `🏒 HÓQUEI`, `🏉 RUGBY`, `🏄 SURF`, `🚴 CICLISMO`).
-3. **Confronto:** `Time Mandante x Time Visitante` (sempre `x` minúsculo cercado de espaços). Para futebol feminino, sufixar `(F)`.
-4. **Eventos solo** (tênis/golfe/MMA/F1/etc., sem adversário): usar apenas o nome do evento na linha do confronto. Ex.: `GP da França — Sprint Race`.
-5. **🏆 Competição:** uma linha. Detalhe entre parênteses: `🏆 Brasileirão Série A (Rodada 32)`.
-6. **⏰ Horário:** sempre `HH:MM` 24h (Brasília). Nunca `HHhMM` nem `9:00`.
-7. **📺 Canais:** separados por vírgula. Sem prefixo. Ex.: `📺 Globo, Premiere, SporTV`.
-8. **Separação:** linha em branco entre cada jogo. Linha em branco + cabeçalho novo para mudar de esporte.
-9. **Proibido:** asteriscos `*`, bandeiras 🇧🇷, traços `—` no meio do confronto, números de telefone, “Contato:”, qualquer rodapé.
+1. **Copiar texto** — usa o gerador `whatsappText.ts` já existente (mesmo formato do parser/admin) e copia pro clipboard.
+2. **Compartilhar WhatsApp** — `https://wa.me/?text=...` com o texto pré-formatado + link `canaldobrito.site/agenda?date=...`.
+3. **Salvar imagem** — usa `html-to-image` (lib leve, ~14kb) pra exportar a página como PNG vertical 1080×1920 (formato story). Fallback: `Web Share API` se disponível.
+4. **Web Share API nativo** — botão "Compartilhar" usa `navigator.share()` em mobile (compartilha texto + URL).
 
-Esse formato cobre 100% dos caminhos felizes do parser atual, sem depender do pré-processador Formato C.
+### Comportamento
 
----
+- Esportes ordenados por contagem (futebol primeiro normalmente).
+- Dentro de cada esporte: ordem cronológica por horário.
+- Jogos `is_live` (computado dinamicamente via `isGameCurrentlyLive`) ganham badge vermelho 🔴 AO VIVO.
+- Jogos já encerrados aparecem em opacidade reduzida (50%).
+- Chips de esporte no topo: clicar filtra; clicar de novo limpa.
+- Date picker discreto no canto superior direito (apenas seta ◀ ontem / amanhã ▶ + data) pra navegar dias.
+- Empty state amigável: "Sem jogos para esta data — confira amanhã!"
 
-## Sugestões de melhorias adicionais (fora deste plano, opt-in)
+### SEO + meta sociais
 
-- **Validador no admin:** botão “Validar formato” que destaca linha por linha o que está fora do padrão antes de tentar parsear.
-- **Botão “Copiar template vazio”** no admin para o operador colar no GPT.
-- **Whitelist de canais conhecidos:** sugerir correção quando aparecer `Spo TV` → `SporTV`.
-- **Normalização silenciosa de invisíveis** (NBSP/ZWSP → espaço) já no `parseScheduleText`.
-- **Suporte a múltiplos dias** num único paste (`📅 09/05` … `📅 10/05` …) — o parser já suporta, só reforçar no template.
+- `<title>` dinâmico: `Agenda de hoje — Quarta 13/05 · 24 jogos | Canal do Brito`
+- `<meta name="description">` com resumo (`14 jogos de futebol, 4 de basquete, …`)
+- Open Graph + Twitter Card (preview rico no WhatsApp/Twitter):
+  - `og:title`, `og:description`, `og:image` (placeholder ou screenshot pré-gerado), `og:url`
+- JSON-LD `SportsEvent` array com os jogos do dia.
+- Canonical: `https://canaldobrito.site/agenda?date=YYYY-MM-DD`.
 
-(Essas melhorias não fazem parte do entregável agora — apenas registradas como recomendações.)
+### Arquivos a criar/editar
 
----
+**Novos:**
+- `src/pages/AgendaPublica.tsx` — página standalone (sem `<AppNavbar/>`, sem `<BottomNav/>`).
+- `src/components/public/agenda/AgendaHeader.tsx` — logo + título + data + total + nav de dias.
+- `src/components/public/agenda/SportSummaryChips.tsx` — chips de contagem por esporte.
+- `src/components/public/agenda/SportGroup.tsx` — header de esporte + lista de cards.
+- `src/components/public/agenda/AgendaShareBar.tsx` — barra fixa de ações (copiar/WhatsApp/imagem).
+- `src/lib/agendaShareImage.ts` — helper `html-to-image` pra gerar PNG.
 
-## Entregável principal: PROMPT pronto para o GPT
+**Editados:**
+- `src/App.tsx` — adicionar `<Route path="/agenda" element={<AgendaPublica />} />` (lazy).
+- `package.json` — instalar `html-to-image` (~14kb gzip).
 
-Copie e cole no ChatGPT (ou qualquer LLM) junto com o texto bagunçado da fonte:
+**Reaproveitado (sem mudar):**
+- `useAllDailyGames(date)` — busca os jogos.
+- `SPORT_EMOJI`, `SPORT_LABEL`, `isGameCurrentlyLive` de `gameUtils.ts`.
+- `whatsappText.ts` — gera texto pra clipboard/WhatsApp.
+- `getLocalDateString`, `formatCountdown` de `dateUtils.ts` (timezone São Paulo).
+- `GameCard` ou simplificação dele (versão "share-friendly" sem botões de ação).
 
-````text
-Você é um formatador de programação esportiva para o Canal do Brito.
-Receberá um texto bruto (WhatsApp, site, lista solta) e deve devolver
-APENAS o texto reformatado no padrão abaixo, sem comentários, sem
-explicações, sem markdown extra.
+### Detalhes técnicos
 
-═══════════════ PADRÃO OBRIGATÓRIO ═══════════════
+- Página é **pública** (RLS já permite SELECT em `daily_games` para todos).
+- Filtro: `archived = false AND active = true AND date = ?`.
+- Sem dependência de auth, sem tracking de admin.
+- Container max-width 430px centralizado também em desktop, com fundo `#07080a` em tela cheia.
+- Respeita safe areas iOS (`env(safe-area-inset-bottom)`) na barra de ações.
+- Botão "Voltar para o app" discreto no rodapé linka pra `/`.
 
-📅 DD/MM
+### Decisões pendentes (posso assumir o default se preferir)
 
-EMOJI_ESPORTE NOME_DO_ESPORTE_EM_MAIUSCULAS
-
-Time Mandante x Time Visitante
-🏆 Nome da Competição (Detalhe opcional)
-⏰ HH:MM
-📺 Canal1, Canal2, Canal3
-
-Time C x Time D
-🏆 Competição
-⏰ HH:MM
-📺 Canal
-
-══════════════════════════════════════════════════
-
-REGRAS RÍGIDAS:
-1. Primeira linha de cada dia: 📅 DD/MM (use o ano atual implicitamente).
-2. Cabeçalho de esporte SEMPRE em MAIÚSCULAS, com um destes emojis:
-   ⚽ FUTEBOL · 🏀 BASQUETE · 🎾 TÊNIS · 🏎️ AUTOMOBILISMO ·
-   🥊 COMBATE · ⛳ GOLFE · 🏐 VÔLEI · 🏈 NFL · ⚾ BEISEBOL ·
-   🏒 HÓQUEI · 🏉 RUGBY · 🏄 SURF · 🚴 CICLISMO
-3. Confronto: "Time A x Time B" (x minúsculo, espaços ao redor).
-   Futebol feminino: adicione " (F)" no final do confronto.
-4. Eventos sem adversário (Tênis/Golfe/F1/MMA solo): use só o nome
-   do evento na linha do confronto. Ex.: "GP da França - Sprint Race".
-5. ⏰ horário SEMPRE no formato HH:MM (24h, horário de Brasília).
-   Converta "9h", "9h00", "21h30", "9:00 AM" → "09:00", "21:30".
-6. 📺 canais separados por vírgula. Normalize nomes:
-   "sportv" → "SporTV", "espn brasil" → "ESPN", "premiere fc" → "Premiere",
-   "disney+" → "Disney+", "globo" → "Globo", "band" → "Band".
-7. UMA linha em branco entre cada jogo.
-8. UMA linha em branco antes de cada cabeçalho de esporte novo.
-9. Detalhes da competição entre parênteses no 🏆 (ex.: "🏆 NBA (Playoffs)").
-10. PROIBIDO no output: asteriscos *, bandeiras 🇧🇷, traços — dentro do
-    confronto, telefones, "Contato:", rodapés, observações, links.
-11. Se faltar canal, omita a linha 📺. Se faltar horário, use ⏰ 00:00.
-12. Se houver múltiplos dias no texto, repita o bloco 📅 DD/MM para cada.
-13. Ordene os jogos por horário crescente dentro de cada esporte.
-
-═══════════════ EXEMPLO DE SAÍDA VÁLIDA ═══════════════
-
-📅 09/05
-
-⚽ FUTEBOL
-
-Flamengo x Palmeiras
-🏆 Brasileirão Série A
-⏰ 16:00
-📺 Globo, Premiere
-
-São Paulo x Corinthians (F)
-🏆 Brasileirão Feminino
-⏰ 18:30
-📺 SporTV
-
-🏀 BASQUETE
-
-Lakers x Celtics
-🏆 NBA (Playoffs)
-⏰ 21:00
-📺 ESPN 4
-
-Dallas Wings x Indiana Fever
-🏆 WNBA
-⏰ 14:00
-📺 ESPN 3
-
-🏎️ AUTOMOBILISMO
-
-GP da França - Qualificação
-🏆 Fórmula 1
-⏰ 05:50
-📺 ESPN 4
-
-GP da França - Sprint Race
-🏆 Fórmula 1
-⏰ 10:00
-📺 ESPN 4
-
-🥊 COMBATE
-
-Angelo Leo x Ra'eese Aleem
-🏆 Boxe
-⏰ 21:00
-📺 ESPN 3
-
-🎾 TÊNIS
-
-Italian Open
-🏆 ATP Masters 1000
-⏰ 06:00
-📺 ESPN 2
-
-Italian Open
-🏆 ATP Masters 1000
-⏰ 10:00
-📺 ESPN 2
-
-⛳ GOLFE
-
-PGA Tour - Terceira Rodada
-🏆 PGA Tour
-⏰ 14:00
-📺 ESPN 3
-
-══════════════════════════════════════════════════
-
-Agora reformate o texto a seguir seguindo EXATAMENTE este padrão.
-Retorne SOMENTE o texto formatado, nada mais.
-
-TEXTO BRUTO:
-[COLE AQUI O TEXTO ORIGINAL]
-````
-
----
-
-## O que muda no código?
-
-**Nada.** Esta entrega é puramente um padrão documentado + prompt de GPT. O parser atual já lê esse Formato A com 100% de fidelidade. As melhorias listadas (validador no admin, botão “Copiar template”, normalização de invisíveis) ficam como sugestões para um próximo ciclo, se você aprovar.
-
+1. **Rota**: `/agenda` (default) ou `/programacao-hoje`?
+2. **Esportes vazios**: ocultar grupos sem jogos (default) ou mostrar "0 jogos"?
+3. **Imagem compartilhável**: gerar dinâmica (html-to-image) — confirma adicionar a lib?
+4. **Navegação de dias**: incluir setas ontem/amanhã (default sim) ou só hoje pra manter foco?
