@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Copy, Share2, MessageCircle, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, ArrowLeft } from "lucide-react";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
