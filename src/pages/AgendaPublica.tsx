@@ -16,6 +16,7 @@ import {
 import { buildDayText, safeCopy, offsetDateStr } from "@/lib/whatsappText";
 import { toast } from "sonner";
 import logo from "@/assets/canal_do_brito_logo.png";
+import LiveNowStrip from "@/components/agenda/LiveNowStrip";
 
 const SITE_URL = "https://canaldobrito.site";
 
@@ -55,6 +56,30 @@ const AgendaPublica = () => {
   );
 
   const grouped = useMemo(() => groupBySport(games), [games]);
+
+  // Tick every 30s so live filtering stays fresh
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const isToday = date === today;
+  const liveGames = useMemo(() => {
+    if (!isToday) return [];
+    return games.filter((g) =>
+      isGameCurrentlyLive(g.game_time, g.date, (g.sport_type || "football") as SportType)
+    );
+  }, [games, isToday]);
+
+  const handleJumpTo = (id: string) => {
+    const el = document.getElementById(`game-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-red-500/60");
+      setTimeout(() => el.classList.remove("ring-2", "ring-red-500/60"), 1600);
+    }
+  };
 
   const sportsSorted = useMemo(() => {
     return Object.keys(grouped).sort((a, b) => {
@@ -201,6 +226,11 @@ const AgendaPublica = () => {
           </p>
         </div>
 
+        {/* Live now strip (only today + has lives) */}
+        {!isLoading && isToday && liveGames.length > 0 && (
+          <LiveNowStrip games={liveGames} onJumpTo={handleJumpTo} />
+        )}
+
         {/* Sport summary chips */}
         {sportsSorted.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-5">
@@ -283,7 +313,8 @@ const AgendaPublica = () => {
                     return (
                       <div
                         key={g.id}
-                        className={`relative rounded-xl border p-3 ${
+                        id={`game-${g.id}`}
+                        className={`relative rounded-xl border p-3 transition-shadow ${
                           live
                             ? "border-red-500/40 bg-red-500/5"
                             : "border-white/10 bg-white/[0.03]"
