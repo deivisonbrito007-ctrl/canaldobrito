@@ -141,17 +141,6 @@ const AgendaPublica = () => {
     setParams(next, { replace: true });
   };
 
-  const handleCopy = async () => {
-    const text = buildDayText(games, date, SITE_URL);
-    if (!text) {
-      toast.error("Nenhum jogo para copiar");
-      return;
-    }
-    const ok = await safeCopy(text);
-    if (ok) toast.success("Programação copiada!");
-    else toast.error("Não foi possível copiar");
-  };
-
   const handleWhatsApp = () => {
     const text = buildDayText(games, date, SITE_URL);
     if (!text) {
@@ -160,24 +149,6 @@ const AgendaPublica = () => {
     }
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleShare = async () => {
-    const text = buildDayText(games, date, SITE_URL);
-    const shareUrl = `${SITE_URL}/agenda?date=${date}`;
-    if (navigator.share && text) {
-      try {
-        await navigator.share({
-          title: `${titleLabel} — ${subtitle}`,
-          text,
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        /* user cancelled */
-      }
-    }
-    handleCopy();
   };
 
   const visibleSports = activeFilter ? [activeFilter] : sportsSorted;
