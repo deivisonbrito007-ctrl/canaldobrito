@@ -4,14 +4,17 @@ import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDail
 import { formatCountdown } from "@/lib/dateUtils";
 import { detectSportType, SPORT_EMOJI, SPORT_LABEL, getLocalDateString, type SportType } from "@/lib/gameUtils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { gameKey } from "@/lib/dedup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck } from "lucide-react";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Wand2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+const SPORT_OPTIONS = Object.keys(SPORT_LABEL) as SportType[];
 
 export const DailyGamesManager = () => {
   const today = getLocalDateString();
@@ -25,6 +28,9 @@ export const DailyGamesManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
+  const [showSuspect, setShowSuspect] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkSport, setBulkSport] = useState<SportType>("football");
 
   // Live countdown tick
   const [, setTick] = useState(0);
@@ -43,17 +49,72 @@ export const DailyGamesManager = () => {
     }, {});
   }, [games]);
 
+  // Pre-compute "suggested" sport for each game (for divergence highlight + suspect filter)
+  const suggestionMap = useMemo(() => {
+    const map = new Map<string, SportType>();
+    if (!games) return map;
+    for (const g of games) {
+      map.set(g.id, detectSportType(g.competition || "", `${g.home_team} ${g.away_team}`));
+    }
+    return map;
+  }, [games]);
+
+  const suspectCount = useMemo(() => {
+    if (!games) return 0;
+    return games.filter((g) => suggestionMap.get(g.id) !== (g.sport_type || "football")).length;
+  }, [games, suggestionMap]);
+
   const filteredGames = useMemo(() => {
     if (!games) return [];
-    if (!sportFilter) return games;
-    return games.filter((g) => (g.sport_type || "football") === sportFilter);
-  }, [games, sportFilter]);
+    let list = games;
+    if (sportFilter) list = list.filter((g) => (g.sport_type || "football") === sportFilter);
+    if (showSuspect) list = list.filter((g) => suggestionMap.get(g.id) !== (g.sport_type || "football"));
+    return list;
+  }, [games, sportFilter, showSuspect, suggestionMap]);
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
   };
 
+  const handleQuickSportChange = (id: string, sport: SportType) => {
+    updateGame.mutate({ id, sport_type: sport });
+  };
 
+  const handleAutoOne = (game: any) => {
+    const correct = detectSportType(game.competition || "", `${game.home_team} ${game.away_team}`);
+    if (correct === game.sport_type) {
+      toast.info(`Já está como ${SPORT_LABEL[correct]}`);
+      return;
+    }
+    updateGame.mutate({ id: game.id, sport_type: correct });
+    toast.success(`${SPORT_EMOJI[correct]} ${SPORT_LABEL[correct]}`);
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkSport = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from("daily_games")
+        .update({ sport_type: bulkSport })
+        .in("id", Array.from(selectedIds));
+      if (error) throw error;
+      toast.success(`${selectedIds.size} jogo(s) alterado(s) para ${SPORT_EMOJI[bulkSport]} ${SPORT_LABEL[bulkSport]}`);
+      clearSelection();
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   const handleArchiveDay = async () => {
     const nonArchived = games?.filter((g) => !g.archived) || [];
@@ -81,7 +142,6 @@ export const DailyGamesManager = () => {
   const handleReclassifySports = async () => {
     setReclassifying(true);
     try {
-      // Fetch ALL non-archived games (no date filter)
       const { data: allGames, error } = await supabase
         .from("daily_games")
         .select("id, home_team, away_team, competition, sport_type")
@@ -129,7 +189,7 @@ export const DailyGamesManager = () => {
         .order("created_at", { ascending: true });
       if (error) throw error;
 
-      const seen = new Map<string, string>(); // key -> id of oldest
+      const seen = new Map<string, string>();
       const dupeIds: string[] = [];
       for (const g of data || []) {
         const key = gameKey(g as any) + "|" + g.date;
@@ -198,9 +258,21 @@ export const DailyGamesManager = () => {
                 {SPORT_EMOJI[sport as SportType] || "⚽"} {count}
               </button>
             ))}
+            {suspectCount > 0 && (
+              <button
+                onClick={() => setShowSuspect((s) => !s)}
+                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                  showSuspect
+                    ? "bg-amber-500/20 text-amber-300 font-bold"
+                    : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                }`}
+              >
+                <AlertTriangle className="h-2.5 w-2.5" /> Suspeitos {suspectCount}
+              </button>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-3 sm:mt-0">
+        <div className="flex items-center gap-2 mt-3 sm:mt-0 flex-wrap">
           <Input
             type="date"
             value={selectedDate}
@@ -227,6 +299,31 @@ export const DailyGamesManager = () => {
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 px-5 sm:px-6 py-3 bg-primary/10 border-b border-primary/20 flex-wrap">
+          <span className="text-xs font-bold text-primary">{selectedIds.size} selecionado(s)</span>
+          <Select value={bulkSport} onValueChange={(v) => setBulkSport(v as SportType)}>
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="z-[100] bg-popover">
+              {SPORT_OPTIONS.map((s) => (
+                <SelectItem key={s} value={s} className="text-xs">
+                  {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={handleBulkSport} className="h-8 text-xs bg-primary text-primary-foreground">
+            Aplicar esporte
+          </Button>
+          <Button size="sm" variant="ghost" onClick={clearSelection} className="h-8 text-xs">
+            Limpar seleção
+          </Button>
+        </div>
+      )}
+
       <div className="p-5 sm:p-6 space-y-3">
         {showAddForm && (
           <AddGameForm
@@ -249,12 +346,16 @@ export const DailyGamesManager = () => {
             {filteredGames.map((game) => {
               const isScheduled = game.publish_at && !game.active && new Date(game.publish_at) > new Date();
               const isArchived = game.archived;
+              const currentSport = (game.sport_type || "football") as SportType;
+              const suggested = suggestionMap.get(game.id) || currentSport;
+              const isDivergent = suggested !== currentSport;
+              const isSelected = selectedIds.has(game.id);
               return (
                 <div
                   key={game.id}
                   className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
                     isArchived ? "opacity-30 border border-dashed border-muted-foreground/20" : !game.active && !isScheduled ? "opacity-40" : ""
-                  }`}
+                  } ${isDivergent && !isArchived ? "border border-amber-500/30" : ""} ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
                   {editingId === game.id ? (
                     <InlineEditForm
@@ -267,11 +368,21 @@ export const DailyGamesManager = () => {
                     />
                   ) : (
                     <>
+                      {!isArchived && (
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelected(game.id)}
+                          className="shrink-0"
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-bold text-foreground truncate">
                             {game.home_team} x {game.away_team}
                           </p>
+                          <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[9px] px-1.5 py-0 shrink-0">
+                            {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
+                          </Badge>
                           {isArchived && (
                             <Badge className="bg-muted/50 text-muted-foreground border-muted text-[9px] px-1.5 py-0 shrink-0">
                               Arquivado
@@ -291,6 +402,18 @@ export const DailyGamesManager = () => {
                         <p className="text-[10px] text-muted-foreground/60">
                           📺 {game.channels?.join(", ") || "—"}
                         </p>
+                        {isDivergent && !isArchived && (
+                          <div className="mt-1.5 flex items-center gap-2 text-[10px] text-amber-400">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>Sugestão: {SPORT_EMOJI[suggested]} {SPORT_LABEL[suggested]}</span>
+                            <button
+                              onClick={() => handleQuickSportChange(game.id, suggested)}
+                              className="px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold"
+                            >
+                              Aceitar
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isArchived ? (
@@ -304,6 +427,26 @@ export const DailyGamesManager = () => {
                           </Button>
                         ) : (
                           <>
+                            {/* Quick sport dropdown (1-click change) */}
+                            <Select value={currentSport} onValueChange={(v) => handleQuickSportChange(game.id, v as SportType)}>
+                              <SelectTrigger className="h-7 w-[110px] text-[10px] px-2">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="z-[100] bg-popover">
+                                {SPORT_OPTIONS.map((s) => (
+                                  <SelectItem key={s} value={s} className="text-xs">
+                                    {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <button
+                              onClick={() => handleAutoOne(game)}
+                              title="Re-classificar este jogo"
+                              className="p-1 rounded hover:bg-blue-500/10 text-blue-400"
+                            >
+                              <Wand2 className="h-3.5 w-3.5" />
+                            </button>
                             <Switch
                               checked={game.active}
                               onCheckedChange={() => handleToggleActive(game.id, game.active)}
@@ -348,8 +491,6 @@ const InlineEditForm = ({
   const [channels, setChannels] = useState(game.channels?.join(", ") || "");
   const [sport, setSport] = useState<SportType>((game.sport_type || "football") as SportType);
 
-  const sportOptions = Object.keys(SPORT_LABEL) as SportType[];
-
   return (
     <div className="flex-1 space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -366,7 +507,7 @@ const InlineEditForm = ({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="z-[100] bg-popover">
-          {sportOptions.map((s) => (
+          {SPORT_OPTIONS.map((s) => (
             <SelectItem key={s} value={s} className="text-xs">
               {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
             </SelectItem>
@@ -412,6 +553,7 @@ const AddGameForm = ({
   const [comp, setComp] = useState("");
   const [time, setTime] = useState("");
   const [channels, setChannels] = useState("");
+  const [sportMode, setSportMode] = useState<"auto" | SportType>("auto");
 
   const handleAdd = async () => {
     if (!home || !away || !time) {
@@ -419,12 +561,8 @@ const AddGameForm = ({
       return;
     }
 
-    // Check for duplicates before inserting
-    const newGame = {
-      home_team: home,
-      away_team: away,
-      game_time: time,
-    };
+    const resolvedSport: SportType =
+      sportMode === "auto" ? detectSportType(comp, `${home} ${away}`) : sportMode;
 
     try {
       const result = await insertGames.mutateAsync([
@@ -440,7 +578,7 @@ const AddGameForm = ({
           is_womens: home.includes("(F)") || away.includes("(F)"),
           active: true,
           archived: false,
-          sport_type: detectSportType(comp, `${home} ${away}`),
+          sport_type: resolvedSport,
           status_short: "NS",
         },
       ]);
@@ -467,6 +605,19 @@ const AddGameForm = ({
         <Input value={time} onChange={(e) => setTime(e.target.value)} placeholder="HH:MM" className="h-8 text-xs" />
       </div>
       <Input value={channels} onChange={(e) => setChannels(e.target.value)} placeholder="Canais (vírgula)" className="h-8 text-xs" />
+      <Select value={sportMode} onValueChange={(v) => setSportMode(v as any)}>
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="z-[100] bg-popover">
+          <SelectItem value="auto" className="text-xs">🪄 Auto (detectar)</SelectItem>
+          {SPORT_OPTIONS.map((s) => (
+            <SelectItem key={s} value={s} className="text-xs">
+              {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <div className="flex gap-2">
         <Button size="sm" onClick={handleAdd} disabled={insertGames.isPending} className="h-7 text-xs bg-emerald-600">
           <Plus className="h-3 w-3 mr-1" /> {insertGames.isPending ? "Adicionando..." : "Adicionar"}
