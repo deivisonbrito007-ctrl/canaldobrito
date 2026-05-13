@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
-import { detectSportType, SPORT_EMOJI, getLocalDateString, type SportType } from "@/lib/gameUtils";
+import { detectSportType, SPORT_EMOJI, SPORT_LABEL, getLocalDateString, type SportType } from "@/lib/gameUtils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { gameKey } from "@/lib/dedup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -345,6 +346,9 @@ const InlineEditForm = ({
   const [comp, setComp] = useState(game.competition);
   const [time, setTime] = useState(game.game_time?.slice(0, 5) || "");
   const [channels, setChannels] = useState(game.channels?.join(", ") || "");
+  const [sport, setSport] = useState<SportType>((game.sport_type || "football") as SportType);
+
+  const sportOptions = Object.keys(SPORT_LABEL) as SportType[];
 
   return (
     <div className="flex-1 space-y-2">
@@ -357,6 +361,18 @@ const InlineEditForm = ({
         <Input value={time} onChange={(e) => setTime(e.target.value)} className="h-8 text-xs" />
       </div>
       <Input value={channels} onChange={(e) => setChannels(e.target.value)} placeholder="Canais" className="h-8 text-xs" />
+      <Select value={sport} onValueChange={(v) => setSport(v as SportType)}>
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="z-[100] bg-popover">
+          {sportOptions.map((s) => (
+            <SelectItem key={s} value={s} className="text-xs">
+              {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -367,6 +383,7 @@ const InlineEditForm = ({
               competition: comp,
               game_time: time,
               channels: channels.split(",").map((c: string) => c.trim()).filter(Boolean),
+              sport_type: sport,
             })
           }
           className="h-7 text-xs bg-emerald-600"
