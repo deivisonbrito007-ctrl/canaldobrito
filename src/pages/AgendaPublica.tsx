@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Copy, Share2, MessageCircle, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, ArrowLeft } from "lucide-react";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
@@ -14,7 +14,7 @@ import {
   isGameCurrentlyLive,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
-import { buildDayText, safeCopy, offsetDateStr } from "@/lib/whatsappText";
+import { buildDayText, offsetDateStr } from "@/lib/whatsappText";
 import { toast } from "sonner";
 import logo from "@/assets/canal_do_brito_logo.png";
 import LiveNowStrip from "@/components/agenda/LiveNowStrip";
@@ -141,17 +141,6 @@ const AgendaPublica = () => {
     setParams(next, { replace: true });
   };
 
-  const handleCopy = async () => {
-    const text = buildDayText(games, date, SITE_URL);
-    if (!text) {
-      toast.error("Nenhum jogo para copiar");
-      return;
-    }
-    const ok = await safeCopy(text);
-    if (ok) toast.success("Programação copiada!");
-    else toast.error("Não foi possível copiar");
-  };
-
   const handleWhatsApp = () => {
     const text = buildDayText(games, date, SITE_URL);
     if (!text) {
@@ -160,24 +149,6 @@ const AgendaPublica = () => {
     }
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleShare = async () => {
-    const text = buildDayText(games, date, SITE_URL);
-    const shareUrl = `${SITE_URL}/agenda?date=${date}`;
-    if (navigator.share && text) {
-      try {
-        await navigator.share({
-          title: `${titleLabel} — ${subtitle}`,
-          text,
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        /* user cancelled */
-      }
-    }
-    handleCopy();
   };
 
   const visibleSports = activeFilter ? [activeFilter] : sportsSorted;
@@ -377,27 +348,13 @@ const AgendaPublica = () => {
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#07080a]/95 backdrop-blur"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto max-w-[460px] px-3 py-3 flex items-center gap-2">
-          <button
-            onClick={handleCopy}
-            className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center gap-2 text-sm font-semibold border border-white/10"
-            aria-label="Copiar texto"
-          >
-            <Copy className="w-4 h-4" /> Copiar
-          </button>
+        <div className="mx-auto max-w-[460px] px-3 py-3">
           <button
             onClick={handleWhatsApp}
-            className="flex-1 h-12 rounded-xl bg-[#25d366] hover:bg-[#1ebe5a] active:scale-95 transition flex items-center justify-center gap-2 text-sm font-bold text-white"
+            className="w-full h-12 rounded-xl bg-[#25d366] hover:bg-[#1ebe5a] active:scale-95 transition flex items-center justify-center gap-2 text-sm font-bold text-white"
             aria-label="Compartilhar no WhatsApp"
           >
             <MessageCircle className="w-4 h-4" /> WhatsApp
-          </button>
-          <button
-            onClick={handleShare}
-            className="h-12 w-12 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex items-center justify-center border border-white/10"
-            aria-label="Compartilhar"
-          >
-            <Share2 className="w-4 h-4" />
           </button>
         </div>
       </div>
