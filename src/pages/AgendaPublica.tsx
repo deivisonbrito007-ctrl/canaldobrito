@@ -14,7 +14,7 @@ import {
   isGameCurrentlyLive,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
-import { buildDayText, safeCopy, offsetDateStr } from "@/lib/whatsappText";
+import { buildDayText, offsetDateStr } from "@/lib/whatsappText";
 import { toast } from "sonner";
 import logo from "@/assets/canal_do_brito_logo.png";
 import LiveNowStrip from "@/components/agenda/LiveNowStrip";
