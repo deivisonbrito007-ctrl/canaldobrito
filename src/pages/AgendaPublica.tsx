@@ -14,8 +14,7 @@ import {
   isGameCurrentlyLive,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
-import { buildDayText, offsetDateStr } from "@/lib/whatsappText";
-import { toast } from "sonner";
+import { offsetDateStr } from "@/lib/whatsappText";
 import logo from "@/assets/canal_do_brito_logo.png";
 import LiveNowStrip from "@/components/agenda/LiveNowStrip";
 
@@ -139,16 +138,6 @@ const AgendaPublica = () => {
     else next.set("date", newDate);
     setActiveFilter(null);
     setParams(next, { replace: true });
-  };
-
-  const handleWhatsApp = () => {
-    const text = buildDayText(games, date, SITE_URL);
-    if (!text) {
-      toast.error("Nenhum jogo para compartilhar");
-      return;
-    }
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const visibleSports = activeFilter ? [activeFilter] : sportsSorted;
