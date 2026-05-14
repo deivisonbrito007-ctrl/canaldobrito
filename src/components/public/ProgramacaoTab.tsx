@@ -164,9 +164,9 @@ const ProgramacaoTab = () => {
           >
             {titleLabel}
           </h1>
-          <nav className="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
-            {isToday ? (
-              tomorrowCount > 0 && (
+          {(isToday ? tomorrowCount > 0 : true) && (
+            <nav className="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
+              {isToday ? (
                 <button
                   onClick={() => goToDate(tomorrow)}
                   className="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
@@ -178,18 +178,18 @@ const ProgramacaoTab = () => {
                   </span>
                   <ChevronRight className="w-3.5 h-3.5 opacity-70" />
                 </button>
-              )
-            ) : (
-              <button
-                onClick={() => goToDate(today)}
-                className="inline-flex items-center gap-1 h-8 pl-2 pr-3 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
-                aria-label="Voltar para hoje"
-              >
-                <ChevronLeft className="w-3.5 h-3.5 opacity-70" />
-                Hoje
-              </button>
-            )}
-          </nav>
+              ) : (
+                <button
+                  onClick={() => goToDate(today)}
+                  className="inline-flex items-center gap-1 h-8 pl-2 pr-3 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                  aria-label="Voltar para hoje"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 opacity-70" />
+                  Hoje
+                </button>
+              )}
+            </nav>
+          )}
         </div>
         <p className="text-[13px] text-white/65 mt-1">
           {subtitle} ·{" "}
