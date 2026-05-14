@@ -23,6 +23,25 @@ import { CinemaCategoryRail, type CinemaCategory } from "@/components/public/cin
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { useCinemaShelves, type CinemaItem } from "@/components/public/cinema/useCinemaShelves";
 
+/** Defer trailer prefetch until browser is idle — não compete com primeira renderização. */
+const useDeferred = <T,>(value: T, ready: boolean): T | undefined => {
+  const [out, setOut] = useState<T | undefined>(undefined);
+  useEffect(() => {
+    if (!ready) return;
+    const ric: typeof requestIdleCallback | undefined =
+      typeof window !== "undefined" ? (window as any).requestIdleCallback : undefined;
+    const cic: typeof cancelIdleCallback | undefined =
+      typeof window !== "undefined" ? (window as any).cancelIdleCallback : undefined;
+    if (ric) {
+      const h = ric(() => setOut(value), { timeout: 1500 });
+      return () => cic?.(h);
+    }
+    const t = window.setTimeout(() => setOut(value), 600);
+    return () => window.clearTimeout(t);
+  }, [value, ready]);
+  return out;
+};
+
 type FilterId = "all" | "movie" | "series" | "lancamento" | "nova_temporada" | "estreia" | "exclusivo";
 
 type SortId = "recent" | "rating" | "title" | "year";
