@@ -1,130 +1,87 @@
-## Refatoração completa da aba AO VIVO (`/ao-vivo`)
+## Objetivo
 
-Reescrita do `src/components/public/LivePageContent.tsx` com foco mobile-first, hierarquia clara, visual minimalista premium e zero dado falso.
+Reduzir o app a duas abas — **Programação** (com o conteúdo atual da página pública `/agenda`) e **Filmes e Séries** — eliminando a aba "Ao Vivo" e a página standalone `/agenda`. Tudo continua linkado e nada quebra.
 
-### Princípios
+## Mudanças
 
-- **Menos é mais**: remover sticky hero ruidoso, aviso amarelo grande, faixas vermelhas em gradiente, watermarks de emoji a 88px, anéis pulsantes em borda inteira de card e múltiplos "selos" de cabeçalho.
-- **Conteúdo primeiro**: time A · minuto · time B · canal — nessa ordem, com tipografia grande.
-- **Acentos pontuais**: vermelho live e verde primário aparecem só nos pontos certos (dot, hover, CTA inferior), nunca cobrindo grandes superfícies.
-- **Sem CTA no hero**: a maioria dos usuários da aba já é assinante — botão "Assistir agora" sai. CTA de assinatura fica só no rodapé do feed, discreto.
-- **Sem dado fake**: sem placar, sem viewers.
+### 1. BottomNav (`src/components/public/BottomNav.tsx`)
+- Remover o item `live` (Ao Vivo).
+- Manter apenas dois itens, nesta ordem:
+  - **Programação** (id `schedule`, ícone `CalendarDays`) — passa a ocupar o slot da esquerda (default).
+  - **Filmes e Séries** (id `novidades`, ícone `Clapperboard`).
+- Layout continua `justify-around`, alvos ≥44px, safe-area mantida.
 
----
+### 2. Aba Programação = conteúdo da agenda pública
+Criar um componente novo `src/components/public/ProgramacaoTab.tsx` derivado do corpo de `AgendaPublica`, **sem**:
+- O `<AgendaHeader>` (logo + navegação de dias no topo).
+- O `<ShareBar>` fixo no rodapé (conflita com BottomNav).
+- O wrapper `min-h-screen` com gradiente próprio (o app já tem background).
+- O link "Voltar para o app" e os metas de SEO/canonical (já são tratados pelo app principal).
 
-### Estrutura final
+O componente mantém:
+- Hook `useAllDailyGames(date)` lendo `?date=` da URL (com fallback para hoje).
+- Filtro de esportes, hero ao vivo, carrossel "Em Breve", CTA "Assine já".
+- A própria navegação de dias (anterior / hoje / próximo) **deslocada para dentro do conteúdo**, logo abaixo do título "AGENDA DE HOJE", em uma linha compacta — mantém a função sem duplicar header.
+- Tick de 20s, lógica de `isGameCurrentlyLive`.
+
+### 3. `src/pages/Index.tsx`
+- `TAB_ORDER` vira `["schedule", "novidades"]`.
+- Default `activeTab` = `"schedule"`.
+- Em `handleTabChange`, normalizar legados:
+  - `"home"`, `"live"`, `"ao-vivo"` → `"schedule"`.
+  - `"highlights"`, `"sugestoes"`, `"destaques"`, `"filmes"`, `"series"` → `"novidades"`.
+- `renderContent`: remover o branch `live` (com `CategoryIconsCarousel`, `LivePageContent`, `PromoStrip`); a aba `schedule` renderiza o novo `ProgramacaoTab` (lazy).
+- Manter o handler `nav-tab-change` (compatibilidade com botões internos como "Ver destaques").
+
+### 4. Roteamento (`src/App.tsx`)
+- Remover as rotas: `/ao-vivo`, `/novidades`, `/sugestoes`, `/destaques`, `/filmes-e-series`, `/filmes`, `/series`.
+- Manter apenas:
+  - `/` → `Index` (abre em Programação).
+  - `/programacao` → `Index`.
+  - `/agenda` → **redirect** para `/programacao` (preserva o `?date=` via `<Navigate to={... + search} replace />`), garantindo que links já compartilhados no WhatsApp continuem abrindo na nova aba.
+- Remover o `lazy(AgendaPublica)` e excluir o arquivo `src/pages/AgendaPublica.tsx` (lógica reaproveitada no novo componente).
+
+### 5. `src/lib/utils.ts` (deep-links)
+- `PublicTab` vira `"schedule" | "novidades"`.
+- `TAB_SLUGS`: `{ schedule: "programacao", novidades: "filmes-e-series" }`.
+- `SLUG_TO_TAB`: mapear todos os slugs antigos (`ao-vivo`, `live`, `home`, `agenda`, etc.) para `"schedule"` e os de filmes/séries para `"novidades"`.
+- `buildDeepLink`: ajustar fallback `home` → `programacao`.
+
+### 6. `src/lib/whatsappText.ts`
+- Trocar `${siteUrl}/agenda?date=${dateStr}` por `${siteUrl}/programacao?date=${dateStr}`.
+
+### 7. Admin — sem mudança de schema, só ajustes de UI
+- `src/pages/admin/AdminWhatsApp.tsx`: remover o item de tab `"live"` do gerador de mensagens (linhas com `tab: "live"` e o template "🔴 Ao Vivo agora no portal!"), e remover `"home"`/`"live"` da lista `(["home", "live", "novidades", "schedule"] as DeepTab[])`, deixando apenas `["schedule", "novidades"]`.
+- `src/components/admin/whatsapp/ABTemplateLab.tsx`: `TABS` passa a ser `["schedule", "novidades"]`.
+- `src/lib/abTemplates.ts`: trocar templates com `tab: "live"` por `tab: "schedule"`.
+- `src/components/admin/ChannelPreviewStage.tsx`: remover a aba "Ao vivo" do preview (ou renomear para "Programação"); ajustar `TabsContent value="live"`.
+- **Banners, Filmes, Séries, Novidades, Configurações, Analytics, Auditoria**: nenhuma alteração — não dependem da aba Ao Vivo. Os banners continuam aparecendo via `LazyPromoStrip`/`BannerSections` onde já são consumidos (se quisermos que continuem visíveis na nova Programação, posso anexar `<PromoStrip />` no fim do `ProgramacaoTab`; recomendo fazer isso para não perder a vitrine de banners).
+
+### 8. E2E e analytics
+- `src/pages/E2EModals.tsx`: trocar `useState("live")` por `useState("schedule")`.
+- `src/lib/analytics.ts`: comentário "/ao-vivo" → "/programacao".
+
+### 9. Limpeza opcional (recomendada, mas posso preservar se preferir)
+Componentes que ficam órfãos após remover a aba Ao Vivo: `LivePageContent`, `LiveNowHero`, `LiveNowSection`, `LiveEventsSection`, `LiveFeedSection`, `WatchTodaySection`, `Hero`, `HeroBanner`, `CategoryIconsCarousel`, `CategoryBar`, `CategoryPills`. Posso deletá-los para reduzir o bundle, **ou** manter no repo caso queira reutilizá-los depois. Aviso antes de excluir.
+
+## Como tudo continua funcionando
+
+- **Links já compartilhados** (`/agenda?date=YYYY-MM-DD`) → redirecionam para `/programacao?date=...`, e o `ProgramacaoTab` lê o `?date` normalmente.
+- **Botões internos** que disparam `nav-tab-change` com `"novidades"` (ex.: "Ver destaques" no estado vazio) continuam válidos.
+- **Admin WhatsApp** continua gerando mensagens com link válido, agora apontando para `/programacao`.
+- **PWA / SW**: nenhuma mudança de manifest necessária; rotas são SPA fallback.
+
+## Diagrama final
 
 ```text
-┌────────────────────────────────────────┐
-│ ● AO VIVO  ·  7 jogos agora     12:34  │  ← header inline compacto
-├────────────────────────────────────────┤
-│  ⚽ FUTEBOL · BRASILEIRÃO              │
-│                                        │
-│       FLAMENGO   —   PALMEIRAS         │  ← HERO (1º live), sem CTA
-│              · 67' ao vivo ·            │
-│  📺 SporTV   Premiere   +1             │
-├────────────────────────────────────────┤
-│  Todos · 7   ⚽ 4   🏀 2   🥊 1        │  ← filtros uma linha, sem glow
-├────────────────────────────────────────┤
-│  ⚽ Brasileirão              SporTV    │
-│  Botafogo        67'        Vasco      │  ← rows magras
-│  ───────────────────────────────────── │
-│  🏀 NBA                       ESPN     │
-│  Lakers          Q3 8:42    Celtics    │
-│  ...                                   │
-├────────────────────────────────────────┤
-│  Em breve · próximo em 14min           │
-│  20:30  Real × Atlético       SporTV   │
-│  21:00  Bayern × Dortmund     ESPN     │
-├────────────────────────────────────────┤
-│  Ainda não é assinante?                │
-│  Assista a tudo por R$ 35/mês          │  ← CTA único de assinatura,
-│       [ ASSINAR AGORA ]                │     no rodapé, discreto
-└────────────────────────────────────────┘
+BottomNav
+ ├─ [📅 Programação]  ← default, conteúdo da antiga /agenda
+ └─ [🎬 Filmes e Séries]
+
+Rotas
+ /                 → Index (Programação)
+ /programacao      → Index (Programação)
+ /filmes-e-series  → Index (Filmes e Séries)   (mantida só para deep-link interno)
+ /agenda(...)      → 301 → /programacao(...)
+ /assinar, /login, /admin/*, /s/:slug → inalteradas
 ```
-
----
-
-### Componentes (todos locais em `LivePageContent.tsx`)
-
-1. **`LiveHeader`** — Linha única, sem sticky pesado:
-   - Esquerda: dot vermelho (ping discreto) + `AO VIVO` (Bebas Neue) + `· 7 jogos`.
-   - Direita: relógio `tabular-nums` em cinza.
-   - Sem borda, sem gradiente, padding generoso.
-
-2. **`LiveHeroCard`** (1º jogo da lista filtrada):
-   - Card grande, fundo `#0D0D0D` puro.
-   - Glow MUITO sutil: `box-shadow` vermelho a 8% opacidade. Sem borda colorida.
-   - Acento do esporte: barra vertical de 2px à esquerda na cor do esporte.
-   - Topo: `⚽ FUTEBOL · BRASILEIRÃO` (10px, uppercase, cinza).
-   - Times: `text-[28px]` Bebas, brancos, com `—` no meio (adversariais) ou nome único centralizado (eventos MMA/F1/etc).
-   - Minuto: `· 67' ao vivo ·` em vermelho 13px abaixo dos times.
-   - Canais: até 3 `ChannelBadge`.
-   - **Sem botão "Assistir agora"** (decisão confirmada).
-   - Animação: fade-in via framer-motion + pulse só no dot vermelho.
-
-3. **`SportFilterBar`** — Uma linha, scroll-x, chips minimais:
-   - "Todos · 7", `⚽ Futebol · 4`, etc. Só esportes presentes em `liveGames`.
-   - Ativo: fundo branco/5 + texto verde primário; inativo: cinza secundário sem borda.
-   - Sem glow, sem shadow.
-
-4. **`LiveGameRow`** — Substitui o `LiveGameCard` atual:
-   - `min-h-[88px]`, fundo `#0D0D0D`, **sem borda**, separador sutil entre rows (`border-b border-white/[0.04]`).
-   - Linha 1: `⚽ Brasileirão` (esquerda, 11px cinza) · `📺 SporTV +1` (direita, 11px cinza).
-   - Linha 2: `home_team` (16px semibold) · pílula `67'` em vermelho (Bebas 18px) · `away_team` (16px semibold).
-   - Eventos não-adversariais: nome único centralizado + minuto à direita.
-   - Hover: `bg-white/[0.02]` apenas.
-   - Acento por esporte: barra de 2px à esquerda, opacidade 35%.
-
-5. **`UpcomingMiniRow`** — "Em breve" como lista magra (próximos 60min):
-   - Linha de 44px: `20:30  Real × Atlético       SporTV`.
-   - Sem card, só padding e separador. Header: `Em breve · próximo em 14min`.
-
-6. **`PremiumCTA`** — Único ponto de conversão, no fim do feed:
-   - Fundo `#0D0D0D`, glow verde a 12% opacidade.
-   - "Ainda não é assinante? Assista a tudo por R$ 35/mês" + emojis discretos.
-   - Botão `ASSINAR AGORA` → `/assinar?from=ao-vivo-bottom`.
-   - Renderizado sempre que há live ou no empty state.
-
-7. **`EmptyLive`** (refeito): card único, `Radio` em cinza, "Sem jogos ao vivo agora", botão "Ver programação" (mantém `nav-tab-change`).
-
-8. **Aviso amarelo** (`LiveNotice`): **removido** — vira nota de 1 linha em cinza no rodapé, abaixo do CTA premium (texto sobre alterações de programação).
-
----
-
-### Paleta e tokens
-
-Adições mínimas em `src/index.css`:
-
-- `--live-bg: 0 0% 2%` (`#050505`)
-- `--live-card: 0 0% 5%` (`#0D0D0D`)
-- `--live-text-muted: 0 0% 63%` (`#A0A0A0`)
-
-Verde `#00FF88` e vermelho `#FF3B3B` já existem como `--primary` e `--destructive`/`--live` — reuso direto, **nada hardcoded** em componentes.
-
-Fundo da aba recebe um `radial-gradient` muito sutil atrás do hero (vermelho a 6% opacidade), profundidade sem poluição.
-
----
-
-### Comportamento e dados
-
-- **Minuto ao vivo**: `getElapsedMinutes(...)` já existe — reuso 100%.
-- **Hero = primeiro live filtrado**, ordenado por: (a) `isHighlightCompetition`, (b) minuto mais avançado, (c) ordem natural.
-- **Lista live**: demais jogos exceto o do hero.
-- **Em breve**: lógica atual (próximos 60min, máximo 5) — só muda a UI.
-- **Tick e realtime**: `useLiveTick` + `useRealtimeDailyGames` mantidos.
-- **Sem placar, sem viewers, sem CTA no hero** (decisões confirmadas).
-
----
-
-### Arquivos tocados
-
-- `src/components/public/LivePageContent.tsx` — reescrita completa (~380 linhas, mais enxuto que as 581 atuais).
-- `src/index.css` — 3 variáveis novas + 1 keyframe `live-pulse` se ainda não existir.
-- Nenhum arquivo deletado, nenhuma rota nova, nenhuma mudança de schema.
-
-### Fora de escopo
-
-- Placar real ao vivo (precisa backend).
-- Push de "começou" (sistema de push existente não muda aqui).
-- Migração da página pública `/agenda` (`AgendaPublica.tsx`) para o mesmo padrão — pacote separado.
