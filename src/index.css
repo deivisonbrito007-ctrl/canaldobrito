@@ -48,6 +48,11 @@
     --green-dim: 153 100% 50% / 0.08;
     --green-border: 153 100% 50% / 0.20;
 
+    /* Live tab tokens (premium minimal) */
+    --live-bg: 0 0% 2%;
+    --live-card: 0 0% 5%;
+    --live-text-muted: 0 0% 63%;
+
     /* Sport identity colors (HSL) */
     --sport-football: 142 76% 45%;
     --sport-basketball: 24 95% 55%;
