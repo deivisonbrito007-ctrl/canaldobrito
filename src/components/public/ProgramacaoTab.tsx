@@ -123,12 +123,21 @@ const ProgramacaoTab = () => {
   })();
 
   const goToDate = (newDate: string) => {
+    if (newDate !== today && newDate !== tomorrow) return;
     const next = new URLSearchParams(params);
     if (newDate === today) next.delete("date");
     else next.set("date", newDate);
     setFilter("all");
     setParams(next, { replace: true });
   };
+
+  // If we somehow ended up on tomorrow with zero games, fall back to today.
+  useEffect(() => {
+    if (date === tomorrow && !isLoading && total === 0) {
+      goToDate(today);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, tomorrow, today, isLoading, total]);
 
   // Aplica filtro
   const visibleSports: SportType[] =
