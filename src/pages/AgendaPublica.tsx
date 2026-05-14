@@ -252,22 +252,30 @@ const AgendaPublica = () => {
         {/* Assine CTA */}
         <Link
           to="/assinar"
-          className="mb-5 flex items-center justify-between gap-3 rounded-xl px-4 py-3 active:scale-[0.99] transition"
-          style={{ background: "#00ff87", color: "#07080a" }}
-          aria-label="Assine o Canal do Brito"
+          className="group mb-5 flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 active:scale-[0.99] transition-all shadow-lg shadow-[#00ff87]/20 hover:shadow-[#00ff87]/30 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #00ff87 0%, #00e07a 100%)",
+            color: "#07080a",
+          }}
+          aria-label="Assine já o Canal do Brito"
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Sparkles className="w-5 h-5 shrink-0" />
-            <div className="min-w-0">
-              <p className="font-bold text-sm leading-tight uppercase tracking-wide" style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "18px" }}>
-                Assine já o Canal do Brito
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0 w-9 h-9 rounded-xl bg-[#07080a]/10 flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 leading-none">
+              <p
+                className="font-bold tracking-wide"
+                style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "22px", lineHeight: 1 }}
+              >
+                ASSINE JÁ
               </p>
-              <p className="text-[11px] opacity-80 leading-tight">
+              <p className="text-[11px] font-medium opacity-75 mt-1">
                 Esportes, filmes e séries · R$ 35/mês
               </p>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 shrink-0" />
+          <ChevronRight className="w-5 h-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
         </Link>
 
         {/* Live now strip (only today + has lives) */}
