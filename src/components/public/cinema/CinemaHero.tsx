@@ -1,6 +1,6 @@
-import { forwardRef, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Play, Info, Star, Sparkles } from "lucide-react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion, type PanInfo } from "framer-motion";
+import { ChevronLeft, ChevronRight, Info, Play, Sparkles, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import type { CinemaItem } from "./useCinemaShelves";
@@ -13,6 +13,7 @@ interface CinemaHeroProps {
 }
 
 const AUTO_ROTATE_MS = 7000;
+const SWIPE_THRESHOLD = 60;
 
 const getBadgeLabel = (badge?: string) => {
   if (badge === "lancamento") return "🆕 Lançamento";
@@ -32,17 +33,37 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
   ({ items, trailerAvailable, onPlayTrailer, onOpenDetails }, ref) => {
     const reduce = useReducedMotion();
     const [index, setIndex] = useState(0);
+    const [paused, setPaused] = useState(false);
     const total = items.length;
 
     useEffect(() => { setIndex(0); }, [total]);
 
+    const goTo = useCallback((next: number) => {
+      if (total === 0) return;
+      setIndex(((next % total) + total) % total);
+    }, [total]);
+
+    const next = useCallback(() => goTo(index + 1), [goTo, index]);
+    const prev = useCallback(() => goTo(index - 1), [goTo, index]);
+
     useEffect(() => {
-      if (reduce || total <= 1) return;
+      if (reduce || total <= 1 || paused) return;
       const id = window.setInterval(() => {
         setIndex((i) => (i + 1) % total);
       }, AUTO_ROTATE_MS);
       return () => window.clearInterval(id);
-    }, [reduce, total]);
+    }, [reduce, total, paused]);
+
+    // Keyboard arrows
+    useEffect(() => {
+      if (total <= 1) return;
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "ArrowRight") next();
+        else if (e.key === "ArrowLeft") prev();
+      };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }, [next, prev, total]);
 
     const safeIdx = total > 0 ? Math.min(index, total - 1) : 0;
     const current = items[safeIdx];
@@ -52,7 +73,12 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
       return trailerAvailable.get(current.tmdb_id) === true;
     }, [current, trailerAvailable]);
 
-    // Empty state — placeholder cinematográfico (sem renderizar preto)
+    const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (Math.abs(info.offset.x) < SWIPE_THRESHOLD) return;
+      if (info.offset.x < 0) next();
+      else prev();
+    };
+
     if (!current) {
       return (
         <section
@@ -84,15 +110,34 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
     const ratingNum = current.rating ? Number(current.rating) : null;
     const typeLabel = getTypeLabel(current.content_type);
     const bgUrl = current.backdrop_url || current.poster_url || "";
+    const showControls = total > 1;
 
     return (
       <section
         ref={ref}
         aria-roledescription="carousel"
         aria-label="Destaques cinematográficos"
-        className="relative h-[62vh] min-h-[460px] sm:h-[70vh] overflow-hidden"
+        className="relative h-[62vh] min-h-[460px] sm:h-[70vh] overflow-hidden group/hero"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocus={() => setPaused(true)}
+        onBlur={() => setPaused(false)}
       >
-        {/* Backdrop crossfade */}
+        {/* Progress bar (top) — mostra que o slide vai trocar sozinho */}
+        {showControls && !reduce && (
+          <div className="absolute top-0 inset-x-0 z-20 h-[3px] bg-foreground/10">
+            <motion.div
+              key={`progress-${safeIdx}-${paused ? "p" : "r"}`}
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: paused ? 0 : 1 }}
+              transition={{ duration: paused ? 0 : AUTO_ROTATE_MS / 1000, ease: "linear" }}
+              style={{ transformOrigin: "left" }}
+              className="h-full bg-primary"
+            />
+          </div>
+        )}
+
+        {/* Backdrop crossfade + swipe area */}
         <AnimatePresence mode="sync">
           <motion.div
             key={current.id}
@@ -101,6 +146,11 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
             exit={{ opacity: 0 }}
             transition={{ duration: reduce ? 0 : 1.2, ease: "easeOut" }}
             className="absolute inset-0"
+            drag={showControls ? "x" : false}
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
           >
             {bgUrl ? (
               <img
@@ -109,28 +159,64 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
                 aria-hidden
                 fetchPriority="high"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+                className="absolute inset-0 h-full w-full object-cover select-none"
               />
             ) : (
               <div className="absolute inset-0 bg-surface-2" />
             )}
-            {/* multi-layer overlay: bottom + left + top hint for nav */}
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/10" />
             <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/20 to-transparent" />
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/70 to-transparent" />
           </motion.div>
         </AnimatePresence>
 
+        {/* Prev / Next arrows */}
+        {showControls && (
+          <>
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Destaque anterior"
+              className={cn(
+                "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20",
+                "inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full",
+                "bg-background/55 backdrop-blur-md border border-border/50 text-foreground",
+                "hover:bg-background/80 active:scale-95 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                "opacity-90 sm:opacity-0 sm:group-hover/hero:opacity-100 sm:focus-within:opacity-100"
+              )}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Próximo destaque"
+              className={cn(
+                "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20",
+                "inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full",
+                "bg-background/55 backdrop-blur-md border border-border/50 text-foreground",
+                "hover:bg-background/80 active:scale-95 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                "opacity-90 sm:opacity-0 sm:group-hover/hero:opacity-100 sm:focus-within:opacity-100"
+              )}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
         {/* Content */}
-        <div className="relative z-10 h-full flex flex-col justify-end px-5 pb-7 sm:pb-10 sm:px-10 max-w-3xl">
+        <div className="relative z-10 h-full flex flex-col justify-end px-5 pb-7 sm:pb-10 sm:px-10 max-w-3xl pointer-events-none">
           <motion.div
             key={`txt-${current.id}`}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
-            className="space-y-3"
+            className="space-y-3 pointer-events-auto"
+            aria-live="polite"
           >
-            {/* badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2.5 py-1 text-[11px] font-semibold text-primary backdrop-blur-md">
                 {getBadgeLabel(current.badge_type)}
@@ -158,7 +244,6 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
               </p>
             )}
 
-            {/* CTAs */}
             <div className="flex items-center gap-3 pt-1">
               <button
                 type="button"
@@ -186,22 +271,33 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
             </div>
           </motion.div>
 
-          {/* Indicators */}
-          {total > 1 && (
-            <div className="flex items-center gap-1.5 mt-5" role="tablist" aria-label="Slides">
-              {items.map((it, i) => (
-                <button
-                  key={it.id}
-                  role="tab"
-                  aria-selected={i === safeIdx}
-                  aria-label={`Ir para slide ${i + 1}`}
-                  onClick={() => setIndex(i)}
-                  className={cn(
-                    "h-1 rounded-full transition-all",
-                    i === safeIdx ? "w-8 bg-primary" : "w-4 bg-foreground/30 hover:bg-foreground/50"
-                  )}
-                />
-              ))}
+          {/* Indicators + counter */}
+          {showControls && (
+            <div className="mt-5 flex items-center gap-3 pointer-events-auto">
+              <div className="flex items-center gap-1.5" role="tablist" aria-label="Slides">
+                {items.map((it, i) => (
+                  <button
+                    key={it.id}
+                    role="tab"
+                    aria-selected={i === safeIdx}
+                    aria-label={`Ir para destaque ${i + 1}`}
+                    onClick={() => goTo(i)}
+                    className="relative py-3 -my-3 group/dot focus-visible:outline-none"
+                  >
+                    <span
+                      className={cn(
+                        "block h-1.5 rounded-full transition-all",
+                        i === safeIdx
+                          ? "w-10 bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.6)]"
+                          : "w-5 bg-foreground/30 group-hover/dot:bg-foreground/60"
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
+              <span className="text-[11px] font-body tabular-nums text-muted-foreground">
+                {safeIdx + 1} <span className="text-foreground/40">/</span> {total}
+              </span>
             </div>
           )}
         </div>
