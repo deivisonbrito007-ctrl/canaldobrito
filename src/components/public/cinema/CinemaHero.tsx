@@ -171,37 +171,7 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
           </motion.div>
         </AnimatePresence>
 
-        {/* Cluster de controles no canto inferior direito (não cobre a arte) */}
-        {showControls && (
-          <div className="absolute right-3 sm:right-6 bottom-6 sm:bottom-8 z-20 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Destaque anterior"
-              className={cn(
-                "inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full",
-                "bg-background/60 backdrop-blur-md border border-border/50 text-foreground",
-                "hover:bg-background/85 active:scale-95 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              )}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Próximo destaque"
-              className={cn(
-                "inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full",
-                "bg-background/60 backdrop-blur-md border border-border/50 text-foreground",
-                "hover:bg-background/85 active:scale-95 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              )}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+        {/* (Setas movidas para a barra inferior — evitam sobrepor a arte) */}
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col justify-end px-5 pb-7 sm:pb-10 sm:px-10 max-w-3xl pointer-events-none">
