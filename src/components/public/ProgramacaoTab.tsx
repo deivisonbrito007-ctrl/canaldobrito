@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Radio, Clock } from "lucide-react";
-import { motion } from "framer-motion";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
@@ -45,22 +44,28 @@ function groupBySport(games: DailyGame[]): Record<string, DailyGame[]> {
 const ProgramacaoTab = () => {
   const [params, setParams] = useSearchParams();
   const today = getLocalDateString();
+  const tomorrow = offsetDateStr(today, 1);
   const rawDate = params.get("date");
-  const dateIsValid = rawDate ? isValidDateParam(rawDate) : true;
-  const date = rawDate && dateIsValid ? rawDate : today;
+  const dateIsAllowed = rawDate ? rawDate === today || rawDate === tomorrow : true;
+  const date = rawDate && dateIsAllowed ? rawDate : today;
   const [filter, setFilter] = useState<FilterValue>("all");
 
-  // Defensive cleanup: if URL has an invalid ?date, drop only that param
-  // and keep UTMs/others. replace:true avoids polluting history.
+  // Defensive cleanup: drop ?date if it's not today/tomorrow (or is malformed).
   useEffect(() => {
-    if (rawDate && !dateIsValid) {
+    if (rawDate && (!isValidDateParam(rawDate) || !dateIsAllowed)) {
       const next = new URLSearchParams(params);
       next.delete("date");
       setParams(next, { replace: true });
     }
-  }, [rawDate, dateIsValid, params, setParams]);
+  }, [rawDate, dateIsAllowed, params, setParams]);
 
   const { data: rawGames, isLoading } = useAllDailyGames(date);
+  // Pre-fetch tomorrow's count when on today, so we can hide/show the toggle.
+  const { data: tomorrowGamesRaw } = useAllDailyGames(date === today ? tomorrow : today);
+  const tomorrowCount = useMemo(
+    () => (date === today ? (tomorrowGamesRaw ?? []).filter((g) => !g.archived && g.active).length : 0),
+    [tomorrowGamesRaw, date, today],
+  );
 
   const games = useMemo(
     () => (rawGames ?? []).filter((g) => !g.archived && g.active),
@@ -118,12 +123,21 @@ const ProgramacaoTab = () => {
   })();
 
   const goToDate = (newDate: string) => {
+    if (newDate !== today && newDate !== tomorrow) return;
     const next = new URLSearchParams(params);
     if (newDate === today) next.delete("date");
     else next.set("date", newDate);
     setFilter("all");
     setParams(next, { replace: true });
   };
+
+  // If we somehow ended up on tomorrow with zero games, fall back to today.
+  useEffect(() => {
+    if (date === tomorrow && !isLoading && total === 0) {
+      goToDate(today);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, tomorrow, today, isLoading, total]);
 
   // Aplica filtro
   const visibleSports: SportType[] =
@@ -150,29 +164,32 @@ const ProgramacaoTab = () => {
           >
             {titleLabel}
           </h1>
-          <nav className="flex items-center gap-0.5 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
-            <button
-              onClick={() => goToDate(offsetDateStr(date, -1))}
-              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition"
-              aria-label="Dia anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => goToDate(today)}
-              className="text-[11px] px-2.5 h-8 rounded-full hover:bg-white/10 transition font-bold uppercase tracking-wider"
-              aria-label="Voltar para hoje"
-            >
-              {isToday ? "Hoje" : format(dateObj, "dd/MM")}
-            </button>
-            <button
-              onClick={() => goToDate(offsetDateStr(date, 1))}
-              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition"
-              aria-label="Próximo dia"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </nav>
+          {(isToday ? tomorrowCount > 0 : true) && (
+            <nav className="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
+              {isToday ? (
+                <button
+                  onClick={() => goToDate(tomorrow)}
+                  className="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                  aria-label={`Ver programação de amanhã (${tomorrowCount} ${tomorrowCount === 1 ? "jogo" : "jogos"})`}
+                >
+                  Amanhã
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#00ff87]/15 text-[#00ff87] text-[10px] tabular-nums">
+                    {tomorrowCount}
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => goToDate(today)}
+                  className="inline-flex items-center gap-1 h-8 pl-2 pr-3 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                  aria-label="Voltar para hoje"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 opacity-70" />
+                  Hoje
+                </button>
+              )}
+            </nav>
+          )}
         </div>
         <p className="text-[13px] text-white/65 mt-1">
           {subtitle} ·{" "}
@@ -195,7 +212,11 @@ const ProgramacaoTab = () => {
 
       {/* Empty */}
       {!isLoading && total === 0 && (
-        <EmptyDayState onSeeTomorrow={() => goToDate(offsetDateStr(date, 1))} />
+        <EmptyDayState
+          onSeeTomorrow={
+            isToday && tomorrowCount > 0 ? () => goToDate(tomorrow) : undefined
+          }
+        />
       )}
 
       {!isLoading && total > 0 && (
