@@ -4,16 +4,13 @@ import { AppNavbar } from "@/components/public/AppNavbar";
 import { TAB_SLUGS, SLUG_TO_TAB } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "@/components/public/PullToRefreshIndicator";
-import { CategoryIconsCarousel } from "@/components/public/CategoryIconsCarousel";
-import { LivePageContent } from "@/components/public/LivePageContent";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BottomNav } from "@/components/public/BottomNav";
 import { SectionHeaderSkeleton, GameCardSkeleton, NewsBannerSkeleton } from "@/components/public/ContentSkeletons";
 import { captureLandingAttribution, getStoredAttribution, track } from "@/lib/analytics";
 
-const ScheduleTab = lazy(() => import("@/components/public/ScheduleTab"));
+const ProgramacaoTab = lazy(() => import("@/components/public/ProgramacaoTab"));
 const LazyNovidadesPage = lazy(() => import("@/components/public/NovidadesPage").then(m => ({ default: m.NovidadesPage })));
-const LazyPromoStrip = lazy(() => import("@/components/public/PromoStrip").then(m => ({ default: m.PromoStrip })));
 
 const LazyAnalyticsDebugOverlay = lazy(() => import("@/components/public/AnalyticsDebugOverlay"));
 
@@ -31,7 +28,7 @@ const BelowFoldSkeleton = () => (
   </div>
 );
 
-const TAB_ORDER = ["live", "novidades", "schedule"] as const;
+const TAB_ORDER = ["schedule", "novidades"] as const;
 type TabId = typeof TAB_ORDER[number];
 
 const slideVariants = {
@@ -42,15 +39,23 @@ const slideVariants = {
 
 const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("live");
+  const [activeTab, setActiveTab] = useState<TabId>("schedule");
   const [direction, setDirection] = useState(0);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const handleTabChange = useCallback((tabId: string) => {
-    // Backwards-compat: legacy "home" → live; legacy "highlights"/"sugestoes" → novidades
+    // Backwards-compat: legacy ids → schedule (default) ou novidades
     let normalized = tabId;
-    if (normalized === "home") normalized = "live";
-    if (normalized === "highlights" || normalized === "sugestoes" || normalized === "destaques") normalized = "novidades";
+    if (normalized === "home" || normalized === "live" || normalized === "ao-vivo") normalized = "schedule";
+    if (
+      normalized === "highlights" ||
+      normalized === "sugestoes" ||
+      normalized === "destaques" ||
+      normalized === "filmes" ||
+      normalized === "series"
+    ) {
+      normalized = "novidades";
+    }
     const next = normalized as TabId;
     if (!TAB_ORDER.includes(next)) return;
     setActiveTab((prev) => {
@@ -62,7 +67,7 @@ const Index = () => {
     // Sync URL so refresh stays on the same tab
     const targetPath = `/${TAB_SLUGS[next]}`;
     if (window.location.pathname !== targetPath) {
-      window.history.replaceState({}, "", targetPath + window.location.hash);
+      window.history.replaceState({}, "", targetPath + window.location.search + window.location.hash);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -78,13 +83,12 @@ const Index = () => {
   }, [handleTabChange]);
 
   // Deep-link support + UTM landing attribution.
-  // Runs once on mount: resolves tab from path/query, captures UTMs, then cleans the URL.
   useEffect(() => {
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
     const params = new URLSearchParams(window.location.search);
     const fromQuery = params.get("tab");
     const candidate = path || fromQuery;
-    let landingTab: TabId = "live";
+    let landingTab: TabId = "schedule";
     if (candidate) {
       const mapped = SLUG_TO_TAB[candidate.toLowerCase()];
       if (mapped) {
@@ -92,17 +96,23 @@ const Index = () => {
         landingTab = mapped as TabId;
       }
     }
-    // Capture UTMs BEFORE we strip the query, correlating with the resolved tab.
     captureLandingAttribution(landingTab);
 
     if (fromQuery || params.has("utm_source") || params.has("utm_campaign") || params.has("utm_content")) {
-      const cleanUrl = window.location.pathname + window.location.hash;
+      // Preserva ?date= e demais params relevantes ao remover só os de UTM/tab
+      params.delete("tab");
+      params.delete("utm_source");
+      params.delete("utm_medium");
+      params.delete("utm_campaign");
+      params.delete("utm_content");
+      const qs = params.toString();
+      const cleanUrl = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
       window.history.replaceState({}, "", cleanUrl);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Emit a tab_view event whenever the active tab changes, attaching last attribution.
+  // Emit a tab_view event whenever the active tab changes
   useEffect(() => {
     const attribution = getStoredAttribution();
     track("tab_view", {
@@ -116,13 +126,6 @@ const Index = () => {
   }, [activeTab]);
 
   const renderContent = () => {
-    if (activeTab === "schedule") {
-      return (
-        <Suspense fallback={<ScheduleFallback />}>
-          <ScheduleTab />
-        </Suspense>
-      );
-    }
     if (activeTab === "novidades") {
       return (
         <Suspense fallback={<BelowFoldSkeleton />}>
@@ -130,17 +133,11 @@ const Index = () => {
         </Suspense>
       );
     }
-    // live (default)
+    // schedule (default)
     return (
-      <div className="space-y-5 min-h-[80vh]">
-        <CategoryIconsCarousel />
-        <div id="live" className="scroll-mt-20">
-          <LivePageContent />
-        </div>
-        <Suspense fallback={<BelowFoldSkeleton />}>
-          <LazyPromoStrip />
-        </Suspense>
-      </div>
+      <Suspense fallback={<ScheduleFallback />}>
+        <ProgramacaoTab />
+      </Suspense>
     );
   };
 

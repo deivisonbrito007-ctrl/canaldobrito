@@ -296,7 +296,7 @@ const AdminWhatsApp = () => {
       text: `⚽ *Jogos de Hoje Atualizados*\n\n📅 ${fDate}\n\nVeja horários, canais e destaques do dia.\n\n👉 LINK_PLACEHOLDER` },
     { id: "entretenimento", label: "🍿 Entretenimento", tab: "novidades" as DeepTab,
       text: `🍿 *Assista Hoje*\n\nFilmes, séries, novidades e lançamentos do dia em um só lugar.\n\n👉 LINK_PLACEHOLDER` },
-    { id: "aovivo", label: "🔴 Ao Vivo", tab: "live" as DeepTab,
+    { id: "aovivo", label: "🔴 Ao Vivo", tab: "schedule" as DeepTab,
       text: `🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 LINK_PLACEHOLDER` },
     { id: "novidades", label: "🆕 Novidades", tab: "novidades" as DeepTab,
       text: `🆕 *Novidades da Semana*\n\nFilmes, séries e lançamentos recém-adicionados.\n\n👉 LINK_PLACEHOLDER` },
@@ -367,9 +367,8 @@ const AdminWhatsApp = () => {
         </div>
         <div className="flex flex-col gap-2">
           {([
-            { tab: "live" as DeepTab, label: "Ao Vivo", emoji: "🔴", msg: "🔴 Ao Vivo agora no portal! Veja o que está rolando 👇" },
-            { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
+            { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
             const content = `quick-${tab}`;
             const link = buildDeepLink(siteUrl, tab, { short: true, content });
@@ -456,7 +455,7 @@ const AdminWhatsApp = () => {
             <span className="text-sm font-bold text-foreground">Mensagem Personalizada</span>
           </div>
           <div className="flex gap-1">
-            {(["home", "live", "novidades", "schedule"] as DeepTab[]).map((t) => (
+            {(["schedule", "novidades"] as DeepTab[]).map((t) => (
               <button
                 key={t}
                 type="button"

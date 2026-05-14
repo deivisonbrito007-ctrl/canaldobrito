@@ -46,7 +46,7 @@ export const DEFAULT_AB_TEMPLATES: ABTemplate[] = [
   {
     id: "aovivo",
     label: "🔴 Ao Vivo",
-    tab: "live",
+    tab: "schedule",
     variants: {
       A: { text: "🔴 *Ao Vivo Agora*\n\nVeja os jogos que estão rolando neste momento.\n\n👉 {LINK}" },
       B: { text: "🚨 Tá rolando AGORA! Entra antes que acabe 👇\n\n{LINK}" },
