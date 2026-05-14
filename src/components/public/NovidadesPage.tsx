@@ -90,8 +90,9 @@ export const NovidadesPage = () => {
   const [selected, setSelected] = useState<NewsRelease | null>(null);
   const [trailerItem, setTrailerItem] = useState<CinemaItem | null>(null);
 
-  // Pré-carrega disponibilidade de trailer para todos os itens visíveis.
-  const { available: trailerMap } = useTrailerAvailability(cinema.trailerLookup);
+  // Defere o prefetch de trailers até o navegador estar ocioso E o hero estar pronto.
+  const deferredLookup = useDeferred(cinema.trailerLookup, !cinema.isHeroLoading);
+  const { available: trailerMap } = useTrailerAvailability(deferredLookup);
 
   // Trailer key on demand (apenas quando o usuário aciona o CTA).
   const { trailerKey, loading: trailerLoading } = useTrailerKey(
