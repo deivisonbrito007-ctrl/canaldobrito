@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown, getElapsedMinutes } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
 
@@ -15,6 +15,7 @@ export const GamePremiumCard = ({ game, index }: Props) => {
   const theme = themeFor(sport);
   const time = game.game_time.slice(0, 5);
   const live = isGameCurrentlyLive(game.game_time, game.date, sport as SportType);
+  const elapsed = live ? getElapsedMinutes(game.game_time, game.date, sport as SportType) : null;
   const minutesUntil = !live ? getMinutesUntilStart(game.game_time, game.date) : null;
   const soon = minutesUntil !== null && minutesUntil <= 60;
   const ended = !live && minutesUntil === null;
@@ -54,9 +55,11 @@ export const GamePremiumCard = ({ game, index }: Props) => {
           >
             {time}
           </p>
-          <p className="text-[9px] uppercase tracking-wider mt-0.5 font-bold"
+          <p className="text-[9px] uppercase tracking-wider mt-0.5 font-bold tabular-nums"
              style={{ color: live ? "#ff3b3b" : soon ? "#fbbf24" : ended ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.45)" }}>
-            {live ? "AO VIVO" : soon ? formatCountdown(minutesUntil!) : ended ? "Encerrado" : "Em breve"}
+            {live
+              ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
+              : soon ? formatCountdown(minutesUntil!) : ended ? "Encerrado" : "Em breve"}
           </p>
         </div>
 
