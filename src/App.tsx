@@ -26,8 +26,18 @@ const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 const AgendaRedirect = () => {
-  const search = typeof window !== "undefined" ? window.location.search : "";
-  return <Navigate to={`/programacao${search}`} replace />;
+  const location = useLocation();
+  const target = buildProgramacaoRedirect(location.search, location.hash);
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("legacy-agenda-redirect", {
+          detail: { from: `/agenda${location.search}${location.hash}`, to: target },
+        })
+      );
+    } catch {}
+  }
+  return <Navigate to={target} replace />;
 };
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
