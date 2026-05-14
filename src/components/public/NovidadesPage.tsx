@@ -1,41 +1,31 @@
+/**
+ * Aba "Filmes & Séries" — visual cinematográfico (streaming premium).
+ *
+ * Componentes legacy intencionalmente não importados aqui (mantidos no repo
+ * para uso futuro / testes existentes): NovidadesCard, WeeklyMoviesSection,
+ * WeeklySeriesSection, HeroBanner.
+ */
 import { useEffect, useMemo, useState } from "react";
-import { Grid, List, Search, Sparkles } from "lucide-react";
-import { useActiveNewsReleases, type NewsRelease } from "@/hooks/useNewsReleases";
-import { useActiveMovies } from "@/hooks/useMovies";
-import { useActiveSeries } from "@/hooks/useSeries";
-import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
-import { FilterChip } from "@/components/public/novidades/FilterChip";
-import { ContentCard } from "@/components/public/novidades/ContentCard";
-import { ContentListItem } from "@/components/public/novidades/ContentListItem";
-import { SearchModal } from "@/components/public/novidades/SearchModal";
-import { NovidadesCard } from "@/components/public/NovidadesCard";
-import { WeeklyMoviesSection } from "@/components/public/WeeklyMoviesSection";
-import { WeeklySeriesSection } from "@/components/public/WeeklySeriesSection";
+import { Grid, Sparkles, Search } from "lucide-react";
+
+import type { NewsRelease } from "@/hooks/useNewsReleases";
+import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
+import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { trackContentClick } from "@/lib/analytics";
 
+import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
+import { TrailerModal } from "@/components/public/TrailerModal";
+import { ContentCard } from "@/components/public/novidades/ContentCard";
+import { SearchModal } from "@/components/public/novidades/SearchModal";
+
+import { CinemaHero } from "@/components/public/cinema/CinemaHero";
+import { PosterRail } from "@/components/public/cinema/PosterRail";
+import { CinemaCategoryRail, type CinemaCategory } from "@/components/public/cinema/CinemaCategoryRail";
+import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
+import { CinemaSearchButton } from "@/components/public/cinema/CinemaSearchButton";
+import { useCinemaShelves, type CinemaItem } from "@/components/public/cinema/useCinemaShelves";
+
 type FilterId = "all" | "movie" | "series" | "lancamento" | "nova_temporada" | "estreia" | "exclusivo";
-
-const FILTERS: { id: FilterId; icon: string; label: string }[] = [
-  { id: "all", icon: "✨", label: "Todos" },
-  { id: "movie", icon: "🎬", label: "Filmes" },
-  { id: "series", icon: "📺", label: "Séries" },
-  { id: "lancamento", icon: "🆕", label: "Lançamentos" },
-  { id: "nova_temporada", icon: "🎞️", label: "Novas Temporadas" },
-  { id: "estreia", icon: "⭐", label: "Estreias" },
-  { id: "exclusivo", icon: "👑", label: "Exclusivos" },
-];
-
-const PosterSkeletonGrid = () => (
-  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
-    {Array.from({ length: 6 }).map((_, i) => (
-      <div key={i} className="space-y-2">
-        <div className="aspect-[2/3] rounded-xl skeleton-shimmer" />
-        <div className="h-4 rounded skeleton-shimmer" />
-        <div className="h-3 w-2/3 rounded skeleton-shimmer" />
-      </div>
-    ))}
-  </div>
-);
 
 type SortId = "recent" | "rating" | "title" | "year";
 
@@ -46,52 +36,139 @@ const SORT_OPTIONS: { id: SortId; label: string }[] = [
   { id: "year", label: "Ano" },
 ];
 
+const PosterSkeletonRow = () => (
+  <div className="flex gap-3 overflow-hidden px-4">
+    {Array.from({ length: 4 }).map((_, i) => (
+      <div key={i} className="shrink-0 w-[42vw] max-w-[164px] sm:w-40 md:w-44 space-y-2">
+        <div className="aspect-[2/3] rounded-xl skeleton-shimmer" />
+        <div className="h-3 rounded skeleton-shimmer" />
+      </div>
+    ))}
+  </div>
+);
+
+const HeroSkeleton = () => (
+  <div className="relative h-[62vh] min-h-[460px] sm:h-[70vh] overflow-hidden">
+    <div className="absolute inset-0 skeleton-shimmer" />
+    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/10" />
+    <div className="absolute bottom-7 left-5 right-5 sm:left-10 space-y-3 max-w-md">
+      <div className="h-4 w-32 rounded-full skeleton-shimmer" />
+      <div className="h-10 w-3/4 rounded skeleton-shimmer" />
+      <div className="h-3 w-2/3 rounded skeleton-shimmer" />
+      <div className="h-12 w-44 rounded-full skeleton-shimmer" />
+    </div>
+  </div>
+);
+
 export const NovidadesPage = () => {
-  const { data: items, isLoading } = useActiveNewsReleases();
-  const { data: weeklyMovies } = useActiveMovies();
-  const { data: weeklySeries } = useActiveSeries();
+  // (useNewsReleases() = useActiveNewsReleases): we need the same data the hook provides
+  // via useCinemaShelves — but we also need raw releases for the filtered grid + search.
+  // useCinemaShelves devolve `releases`, então não duplicamos requisições.
+  const cinema = useCinemaShelves();
+  const releases = cinema.releases;
+
   const [filter, setFilter] = useState<FilterId>("all");
   const [sort, setSort] = useState<SortId>("recent");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selected, setSelected] = useState<NewsRelease | null>(null);
+  const [trailerItem, setTrailerItem] = useState<CinemaItem | null>(null);
 
-  const all = items ?? [];
-  const showWeekly = filter === "all";
-  const weeklyCount = (weeklyMovies?.length || 0) + (weeklySeries?.length || 0);
+  // Pré-carrega disponibilidade de trailer para todos os itens visíveis.
+  const { available: trailerMap } = useTrailerAvailability(cinema.trailerLookup);
 
+  // Trailer key on demand (apenas quando o usuário aciona o CTA).
+  const { trailerKey, loading: trailerLoading } = useTrailerKey(
+    trailerItem?.tmdb_id,
+    trailerItem?.content_type,
+    !!trailerItem
+  );
+
+  // Estatísticas para os chips (mesma lógica anterior).
   const stats = useMemo(() => {
     const isMovie = (i: NewsRelease) => i.content_type === "movie";
     const isSeries = (i: NewsRelease) => i.content_type === "series" || i.content_type === "tv";
     return {
-      all: all.length,
-      movie: all.filter(isMovie).length,
-      series: all.filter(isSeries).length,
-      lancamento: all.filter((i) => i.badge_type === "lancamento").length,
-      nova_temporada: all.filter((i) => i.badge_type === "nova_temporada").length,
-      estreia: all.filter((i) => i.badge_type === "estreia").length,
-      exclusivo: all.filter((i) => i.badge_type === "exclusivo").length,
+      all: releases.length,
+      movie: releases.filter(isMovie).length,
+      series: releases.filter(isSeries).length,
+      lancamento: releases.filter((i) => i.badge_type === "lancamento").length,
+      nova_temporada: releases.filter((i) => i.badge_type === "nova_temporada").length,
+      estreia: releases.filter((i) => i.badge_type === "estreia").length,
+      exclusivo: releases.filter((i) => i.badge_type === "exclusivo").length,
     } as Record<FilterId, number>;
-  }, [all]);
+  }, [releases]);
 
   const filtered = useMemo(() => {
     let list: NewsRelease[];
-    if (filter === "all") list = all;
-    else if (filter === "movie") list = all.filter((i) => i.content_type === "movie");
-    else if (filter === "series") list = all.filter((i) => i.content_type === "series" || i.content_type === "tv");
-    else list = all.filter((i) => i.badge_type === filter);
+    if (filter === "all") list = releases;
+    else if (filter === "movie") list = releases.filter((i) => i.content_type === "movie");
+    else if (filter === "series")
+      list = releases.filter((i) => i.content_type === "series" || i.content_type === "tv");
+    else list = releases.filter((i) => i.badge_type === filter);
 
     const sorted = [...list];
-    if (sort === "rating") sorted.sort((a, b) => (Number(b.rating ?? 0)) - (Number(a.rating ?? 0)));
+    if (sort === "rating") sorted.sort((a, b) => Number(b.rating ?? 0) - Number(a.rating ?? 0));
     else if (sort === "title") sorted.sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
     else if (sort === "year") sorted.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-    // "recent": rely on the original order from useActiveNewsReleases (created_at desc)
     return sorted;
-  }, [all, filter, sort]);
+  }, [releases, filter, sort]);
 
-  const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "Todos";
+  const categories: CinemaCategory[] = useMemo(() => {
+    const all: { id: FilterId; emoji: string; label: string }[] = [
+      { id: "all", emoji: "✨", label: "Todos" },
+      { id: "movie", emoji: "🎬", label: "Filmes" },
+      { id: "series", emoji: "📺", label: "Séries" },
+      { id: "lancamento", emoji: "🆕", label: "Lançamentos" },
+      { id: "nova_temporada", emoji: "🎞️", label: "Novas Temporadas" },
+      { id: "estreia", emoji: "⭐", label: "Estreias" },
+      { id: "exclusivo", emoji: "👑", label: "Exclusivos" },
+    ];
+    return all
+      .filter((c) => c.id === "all" || (stats[c.id] ?? 0) > 0)
+      .map((c) => ({ id: c.id, emoji: c.emoji, label: c.label, count: c.id === "all" ? undefined : stats[c.id] }));
+  }, [stats]);
 
-  const handleSelect = (item: NewsRelease) => {
+  // Resolve um item da hero/poster para o shape esperado pelo ContentDetailSheet.
+  const openDetailsFromCinema = (item: CinemaItem) => {
+    trackContentClick({
+      surface: "novidades_page",
+      content_type: item.content_type ?? "news",
+      content_id: item.tmdb_id ?? item.id,
+      content_title: item.title,
+      action: "open",
+    });
+    // Tenta achar release equivalente (preserva ids/badges); senão monta wrapper.
+    const releaseMatch =
+      item.source === "release"
+        ? releases.find((r) => `release:${r.id}` === item.id)
+        : undefined;
+    if (releaseMatch) {
+      setSelected(releaseMatch);
+      return;
+    }
+    setSelected({
+      id: item.id,
+      title: item.title,
+      content_type: item.content_type,
+      badge_type: item.badge_type ?? "novidade",
+      image_url: item.poster_url,
+      overview: item.overview,
+      year: item.year,
+      rating: item.rating,
+      tmdb_id: item.tmdb_id,
+      active: true,
+      display_order: 0,
+      added_by: null,
+      created_at: new Date().toISOString(),
+      genres: item.genres,
+      runtime: null,
+      seasons: null,
+      tagline: null,
+      backdrop_url: item.backdrop_url,
+    });
+  };
+
+  const handleSelectRelease = (item: NewsRelease) => {
     trackContentClick({
       surface: "novidades_page",
       content_type: item.content_type ?? "news",
@@ -102,7 +179,18 @@ export const NovidadesPage = () => {
     setSelected(item);
   };
 
-  // Atalho "/" abre a busca
+  const playTrailer = (item: CinemaItem) => {
+    trackContentClick({
+      surface: "novidades_page",
+      content_type: item.content_type ?? "news",
+      content_id: item.tmdb_id ?? item.id,
+      content_title: item.title,
+      action: "trailer",
+    });
+    setTrailerItem(item);
+  };
+
+  // Atalho "/" abre a busca.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (searchOpen) return;
@@ -118,66 +206,72 @@ export const NovidadesPage = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [searchOpen]);
 
-  const isEmptyAll = !isLoading && stats.all === 0 && weeklyCount === 0;
+  const filterLabel = categories.find((c) => c.id === filter)?.label ?? "Todos";
+  const isEmptyAll =
+    !cinema.isLoading && cinema.heroItems.length === 0 && cinema.shelves.length === 0;
 
   return (
-    <div className="space-y-5 min-h-[80vh] pt-2 animate-fade-up" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
-      {/* Hero header */}
-      <div className="px-4 pt-4 pb-2 space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="space-y-1 min-w-0">
-            <h1 className="font-display text-3xl text-foreground tracking-wide leading-none">
-              FILMES E SÉRIES <span className="text-primary">🎬</span>
-            </h1>
-            <p className="text-xs text-muted-foreground font-body">
-              {isLoading ? "Carregando..." : `${stats.all + (showWeekly ? weeklyCount : 0)} ${(stats.all + (showWeekly ? weeklyCount : 0)) === 1 ? "título disponível" : "títulos disponíveis"}`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Buscar"
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-surface-2 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors min-h-[44px] min-w-[44px] shrink-0"
-          >
-            <Search className="w-4 h-4" />
-          </button>
+    <div
+      className="space-y-8 min-h-[80vh] animate-fade-in"
+      style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+    >
+      {/* Header flutuante com busca premium */}
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-end px-4 pt-4 pointer-events-none">
+        <div className="pointer-events-auto">
+          <CinemaSearchButton onClick={() => setSearchOpen(true)} />
         </div>
+      </header>
 
-        {/* Filtros rápidos */}
-        <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide -mx-1 px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]">
-          {FILTERS.filter((f) => f.id === "all" || (stats[f.id] ?? 0) > 0).map((f) => (
-            <FilterChip
-              key={f.id}
-              icon={f.icon}
-              label={f.label}
-              count={stats[f.id] ?? 0}
-              active={filter === f.id}
-              onClick={() => setFilter(f.id)}
-            />
-          ))}
-        </div>
-      </div>
+      {/* HERO cinematográfico */}
+      {cinema.isLoading ? (
+        <HeroSkeleton />
+      ) : (
+        <CinemaHero
+          items={cinema.heroItems}
+          trailerAvailable={trailerMap}
+          onPlayTrailer={playTrailer}
+          onOpenDetails={openDetailsFromCinema}
+        />
+      )}
 
-      {/* Carrossel destacado (auto-rotate, badges, trailer) — apenas com filtro Todos */}
-      {showWeekly && <NovidadesCard />}
+      {/* Categorias */}
+      {categories.length > 1 && (
+        <CinemaCategoryRail
+          categories={categories}
+          active={filter}
+          onChange={(id) => setFilter(id as FilterId)}
+        />
+      )}
 
-      {/* Destaques da Semana (apenas quando filtro = Todos) */}
-      {showWeekly && (
-        <div className="space-y-6">
-          <WeeklyMoviesSection />
-          {(weeklyMovies?.length || 0) > 0 && (weeklySeries?.length || 0) > 0 && (
-            <div className="px-4">
-              <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
-            </div>
+      {/* Trilhas (somente quando filtro = Todos) */}
+      {filter === "all" && (
+        <div className="space-y-8">
+          {cinema.isLoading && cinema.shelves.length === 0 ? (
+            <>
+              <PosterSkeletonRow />
+              <PosterSkeletonRow />
+            </>
+          ) : (
+            cinema.shelves.map((shelf) => (
+              <PosterRail
+                key={shelf.id}
+                title={shelf.title}
+                emoji={shelf.emoji}
+                items={shelf.items}
+                onSelect={openDetailsFromCinema}
+              />
+            ))
           )}
-          <WeeklySeriesSection />
         </div>
       )}
 
-      {/* Empty state global */}
-      {showWeekly && isEmptyAll && (
+      {/* CTA Premium */}
+      {!cinema.isLoading && <PremiumCTA />}
+
+      {/* Empty state global (sem dados em nenhum lugar) */}
+      {filter === "all" && isEmptyAll && (
         <div className="px-4">
-          <div className="rounded-2xl border border-border bg-surface-2 p-10 text-center space-y-3">
+          <div className="rounded-2xl border border-border/50 bg-surface-2 p-10 text-center space-y-3">
             <Sparkles className="w-10 h-10 text-primary/60 mx-auto" />
             <p className="text-base font-bold text-foreground font-body">Em breve novos títulos</p>
             <p className="text-xs text-muted-foreground font-body max-w-xs mx-auto">
@@ -194,13 +288,15 @@ export const NovidadesPage = () => {
         </div>
       )}
 
-      {/* Grid / Lista — só aparece quando há filtro ativo (evita repetir o carrossel acima) */}
+      {/* Grid filtrada (só quando há filtro ativo) */}
       {filter !== "all" && (
         <div className="space-y-3">
           <div className="px-4 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-foreground font-body min-w-0 truncate">
+            <h2 className="font-display text-xl tracking-wide text-foreground min-w-0 truncate">
               {filterLabel}
-              <span className="ml-2 text-muted-foreground font-normal tabular-nums">({filtered.length})</span>
+              <span className="ml-2 text-sm text-muted-foreground font-body font-normal tabular-nums">
+                ({filtered.length})
+              </span>
             </h2>
             <div className="flex items-center gap-2 shrink-0">
               <label className="sr-only" htmlFor="novidades-sort">Ordenar</label>
@@ -208,45 +304,32 @@ export const NovidadesPage = () => {
                 id="novidades-sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortId)}
-                className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-muted-foreground font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[36px]"
+                className="text-xs bg-surface-2 border border-border/50 rounded-lg px-2 py-1.5 text-muted-foreground font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[36px]"
                 aria-label="Ordenar resultados"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.id} value={o.id}>{o.label}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-body min-h-[36px] px-2 rounded-lg"
-                aria-label={`Mudar para visão em ${viewMode === "grid" ? "lista" : "grade"}`}
-              >
-                {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
-              </button>
+              <Grid className="w-4 h-4 text-muted-foreground" aria-hidden />
             </div>
           </div>
 
-          {isLoading ? (
-            <PosterSkeletonGrid />
+          {cinema.isLoading ? (
+            <PosterSkeletonRow />
           ) : filtered.length === 0 ? (
             <div className="px-4">
-              <div className="rounded-2xl border border-border bg-surface-2 p-8 text-center space-y-2">
+              <div className="rounded-2xl border border-border/50 bg-surface-2 p-8 text-center space-y-2">
                 <p className="text-sm font-bold text-foreground font-body">Nada por aqui ainda</p>
                 <p className="text-xs text-muted-foreground font-body">
                   Tente outro filtro ou volte mais tarde para conferir as novidades.
                 </p>
               </div>
             </div>
-          ) : viewMode === "grid" ? (
+          ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
               {filtered.map((item) => (
-                <ContentCard key={item.id} item={item} onSelect={handleSelect} />
-              ))}
-            </div>
-          ) : (
-            <div className="px-4 space-y-2">
-              {filtered.map((item) => (
-                <ContentListItem key={item.id} item={item} onSelect={handleSelect} />
+                <ContentCard key={item.id} item={item} onSelect={handleSelectRelease} />
               ))}
             </div>
           )}
@@ -256,27 +339,41 @@ export const NovidadesPage = () => {
       <SearchModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
-        items={all}
-        onSelect={handleSelect}
+        items={releases}
+        onSelect={handleSelectRelease}
       />
 
       <ContentDetailSheet
         open={!!selected}
         onClose={() => setSelected(null)}
-        item={selected ? {
-          title: selected.title,
-          overview: selected.overview,
-          poster_url: selected.image_url,
-          backdrop_url: selected.backdrop_url,
-          rating: selected.rating,
-          year: selected.year,
-          genre: selected.genres,
-          tmdb_id: selected.tmdb_id,
-          content_type: selected.content_type,
-        } : null}
+        item={
+          selected
+            ? {
+                title: selected.title,
+                overview: selected.overview,
+                poster_url: selected.image_url,
+                backdrop_url: selected.backdrop_url,
+                rating: selected.rating,
+                year: selected.year,
+                genre: selected.genres,
+                tmdb_id: selected.tmdb_id,
+                content_type: selected.content_type,
+              }
+            : null
+        }
+      />
+
+      <TrailerModal
+        open={!!trailerItem}
+        onClose={() => setTrailerItem(null)}
+        trailerKey={trailerKey}
+        loading={trailerLoading}
+        title={trailerItem?.title}
+        fallbackQuery={trailerItem ? `${trailerItem.title} trailer oficial` : undefined}
       />
     </div>
   );
 };
+
 
 export default NovidadesPage;
