@@ -23,6 +23,25 @@ import { CinemaCategoryRail, type CinemaCategory } from "@/components/public/cin
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { useCinemaShelves, type CinemaItem } from "@/components/public/cinema/useCinemaShelves";
 
+/** Defer trailer prefetch until browser is idle — não compete com primeira renderização. */
+const useDeferred = <T,>(value: T, ready: boolean): T | undefined => {
+  const [out, setOut] = useState<T | undefined>(undefined);
+  useEffect(() => {
+    if (!ready) return;
+    const ric: typeof requestIdleCallback | undefined =
+      typeof window !== "undefined" ? (window as any).requestIdleCallback : undefined;
+    const cic: typeof cancelIdleCallback | undefined =
+      typeof window !== "undefined" ? (window as any).cancelIdleCallback : undefined;
+    if (ric) {
+      const h = ric(() => setOut(value), { timeout: 1500 });
+      return () => cic?.(h);
+    }
+    const t = window.setTimeout(() => setOut(value), 600);
+    return () => window.clearTimeout(t);
+  }, [value, ready]);
+  return out;
+};
+
 type FilterId = "all" | "movie" | "series" | "lancamento" | "nova_temporada" | "estreia" | "exclusivo";
 
 type SortId = "recent" | "rating" | "title" | "year";
@@ -71,8 +90,9 @@ export const NovidadesPage = () => {
   const [selected, setSelected] = useState<NewsRelease | null>(null);
   const [trailerItem, setTrailerItem] = useState<CinemaItem | null>(null);
 
-  // Pré-carrega disponibilidade de trailer para todos os itens visíveis.
-  const { available: trailerMap } = useTrailerAvailability(cinema.trailerLookup);
+  // Defere o prefetch de trailers até o navegador estar ocioso E o hero estar pronto.
+  const deferredLookup = useDeferred(cinema.trailerLookup, !cinema.isHeroLoading);
+  const { available: trailerMap } = useTrailerAvailability(deferredLookup);
 
   // Trailer key on demand (apenas quando o usuário aciona o CTA).
   const { trailerKey, loading: trailerLoading } = useTrailerKey(
@@ -199,7 +219,7 @@ export const NovidadesPage = () => {
       style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
     >
       {/* HERO cinematográfico */}
-      {cinema.isLoading ? (
+      {cinema.isHeroLoading ? (
         <HeroSkeleton />
       ) : (
         <CinemaHero

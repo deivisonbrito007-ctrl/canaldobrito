@@ -79,6 +79,17 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
       else prev();
     };
 
+    // Pré-carrega o backdrop do PRÓXIMO slide para o crossfade não piscar.
+    useEffect(() => {
+      if (total <= 1) return;
+      const nextItem = items[(safeIdx + 1) % total];
+      const url = nextItem?.backdrop_url || nextItem?.poster_url;
+      if (!url) return;
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+    }, [items, safeIdx, total]);
+
     if (!current) {
       return (
         <section
