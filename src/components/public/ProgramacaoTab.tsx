@@ -44,22 +44,28 @@ function groupBySport(games: DailyGame[]): Record<string, DailyGame[]> {
 const ProgramacaoTab = () => {
   const [params, setParams] = useSearchParams();
   const today = getLocalDateString();
+  const tomorrow = offsetDateStr(today, 1);
   const rawDate = params.get("date");
-  const dateIsValid = rawDate ? isValidDateParam(rawDate) : true;
-  const date = rawDate && dateIsValid ? rawDate : today;
+  const dateIsAllowed = rawDate ? rawDate === today || rawDate === tomorrow : true;
+  const date = rawDate && dateIsAllowed ? rawDate : today;
   const [filter, setFilter] = useState<FilterValue>("all");
 
-  // Defensive cleanup: if URL has an invalid ?date, drop only that param
-  // and keep UTMs/others. replace:true avoids polluting history.
+  // Defensive cleanup: drop ?date if it's not today/tomorrow (or is malformed).
   useEffect(() => {
-    if (rawDate && !dateIsValid) {
+    if (rawDate && (!isValidDateParam(rawDate) || !dateIsAllowed)) {
       const next = new URLSearchParams(params);
       next.delete("date");
       setParams(next, { replace: true });
     }
-  }, [rawDate, dateIsValid, params, setParams]);
+  }, [rawDate, dateIsAllowed, params, setParams]);
 
   const { data: rawGames, isLoading } = useAllDailyGames(date);
+  // Pre-fetch tomorrow's count when on today, so we can hide/show the toggle.
+  const { data: tomorrowGamesRaw } = useAllDailyGames(date === today ? tomorrow : today);
+  const tomorrowCount = useMemo(
+    () => (date === today ? (tomorrowGamesRaw ?? []).filter((g) => !g.archived && g.active).length : 0),
+    [tomorrowGamesRaw, date, today],
+  );
 
   const games = useMemo(
     () => (rawGames ?? []).filter((g) => !g.archived && g.active),
