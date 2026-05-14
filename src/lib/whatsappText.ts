@@ -84,6 +84,59 @@ export function buildDayText(
   return lines.join("\n").trim();
 }
 
+/** Build a short, share-friendly message with link to the public agenda page. */
+export function buildShareMessage(
+  games: DailyGame[],
+  dateStr: string,
+  siteUrl: string,
+): string {
+  const filtered = (games ?? []).filter((g) => !g.archived);
+  const spDate = midnightInSaoPaulo(dateStr);
+  const dayLabel = format(spDate, "EEEE", { locale: ptBR });
+  const [, m, d] = dateStr.split("-");
+  const today = (() => {
+    const n = new Date();
+    const y = n.getFullYear();
+    const mm = String(n.getMonth() + 1).padStart(2, "0");
+    const dd = String(n.getDate()).padStart(2, "0");
+    return `${y}-${mm}-${dd}`;
+  })();
+  const tomorrow = offsetDateStr(today, 1);
+  const heading =
+    dateStr === today ? "AGENDA DE HOJE" :
+    dateStr === tomorrow ? "AGENDA DE AMANHÃ" :
+    `AGENDA ${d}/${m}`;
+
+  const total = filtered.length;
+  const lines: string[] = [];
+  lines.push(`🔥 *${heading} — Canal do Brito*`);
+  lines.push(
+    `${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}, ${d}/${m} · ${total} ${total === 1 ? "jogo" : "jogos"}`,
+  );
+
+  if (total > 0) {
+    const bySport: Record<string, number> = {};
+    filtered.forEach((g) => {
+      const saved = g.sport_type || "football";
+      const detected = detectSportType(`${g.competition} ${g.home_team} ${g.away_team}`);
+      const key = detected !== "football" ? detected : saved;
+      bySport[key] = (bySport[key] ?? 0) + 1;
+    });
+    const top = Object.entries(bySport)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([s, n]) => `${SPORT_EMOJI[s as SportType] ?? "🏆"} ${n} ${SPORT_LABEL[s as SportType] ?? s}`)
+      .join("  ");
+    lines.push("");
+    lines.push(top);
+  }
+
+  lines.push("");
+  lines.push("Veja todos os jogos e canais 👇");
+  lines.push(`${siteUrl}/agenda?date=${dateStr}`);
+  return lines.join("\n").trim();
+}
+
 export interface DayValidation {
   total: number;
   active: number;

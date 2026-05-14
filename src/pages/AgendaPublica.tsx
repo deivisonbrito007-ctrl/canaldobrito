@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Copy, Share2 } from "lucide-react";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
@@ -14,7 +14,8 @@ import {
   isGameCurrentlyLive,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
-import { offsetDateStr } from "@/lib/whatsappText";
+import { offsetDateStr, buildShareMessage, safeCopy } from "@/lib/whatsappText";
+import { toast } from "sonner";
 import logo from "@/assets/canal_do_brito_logo.png";
 import LiveNowStrip from "@/components/agenda/LiveNowStrip";
 
@@ -40,6 +41,67 @@ function groupBySport(games: DailyGame[]): Record<string, DailyGame[]> {
     arr.sort((a, b) => a.game_time.localeCompare(b.game_time))
   );
   return out;
+}
+
+function ShareBar({ games, date }: { games: DailyGame[]; date: string }) {
+  const message = useMemo(() => buildShareMessage(games, date, SITE_URL), [games, date]);
+
+  const handleCopy = async () => {
+    const ok = await safeCopy(message);
+    if (ok) toast.success("Mensagem copiada!");
+    else toast.error("Não foi possível copiar.");
+  };
+
+  const handleWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Canal do Brito — Agenda", text: message });
+      } catch {
+        /* user cancelled */
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  return (
+    <div
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-white/10 bg-[#07080a]/95 backdrop-blur"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="mx-auto w-full max-w-[460px] px-4 py-3 grid grid-cols-3 gap-2">
+        <button
+          onClick={handleCopy}
+          className="flex items-center justify-center gap-1.5 h-11 rounded-full bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 active:scale-95 transition"
+          aria-label="Copiar mensagem"
+        >
+          <Copy className="w-4 h-4" />
+          Copiar
+        </button>
+        <button
+          onClick={handleWhatsApp}
+          className="flex items-center justify-center gap-1.5 h-11 rounded-full text-sm font-bold active:scale-95 transition"
+          style={{ background: "#25D366", color: "#07080a" }}
+          aria-label="Enviar no WhatsApp"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          WhatsApp
+        </button>
+        <button
+          onClick={handleShare}
+          className="flex items-center justify-center gap-1.5 h-11 rounded-full bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 active:scale-95 transition"
+          aria-label="Compartilhar"
+        >
+          <Share2 className="w-4 h-4" />
+          Mais
+        </button>
+      </div>
+    </div>
+  );
 }
 
 const AgendaPublica = () => {
@@ -187,6 +249,27 @@ const AgendaPublica = () => {
           </p>
         </div>
 
+        {/* Assine CTA */}
+        <Link
+          to="/assinar"
+          className="mb-5 flex items-center justify-between gap-3 rounded-xl px-4 py-3 active:scale-[0.99] transition"
+          style={{ background: "#00ff87", color: "#07080a" }}
+          aria-label="Assine o Canal do Brito"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Sparkles className="w-5 h-5 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-bold text-sm leading-tight uppercase tracking-wide" style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "18px" }}>
+                Assine já o Canal do Brito
+              </p>
+              <p className="text-[11px] opacity-80 leading-tight">
+                Esportes, filmes e séries · R$ 35/mês
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 shrink-0" />
+        </Link>
+
         {/* Live now strip (only today + has lives) */}
         {!isLoading && isToday && liveGames.length > 0 && (
           <LiveNowStrip games={liveGames} onJumpTo={handleJumpTo} />
@@ -331,6 +414,9 @@ const AgendaPublica = () => {
           <p className="text-[11px] text-white/30 mt-2">canaldobrito.site</p>
         </div>
       </div>
+
+      {/* Sticky share bar */}
+      <ShareBar games={games} date={date} />
 
 
       <style>{`
