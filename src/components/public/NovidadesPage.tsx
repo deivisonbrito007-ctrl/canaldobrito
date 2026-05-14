@@ -8,7 +8,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Grid, Sparkles, Search } from "lucide-react";
 
-import { useNewsReleases } from "@/hooks/useNewsReleases";
 import type { NewsRelease } from "@/hooks/useNewsReleases";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
