@@ -52,6 +52,8 @@ interface UseCinemaShelvesResult {
   /** Combined list (deduped by tmdb_id when possible) for trailer prefetch. */
   trailerLookup: Array<{ tmdb_id: number | null; content_type: string }>;
   releases: NewsRelease[]; // raw releases for filtered grid + search modal
+  /** Unified list (releases + featured movies + featured series) in NewsRelease shape, deduped by tmdb_id. */
+  allItems: NewsRelease[];
 }
 
 export const useCinemaShelves = (): UseCinemaShelvesResult => {
