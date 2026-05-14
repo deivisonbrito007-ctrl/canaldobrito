@@ -52,6 +52,8 @@ interface UseCinemaShelvesResult {
   /** Combined list (deduped by tmdb_id when possible) for trailer prefetch. */
   trailerLookup: Array<{ tmdb_id: number | null; content_type: string }>;
   releases: NewsRelease[]; // raw releases for filtered grid + search modal
+  /** Unified list (releases + featured movies + featured series) in NewsRelease shape, deduped by tmdb_id. */
+  allItems: NewsRelease[];
 }
 
 export const useCinemaShelves = (): UseCinemaShelvesResult => {
@@ -116,6 +118,57 @@ export const useCinemaShelves = (): UseCinemaShelvesResult => {
       .filter((i) => i.tmdb_id)
       .map((i) => ({ tmdb_id: i.tmdb_id, content_type: i.content_type }));
 
+    // Build unified list in NewsRelease shape, deduped by tmdb_id (releases win).
+    const seenTmdb = new Set<number>();
+    releases.forEach((r) => { if (r.tmdb_id) seenTmdb.add(r.tmdb_id); });
+    const movieAsRelease: NewsRelease[] = movies
+      .filter((m) => !m.tmdb_id || !seenTmdb.has(m.tmdb_id))
+      .map((m) => ({
+        id: `movie:${m.id}`,
+        title: m.title,
+        content_type: "movie",
+        badge_type: "novidade",
+        image_url: m.poster_url,
+        overview: m.overview,
+        year: m.year,
+        rating: m.rating,
+        tmdb_id: m.tmdb_id,
+        active: true,
+        display_order: 0,
+        added_by: null,
+        created_at: m.created_at,
+        genres: m.genre,
+        runtime: null,
+        seasons: null,
+        tagline: null,
+        backdrop_url: m.backdrop_url,
+      }));
+    movies.forEach((m) => { if (m.tmdb_id) seenTmdb.add(m.tmdb_id); });
+    const seriesAsRelease: NewsRelease[] = series
+      .filter((s) => !s.tmdb_id || !seenTmdb.has(s.tmdb_id))
+      .map((s) => ({
+        id: `series:${s.id}`,
+        title: s.title,
+        content_type: "series",
+        badge_type: "novidade",
+        image_url: s.poster_url,
+        overview: s.overview,
+        year: s.year,
+        rating: s.rating,
+        tmdb_id: s.tmdb_id,
+        active: true,
+        display_order: 0,
+        added_by: null,
+        created_at: s.created_at,
+        genres: s.genre,
+        runtime: null,
+        seasons: null,
+        tagline: null,
+        backdrop_url: s.backdrop_url,
+      }));
+
+    const allItems: NewsRelease[] = [...releases, ...movieAsRelease, ...seriesAsRelease];
+
     return {
       isLoading: releasesQ.isLoading || moviesQ.isLoading || seriesQ.isLoading,
       isError: releasesQ.isError || moviesQ.isError || seriesQ.isError,
@@ -123,6 +176,7 @@ export const useCinemaShelves = (): UseCinemaShelvesResult => {
       shelves,
       trailerLookup,
       releases,
+      allItems,
     };
   }, [releases, movies, series, releasesQ.isLoading, moviesQ.isLoading, seriesQ.isLoading, releasesQ.isError, moviesQ.isError, seriesQ.isError]);
 };
