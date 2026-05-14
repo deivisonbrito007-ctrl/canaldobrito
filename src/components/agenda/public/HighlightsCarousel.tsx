@@ -53,6 +53,19 @@ export const HighlightsCarousel = ({ highlights }: Props) => {
                   boxShadow: `0 6px 24px -10px rgba(${theme.glow},0.5)`,
                 }}
               >
+                {/* Watermark do esporte */}
+                <span
+                  aria-hidden
+                  className="absolute -right-4 -bottom-6 text-[120px] leading-none select-none pointer-events-none"
+                  style={{
+                    opacity: 0.08,
+                    filter: `drop-shadow(0 0 14px rgba(${theme.glow},0.4))`,
+                    transform: "rotate(-12deg)",
+                  }}
+                >
+                  {SPORT_EMOJI[sport] ?? "🏆"}
+                </span>
+
                 {/* Top row: esporte + countdown chip */}
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <span

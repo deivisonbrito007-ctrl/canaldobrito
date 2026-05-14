@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown, getElapsedMinutes } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown, getElapsedMinutes, SPORT_EMOJI } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
 
@@ -42,6 +42,20 @@ export const GamePremiumCard = ({ game, index }: Props) => {
           boxShadow: `0 0 10px rgba(${live ? "255,59,59" : theme.glow},0.55)`,
         }}
       />
+
+      {/* Watermark do esporte */}
+      <span
+        aria-hidden
+        className="absolute -right-3 -bottom-4 text-[88px] leading-none select-none pointer-events-none motion-reduce:opacity-[0.04]"
+        style={{
+          opacity: 0.07,
+          filter: `drop-shadow(0 0 12px rgba(${theme.glow},0.35))`,
+          transform: "rotate(-12deg)",
+        }}
+      >
+        {SPORT_EMOJI[sport] ?? "🏆"}
+      </span>
+
 
       <div className="pl-3.5 pr-3 py-3 flex items-center gap-3">
         {/* Horário */}

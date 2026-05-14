@@ -115,6 +115,19 @@ export const LiveHeroCard = ({ games }: Props) => {
             aria-roledescription="slide"
             aria-label={`Jogo ${i + 1} de ${total}`}
           >
+            {/* Watermark do esporte */}
+            <span
+              aria-hidden
+              className="absolute -right-4 -bottom-6 leading-none select-none pointer-events-none text-[160px]"
+              style={{
+                opacity: 0.06,
+                filter: `drop-shadow(0 0 18px rgba(${theme.glow},0.5))`,
+                transform: "rotate(-12deg)",
+              }}
+            >
+              {SPORT_EMOJI[sport] ?? "🏆"}
+            </span>
+
             {/* Top row: badge AO VIVO + sport + contador */}
             <div className="flex items-center justify-between mb-3 gap-2">
               <span
