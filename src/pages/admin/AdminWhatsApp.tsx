@@ -369,7 +369,6 @@ const AdminWhatsApp = () => {
           {([
             { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
             { tab: "novidades" as DeepTab, label: "Filmes e Séries", emoji: "🎬", msg: "🎬 Filmes e séries da semana — confira os lançamentos 👇" },
-            { tab: "schedule" as DeepTab, label: "Programação", emoji: "📅", msg: "📅 Programação completa de hoje no portal 👇" },
           ]).map(({ tab, label, emoji, msg }) => {
             const content = `quick-${tab}`;
             const link = buildDeepLink(siteUrl, tab, { short: true, content });
