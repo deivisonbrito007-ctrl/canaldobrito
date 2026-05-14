@@ -22,7 +22,7 @@ export const HighlightsCarousel = ({ highlights }: Props) => {
           <Clock size={18} className="text-[#00ff87]" strokeWidth={2.5} />
           <span className="text-white">Em Breve</span>
           <span className="text-white/35 text-xs normal-case tracking-normal font-normal">
-            · próximos {highlights.length}
+            · nas próximas horas
           </span>
         </h2>
         <span className="text-[10.5px] uppercase tracking-wider text-white/40 font-bold">

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import { SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { SPORT_EMOJI, SPORT_LABEL, type SportType, getElapsedMinutes } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
 
@@ -63,6 +63,7 @@ export const LiveHeroCard = ({ games }: Props) => {
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const isVs = !!game.away_team;
+  const elapsed = getElapsedMinutes(game.game_time, game.date, sport);
 
   const goPrev = () => {
     setIndex((v) => (v - 1 + total) % total);
@@ -119,6 +120,7 @@ export const LiveHeroCard = ({ games }: Props) => {
               <span
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-[0.14em]"
                 style={{ background: "#ff3b3b", color: "#0a0000" }}
+                aria-label={elapsed !== null ? `Ao vivo, ${elapsed} minutos` : "Ao vivo"}
               >
                 <motion.span
                   className="w-1.5 h-1.5 rounded-full bg-white"
@@ -126,6 +128,9 @@ export const LiveHeroCard = ({ games }: Props) => {
                   transition={{ duration: 1.2, repeat: Infinity }}
                 />
                 AO VIVO
+                {elapsed !== null && (
+                  <span className="ml-0.5 tabular-nums">· {elapsed}'</span>
+                )}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-white/60 font-medium flex items-center gap-1">

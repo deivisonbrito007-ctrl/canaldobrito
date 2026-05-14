@@ -117,10 +117,10 @@ const AgendaPublica = () => {
 
   const grouped = useMemo(() => groupBySport(games), [games]);
 
-  // Tick a cada 30s para manter status ao vivo fresco
+  // Tick a cada 20s para manter status ao vivo / minuto fresco
   const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 30000);
+    const id = setInterval(() => setTick((n) => n + 1), 20000);
     return () => clearInterval(id);
   }, []);
 
@@ -132,7 +132,11 @@ const AgendaPublica = () => {
     );
   }, [games, isToday]);
 
-  const highlights = useMemo(() => curateHighlights(games, 8), [games]);
+  const allHighlights = useMemo(() => curateHighlights(games, 8), [games]);
+  const highlights = useMemo(() => {
+    if (filter === "all" || filter === "live") return allHighlights;
+    return allHighlights.filter((h) => detectedSport(h.game) === filter);
+  }, [allHighlights, filter]);
 
   const sportsSorted = useMemo(() => {
     return Object.keys(grouped).sort((a, b) => {
@@ -268,6 +272,9 @@ const AgendaPublica = () => {
             {/* AO VIVO HERO */}
             {isToday && liveGames.length > 0 && <LiveHeroCard games={liveGames} />}
 
+            {/* Em Breve — fixo, sempre visível independente do filtro */}
+            {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
+
             {/* CTA Assine premium */}
             <Link
               to="/assinar"
@@ -318,11 +325,6 @@ const AgendaPublica = () => {
                 countsBySport={countsBySport}
                 sportOrder={sportsSorted}
               />
-            )}
-
-            {/* Imperdíveis */}
-            {filter === "all" && highlights.length > 0 && (
-              <HighlightsCarousel highlights={highlights} />
             )}
 
             {/* Agrupamentos */}
