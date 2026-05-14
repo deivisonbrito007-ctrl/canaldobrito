@@ -1,76 +1,62 @@
-# Hardening do redirect `/agenda` → `/programacao`
+# Fallback de `?date` inválido na Programação
 
-Hoje o `AgendaRedirect` em `src/App.tsx` já faz `Navigate` para `/programacao${window.location.search}`, mas não valida nada — qualquer string passa adiante, e parâmetros inválidos podem quebrar a `ProgramacaoTab` (por exemplo `?date=hoje` ou `?date=2026-13-40`).
-
-A proposta é transformar esse redirect em um componente robusto, com validação explícita de `date`, preservação garantida de UTMs e de parâmetros conhecidos, e descarte seguro do resto.
+O helper `buildProgramacaoRedirect` já valida o `date` no caminho `/agenda → /programacao`, mas a `ProgramacaoTab` é alcançada também por links diretos, deep-links salvos e o WhatsApp parser. Hoje, se a URL for `/programacao?date=lixo`, o componente faz `useAllDailyGames("lixo")` e o filtro de "ao vivo hoje" também falha. Precisa de uma camada defensiva no próprio componente.
 
 ## O que muda
 
-### 1. Novo helper `src/lib/agendaRedirect.ts`
+### 1. Reusar a validação existente
 
-Função pura `buildProgramacaoRedirect(search: string, hash: string): string` que:
+`src/lib/agendaRedirect.ts` já exporta `isValidDateParam(value)`. Vou aproveitá-la — sem duplicação.
 
-- Faz parse com `URLSearchParams`.
-- Valida `date`:
-  - Aceita somente formato `YYYY-MM-DD` via regex `^\d{4}-\d{2}-\d{2}$`.
-  - Confere se é uma data real (`new Date(...)` + checagem de componentes).
-  - Se inválido → remove o param (cai no default = hoje na `ProgramacaoTab`).
-- Preserva, sem alteração, a allowlist:
-  - `date`
-  - `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`
-  - `ref`, `src` (já usados em compartilhamentos)
-  - `tab` (mapeado via `SLUG_TO_TAB` se presente; fallback `schedule`)
-- Descarta silenciosamente qualquer outra chave (evita que params órfãos da rota antiga vazem).
-- Retorna `/programacao` + querystring reconstruída + `hash` original (se existir).
+### 2. `ProgramacaoTab.tsx`
 
-### 2. `AgendaRedirect` em `src/App.tsx`
+Substituir:
 
-Substituir o componente atual por uma versão que:
+```ts
+const date = params.get("date") || today;
+```
 
-- Lê `useLocation()` (em vez de `window.location`) para SSR-safety e consistência com o React Router.
-- Chama `buildProgramacaoRedirect(location.search, location.hash)`.
-- Renderiza `<Navigate to={target} replace />`.
+por uma resolução validada:
 
-### 3. Telemetria leve (opcional, mesmo arquivo)
+```ts
+const rawDate = params.get("date");
+const date = rawDate && isValidDateParam(rawDate) ? rawDate : today;
+```
 
-Antes do `Navigate`, dispara um `window.dispatchEvent(new CustomEvent("legacy-agenda-redirect", { detail: { from, to } }))` para que o pipeline de analytics existente possa registrar quantos acessos ainda chegam por `/agenda`. Sem custo se nada estiver escutando.
+E adicionar um `useEffect` que **limpa a URL** quando o param veio inválido:
 
-### 4. Cobertura de testes
+- Se `rawDate` existe e não passa em `isValidDateParam`, chama `setParams(next, { replace: true })` removendo a chave `date`.
+- `replace: true` evita poluir o histórico (o usuário não precisa "voltar" para a URL quebrada).
+- UTMs e demais params permanecem intactos (apenas `date` é removido).
 
-Adicionar `src/lib/__tests__/agendaRedirect.test.ts` com casos:
+Resultado visível: a página abre normalmente em **hoje** (default correto da agenda) e a URL é normalizada para `/programacao` (ou `/programacao?utm_source=...` se houver UTMs).
 
-- `?date=2026-05-20` → preservado.
-- `?date=invalida` → removido.
-- `?date=2026-13-40` → removido.
-- `?utm_source=wa&utm_campaign=x&date=2026-05-20` → todos preservados, ordem irrelevante.
-- `?foo=bar&date=2026-05-20` → `foo` descartado.
-- `#secao` → hash preservado.
-- string vazia → `/programacao`.
+### 3. Sem mudança em "dia mais próximo"
+
+A interpretação literal de "dia mais próximo" seria buscar o próximo dia com jogos. Isso já é coberto pelo `EmptyDayState`, que oferece o botão "Ver amanhã" quando o dia escolhido está vazio. Cobrir isso de forma automática (auto-pular dias) seria uma mudança de UX maior e fora do escopo desta validação — é um redirect silencioso, não um "skip". Se você quiser esse comportamento, é uma feature à parte.
+
+O fallback aqui cobre apenas **date inválido** → **hoje** (o "padrão correto" mencionado).
 
 ## Detalhes técnicos
 
 ```text
-/agenda?date=2026-05-20&utm_source=wa&foo=bar#x
+/programacao?date=lixo&utm_source=wa
         │
-        ▼
-buildProgramacaoRedirect()
-        │
-        ▼
-/programacao?date=2026-05-20&utm_source=wa#x
+        ▼ (validação no mount)
+/programacao?utm_source=wa            ← URL normalizada
+hoje carregado em useAllDailyGames    ← UI consistente
 ```
 
-- Sem alteração em `ProgramacaoTab`, `BottomNav`, `Index`, `whatsappText` ou templates do admin — a contract da nova URL continua a mesma já consumida hoje.
-- Sem mudanças em rotas: apenas o componente de `/agenda` é trocado.
-- 100% client-side; nenhum impacto em SEO além do `replace` que evita poluir o histórico.
+- Idempotente: o `useEffect` só dispara se `rawDate` for inválido.
+- Sem flicker: a primeira render já usa `today` porque a resolução acontece antes do `useAllDailyGames`.
+- Sem impacto em `LiveHeroCard`, `SportSection`, ou outros consumidores — todos recebem `date` válido.
 
 ## Arquivos tocados
 
-- `src/lib/agendaRedirect.ts` (novo)
-- `src/lib/__tests__/agendaRedirect.test.ts` (novo)
-- `src/App.tsx` (substituir `AgendaRedirect`)
+- `src/components/public/ProgramacaoTab.tsx` (validação + cleanup da URL)
 
 ## Fora de escopo
 
-- Redirect server-side (Lovable já serve SPA fallback; o redirect client-side é suficiente).
-- Mudanças visuais na `ProgramacaoTab`.
-- Limpeza dos componentes órfãos da antiga aba "Ao Vivo" (pendente de decisão sua em mensagem anterior).
+- Auto-skip para o "próximo dia com jogos" (mudança de UX).
+- Mudanças no helper de redirect (já valida na rota `/agenda`).
+- Validação no admin (deep-links admin não usam `?date` na Programação pública).
