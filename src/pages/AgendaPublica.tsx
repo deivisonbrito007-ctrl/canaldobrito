@@ -354,6 +354,9 @@ const AgendaPublica = () => {
         </div>
       </div>
 
+      {/* Sticky share bar */}
+      <ShareBar games={games} date={date} />
+
 
       <style>{`
         @keyframes shimmer {
