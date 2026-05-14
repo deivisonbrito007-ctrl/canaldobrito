@@ -43,6 +43,20 @@ export const GamePremiumCard = ({ game, index }: Props) => {
         }}
       />
 
+      {/* Watermark do esporte */}
+      <span
+        aria-hidden
+        className="absolute -right-3 -bottom-4 text-[88px] leading-none select-none pointer-events-none motion-reduce:opacity-[0.04]"
+        style={{
+          opacity: 0.07,
+          filter: `drop-shadow(0 0 12px rgba(${theme.glow},0.35))`,
+          transform: "rotate(-12deg)",
+        }}
+      >
+        {SPORT_EMOJI[sport] ?? "🏆"}
+      </span>
+
+
       <div className="pl-3.5 pr-3 py-3 flex items-center gap-3">
         {/* Horário */}
         <div className="shrink-0 w-[58px] text-center">
