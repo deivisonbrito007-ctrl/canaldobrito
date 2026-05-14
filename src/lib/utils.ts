@@ -8,31 +8,33 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Build a deep-link URL for a specific public tab/section.
  * Used for sharing on WhatsApp Status so the recipient lands directly
- * on the right view (e.g. ao vivo, programação, destaques, novidades).
+ * on the right view (programação ou filmes e séries).
  */
-export type PublicTab = "live" | "novidades" | "schedule";
+export type PublicTab = "schedule" | "novidades";
 
 /** Pretty path slugs used in shared URLs (WhatsApp Status, etc.). */
 export const TAB_SLUGS: Record<PublicTab, string> = {
-  live: "ao-vivo",
-  novidades: "filmes-e-series",
   schedule: "programacao",
+  novidades: "filmes-e-series",
 };
 
 /** Reverse lookup: slug → tab id. Includes legacy aliases. */
 export const SLUG_TO_TAB: Record<string, PublicTab> = {
-  "ao-vivo": "live",
-  "live": "live",
-  "home": "live", // legacy
+  // Programação (default)
+  "programacao": "schedule",
+  "schedule": "schedule",
+  "agenda": "schedule",        // legacy /agenda
+  "ao-vivo": "schedule",       // legacy /ao-vivo
+  "live": "schedule",          // legacy
+  "home": "schedule",          // legacy
+  // Filmes e Séries
   "filmes-e-series": "novidades",
   "filmes": "novidades",
   "series": "novidades",
   "novidades": "novidades",
-  "sugestoes": "novidades", // legacy
-  "destaques": "novidades", // legacy
-  "highlights": "novidades", // legacy
-  "programacao": "schedule",
-  "schedule": "schedule",
+  "sugestoes": "novidades",    // legacy
+  "destaques": "novidades",    // legacy
+  "highlights": "novidades",   // legacy
 };
 
 export interface DeepLinkOptions {
@@ -58,13 +60,15 @@ export function slugifyUtm(text: string): string {
 
 export function buildDeepLink(base: string, tab?: PublicTab, opts: DeepLinkOptions = {}): string {
   const cleanBase = base.replace(/\/$/, "");
+  // Default to "schedule" when no tab is specified (programação é a home agora).
+  const effectiveTab: PublicTab = tab ?? "schedule";
 
-  // Preferred sharing format: /s/<slug> — short, clean, analytics handled by ShareRedirect
+  // Preferred sharing format: /s/<slug>
   if (opts.short) {
-    const slug = tab ? TAB_SLUGS[tab] : "home";
+    const slug = TAB_SLUGS[effectiveTab];
     const path = `${cleanBase}/s/${slug}`;
     if (opts.content) {
-      const tabPrefix = tab ? `${TAB_SLUGS[tab]}-` : "";
+      const tabPrefix = `${slug}-`;
       const c = slugifyUtm(opts.content);
       const tagged = c.startsWith(tabPrefix) || /^(ab|tpl|quick|custom)-/.test(c)
         ? c : `${tabPrefix}${c}`;
@@ -73,16 +77,16 @@ export function buildDeepLink(base: string, tab?: PublicTab, opts: DeepLinkOptio
     return path;
   }
 
-  const path = tab ? `${cleanBase}/${TAB_SLUGS[tab]}` : (cleanBase || base);
+  const path = `${cleanBase}/${TAB_SLUGS[effectiveTab]}`;
   if (!opts.utm && !opts.content) return path;
 
   const params = new URLSearchParams({
     utm_source: opts.source ?? "whatsapp",
     utm_medium: opts.medium ?? "status",
-    utm_campaign: opts.campaign ?? `share-${tab ? TAB_SLUGS[tab] : "home"}`,
+    utm_campaign: opts.campaign ?? `share-${TAB_SLUGS[effectiveTab]}`,
   });
   if (opts.content) {
-    const tabPrefix = tab ? `${TAB_SLUGS[tab]}-` : "";
+    const tabPrefix = `${TAB_SLUGS[effectiveTab]}-`;
     const slug = slugifyUtm(opts.content);
     params.set("utm_content", slug.startsWith(tabPrefix) ? slug : `${tabPrefix}${slug}`);
   }
