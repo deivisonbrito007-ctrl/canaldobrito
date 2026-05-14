@@ -12,6 +12,7 @@ import {
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
 import { offsetDateStr } from "@/lib/whatsappText";
+import { isValidDateParam } from "@/lib/agendaRedirect";
 
 import { LiveHeroCard } from "@/components/agenda/public/LiveHeroCard";
 import { SportFilterBar, type FilterValue } from "@/components/agenda/public/SportFilterBar";
