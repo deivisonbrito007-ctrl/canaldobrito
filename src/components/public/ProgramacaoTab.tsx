@@ -44,8 +44,20 @@ function groupBySport(games: DailyGame[]): Record<string, DailyGame[]> {
 const ProgramacaoTab = () => {
   const [params, setParams] = useSearchParams();
   const today = getLocalDateString();
-  const date = params.get("date") || today;
+  const rawDate = params.get("date");
+  const dateIsValid = rawDate ? isValidDateParam(rawDate) : true;
+  const date = rawDate && dateIsValid ? rawDate : today;
   const [filter, setFilter] = useState<FilterValue>("all");
+
+  // Defensive cleanup: if URL has an invalid ?date, drop only that param
+  // and keep UTMs/others. replace:true avoids polluting history.
+  useEffect(() => {
+    if (rawDate && !dateIsValid) {
+      const next = new URLSearchParams(params);
+      next.delete("date");
+      setParams(next, { replace: true });
+    }
+  }, [rawDate, dateIsValid, params, setParams]);
 
   const { data: rawGames, isLoading } = useAllDailyGames(date);
 
