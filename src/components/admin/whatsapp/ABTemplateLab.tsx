@@ -24,7 +24,7 @@ interface FunnelRow {
 }
 
 const VARIANTS: Variant[] = ["A", "B"];
-const TABS: PublicTab[] = ["live", "novidades", "schedule"];
+const TABS: PublicTab[] = ["schedule", "novidades"];
 
 const openWhatsApp = (text: string) => {
   const win = window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
