@@ -252,30 +252,30 @@ const AgendaPublica = () => {
         {/* Assine CTA */}
         <Link
           to="/assinar"
-          className="group mb-5 flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 active:scale-[0.99] transition-all shadow-lg shadow-[#00ff87]/20 hover:shadow-[#00ff87]/30 relative overflow-hidden"
+          className="group mb-5 flex items-center justify-between gap-2 rounded-2xl px-4 h-14 active:scale-[0.99] transition-all shadow-lg shadow-[#00ff87]/20 hover:shadow-[#00ff87]/30 relative overflow-hidden"
           style={{
             background: "linear-gradient(135deg, #00ff87 0%, #00e07a 100%)",
             color: "#07080a",
           }}
           aria-label="Assine já o Canal do Brito"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="shrink-0 w-9 h-9 rounded-xl bg-[#07080a]/10 flex items-center justify-center">
-              <Sparkles className="w-5 h-5" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-[#07080a]/10 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div className="min-w-0 leading-none">
               <p
-                className="font-bold tracking-wide"
-                style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "22px", lineHeight: 1 }}
+                className="font-bold tracking-wide whitespace-nowrap"
+                style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "20px", lineHeight: 1 }}
               >
                 ASSINE JÁ
               </p>
-              <p className="text-[11px] font-medium opacity-75 mt-1">
+              <p className="text-[10.5px] font-medium opacity-75 mt-1 whitespace-nowrap">
                 Esportes, filmes e séries · R$ 35/mês
               </p>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+          <ChevronRight className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
         </Link>
 
         {/* Live now strip (only today + has lives) */}
