@@ -119,11 +119,10 @@ const LiveHeroCard = ({ game }: { game: DailyGame }) => {
       {/* sport watermark */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-3 -bottom-6 text-[140px] leading-none select-none"
+        className="pointer-events-none absolute -right-2 -bottom-4 text-[88px] sm:text-[112px] leading-none select-none"
         style={{
-          opacity: 0.05,
+          opacity: 0.035,
           color: theme.color,
-          filter: "blur(0.3px)",
           transform: "rotate(-8deg)",
         }}
       >
@@ -133,10 +132,10 @@ const LiveHeroCard = ({ game }: { game: DailyGame }) => {
       {/* sport color glow */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full"
+        className="pointer-events-none absolute -top-12 -right-12 w-36 h-36 sm:w-48 sm:h-48 rounded-full"
         style={{
           background: `radial-gradient(circle, ${theme.color} 0%, transparent 70%)`,
-          opacity: 0.08,
+          opacity: 0.06,
         }}
       />
 
