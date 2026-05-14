@@ -203,54 +203,52 @@ export const LiveHeroCard = ({ games }: Props) => {
           </motion.article>
         </AnimatePresence>
 
-        {/* Setas laterais (visíveis sempre que houver mais de 1) */}
+        {/* Controles abaixo do card: setas + bolinhas (não sobrepõem o conteúdo) */}
         {hasMany && (
-          <>
+          <div className="mt-3 flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={goPrev}
               aria-label="Jogo anterior"
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition active:scale-90 hover:bg-white/15"
+              className="w-9 h-9 rounded-full flex items-center justify-center border transition active:scale-90 hover:bg-white/10"
               style={{
-                background: "rgba(10,10,10,0.55)",
-                borderColor: "rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.05)",
+                borderColor: "rgba(255,255,255,0.12)",
                 color: "#fff",
               }}
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={18} />
             </button>
+
+            <div className="flex items-center gap-1.5">
+              {games.map((g, idx) => (
+                <button
+                  key={g.id}
+                  onClick={() => goTo(idx)}
+                  className="h-1.5 rounded-full transition-all"
+                  style={{
+                    width: idx === i ? 22 : 6,
+                    background: idx === i ? "#ff3b3b" : "rgba(255,255,255,0.25)",
+                  }}
+                  aria-label={`Ir para jogo ${idx + 1}`}
+                  aria-current={idx === i ? "true" : undefined}
+                />
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={goNext}
               aria-label="Próximo jogo"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition active:scale-90 hover:bg-white/15"
+              className="w-9 h-9 rounded-full flex items-center justify-center border transition active:scale-90 hover:bg-white/10"
               style={{
-                background: "rgba(10,10,10,0.55)",
-                borderColor: "rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.05)",
+                borderColor: "rgba(255,255,255,0.12)",
                 color: "#fff",
               }}
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={18} />
             </button>
-          </>
-        )}
-
-        {/* Bolinhas clicáveis */}
-        {hasMany && (
-          <div className="mt-2.5 flex items-center justify-center gap-1.5">
-            {games.map((g, idx) => (
-              <button
-                key={g.id}
-                onClick={() => goTo(idx)}
-                className="h-1.5 rounded-full transition-all"
-                style={{
-                  width: idx === i ? 22 : 6,
-                  background: idx === i ? "#ff3b3b" : "rgba(255,255,255,0.25)",
-                }}
-                aria-label={`Ir para jogo ${idx + 1}`}
-                aria-current={idx === i ? "true" : undefined}
-              />
-            ))}
           </div>
         )}
       </div>
