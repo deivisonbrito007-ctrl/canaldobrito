@@ -241,9 +241,6 @@ export const NovidadesPage = () => {
         </div>
       )}
 
-      {/* CTA Premium */}
-      {!cinema.isLoading && <PremiumCTA />}
-
       {/* Empty state global (sem dados em nenhum lugar) */}
       {filter === "all" && isEmptyAll && (
         <div className="px-4">
@@ -304,6 +301,9 @@ export const NovidadesPage = () => {
           )}
         </div>
       )}
+
+      {/* CTA Premium — sempre ao final da página */}
+      {!cinema.isLoading && <PremiumCTA />}
 
       <ContentDetailSheet
         open={!!selected}
