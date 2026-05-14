@@ -375,7 +375,5 @@ export const NovidadesPage = () => {
   );
 };
 
-// Mantido para evitar warnings de import não utilizado (feature reservada).
-void useNewsReleases;
 
 export default NovidadesPage;
