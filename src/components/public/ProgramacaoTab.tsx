@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Sparkles, ChevronRight, ChevronLeft, Radio, Clock } from "lucide-react";
+import { ChevronLeft, Radio, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   type SportType,
@@ -280,51 +281,13 @@ const ProgramacaoTab = () => {
             )}
 
           {/* CTA Assine premium — ao final da página */}
-          <Link
-            to="/assinar"
-            className="group mt-2 mb-2 flex items-center justify-between gap-2 rounded-2xl px-4 h-14 active:scale-[0.99] transition-all shadow-lg shadow-[#00ff87]/20 hover:shadow-[#00ff87]/35 relative overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, #00ff87 0%, #00e07a 100%)",
-              color: "#07080a",
-            }}
-            aria-label="Assine já o Canal do Brito"
-          >
-            <motion.span
-              aria-hidden
-              className="absolute inset-y-0 -left-1/3 w-1/3 motion-reduce:hidden"
-              style={{
-                background:
-                  "linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)",
-              }}
-              animate={{ x: ["0%", "420%"] }}
-              transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }}
-            />
-            <div className="flex items-center gap-2.5 min-w-0 relative">
-              <div className="shrink-0 w-8 h-8 rounded-lg bg-[#07080a]/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 leading-none">
-                <p
-                  className="font-bold tracking-wide whitespace-nowrap"
-                  style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "20px", lineHeight: 1 }}
-                >
-                  ASSINE JÁ · R$ 35/MÊS
-                </p>
-                <p className="text-[10.5px] font-medium opacity-75 mt-1 whitespace-nowrap">
-                  Esportes · Filmes · Séries
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 relative" />
-          </Link>
+          <div className="mt-4 mb-2">
+            <PremiumCTA from="programacao-bottom" />
+          </div>
         </>
       )}
 
       <style>{`
-        @keyframes shimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
         .scrollbar-none::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
