@@ -272,6 +272,9 @@ const AgendaPublica = () => {
             {/* AO VIVO HERO */}
             {isToday && liveGames.length > 0 && <LiveHeroCard games={liveGames} />}
 
+            {/* Em Breve — fixo, sempre visível independente do filtro */}
+            {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
+
             {/* CTA Assine premium */}
             <Link
               to="/assinar"
@@ -322,11 +325,6 @@ const AgendaPublica = () => {
                 countsBySport={countsBySport}
                 sportOrder={sportsSorted}
               />
-            )}
-
-            {/* Imperdíveis */}
-            {filter === "all" && highlights.length > 0 && (
-              <HighlightsCarousel highlights={highlights} />
             )}
 
             {/* Agrupamentos */}
