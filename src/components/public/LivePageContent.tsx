@@ -312,9 +312,9 @@ const LiveGameRow = ({ game }: { game: DailyGame }) => {
       {/* sport watermark */}
       <span
         aria-hidden
-        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[64px] leading-none select-none"
+        className="pointer-events-none absolute right-1 top-1/2 text-[40px] sm:text-[52px] leading-none select-none"
         style={{
-          opacity: 0.04,
+          opacity: 0.025,
           color: theme.color,
           transform: "translateY(-50%) rotate(-6deg)",
         }}
