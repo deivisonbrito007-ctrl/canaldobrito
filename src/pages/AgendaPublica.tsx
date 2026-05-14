@@ -181,11 +181,24 @@ const AgendaPublica = () => {
       el.setAttribute("content", content);
     };
     const desc = total > 0 ? `${total} jogos: ${summary}.` : "Sem jogos cadastrados.";
+    const ogImage = "https://storage.googleapis.com/gpt-engineer-file-uploads/CBtJ5hWstpQNOL94TuD5N8LmpqD2/social-images/social-1778721619091-imagem_social_canal_do_brito.webp";
+    const pageUrl = `${SITE_URL}/agenda?date=${date}`;
+    const fullTitle = `${titleLabel} — ${subtitle}`;
     setMeta("description", desc);
-    setMeta("og:title", `${titleLabel} — ${subtitle}`, "property");
+    setMeta("og:site_name", "Canal do Brito", "property");
+    setMeta("og:title", fullTitle, "property");
     setMeta("og:description", desc, "property");
-    setMeta("og:url", `${SITE_URL}/agenda?date=${date}`, "property");
+    setMeta("og:url", pageUrl, "property");
     setMeta("og:type", "website", "property");
+    setMeta("og:locale", "pt_BR", "property");
+    setMeta("og:image", ogImage, "property");
+    setMeta("og:image:width", "1200", "property");
+    setMeta("og:image:height", "630", "property");
+    setMeta("og:image:alt", fullTitle, "property");
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", fullTitle);
+    setMeta("twitter:description", desc);
+    setMeta("twitter:image", ogImage);
     let canon = document.head.querySelector('link[rel="canonical"]');
     if (!canon) {
       canon = document.createElement("link");
