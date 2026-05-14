@@ -81,27 +81,28 @@ export const NovidadesPage = () => {
     !!trailerItem
   );
 
-  // Estatísticas para os chips (mesma lógica anterior).
+  // Estatísticas para os chips — usam o conjunto unificado para movie/series e
+  // apenas releases para os badges (lançamento, nova_temporada, estreia, exclusivo).
   const stats = useMemo(() => {
     const isMovie = (i: NewsRelease) => i.content_type === "movie";
     const isSeries = (i: NewsRelease) => i.content_type === "series" || i.content_type === "tv";
     return {
-      all: releases.length,
-      movie: releases.filter(isMovie).length,
-      series: releases.filter(isSeries).length,
+      all: cinema.allItems.length,
+      movie: cinema.allItems.filter(isMovie).length,
+      series: cinema.allItems.filter(isSeries).length,
       lancamento: releases.filter((i) => i.badge_type === "lancamento").length,
       nova_temporada: releases.filter((i) => i.badge_type === "nova_temporada").length,
       estreia: releases.filter((i) => i.badge_type === "estreia").length,
       exclusivo: releases.filter((i) => i.badge_type === "exclusivo").length,
     } as Record<FilterId, number>;
-  }, [releases]);
+  }, [releases, cinema.allItems]);
 
   const filtered = useMemo(() => {
     let list: NewsRelease[];
-    if (filter === "all") list = releases;
-    else if (filter === "movie") list = releases.filter((i) => i.content_type === "movie");
+    if (filter === "all") list = cinema.allItems;
+    else if (filter === "movie") list = cinema.allItems.filter((i) => i.content_type === "movie");
     else if (filter === "series")
-      list = releases.filter((i) => i.content_type === "series" || i.content_type === "tv");
+      list = cinema.allItems.filter((i) => i.content_type === "series" || i.content_type === "tv");
     else list = releases.filter((i) => i.badge_type === filter);
 
     const sorted = [...list];
@@ -109,7 +110,7 @@ export const NovidadesPage = () => {
     else if (sort === "title") sorted.sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
     else if (sort === "year") sorted.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
     return sorted;
-  }, [releases, filter, sort]);
+  }, [cinema.allItems, releases, filter, sort]);
 
   const categories: CinemaCategory[] = useMemo(() => {
     const all: { id: FilterId; emoji: string; label: string }[] = [
