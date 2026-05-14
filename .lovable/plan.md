@@ -1,131 +1,37 @@
-# Refatoração cinematográfica de Filmes & Séries (v3)
+## Objetivo
 
-Reconstrução completa da `NovidadesPage` para parecer um streaming premium real (Netflix / Prime / Apple TV) com foco em mobile-first e usuário vindo do WhatsApp Status. Mantém a Bottom Nav atual (2 botões) e o backend existente.
+Substituir o botão verde pill atual no rodapé da aba **Programação** pelo mesmo CTA premium usado na aba **Novidades** (`cinema/PremiumCTA.tsx`), e elevar o acabamento desse componente para ficar mais profissional — aplicando a melhoria nas duas abas ao mesmo tempo (já que compartilham o mesmo componente).
 
-**Mudança v3** (sobre v2): adicionado um **plano de proteção contra regressões** para garantir que nada quebre — mapeamento explícito do que é tocado, fallbacks, smoke checks e estratégia de rollback.
+## Mudanças
 
-## Escopo confirmado
+### 1. `src/components/public/cinema/PremiumCTA.tsx` — refinar o card
 
-- Trilhas: `🆕 Lançamentos`, `🎬 Filmes da Semana`, `📺 Séries da Semana`. Sem "Em Alta" e sem "Exclusivos".
-- Hero cinematográfico com auto-rotate, swipe só dentro do hero.
-- CTA `▶ Assistir Trailer` abre `TrailerModal` via `useTrailerKey` (já existe).
-- Sem favoritos, sem "continue assistindo", sem mudança de Bottom Nav, sem migrations.
+Manter a estrutura (título Bebas Neue + chips de categorias + botão pill verde), mas elevar o acabamento:
 
-## Estrutura final
+- **Borda e fundo:** dupla camada — `border-primary/20` + gradiente sutil `from-[#0d0f12] via-[#0a0b0e] to-[#0d0f12]`, com inner highlight (`shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]`).
+- **Glow:** trocar o blob inferior por um glow radial mais discreto (top-right) usando `bg-primary/10` + `blur-2xl`, para não competir com o conteúdo.
+- **Cabeçalho:** adicionar um eyebrow pequeno acima do título — `PLANO PREMIUM · R$ 35/MÊS` em uppercase tracking wide, cor `text-primary/80`, fonte Syne.
+- **Título:** `ASSISTA TUDO SEM LIMITES` — manter Bebas Neue, ajustar `text-[28px] sm:text-4xl`, `text-primary` apenas em "SEM LIMITES".
+- **Subcopy:** uma linha curta em `text-foreground/65` font-body — "Esportes ao vivo, filmes e séries em um só lugar."
+- **Chips de categorias:** trocar os emojis soltos por pills com `bg-white/[0.04] border border-white/[0.06] rounded-full px-2.5 py-1 text-[11px]` — visual mais coeso, menos "infantil".
+- **CTA:** botão pill `bg-primary text-primary-foreground`, `min-h-[52px]`, com micro-shimmer (igual ao da Programação atual — manter brilho diagonal repetindo a cada ~5s, respeitando `motion-reduce:hidden`). Texto: `ASSINAR AGORA` em Bebas Neue + `ArrowRight`.
+- **Trust line (opcional, mas recomendado):** linha minúscula abaixo do botão `Pix · Sem fidelidade · Cancele quando quiser` em `text-[10.5px] text-foreground/50`.
+- **Mobile-first:** padding `p-5 sm:p-7`, raio `rounded-3xl`, respeitar safe areas via `mx-4`.
+- **Acessibilidade:** `aria-label` no Link, foco visível (`focus-visible:ring-2 ring-primary/60 ring-offset-2 ring-offset-background`).
 
-```text
-CinemaHero (auto-rotate)
-CinemaCategoryRail (chips Apple TV)
-PosterRail "🆕 Lançamentos"
-PosterRail "🎬 Filmes da Semana"
-PosterRail "📺 Séries da Semana"
-PremiumCTA → /assinar
-Grid filtrada (só quando chip ≠ Todos)
-```
+### 2. `src/components/public/ProgramacaoTab.tsx` — usar o mesmo componente
 
-## Componentes novos (`src/components/public/cinema/`)
+- Remover o bloco `<Link to="/assinar">` atual (linhas 282–319) e o `<style>` do shimmer local (que vira responsabilidade do `PremiumCTA`).
+- Importar e renderizar `<PremiumCTA />` no mesmo lugar (após o estado vazio).
+- Trocar o destino para `/assinar?from=programacao-bottom` (passando uma prop opcional `from` no componente para rastrear a origem sem duplicar o componente). Default mantém `/assinar` para Novidades, ou padronizamos com query param por aba.
 
-- `CinemaHero.tsx` — backdrop full-bleed `60vh`/`70vh`, badges, sinopse 2 linhas, dois CTAs, auto-rotate 7s, `framer-motion` cross-fade. `React.forwardRef`.
-- `PosterRail.tsx` + `PosterCard.tsx` — scroll horizontal `snap-mandatory scrollbar-hide`, `mask-image` nas bordas, posters `aspect-[2/3]` maiores que hoje, hover/tap sutil.
-- `CinemaCategoryRail.tsx` — chips glass com 1 camada de glow `primary/15`. Reaproveita `FilterId` e `stats` da página atual.
-- `PremiumCTA.tsx` — banner `rounded-3xl`, gradiente sutil, CTA largura total `min-h-[52px]` → `/assinar`.
-- `CinemaSearchButton.tsx` — refino visual; abre o `SearchModal` existente.
-- `useCinemaShelves.ts` — hook único: combina `useActiveNewsReleases` + `useActiveMovies` + `useActiveSeries` e retorna `{heroItems, shelves, allForSearch}`. Centraliza a derivação para facilitar ligar/desligar trilhas opcionais (`Novas Temporadas`, `Mais Bem Avaliados`) no futuro.
+### 3. Manter consistência
 
-## Mudanças nos componentes existentes
+- A aba **Ao Vivo** já tem seu próprio `PremiumCTA` interno em `LivePageContent.tsx` (formato horizontal compacto). **Não mexer** — escopo do pedido é só Programação + Novidades.
 
-- `NovidadesPage.tsx` reescrita: passa a usar os componentes acima. Mantém hooks, `SearchModal`, `ContentDetailSheet`, atalho `/`, lógica de filtros e ordenação. `viewMode` (grid/list) removido — só grid premium na grade filtrada.
-- `src/index.css` — adicionar `--primary-hover` se faltar; classe `cinema-bg-noise` opcional. Sem mexer em tokens existentes.
+## Detalhes técnicos
 
-## Plano anti-regressão (novo)
-
-### O que **NÃO** vou tocar
-
-- `src/integrations/supabase/*` — nada de schema/types.
-- Hooks de dados (`useNewsReleases`, `useMovies`, `useSeries`, `useTrailerKey`, `useTrailerAvailability`) — só consumo.
-- Toda a aba `Programação` (`ProgramacaoTab`, `LiveHeroCard`, `SportSection`, etc.).
-- Bottom Nav, `Index.tsx`, `App.tsx` rotas.
-- Admin inteiro (`/admin/**`).
-- `ShareRedirect`, `whatsappText`, `agendaRedirect` (helpers que acabamos de proteger).
-- Service worker / PWA / push notifications.
-
-### Mapeamento de impacto antes de codar
-
-Antes de criar arquivos, rodar `rg` para confirmar todos os consumidores dos componentes que vou parar de importar:
-
-- `NovidadesCard`, `WeeklyMoviesSection`, `WeeklySeriesSection`, `HeroBanner`.
-- Se algum aparecer em outra rota (admin, E2E, share), **não** removo do repo — apenas paro de importar em `NovidadesPage`.
-- Lista de consumidores vai virar comentário no topo do `NovidadesPage` para auditoria futura.
-
-### Fallbacks e estados degradados
-
-- **Sem dados**: cada `PosterRail` retorna `null` quando `items.length === 0`. `CinemaHero` cai num placeholder estático com CTA `Assinar agora` se `heroItems.length === 0`. Nada de seção vazia.
-- **Sem `backdrop_url`**: hero usa `image_url` (poster) com `object-cover` + blur de fundo do mesmo poster (técnica Spotify) — nunca renderiza preto.
-- **Sem `tmdb_id` ou trailer indisponível** (`useTrailerAvailability` falsy): CTA `▶ Assistir Trailer` vira `+ Detalhes` (abre `ContentDetailSheet`) e o ícone muda. Sem botão morto.
-- **Erro de rede**: `isError` do React Query mostra skeleton + `EmptyDayState`-like fallback (reutilizo padrão visual já existente).
-- **Imagens 404**: `onError` no `<img>` substitui por placeholder `bg-surface-2` + ícone `ImageOff` (já tem em `NovidadesCard`).
-
-### Acessibilidade preservada
-
-- Todos os CTAs com `aria-label`.
-- Hero com `role="region" aria-label="Destaques"` e cada slide com `aria-roledescription="slide"`.
-- Auto-rotate respeita `useReducedMotion()`.
-- Tab order: hero → chips → trilhas → CTA → grid.
-- Foco visível mantido (não vou suprimir outline em nenhum componente).
-
-### Performance / mobile
-
-- `useTrailerAvailability` chamado **uma vez** no topo da página com a lista combinada. Mapa distribuído por prop — evita N requests duplicadas que existem hoje (`NovidadesCard` + cada `Weekly*Section` chamam separadamente).
-- `loading="lazy"` em backdrops/posters fora do hero. `fetchpriority="high"` no slide ativo.
-- Skeletons shimmer (memória global) em todas as seções enquanto `isLoading`.
-- Sem layout shift: cada poster tem `aspect-[2/3]` reservado.
-
-### Smoke tests manuais (vou rodar antes de declarar pronto)
-
-1. `/` (home) carrega → aba "Filmes & Séries" abre sem erros no console.
-2. Hero rotaciona, swipe horizontal funciona dentro do hero, **não** dispara troca de aba.
-3. Tap em poster abre `ContentDetailSheet`.
-4. Tap em `▶ Assistir Trailer` abre `TrailerModal`; se trailer indisponível, CTA mostra estado correto.
-5. Botão de busca abre `SearchModal`; atalho `/` continua funcionando.
-6. Chip de filtro mostra a grade abaixo; chip "Todos" esconde a grade.
-7. Aba "Programação" continua intocada (smoke: troco de aba e volto).
-8. `/agenda?date=2026-05-20` ainda redireciona para `/programacao?date=2026-05-20` (não mexo nesse caminho, mas confiro).
-9. Admin (`/admin/dashboard`) abre sem erro de import.
-10. Lighthouse no preview mobile: sem erros de console, sem warnings críticos.
-
-### Tipagem e build
-
-- TypeScript strict mantido. `useCinemaShelves` usa os tipos `NewsRelease`, `Movie`, `Series` exportados pelos hooks.
-- Sem `any` em props públicas dos novos componentes.
-- O harness roda build automaticamente após cada edit; vou corrigir qualquer erro antes de seguir.
-
-### Rollback fácil
-
-- Toda a lógica nova vive em `src/components/public/cinema/`. Se precisar reverter, basta restaurar a versão anterior de `NovidadesPage.tsx` e apagar a pasta `cinema/`.
-- Não removo nenhum arquivo legado nesta passada (`NovidadesCard`, `WeeklyMoviesSection`, etc. ficam no repo). Limpeza física só em uma 2ª passada após observação em produção.
-
-## Sugestões adicionais (opcionais, posso ativar agora ou depois)
-
-- **Trilha "🎞️ Novas Temporadas"** — `badge_type='nova_temporada'`. Some quando vazia.
-- **Trilha "⭐ Mais Bem Avaliados"** — `rating>=7.5` ordenado desc, top 12. Substitui bem o "Em Alta" sem repetir o termo.
-- **Pré-fetch de detalhes** ao tocar/scrollar o poster (reduz latência ao abrir o sheet).
-- **Telemetria** `view_cinema_hero_slide` e `click_cinema_cta` reaproveitando `trackContentClick` para medir o impacto da refatoração.
-
-Por padrão **não ligo nenhuma** sem você confirmar — para manter o escopo enxuto e o risco baixo.
-
-## Arquivos tocados
-
-Criados:
-- `src/components/public/cinema/CinemaHero.tsx`
-- `src/components/public/cinema/PosterRail.tsx`
-- `src/components/public/cinema/PosterCard.tsx`
-- `src/components/public/cinema/CinemaCategoryRail.tsx`
-- `src/components/public/cinema/PremiumCTA.tsx`
-- `src/components/public/cinema/CinemaSearchButton.tsx`
-- `src/components/public/cinema/useCinemaShelves.ts`
-
-Editados:
-- `src/components/public/NovidadesPage.tsx` (reescrita da composição)
-- `src/index.css` (apenas se faltar `--primary-hover`)
-
-Não removidos: `NovidadesCard`, `WeeklyMoviesSection`, `WeeklySeriesSection`, `HeroBanner` ficam intactos no repo.
+- Arquivos editados: 2 (`cinema/PremiumCTA.tsx`, `ProgramacaoTab.tsx`).
+- Sem mudanças de schema, rotas, tokens globais ou regras de negócio.
+- Animação respeita `prefers-reduced-motion` (regra global do projeto).
+- Tokens semânticos: usar `--primary`, `--foreground`, `--surface-2` já existentes; não adicionar cor nova.
