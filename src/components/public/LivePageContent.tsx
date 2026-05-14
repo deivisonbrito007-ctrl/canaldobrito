@@ -116,6 +116,30 @@ const LiveHeroCard = ({ game }: { game: DailyGame }) => {
         style={{ background: theme.color, opacity: 0.7 }}
       />
 
+      {/* sport watermark */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-3 -bottom-6 text-[140px] leading-none select-none"
+        style={{
+          opacity: 0.05,
+          color: theme.color,
+          filter: "blur(0.3px)",
+          transform: "rotate(-8deg)",
+        }}
+      >
+        {emoji}
+      </span>
+
+      {/* sport color glow */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full"
+        style={{
+          background: `radial-gradient(circle, ${theme.color} 0%, transparent 70%)`,
+          opacity: 0.08,
+        }}
+      />
+
       <div className="relative px-5 pt-4 pb-5">
         {/* meta */}
         <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-[hsl(var(--live-text-muted))] mb-4">
