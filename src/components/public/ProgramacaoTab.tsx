@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, Radio, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Radio, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
