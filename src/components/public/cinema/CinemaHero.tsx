@@ -1,0 +1,212 @@
+import { forwardRef, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Play, Info, Star, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import type { CinemaItem } from "./useCinemaShelves";
+
+interface CinemaHeroProps {
+  items: CinemaItem[];
+  trailerAvailable: Map<number, boolean>;
+  onPlayTrailer: (item: CinemaItem) => void;
+  onOpenDetails: (item: CinemaItem) => void;
+}
+
+const AUTO_ROTATE_MS = 7000;
+
+const getBadgeLabel = (badge?: string) => {
+  if (badge === "lancamento") return "🆕 Lançamento";
+  if (badge === "estreia") return "⭐ Estreia";
+  if (badge === "exclusivo") return "👑 Exclusivo";
+  if (badge === "nova_temporada") return "🎞️ Nova Temporada";
+  return "🔥 Em Destaque";
+};
+
+const getTypeLabel = (t?: string) => {
+  if (t === "movie") return "Filme";
+  if (t === "series" || t === "tv") return "Série";
+  return null;
+};
+
+export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
+  ({ items, trailerAvailable, onPlayTrailer, onOpenDetails }, ref) => {
+    const reduce = useReducedMotion();
+    const [index, setIndex] = useState(0);
+    const total = items.length;
+
+    useEffect(() => { setIndex(0); }, [total]);
+
+    useEffect(() => {
+      if (reduce || total <= 1) return;
+      const id = window.setInterval(() => {
+        setIndex((i) => (i + 1) % total);
+      }, AUTO_ROTATE_MS);
+      return () => window.clearInterval(id);
+    }, [reduce, total]);
+
+    const safeIdx = total > 0 ? Math.min(index, total - 1) : 0;
+    const current = items[safeIdx];
+
+    const hasTrailer = useMemo(() => {
+      if (!current?.tmdb_id) return false;
+      return trailerAvailable.get(current.tmdb_id) === true;
+    }, [current, trailerAvailable]);
+
+    // Empty state — placeholder cinematográfico (sem renderizar preto)
+    if (!current) {
+      return (
+        <section
+          ref={ref}
+          aria-label="Destaques"
+          className="relative h-[58vh] min-h-[420px] sm:h-[68vh] flex items-end overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.18),transparent_55%)]" />
+          <div className="relative z-10 px-5 pb-10 space-y-3 max-w-xl">
+            <Sparkles className="w-7 h-7 text-primary" />
+            <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-foreground">
+              EM BREVE NOVOS LANÇAMENTOS
+            </h1>
+            <p className="text-sm text-muted-foreground font-body max-w-md">
+              Estamos preparando estreias e séries exclusivas. Assine agora e seja o primeiro a assistir.
+            </p>
+            <Link
+              to="/assinar"
+              className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-full bg-primary text-primary-foreground font-semibold font-body shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.6)] hover:opacity-95 transition-opacity"
+            >
+              Assinar agora
+            </Link>
+          </div>
+        </section>
+      );
+    }
+
+    const ratingNum = current.rating ? Number(current.rating) : null;
+    const typeLabel = getTypeLabel(current.content_type);
+    const bgUrl = current.backdrop_url || current.poster_url || "";
+
+    return (
+      <section
+        ref={ref}
+        aria-roledescription="carousel"
+        aria-label="Destaques cinematográficos"
+        className="relative h-[62vh] min-h-[460px] sm:h-[70vh] overflow-hidden"
+      >
+        {/* Backdrop crossfade */}
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={current.id}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 1.2, ease: "easeOut" }}
+            className="absolute inset-0"
+          >
+            {bgUrl ? (
+              <img
+                src={bgUrl}
+                alt=""
+                aria-hidden
+                fetchPriority="high"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-surface-2" />
+            )}
+            {/* multi-layer overlay: bottom + left + top hint for nav */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/20 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/70 to-transparent" />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col justify-end px-5 pb-7 sm:pb-10 sm:px-10 max-w-3xl">
+          <motion.div
+            key={`txt-${current.id}`}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: reduce ? 0 : 0.5, ease: "easeOut" }}
+            className="space-y-3"
+          >
+            {/* badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2.5 py-1 text-[11px] font-semibold text-primary backdrop-blur-md">
+                {getBadgeLabel(current.badge_type)}
+              </span>
+              {ratingNum !== null && ratingNum > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-background/60 border border-border/40 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur-md">
+                  <Star className="w-3 h-3 fill-primary text-primary" />
+                  <span className="tabular-nums">{ratingNum.toFixed(1)} IMDb</span>
+                </span>
+              )}
+              {typeLabel && (
+                <span className="inline-flex items-center rounded-full bg-background/60 border border-border/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground backdrop-blur-md">
+                  {typeLabel}
+                </span>
+              )}
+            </div>
+
+            <h1 className="font-display text-4xl sm:text-6xl leading-[0.95] tracking-wide text-foreground">
+              {current.title}
+            </h1>
+
+            {current.overview && (
+              <p className="text-sm sm:text-base text-foreground/80 font-body line-clamp-2 max-w-xl">
+                {current.overview}
+              </p>
+            )}
+
+            {/* CTAs */}
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => (hasTrailer ? onPlayTrailer(current) : onOpenDetails(current))}
+                aria-label={hasTrailer ? "Assistir trailer" : "Ver detalhes"}
+                className={cn(
+                  "inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full",
+                  "bg-primary text-primary-foreground font-semibold font-body",
+                  "shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.55)]",
+                  "hover:opacity-95 active:scale-[0.98] transition-all"
+                )}
+              >
+                {hasTrailer ? <Play className="w-4 h-4 fill-current" /> : <Info className="w-4 h-4" />}
+                {hasTrailer ? "Assistir Trailer" : "Ver Detalhes"}
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenDetails(current)}
+                aria-label="Mais informações"
+                className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-background/40 border border-border/50 text-foreground font-semibold font-body backdrop-blur-md hover:bg-background/60 transition-colors"
+              >
+                <Info className="w-4 h-4" />
+                Detalhes
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Indicators */}
+          {total > 1 && (
+            <div className="flex items-center gap-1.5 mt-5" role="tablist" aria-label="Slides">
+              {items.map((it, i) => (
+                <button
+                  key={it.id}
+                  role="tab"
+                  aria-selected={i === safeIdx}
+                  aria-label={`Ir para slide ${i + 1}`}
+                  onClick={() => setIndex(i)}
+                  className={cn(
+                    "h-1 rounded-full transition-all",
+                    i === safeIdx ? "w-8 bg-primary" : "w-4 bg-foreground/30 hover:bg-foreground/50"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+);
+CinemaHero.displayName = "CinemaHero";
