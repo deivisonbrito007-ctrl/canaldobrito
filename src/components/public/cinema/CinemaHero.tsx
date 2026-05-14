@@ -225,15 +225,17 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
                 {hasTrailer ? <Play className="w-4 h-4 fill-current" /> : <Info className="w-4 h-4" />}
                 {hasTrailer ? "Assistir Trailer" : "Ver Detalhes"}
               </button>
-              <button
-                type="button"
-                onClick={() => onOpenDetails(current)}
-                aria-label="Mais informações"
-                className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-background/40 border border-border/50 text-foreground font-semibold font-body backdrop-blur-md hover:bg-background/60 transition-colors"
-              >
-                <Info className="w-4 h-4" />
-                Detalhes
-              </button>
+              {hasTrailer && (
+                <button
+                  type="button"
+                  onClick={() => onOpenDetails(current)}
+                  aria-label="Mais informações"
+                  className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-background/40 border border-border/50 text-foreground font-semibold font-body backdrop-blur-md hover:bg-background/60 transition-colors"
+                >
+                  <Info className="w-4 h-4" />
+                  Detalhes
+                </button>
+              )}
             </div>
           </motion.div>
 
