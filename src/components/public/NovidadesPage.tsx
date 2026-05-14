@@ -219,7 +219,7 @@ export const NovidadesPage = () => {
       style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
     >
       {/* HERO cinematográfico */}
-      {cinema.isLoading ? (
+      {cinema.isHeroLoading ? (
         <HeroSkeleton />
       ) : (
         <CinemaHero
