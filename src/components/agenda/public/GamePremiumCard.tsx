@@ -57,9 +57,9 @@ export const GamePremiumCard = ({ game, index }: Props) => {
       </span>
 
 
-      <div className="pl-3.5 pr-3 py-3 flex items-center gap-3">
+      <div className="pl-3.5 pr-3 py-3 flex items-start gap-3.5">
         {/* Horário */}
-        <div className="shrink-0 w-[58px] text-center">
+        <div className="shrink-0 w-[64px] text-center pr-1 border-r border-white/5">
           <p
             className="text-[24px] leading-none tabular-nums"
             style={{
@@ -69,7 +69,7 @@ export const GamePremiumCard = ({ game, index }: Props) => {
           >
             {time}
           </p>
-          <p className="text-[9px] uppercase tracking-wider mt-0.5 font-bold tabular-nums"
+          <p className="text-[9px] uppercase tracking-wider mt-1 font-bold tabular-nums whitespace-nowrap"
              style={{ color: live ? "#ff3b3b" : soon ? "#fbbf24" : ended ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.45)" }}>
             {live
               ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
