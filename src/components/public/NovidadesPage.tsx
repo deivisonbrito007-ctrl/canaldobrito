@@ -188,22 +188,6 @@ export const NovidadesPage = () => {
     setTrailerItem(item);
   };
 
-  // Atalho "/" abre a busca.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (searchOpen) return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
-      if (e.key === "/") {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [searchOpen]);
-
   const filterLabel = categories.find((c) => c.id === filter)?.label ?? "Todos";
   const isEmptyAll =
     !cinema.isLoading && cinema.heroItems.length === 0 && cinema.shelves.length === 0;
