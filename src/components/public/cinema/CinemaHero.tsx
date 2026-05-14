@@ -171,37 +171,7 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
           </motion.div>
         </AnimatePresence>
 
-        {/* Cluster de controles no canto inferior direito (não cobre a arte) */}
-        {showControls && (
-          <div className="absolute right-3 sm:right-6 bottom-6 sm:bottom-8 z-20 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Destaque anterior"
-              className={cn(
-                "inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full",
-                "bg-background/60 backdrop-blur-md border border-border/50 text-foreground",
-                "hover:bg-background/85 active:scale-95 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              )}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Próximo destaque"
-              className={cn(
-                "inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full",
-                "bg-background/60 backdrop-blur-md border border-border/50 text-foreground",
-                "hover:bg-background/85 active:scale-95 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              )}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+        {/* (Setas movidas para a barra inferior — evitam sobrepor a arte) */}
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col justify-end px-5 pb-7 sm:pb-10 sm:px-10 max-w-3xl pointer-events-none">
@@ -267,33 +237,74 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
             </div>
           </motion.div>
 
-          {/* Indicators + counter */}
+          {/* Barra de controle: indicadores + contador (esquerda) e setas (direita) */}
           {showControls && (
-            <div className="mt-5 flex items-center gap-3 pointer-events-auto">
-              <div className="flex items-center gap-1.5" role="tablist" aria-label="Slides">
-                {items.map((it, i) => (
-                  <button
-                    key={it.id}
-                    role="tab"
-                    aria-selected={i === safeIdx}
-                    aria-label={`Ir para destaque ${i + 1}`}
-                    onClick={() => goTo(i)}
-                    className="relative py-3 -my-3 group/dot focus-visible:outline-none"
-                  >
-                    <span
+            <div className="mt-5 flex items-center justify-between gap-3 pointer-events-auto">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-1.5" role="tablist" aria-label="Slides de destaques">
+                  {items.map((it, i) => (
+                    <button
+                      key={it.id}
+                      role="tab"
+                      type="button"
+                      aria-selected={i === safeIdx}
+                      aria-label={`Ir para destaque ${i + 1} de ${total}${items[i]?.title ? `: ${items[i].title}` : ""}`}
+                      onClick={() => goTo(i)}
                       className={cn(
-                        "block h-1.5 rounded-full transition-all",
-                        i === safeIdx
-                          ? "w-10 bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.6)]"
-                          : "w-5 bg-foreground/30 group-hover/dot:bg-foreground/60"
+                        "relative py-3 -my-3 group/dot rounded-full",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       )}
-                    />
-                  </button>
-                ))}
+                    >
+                      <span
+                        className={cn(
+                          "block h-1.5 rounded-full transition-all",
+                          i === safeIdx
+                            ? "w-10 bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.6)]"
+                            : "w-5 bg-foreground/30 group-hover/dot:bg-foreground/60"
+                        )}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <span
+                  className="text-[11px] font-body tabular-nums text-muted-foreground"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {safeIdx + 1} <span className="text-foreground/40">/</span> {total}
+                </span>
               </div>
-              <span className="text-[11px] font-body tabular-nums text-muted-foreground">
-                {safeIdx + 1} <span className="text-foreground/40">/</span> {total}
-              </span>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={prev}
+                  aria-label={`Destaque anterior (${((safeIdx - 1 + total) % total) + 1} de ${total})`}
+                  aria-controls="cinema-hero-slide"
+                  className={cn(
+                    "inline-flex items-center justify-center w-11 h-11 rounded-full",
+                    "bg-background/65 backdrop-blur-md border border-border/60 text-foreground",
+                    "hover:bg-background/90 hover:border-primary/50 active:scale-95 transition-all",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  )}
+                >
+                  <ChevronLeft className="w-5 h-5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={next}
+                  aria-label={`Próximo destaque (${(safeIdx + 1) % total + 1} de ${total})`}
+                  aria-controls="cinema-hero-slide"
+                  className={cn(
+                    "inline-flex items-center justify-center w-11 h-11 rounded-full",
+                    "bg-background/65 backdrop-blur-md border border-border/60 text-foreground",
+                    "hover:bg-background/90 hover:border-primary/50 active:scale-95 transition-all",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  )}
+                >
+                  <ChevronRight className="w-5 h-5" aria-hidden />
+                </button>
+              </div>
             </div>
           )}
         </div>
