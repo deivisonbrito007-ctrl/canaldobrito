@@ -46,6 +46,8 @@ const fromRelease = (r: NewsRelease): CinemaItem => ({
 
 interface UseCinemaShelvesResult {
   isLoading: boolean;
+  /** True only while the hero data source (releases) is loading — prateleiras podem chegar depois. */
+  isHeroLoading: boolean;
   isError: boolean;
   heroItems: CinemaItem[];
   shelves: CinemaShelf[];
