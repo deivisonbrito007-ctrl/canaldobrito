@@ -163,14 +163,19 @@ const LiveHeroCard = ({ game }: { game: DailyGame }) => {
 
         {/* minute */}
         <div className="flex items-center justify-center gap-2 mb-4">
-          <span className="h-px w-6 bg-destructive/40" aria-hidden />
-          <span className="text-[12px] uppercase tracking-[0.16em] font-bold text-destructive tabular-nums">
-            {elapsed !== null ? `${elapsed}'` : "ao vivo"}
-            <span className="text-[hsl(var(--live-text-muted))] font-medium normal-case tracking-normal ml-1.5">
+          <span className="h-px w-8 bg-destructive/40" aria-hidden />
+          <span className="inline-flex items-baseline gap-1.5">
+            <span
+              className="text-[18px] leading-none text-destructive tabular-nums"
+              style={{ fontFamily: "Bebas Neue, sans-serif" }}
+            >
+              {elapsed !== null ? `${elapsed}'` : ""}
+            </span>
+            <span className="text-[10.5px] uppercase tracking-[0.18em] font-bold text-destructive">
               ao vivo
             </span>
           </span>
-          <span className="h-px w-6 bg-destructive/40" aria-hidden />
+          <span className="h-px w-8 bg-destructive/40" aria-hidden />
         </div>
 
         {/* channels */}
