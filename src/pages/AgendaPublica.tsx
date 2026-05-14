@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Sparkles, ChevronRight, Copy, Share2 } from "lucide-react";
+import { ArrowLeft, Sparkles, ChevronRight, Copy, Share2, Radio, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
@@ -284,6 +284,52 @@ const AgendaPublica = () => {
           <>
             {/* AO VIVO HERO */}
             {isToday && liveGames.length > 0 && <LiveHeroCard games={liveGames} />}
+
+            {/* Placeholder: hoje, sem jogos ao vivo */}
+            {isToday && liveGames.length === 0 && (
+              <section
+                className="mb-5 rounded-2xl border px-4 py-3.5 flex items-center gap-3"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(13,13,13,0.6) 100%)",
+                  borderColor: "rgba(255,255,255,0.08)",
+                }}
+                aria-label="Sem jogos ao vivo agora"
+              >
+                <div
+                  className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <Radio className="w-4 h-4 text-white/55" strokeWidth={2.2} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-[15px] uppercase tracking-wide leading-none text-white/85"
+                    style={{ fontFamily: "Bebas Neue, sans-serif" }}
+                  >
+                    Sem jogos ao vivo agora
+                  </p>
+                  {allHighlights.length > 0 ? (
+                    <p className="text-[11.5px] text-white/55 mt-1.5 flex items-center gap-1 truncate">
+                      <Clock className="w-3 h-3 shrink-0" />
+                      Próximo: <span className="text-white/85 font-semibold tabular-nums">{allHighlights[0].game.game_time.slice(0, 5)}</span>
+                      <span className="truncate">
+                        · {allHighlights[0].game.away_team
+                          ? `${allHighlights[0].game.home_team} × ${allHighlights[0].game.away_team}`
+                          : allHighlights[0].game.home_team}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-[11.5px] text-white/50 mt-1.5">
+                      Confira a programação completa abaixo.
+                    </p>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* Em Breve — fixo, sempre visível independente do filtro */}
             {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
