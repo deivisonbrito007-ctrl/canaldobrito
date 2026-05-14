@@ -164,28 +164,31 @@ const ProgramacaoTab = () => {
           >
             {titleLabel}
           </h1>
-          <nav className="flex items-center gap-0.5 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
-            <button
-              onClick={() => goToDate(offsetDateStr(date, -1))}
-              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition"
-              aria-label="Dia anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => goToDate(today)}
-              className="text-[11px] px-2.5 h-8 rounded-full hover:bg-white/10 transition font-bold uppercase tracking-wider"
-              aria-label="Voltar para hoje"
-            >
-              {isToday ? "Hoje" : format(dateObj, "dd/MM")}
-            </button>
-            <button
-              onClick={() => goToDate(offsetDateStr(date, 1))}
-              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition"
-              aria-label="Próximo dia"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+          <nav className="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
+            {isToday ? (
+              tomorrowCount > 0 && (
+                <button
+                  onClick={() => goToDate(tomorrow)}
+                  className="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                  aria-label={`Ver programação de amanhã (${tomorrowCount} ${tomorrowCount === 1 ? "jogo" : "jogos"})`}
+                >
+                  Amanhã
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#00ff87]/15 text-[#00ff87] text-[10px] tabular-nums">
+                    {tomorrowCount}
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                </button>
+              )
+            ) : (
+              <button
+                onClick={() => goToDate(today)}
+                className="inline-flex items-center gap-1 h-8 pl-2 pr-3 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                aria-label="Voltar para hoje"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 opacity-70" />
+                Hoje
+              </button>
+            )}
           </nav>
         </div>
         <p className="text-[13px] text-white/65 mt-1">
