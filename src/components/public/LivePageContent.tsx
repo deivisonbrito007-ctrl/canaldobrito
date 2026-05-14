@@ -301,7 +301,7 @@ const LiveGameRow = ({ game }: { game: DailyGame }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="relative px-4 py-3 transition-colors hover:bg-white/[0.02]"
+      className="relative px-4 py-3 transition-colors hover:bg-white/[0.02] overflow-hidden"
     >
       {/* sport accent */}
       <span
@@ -309,6 +309,19 @@ const LiveGameRow = ({ game }: { game: DailyGame }) => {
         className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r"
         style={{ background: theme.color, opacity: 0.35 }}
       />
+
+      {/* sport watermark */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[64px] leading-none select-none"
+        style={{
+          opacity: 0.04,
+          color: theme.color,
+          transform: "translateY(-50%) rotate(-6deg)",
+        }}
+      >
+        {emoji}
+      </span>
 
       {/* meta line */}
       <div className="flex items-center justify-between gap-3 mb-2 text-[10.5px] uppercase tracking-[0.14em] text-[hsl(var(--live-text-muted))]">
