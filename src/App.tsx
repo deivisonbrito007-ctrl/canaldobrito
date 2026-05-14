@@ -25,7 +25,10 @@ const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
-const AgendaPublica = lazy(() => import("./pages/AgendaPublica"));
+const AgendaRedirect = () => {
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  return <Navigate to={`/programacao${search}`} replace />;
+};
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
 const UpdateAvailableBanner = lazy(() => import("./components/UpdateAvailableBanner"));
@@ -43,15 +46,9 @@ const App = () => (
             <UpdateAvailableBanner />
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/ao-vivo" element={<Index />} />
-              <Route path="/novidades" element={<Index />} />
-              <Route path="/sugestoes" element={<Index />} />
-              <Route path="/destaques" element={<Index />} />
-              <Route path="/filmes-e-series" element={<Index />} />
-              <Route path="/filmes" element={<Index />} />
-              <Route path="/series" element={<Index />} />
               <Route path="/programacao" element={<Index />} />
-              <Route path="/agenda" element={<AgendaPublica />} />
+              <Route path="/filmes-e-series" element={<Index />} />
+              <Route path="/agenda" element={<AgendaRedirect />} />
               <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
