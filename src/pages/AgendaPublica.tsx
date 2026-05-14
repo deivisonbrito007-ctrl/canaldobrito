@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Sparkles, ChevronRight, Copy, Share2 } from "lucide-react";
+import { ArrowLeft, Sparkles, ChevronRight, Copy, Share2, Radio, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
