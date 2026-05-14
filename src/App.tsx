@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { buildProgramacaoRedirect } from "@/lib/agendaRedirect";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,8 +27,18 @@ const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 const AgendaRedirect = () => {
-  const search = typeof window !== "undefined" ? window.location.search : "";
-  return <Navigate to={`/programacao${search}`} replace />;
+  const location = useLocation();
+  const target = buildProgramacaoRedirect(location.search, location.hash);
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("legacy-agenda-redirect", {
+          detail: { from: `/agenda${location.search}${location.hash}`, to: target },
+        })
+      );
+    } catch {}
+  }
+  return <Navigate to={target} replace />;
 };
 const E2EModals = lazy(() => import("./pages/E2EModals"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
