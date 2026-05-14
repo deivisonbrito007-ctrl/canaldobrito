@@ -251,10 +251,38 @@ const ProgramacaoTab = () => {
           {/* Em Breve — fixo, sempre visível independente do filtro */}
           {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
 
-          {/* CTA Assine premium */}
+          {/* Filtros */}
+          {sportsSorted.length > 0 && (
+            <SportFilterBar
+              active={filter}
+              onChange={setFilter}
+              totalCount={total}
+              liveCount={liveGames.length}
+              countsBySport={countsBySport}
+              sportOrder={sportsSorted}
+            />
+          )}
+
+          {/* Agrupamentos */}
+          {visibleSports.map((sport) => (
+            <SportSection
+              key={sport}
+              sport={sport}
+              games={filteredGroup(sport)}
+            />
+          ))}
+
+          {filter === "live" &&
+            visibleSports.every((s) => filteredGroup(s).length === 0) && (
+              <div className="text-center py-12 text-white/55 text-sm">
+                Nenhum jogo ao vivo no momento.
+              </div>
+            )}
+
+          {/* CTA Assine premium — ao final da página */}
           <Link
             to="/assinar"
-            className="group mb-5 flex items-center justify-between gap-2 rounded-2xl px-4 h-14 active:scale-[0.99] transition-all shadow-lg shadow-[#00ff87]/20 hover:shadow-[#00ff87]/35 relative overflow-hidden"
+            className="group mt-2 mb-2 flex items-center justify-between gap-2 rounded-2xl px-4 h-14 active:scale-[0.99] transition-all shadow-lg shadow-[#00ff87]/20 hover:shadow-[#00ff87]/35 relative overflow-hidden"
             style={{
               background: "linear-gradient(135deg, #00ff87 0%, #00e07a 100%)",
               color: "#07080a",
@@ -289,34 +317,6 @@ const ProgramacaoTab = () => {
             </div>
             <ChevronRight className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 relative" />
           </Link>
-
-          {/* Filtros */}
-          {sportsSorted.length > 0 && (
-            <SportFilterBar
-              active={filter}
-              onChange={setFilter}
-              totalCount={total}
-              liveCount={liveGames.length}
-              countsBySport={countsBySport}
-              sportOrder={sportsSorted}
-            />
-          )}
-
-          {/* Agrupamentos */}
-          {visibleSports.map((sport) => (
-            <SportSection
-              key={sport}
-              sport={sport}
-              games={filteredGroup(sport)}
-            />
-          ))}
-
-          {filter === "live" &&
-            visibleSports.every((s) => filteredGroup(s).length === 0) && (
-              <div className="text-center py-12 text-white/55 text-sm">
-                Nenhum jogo ao vivo no momento.
-              </div>
-            )}
         </>
       )}
 
