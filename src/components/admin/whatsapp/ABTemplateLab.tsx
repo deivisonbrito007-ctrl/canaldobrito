@@ -294,7 +294,7 @@ export const ABTemplateLab = () => {
                 className="h-8 text-xs rounded-md bg-background/50 border border-border/30 px-2 text-foreground"
                 aria-label="Aba destino"
               >
-                <option value="">home</option>
+                <option value="">programação</option>
                 {TABS.map((tb) => <option key={tb} value={tb}>{tb}</option>)}
               </select>
               <Button size="sm" variant="ghost" onClick={() => removeTemplate(t.id)} className="h-8 px-2 text-destructive hover:bg-destructive/10">

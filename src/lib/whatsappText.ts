@@ -133,7 +133,7 @@ export function buildShareMessage(
 
   lines.push("");
   lines.push("Veja todos os jogos e canais 👇");
-  lines.push(`${siteUrl}/agenda?date=${dateStr}`);
+  lines.push(`${siteUrl}/programacao?date=${dateStr}`);
   return lines.join("\n").trim();
 }
 

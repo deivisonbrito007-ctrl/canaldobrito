@@ -455,7 +455,7 @@ const AdminWhatsApp = () => {
             <span className="text-sm font-bold text-foreground">Mensagem Personalizada</span>
           </div>
           <div className="flex gap-1">
-            {(["home", "live", "novidades", "schedule"] as DeepTab[]).map((t) => (
+            {(["schedule", "novidades"] as DeepTab[]).map((t) => (
               <button
                 key={t}
                 type="button"

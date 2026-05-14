@@ -24,7 +24,7 @@ const SAMPLE_ITEM = {
 const E2EModals = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [trailerOpen, setTrailerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("live");
+  const [activeTab, setActiveTab] = useState("schedule");
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 space-y-4">
