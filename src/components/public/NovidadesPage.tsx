@@ -6,7 +6,7 @@
  * WeeklySeriesSection, HeroBanner.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Grid, Sparkles, Search } from "lucide-react";
+import { Grid, Sparkles } from "lucide-react";
 
 import type { NewsRelease } from "@/hooks/useNewsReleases";
 import { useTrailerAvailability } from "@/hooks/useTrailerAvailability";
@@ -16,13 +16,11 @@ import { trackContentClick } from "@/lib/analytics";
 import { ContentDetailSheet } from "@/components/public/ContentDetailSheet";
 import { TrailerModal } from "@/components/public/TrailerModal";
 import { ContentCard } from "@/components/public/novidades/ContentCard";
-import { SearchModal } from "@/components/public/novidades/SearchModal";
 
 import { CinemaHero } from "@/components/public/cinema/CinemaHero";
 import { PosterRail } from "@/components/public/cinema/PosterRail";
 import { CinemaCategoryRail, type CinemaCategory } from "@/components/public/cinema/CinemaCategoryRail";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
-import { CinemaSearchButton } from "@/components/public/cinema/CinemaSearchButton";
 import { useCinemaShelves, type CinemaItem } from "@/components/public/cinema/useCinemaShelves";
 
 type FilterId = "all" | "movie" | "series" | "lancamento" | "nova_temporada" | "estreia" | "exclusivo";
@@ -69,7 +67,7 @@ export const NovidadesPage = () => {
 
   const [filter, setFilter] = useState<FilterId>("all");
   const [sort, setSort] = useState<SortId>("recent");
-  const [searchOpen, setSearchOpen] = useState(false);
+  
   const [selected, setSelected] = useState<NewsRelease | null>(null);
   const [trailerItem, setTrailerItem] = useState<CinemaItem | null>(null);
 
@@ -190,22 +188,6 @@ export const NovidadesPage = () => {
     setTrailerItem(item);
   };
 
-  // Atalho "/" abre a busca.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (searchOpen) return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
-      if (e.key === "/") {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [searchOpen]);
-
   const filterLabel = categories.find((c) => c.id === filter)?.label ?? "Todos";
   const isEmptyAll =
     !cinema.isLoading && cinema.heroItems.length === 0 && cinema.shelves.length === 0;
@@ -215,13 +197,6 @@ export const NovidadesPage = () => {
       className="space-y-8 min-h-[80vh] animate-fade-in"
       style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      {/* Header flutuante com busca premium */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-end px-4 pt-4 pointer-events-none">
-        <div className="pointer-events-auto">
-          <CinemaSearchButton onClick={() => setSearchOpen(true)} />
-        </div>
-      </header>
-
       {/* HERO cinematográfico */}
       {cinema.isLoading ? (
         <HeroSkeleton />
@@ -275,15 +250,8 @@ export const NovidadesPage = () => {
             <Sparkles className="w-10 h-10 text-primary/60 mx-auto" />
             <p className="text-base font-bold text-foreground font-body">Em breve novos títulos</p>
             <p className="text-xs text-muted-foreground font-body max-w-xs mx-auto">
-              Estamos preparando novidades. Volte logo ou use a busca para procurar um título específico.
+              Estamos preparando novidades. Volte logo para conferir os próximos lançamentos.
             </p>
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 text-primary text-sm font-semibold font-body hover:bg-primary/20 transition-colors min-h-[44px]"
-            >
-              <Search className="w-4 h-4" /> Buscar conteúdo
-            </button>
           </div>
         </div>
       )}
@@ -335,13 +303,6 @@ export const NovidadesPage = () => {
           )}
         </div>
       )}
-
-      <SearchModal
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        items={releases}
-        onSelect={handleSelectRelease}
-      />
 
       <ContentDetailSheet
         open={!!selected}
