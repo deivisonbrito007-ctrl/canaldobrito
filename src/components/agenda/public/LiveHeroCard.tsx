@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
@@ -10,18 +11,85 @@ interface Props {
   games: DailyGame[];
 }
 
+const ROTATE_MS = 5000;
+
 export const LiveHeroCard = ({ games }: Props) => {
   const [index, setIndex] = useState(0);
-  if (games.length === 0) return null;
-  const i = Math.min(index, games.length - 1);
+  const [paused, setPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const startRef = useRef<number>(Date.now());
+  const rafRef = useRef<number | null>(null);
+
+  const total = games.length;
+  const hasMany = total > 1;
+
+  // Reset quando muda a quantidade de jogos
+  useEffect(() => {
+    if (index >= total) setIndex(0);
+  }, [total, index]);
+
+  // Respeita prefers-reduced-motion: sem auto-rotação
+  const reducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  // Loop de progresso + auto-advance
+  useEffect(() => {
+    if (!hasMany || paused || reducedMotion) {
+      setProgress(0);
+      return;
+    }
+    startRef.current = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - startRef.current;
+      const pct = Math.min(1, elapsed / ROTATE_MS);
+      setProgress(pct);
+      if (pct >= 1) {
+        setIndex((i) => (i + 1) % total);
+        startRef.current = Date.now();
+        setProgress(0);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [hasMany, paused, reducedMotion, total, index]);
+
+  if (total === 0) return null;
+  const i = Math.min(index, total - 1);
   const game = games[i];
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const isVs = !!game.away_team;
 
+  const goPrev = () => {
+    setIndex((v) => (v - 1 + total) % total);
+    startRef.current = Date.now();
+    setProgress(0);
+  };
+  const goNext = () => {
+    setIndex((v) => (v + 1) % total);
+    startRef.current = Date.now();
+    setProgress(0);
+  };
+  const goTo = (idx: number) => {
+    setIndex(idx);
+    startRef.current = Date.now();
+    setProgress(0);
+  };
+
   return (
-    <section className="mb-5" aria-label="Jogo ao vivo">
-      <div className="relative">
+    <section className="mb-5" aria-label="Jogo ao vivo" aria-roledescription="carrossel">
+      <div
+        className="relative"
+        onPointerDown={() => setPaused(true)}
+        onPointerUp={() => setPaused(false)}
+        onPointerLeave={() => setPaused(false)}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
         {/* Glow vermelho ambiente */}
         <motion.div
           aria-hidden
@@ -43,9 +111,11 @@ export const LiveHeroCard = ({ games }: Props) => {
               borderColor: "rgba(255,59,59,0.32)",
               boxShadow: "0 0 30px rgba(255,59,59,0.18), inset 0 1px 0 rgba(255,255,255,0.04)",
             }}
+            aria-roledescription="slide"
+            aria-label={`Jogo ${i + 1} de ${total}`}
           >
-            {/* Top row: badge AO VIVO + sport */}
-            <div className="flex items-center justify-between mb-3">
+            {/* Top row: badge AO VIVO + sport + contador */}
+            <div className="flex items-center justify-between mb-3 gap-2">
               <span
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-[0.14em]"
                 style={{ background: "#ff3b3b", color: "#0a0000" }}
@@ -57,17 +127,29 @@ export const LiveHeroCard = ({ games }: Props) => {
                 />
                 AO VIVO
               </span>
-              <span className="text-[11px] text-white/60 font-medium flex items-center gap-1">
-                <span>{SPORT_EMOJI[sport] ?? "🏆"}</span>
-                <span>{SPORT_LABEL[sport] ?? sport}</span>
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-white/60 font-medium flex items-center gap-1">
+                  <span>{SPORT_EMOJI[sport] ?? "🏆"}</span>
+                  <span>{SPORT_LABEL[sport] ?? sport}</span>
+                </span>
+                {hasMany && (
+                  <span
+                    className="text-[10.5px] font-bold tabular-nums px-2 py-0.5 rounded-full"
+                    style={{
+                      background: "rgba(255,255,255,0.08)",
+                      color: "rgba(255,255,255,0.85)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                    }}
+                    aria-label={`Jogo ${i + 1} de ${total}`}
+                  >
+                    {i + 1}/{total}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Times */}
-            <div
-              className="text-white"
-              style={{ fontFamily: "Bebas Neue, sans-serif" }}
-            >
+            <div className="text-white" style={{ fontFamily: "Bebas Neue, sans-serif" }}>
               {isVs ? (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[26px] sm:text-[30px] leading-[0.95] flex-1 truncate">{game.home_team}</p>
@@ -101,22 +183,72 @@ export const LiveHeroCard = ({ games }: Props) => {
               className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r"
               style={{ background: theme.accent, boxShadow: `0 0 12px rgba(${theme.glow},0.6)` }}
             />
+
+            {/* Barra de progresso até trocar */}
+            {hasMany && !reducedMotion && (
+              <div
+                aria-hidden
+                className="absolute left-0 right-0 bottom-0 h-[3px] bg-white/5 overflow-hidden"
+              >
+                <div
+                  className="h-full transition-[width] duration-100 ease-linear"
+                  style={{
+                    width: `${progress * 100}%`,
+                    background: "#ff3b3b",
+                    boxShadow: "0 0 8px rgba(255,59,59,0.6)",
+                  }}
+                />
+              </div>
+            )}
           </motion.article>
         </AnimatePresence>
 
-        {/* Paginação se houver múltiplos */}
-        {games.length > 1 && (
+        {/* Setas laterais (visíveis sempre que houver mais de 1) */}
+        {hasMany && (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="Jogo anterior"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition active:scale-90 hover:bg-white/15"
+              style={{
+                background: "rgba(10,10,10,0.55)",
+                borderColor: "rgba(255,255,255,0.14)",
+                color: "#fff",
+              }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label="Próximo jogo"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition active:scale-90 hover:bg-white/15"
+              style={{
+                background: "rgba(10,10,10,0.55)",
+                borderColor: "rgba(255,255,255,0.14)",
+                color: "#fff",
+              }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </>
+        )}
+
+        {/* Bolinhas clicáveis */}
+        {hasMany && (
           <div className="mt-2.5 flex items-center justify-center gap-1.5">
             {games.map((g, idx) => (
               <button
                 key={g.id}
-                onClick={() => setIndex(idx)}
+                onClick={() => goTo(idx)}
                 className="h-1.5 rounded-full transition-all"
                 style={{
                   width: idx === i ? 22 : 6,
                   background: idx === i ? "#ff3b3b" : "rgba(255,255,255,0.25)",
                 }}
-                aria-label={`Jogo ao vivo ${idx + 1}`}
+                aria-label={`Ir para jogo ${idx + 1}`}
+                aria-current={idx === i ? "true" : undefined}
               />
             ))}
           </div>
