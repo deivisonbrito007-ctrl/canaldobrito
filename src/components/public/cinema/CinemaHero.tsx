@@ -171,20 +171,18 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
           </motion.div>
         </AnimatePresence>
 
-        {/* Prev / Next arrows */}
+        {/* Cluster de controles no canto inferior direito (não cobre a arte) */}
         {showControls && (
-          <>
+          <div className="absolute right-3 sm:right-6 bottom-6 sm:bottom-8 z-20 flex items-center gap-2">
             <button
               type="button"
               onClick={prev}
               aria-label="Destaque anterior"
               className={cn(
-                "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20",
-                "inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full",
-                "bg-background/55 backdrop-blur-md border border-border/50 text-foreground",
-                "hover:bg-background/80 active:scale-95 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                "opacity-90 sm:opacity-0 sm:group-hover/hero:opacity-100 sm:focus-within:opacity-100"
+                "inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full",
+                "bg-background/60 backdrop-blur-md border border-border/50 text-foreground",
+                "hover:bg-background/85 active:scale-95 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               )}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -194,17 +192,15 @@ export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
               onClick={next}
               aria-label="Próximo destaque"
               className={cn(
-                "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20",
-                "inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full",
-                "bg-background/55 backdrop-blur-md border border-border/50 text-foreground",
-                "hover:bg-background/80 active:scale-95 transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                "opacity-90 sm:opacity-0 sm:group-hover/hero:opacity-100 sm:focus-within:opacity-100"
+                "inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full",
+                "bg-background/60 backdrop-blur-md border border-border/50 text-foreground",
+                "hover:bg-background/85 active:scale-95 transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               )}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-          </>
+          </div>
         )}
 
         {/* Content */}
