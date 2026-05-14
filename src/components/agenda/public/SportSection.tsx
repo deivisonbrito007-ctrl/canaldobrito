@@ -21,13 +21,6 @@ export const SportSection = ({ sport, games }: Props) => {
         boxShadow: `0 6px 22px -14px rgba(${theme.glow},0.55), inset 0 1px 0 rgba(255,255,255,0.03)`,
       }}
     >
-      {/* Halo decorativo no topo */}
-      <div
-        aria-hidden
-        className="absolute -top-16 -right-10 w-40 h-40 rounded-full opacity-40 blur-3xl pointer-events-none"
-        style={{ background: `radial-gradient(circle, rgba(${theme.glow},0.55) 0%, transparent 70%)` }}
-      />
-
       {/* Header com chip do esporte */}
       <header
         className="flex items-center justify-between gap-2 px-3.5 pt-3 pb-2.5 border-b"
