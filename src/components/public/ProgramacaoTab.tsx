@@ -212,7 +212,11 @@ const ProgramacaoTab = () => {
 
       {/* Empty */}
       {!isLoading && total === 0 && (
-        <EmptyDayState onSeeTomorrow={() => goToDate(offsetDateStr(date, 1))} />
+        <EmptyDayState
+          onSeeTomorrow={
+            isToday && tomorrowCount > 0 ? () => goToDate(tomorrow) : undefined
+          }
+        />
       )}
 
       {!isLoading && total > 0 && (
