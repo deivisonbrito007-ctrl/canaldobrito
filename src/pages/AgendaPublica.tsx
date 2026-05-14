@@ -188,6 +188,27 @@ const AgendaPublica = () => {
           </p>
         </div>
 
+        {/* Assine CTA */}
+        <Link
+          to="/assinar"
+          className="mb-5 flex items-center justify-between gap-3 rounded-xl px-4 py-3 active:scale-[0.99] transition"
+          style={{ background: "#00ff87", color: "#07080a" }}
+          aria-label="Assine o Canal do Brito"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Sparkles className="w-5 h-5 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-bold text-sm leading-tight uppercase tracking-wide" style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "18px" }}>
+                Assine já o Canal do Brito
+              </p>
+              <p className="text-[11px] opacity-80 leading-tight">
+                Esportes, filmes e séries · R$ 35/mês
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 shrink-0" />
+        </Link>
+
         {/* Live now strip (only today + has lives) */}
         {!isLoading && isToday && liveGames.length > 0 && (
           <LiveNowStrip games={liveGames} onJumpTo={handleJumpTo} />
