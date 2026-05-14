@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown, getElapsedMinutes } from "@/lib/gameUtils";
+import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown, getElapsedMinutes, SPORT_EMOJI } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
 
