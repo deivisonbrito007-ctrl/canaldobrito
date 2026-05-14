@@ -171,6 +171,7 @@ export const useCinemaShelves = (): UseCinemaShelvesResult => {
 
     return {
       isLoading: releasesQ.isLoading || moviesQ.isLoading || seriesQ.isLoading,
+      isHeroLoading: releasesQ.isLoading,
       isError: releasesQ.isError || moviesQ.isError || seriesQ.isError,
       heroItems,
       shelves,
