@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Copy, Share2 } from "lucide-react";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
@@ -14,7 +14,8 @@ import {
   isGameCurrentlyLive,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
-import { offsetDateStr } from "@/lib/whatsappText";
+import { offsetDateStr, buildShareMessage, safeCopy } from "@/lib/whatsappText";
+import { toast } from "sonner";
 import logo from "@/assets/canal_do_brito_logo.png";
 import LiveNowStrip from "@/components/agenda/LiveNowStrip";
 
