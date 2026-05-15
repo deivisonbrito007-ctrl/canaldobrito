@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
+import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type Banner, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
+import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, ClipboardPaste, Clock, PowerOff, AlertCircle } from "lucide-react";
 import { formatCountdown, getScheduleDate, isFutureSchedule } from "@/lib/dateUtils";
+import { useLiveTick } from "@/hooks/useLiveTick";
 import { toast } from "sonner";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB
@@ -104,21 +106,17 @@ const AdminBanners = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
 
-  // Live countdown tick (60s) — local only, doesn't refetch.
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setTick((x) => x + 1), 60_000);
-    return () => clearInterval(t);
-  }, []);
+  // Live countdown tick (only relevant in "categories" tab)
+  useLiveTick();
 
   const handleSetSection = useCallback((section: "categories" | "programacao") => {
     setActiveSection(section);
     setSearchParams(section === "programacao" ? {} : { tab: section });
   }, [setSearchParams]);
 
-  // Schedule validation
+  // Schedule validation — applies to ALL modes (including 00/06/12 presets)
   const minDatetime = getScheduleDate(0).slice(0, 16);
-  const scheduleInvalid = scheduleMode === "custom" && !isFutureSchedule(scheduleDate);
+  const scheduleInvalid = scheduleMode !== "none" && !isFutureSchedule(scheduleDate);
 
   const uploadMany = useCallback(async (files: File[]) => {
     if (!files.length) return;
@@ -141,7 +139,20 @@ const AdminBanners = () => {
     setUploading(true);
     setProgress({ current: 0, total: valid.length });
 
-    let baseOrder = banners?.reduce((max, b) => Math.max(max, b.sort_order), 0) || 0;
+    // Fetch current max sort_order from DB (avoids races vs cache)
+    let baseOrder = 0;
+    try {
+      const { data: maxRow } = await supabase
+        .from("banners")
+        .select("sort_order")
+        .eq("category", selectedCategory)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      baseOrder = maxRow?.sort_order ?? 0;
+    } catch {
+      baseOrder = banners?.reduce((max, b) => Math.max(max, b.sort_order), 0) || 0;
+    }
     let okCount = 0;
     let failCount = 0;
 
@@ -151,12 +162,12 @@ const AdminBanners = () => {
         const ext = file.name?.split(".").pop()?.toLowerCase() || "png";
         const today = new Date().toISOString().split("T")[0];
         const path = `${selectedCategory}/${today}/${Date.now()}-${i}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
+        const { error: upErr } = await supabase.storage.from("banners").upload(path, file);
         if (upErr) throw upErr;
         const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
 
         baseOrder += 1;
-        const bannerData: any = {
+        const bannerData: Parameters<typeof createBanner.mutateAsync>[0] = {
           image_url: publicUrl,
           category: selectedCategory,
           sort_order: baseOrder,
@@ -189,17 +200,33 @@ const AdminBanners = () => {
     e.target.value = "";
   };
 
-  // Optimistic reorder
+  // Group banners by created_at date (used by both render + reorder scoping)
+  const groupedByDate = useMemo(() => {
+    const grouped: Record<string, Banner[]> = {};
+    (banners || []).forEach((b) => {
+      const dateKey = new Date(b.created_at).toLocaleDateString("pt-BR");
+      if (!grouped[dateKey]) grouped[dateKey] = [];
+      grouped[dateKey]!.push(b);
+    });
+    return grouped;
+  }, [banners]);
+
+  // Reorder scoped to the same date group (matches what the user sees)
   const moveBanner = async (id: string, direction: "up" | "down") => {
     if (!banners) return;
-    const idx = banners.findIndex((b) => b.id === id);
+    const target = banners.find((b) => b.id === id);
+    if (!target) return;
+    const dateKey = new Date(target.created_at).toLocaleDateString("pt-BR");
+    const group = groupedByDate[dateKey] || [];
+    const idx = group.findIndex((b) => b.id === id);
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= banners.length) return;
+    if (swapIdx < 0 || swapIdx >= group.length) return;
+    const a = group[idx];
+    const b = group[swapIdx];
     try {
-      await Promise.all([
-        updateBanner.mutateAsync({ id: banners[idx].id, sort_order: banners[swapIdx].sort_order }),
-        updateBanner.mutateAsync({ id: banners[swapIdx].id, sort_order: banners[idx].sort_order }),
-      ]);
+      // Sequential to avoid double cache-invalidation flicker
+      await updateBanner.mutateAsync({ id: a.id, sort_order: b.sort_order });
+      await updateBanner.mutateAsync({ id: b.id, sort_order: a.sort_order });
     } catch {
       toast.error("Erro ao reordenar");
     }
@@ -227,11 +254,25 @@ const AdminBanners = () => {
     }
   };
 
+  // Toggle active — when activating an agendado, clear publish_at to avoid inconsistent state
+  const toggleActive = async (banner: Banner, next: boolean) => {
+    try {
+      const updates: Partial<Banner> & { id: string } = { id: banner.id, active: next };
+      if (next && banner.publish_at && new Date(banner.publish_at) > new Date()) {
+        updates.publish_at = null;
+        toast.info("Agendamento removido — banner publicado agora");
+      }
+      await updateBanner.mutateAsync(updates);
+    } catch {
+      toast.error("Erro ao atualizar banner");
+    }
+  };
+
   const activeBanners = banners?.filter((b) => b.active).length || 0;
   const scheduledBanners = banners?.filter((b) => b.publish_at && !b.active).length || 0;
   const inactiveBanners = banners?.filter((b) => !b.active && !b.publish_at).length || 0;
   const totalBanners = banners?.length || 0;
-  const isScheduled = (banner: any) => banner.publish_at && !banner.active;
+  const isScheduled = (banner: Banner) => !!banner.publish_at && !banner.active;
 
   return (
     <div className="space-y-4">
@@ -270,6 +311,8 @@ const AdminBanners = () => {
 
       {activeSection === "categories" && (
         <>
+          <ExpiredBannersAlert banners={banners} isLoading={isLoading} />
+
           <div
             role="tablist"
             aria-label="Categoria de banner"
@@ -420,26 +463,19 @@ const AdminBanners = () => {
                 </div>
               ) : (
                 <div className="space-y-5">
-                  {(() => {
-                    const grouped: Record<string, typeof banners> = {};
-                    banners.forEach((b) => {
-                      const dateKey = new Date(b.created_at).toLocaleDateString("pt-BR");
-                      if (!grouped[dateKey]) grouped[dateKey] = [];
-                      grouped[dateKey]!.push(b);
-                    });
-                    const globalIdx = new Map<string, number>();
-                    banners.forEach((b, i) => globalIdx.set(b.id, i));
-
-                    return Object.keys(grouped).map((dateKey) => (
+                  {Object.keys(groupedByDate).map((dateKey) => {
+                    const group = groupedByDate[dateKey]!;
+                    return (
                       <div key={dateKey}>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-[11px] font-bold text-foreground">📅 {dateKey}</span>
-                          <span className="text-[10px] text-muted-foreground">— {grouped[dateKey]!.length} banner{grouped[dateKey]!.length !== 1 ? "s" : ""}</span>
+                          <span className="text-[10px] text-muted-foreground">— {group.length} banner{group.length !== 1 ? "s" : ""}</span>
                         </div>
                         <div className="space-y-3">
-                          {grouped[dateKey]!.map((banner) => {
-                            const gIdx = globalIdx.get(banner.id) ?? 0;
-                            const altText = banner.title || `Banner ${CATEGORY_LABELS[selectedCategory]} de ${dateKey}`;
+                          {group.map((banner, gIdx) => {
+                            const altText =
+                              banner.title?.trim() ||
+                              `Banner ${CATEGORY_LABELS[selectedCategory]} — ${dateKey}${banner.active ? "" : " (inativo)"}`;
                             return (
                               <div key={banner.id} className="rounded-xl glass-panel overflow-hidden">
                                 <div className="relative aspect-[16/9]">
@@ -457,7 +493,7 @@ const AdminBanners = () => {
                                       </Badge>
                                     )}
                                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${banner.active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"}`}>
-                                      {banner.active ? "ATIVO" : "OFF"}
+                                      {banner.active ? "✓ ATIVO" : "⏸ OFF"}
                                     </span>
                                   </div>
                                 </div>
@@ -474,14 +510,14 @@ const AdminBanners = () => {
                                     <div className="flex items-center gap-2">
                                       <Switch
                                         checked={banner.active}
-                                        onCheckedChange={(v) => updateBanner.mutate({ id: banner.id, active: v })}
+                                        onCheckedChange={(v) => toggleActive(banner, v)}
                                         aria-label={`${banner.active ? "Desativar" : "Ativar"} banner`}
                                       />
                                       <span className={`text-[10px] font-medium ${banner.active ? "text-emerald-400" : "text-muted-foreground/60"}`}>
                                         {banner.active ? "Ativo" : "Off"}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-1">
+                                    <div role="toolbar" aria-label="Ações do banner" className="flex items-center gap-1">
                                       <Button
                                         size="icon"
                                         variant="ghost"
@@ -497,7 +533,7 @@ const AdminBanners = () => {
                                         variant="ghost"
                                         aria-label="Mover para baixo"
                                         className="h-11 w-11 sm:h-9 sm:w-9 rounded-lg hover:bg-white/[0.06]"
-                                        disabled={gIdx === banners.length - 1}
+                                        disabled={gIdx === group.length - 1}
                                         onClick={() => moveBanner(banner.id, "down")}
                                       >
                                         <ArrowDown className="h-4 w-4" />
@@ -519,8 +555,8 @@ const AdminBanners = () => {
                           })}
                         </div>
                       </div>
-                    ));
-                  })()}
+                    );
+                  })}
                   <div ref={listEndRef} />
                 </div>
               )}
@@ -538,6 +574,21 @@ const AdminBanners = () => {
               Esta ação remove permanentemente o banner. Não é possível desfazer.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {(() => {
+            const target = banners?.find((b) => b.id === deleteId);
+            if (!target) return null;
+            return (
+              <div className="flex items-center gap-3 rounded-lg glass-panel p-2.5">
+                <img src={target.image_url} alt="" className="h-12 w-20 object-cover rounded-md" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold truncate">{target.title || CATEGORY_LABELS[target.category]}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(target.created_at).toLocaleDateString("pt-BR")} · {target.active ? "ativo" : "inativo"}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
