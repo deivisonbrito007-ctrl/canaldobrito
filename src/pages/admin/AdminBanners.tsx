@@ -162,7 +162,13 @@ const AdminBanners = () => {
       baseOrder = banners?.reduce((m, b) => Math.max(m, b.sort_order), 0) || 0;
     }
 
-    let okCount = 0, failCount = 0;
+    // Recurring schedule expansion: each file becomes N entries with publish_at staggered.
+    const repeats = recurringEnabled && scheduleMode !== "none" ? Math.max(1, Math.min(12, recurringRepeats)) : 1;
+    const intervalMs = Math.max(1, Math.min(30, recurringIntervalDays)) * 24 * 60 * 60 * 1000;
+    const totalOps = valid.length * repeats;
+    setProgress({ current: 0, total: totalOps });
+
+    let okCount = 0, failCount = 0, opIdx = 0;
     for (let i = 0; i < valid.length; i++) {
       const file = valid[i];
       try {
@@ -173,34 +179,44 @@ const AdminBanners = () => {
         if (upErr) throw upErr;
         const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
 
-        baseOrder += 1;
-        const bannerData: Parameters<typeof createBanner.mutateAsync>[0] = {
-          image_url: publicUrl, category: selectedCategory, sort_order: baseOrder,
-        };
-        if (scheduleMode !== "none" && scheduleDate) {
-          bannerData.publish_at = new Date(scheduleDate).toISOString();
-          bannerData.active = false;
+        const baseDate = scheduleMode !== "none" && scheduleDate ? new Date(scheduleDate) : null;
+        for (let r = 0; r < repeats; r++) {
+          baseOrder += 1;
+          const bannerData: Parameters<typeof createBanner.mutateAsync>[0] = {
+            image_url: publicUrl, category: selectedCategory, sort_order: baseOrder,
+          };
+          if (baseDate) {
+            bannerData.publish_at = new Date(baseDate.getTime() + r * intervalMs).toISOString();
+            bannerData.active = false;
+          }
+          if (defaultExpires) {
+            (bannerData as any).expires_at = new Date(defaultExpires).toISOString();
+          }
+          try {
+            await createBanner.mutateAsync(bannerData);
+            okCount += 1;
+          } catch (e: any) {
+            failCount += 1;
+            toast.error(`Falha em ${file.name} (rep ${r + 1})`, { description: e?.message?.slice(0, 100) });
+          } finally {
+            opIdx += 1;
+            setProgress({ current: opIdx, total: totalOps });
+          }
         }
-        // expires_at via raw insert (not in Create payload type)
-        if (defaultExpires) {
-          (bannerData as any).expires_at = new Date(defaultExpires).toISOString();
-        }
-        await createBanner.mutateAsync(bannerData);
-        okCount += 1;
       } catch (err: any) {
-        failCount += 1;
-        toast.error(`Falha em ${file.name}`, { description: err?.message?.slice(0, 100) });
-      } finally {
-        setProgress({ current: i + 1, total: valid.length });
+        failCount += repeats;
+        opIdx += repeats;
+        setProgress({ current: opIdx, total: totalOps });
+        toast.error(`Falha no upload de ${file.name}`, { description: err?.message?.slice(0, 100) });
       }
     }
 
     setUploading(false);
     setTimeout(() => setProgress(null), 1500);
     if (okCount && !failCount) toast.success(`${okCount} banner${okCount > 1 ? "s" : ""} ${scheduleMode !== "none" ? "agendado(s)" : "enviado(s)"}`);
-    else if (okCount && failCount) toast.warning(`${okCount} enviado(s), ${failCount} com erro`);
+    else if (okCount && failCount) toast.warning(`${okCount} ok, ${failCount} com erro`);
     setTimeout(() => listEndRef.current?.scrollIntoView({ behavior: "smooth" }), 500);
-  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode, scheduleInvalid, defaultExpires]);
+  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode, scheduleInvalid, defaultExpires, recurringEnabled, recurringRepeats, recurringIntervalDays]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
