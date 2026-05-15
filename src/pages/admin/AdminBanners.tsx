@@ -771,6 +771,13 @@ const AdminBanners = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BannerPreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        category={selectedCategory}
+        banners={banners}
+      />
     </div>
   );
 };
