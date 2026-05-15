@@ -6,6 +6,8 @@ import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { BannerCard } from "@/components/admin/BannerCard";
+import { BannerHealthPanel } from "@/components/admin/BannerHealthPanel";
+import { BannerPreviewModal } from "@/components/admin/BannerPreviewModal";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
