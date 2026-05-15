@@ -533,6 +533,47 @@ const AdminBanners = () => {
                   onChange={(e) => setDefaultExpires(e.target.value)}
                   className="text-xs h-10 glass-panel" placeholder="Sem expiração" />
               </div>
+
+              {/* Recurring schedule */}
+              <div className={`rounded-lg p-3 border ${recurringEnabled ? "border-amber-500/30 bg-amber-500/[0.04]" : "border-white/[0.06] bg-transparent"}`}>
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={recurringEnabled}
+                    onChange={(e) => setRecurringEnabled(e.target.checked)}
+                    disabled={scheduleMode === "none"}
+                    className="h-4 w-4 accent-amber-500"
+                  />
+                  <span className="text-[11px] font-semibold text-foreground">
+                    Agendamento recorrente
+                  </span>
+                  {scheduleMode === "none" && (
+                    <span className="text-[10px] text-muted-foreground/60">— escolha um agendamento acima primeiro</span>
+                  )}
+                </label>
+                {recurringEnabled && scheduleMode !== "none" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Repetições (1-12)</label>
+                        <Input type="number" min={1} max={12} value={recurringRepeats}
+                          onChange={(e) => setRecurringRepeats(Number(e.target.value) || 1)}
+                          className="text-xs h-9" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Intervalo (dias, 1-30)</label>
+                        <Input type="number" min={1} max={30} value={recurringIntervalDays}
+                          onChange={(e) => setRecurringIntervalDays(Number(e.target.value) || 1)}
+                          className="text-xs h-9" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Cada arquivo enviado gerará <strong className="text-amber-400">{recurringRepeats}</strong> banners
+                      espaçados de <strong className="text-amber-400">{recurringIntervalDays}</strong> dia{recurringIntervalDays > 1 ? "s" : ""}.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Filters */}
