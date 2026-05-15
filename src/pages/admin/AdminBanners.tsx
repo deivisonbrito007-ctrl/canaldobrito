@@ -105,6 +105,10 @@ const AdminBanners = () => {
   const [scheduleMode, setScheduleMode] = useState<"none" | "00" | "06" | "12" | "custom">("00");
   const [scheduleDate, setScheduleDate] = useState(() => getScheduleDate(0));
   const [defaultExpires, setDefaultExpires] = useState<string>("");
+  const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const [recurringRepeats, setRecurringRepeats] = useState(2);
+  const [recurringIntervalDays, setRecurringIntervalDays] = useState(1);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const listEndRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState("");
