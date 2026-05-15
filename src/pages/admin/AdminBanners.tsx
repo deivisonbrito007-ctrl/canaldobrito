@@ -6,6 +6,8 @@ import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { BannerCard } from "@/components/admin/BannerCard";
+import { BannerHealthPanel } from "@/components/admin/BannerHealthPanel";
+import { BannerPreviewModal } from "@/components/admin/BannerPreviewModal";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -103,6 +105,10 @@ const AdminBanners = () => {
   const [scheduleMode, setScheduleMode] = useState<"none" | "00" | "06" | "12" | "custom">("00");
   const [scheduleDate, setScheduleDate] = useState(() => getScheduleDate(0));
   const [defaultExpires, setDefaultExpires] = useState<string>("");
+  const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const [recurringRepeats, setRecurringRepeats] = useState(2);
+  const [recurringIntervalDays, setRecurringIntervalDays] = useState(1);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const listEndRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState("");
@@ -156,7 +162,13 @@ const AdminBanners = () => {
       baseOrder = banners?.reduce((m, b) => Math.max(m, b.sort_order), 0) || 0;
     }
 
-    let okCount = 0, failCount = 0;
+    // Recurring schedule expansion: each file becomes N entries with publish_at staggered.
+    const repeats = recurringEnabled && scheduleMode !== "none" ? Math.max(1, Math.min(12, recurringRepeats)) : 1;
+    const intervalMs = Math.max(1, Math.min(30, recurringIntervalDays)) * 24 * 60 * 60 * 1000;
+    const totalOps = valid.length * repeats;
+    setProgress({ current: 0, total: totalOps });
+
+    let okCount = 0, failCount = 0, opIdx = 0;
     for (let i = 0; i < valid.length; i++) {
       const file = valid[i];
       try {
@@ -167,34 +179,44 @@ const AdminBanners = () => {
         if (upErr) throw upErr;
         const { data: { publicUrl } } = supabase.storage.from("banners").getPublicUrl(path);
 
-        baseOrder += 1;
-        const bannerData: Parameters<typeof createBanner.mutateAsync>[0] = {
-          image_url: publicUrl, category: selectedCategory, sort_order: baseOrder,
-        };
-        if (scheduleMode !== "none" && scheduleDate) {
-          bannerData.publish_at = new Date(scheduleDate).toISOString();
-          bannerData.active = false;
+        const baseDate = scheduleMode !== "none" && scheduleDate ? new Date(scheduleDate) : null;
+        for (let r = 0; r < repeats; r++) {
+          baseOrder += 1;
+          const bannerData: Parameters<typeof createBanner.mutateAsync>[0] = {
+            image_url: publicUrl, category: selectedCategory, sort_order: baseOrder,
+          };
+          if (baseDate) {
+            bannerData.publish_at = new Date(baseDate.getTime() + r * intervalMs).toISOString();
+            bannerData.active = false;
+          }
+          if (defaultExpires) {
+            (bannerData as any).expires_at = new Date(defaultExpires).toISOString();
+          }
+          try {
+            await createBanner.mutateAsync(bannerData);
+            okCount += 1;
+          } catch (e: any) {
+            failCount += 1;
+            toast.error(`Falha em ${file.name} (rep ${r + 1})`, { description: e?.message?.slice(0, 100) });
+          } finally {
+            opIdx += 1;
+            setProgress({ current: opIdx, total: totalOps });
+          }
         }
-        // expires_at via raw insert (not in Create payload type)
-        if (defaultExpires) {
-          (bannerData as any).expires_at = new Date(defaultExpires).toISOString();
-        }
-        await createBanner.mutateAsync(bannerData);
-        okCount += 1;
       } catch (err: any) {
-        failCount += 1;
-        toast.error(`Falha em ${file.name}`, { description: err?.message?.slice(0, 100) });
-      } finally {
-        setProgress({ current: i + 1, total: valid.length });
+        failCount += repeats;
+        opIdx += repeats;
+        setProgress({ current: opIdx, total: totalOps });
+        toast.error(`Falha no upload de ${file.name}`, { description: err?.message?.slice(0, 100) });
       }
     }
 
     setUploading(false);
     setTimeout(() => setProgress(null), 1500);
     if (okCount && !failCount) toast.success(`${okCount} banner${okCount > 1 ? "s" : ""} ${scheduleMode !== "none" ? "agendado(s)" : "enviado(s)"}`);
-    else if (okCount && failCount) toast.warning(`${okCount} enviado(s), ${failCount} com erro`);
+    else if (okCount && failCount) toast.warning(`${okCount} ok, ${failCount} com erro`);
     setTimeout(() => listEndRef.current?.scrollIntoView({ behavior: "smooth" }), 500);
-  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode, scheduleInvalid, defaultExpires]);
+  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode, scheduleInvalid, defaultExpires, recurringEnabled, recurringRepeats, recurringIntervalDays]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -382,6 +404,7 @@ const AdminBanners = () => {
       {activeSection === "categories" && (
         <>
           <ExpiredBannersAlert banners={banners} isLoading={isLoading} />
+          <BannerHealthPanel banners={banners} onPreview={() => setPreviewOpen(true)} />
 
           <div role="tablist" aria-label="Categoria de banner"
             className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]">
@@ -509,6 +532,47 @@ const AdminBanners = () => {
                 <Input type="datetime-local" value={defaultExpires}
                   onChange={(e) => setDefaultExpires(e.target.value)}
                   className="text-xs h-10 glass-panel" placeholder="Sem expiração" />
+              </div>
+
+              {/* Recurring schedule */}
+              <div className={`rounded-lg p-3 border ${recurringEnabled ? "border-amber-500/30 bg-amber-500/[0.04]" : "border-white/[0.06] bg-transparent"}`}>
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={recurringEnabled}
+                    onChange={(e) => setRecurringEnabled(e.target.checked)}
+                    disabled={scheduleMode === "none"}
+                    className="h-4 w-4 accent-amber-500"
+                  />
+                  <span className="text-[11px] font-semibold text-foreground">
+                    Agendamento recorrente
+                  </span>
+                  {scheduleMode === "none" && (
+                    <span className="text-[10px] text-muted-foreground/60">— escolha um agendamento acima primeiro</span>
+                  )}
+                </label>
+                {recurringEnabled && scheduleMode !== "none" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Repetições (1-12)</label>
+                        <Input type="number" min={1} max={12} value={recurringRepeats}
+                          onChange={(e) => setRecurringRepeats(Number(e.target.value) || 1)}
+                          className="text-xs h-9" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground">Intervalo (dias, 1-30)</label>
+                        <Input type="number" min={1} max={30} value={recurringIntervalDays}
+                          onChange={(e) => setRecurringIntervalDays(Number(e.target.value) || 1)}
+                          className="text-xs h-9" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Cada arquivo enviado gerará <strong className="text-amber-400">{recurringRepeats}</strong> banners
+                      espaçados de <strong className="text-amber-400">{recurringIntervalDays}</strong> dia{recurringIntervalDays > 1 ? "s" : ""}.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -707,6 +771,13 @@ const AdminBanners = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BannerPreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        category={selectedCategory}
+        banners={banners}
+      />
     </div>
   );
 };
