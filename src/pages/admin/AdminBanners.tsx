@@ -404,6 +404,7 @@ const AdminBanners = () => {
       {activeSection === "categories" && (
         <>
           <ExpiredBannersAlert banners={banners} isLoading={isLoading} />
+          <BannerHealthPanel banners={banners} onPreview={() => setPreviewOpen(true)} />
 
           <div role="tablist" aria-label="Categoria de banner"
             className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]">
