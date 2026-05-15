@@ -1,27 +1,31 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type Banner, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
+import { BannerCard } from "@/components/admin/BannerCard";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Upload, ArrowUp, ArrowDown, Loader2, Image, ClipboardPaste, Clock, PowerOff, AlertCircle } from "lucide-react";
+import { Upload, Loader2, Image as ImageIcon, ClipboardPaste, Clock, PowerOff, AlertCircle, Search, X, Power, Trash2 } from "lucide-react";
 import { formatCountdown, getScheduleDate, isFutureSchedule } from "@/lib/dateUtils";
 import { useLiveTick } from "@/hooks/useLiveTick";
 import { toast } from "sonner";
+import {
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 const validateImageFile = (file: File): string | null => {
   if (!file.type.startsWith("image/")) return `${file.name}: não é imagem`;
@@ -29,9 +33,10 @@ const validateImageFile = (file: File): string | null => {
   return null;
 };
 
+type StatusFilter = "all" | "active" | "scheduled" | "inactive" | "expired";
+
 const PasteZone = ({
-  onFiles,
-  uploading,
+  onFiles, uploading,
 }: { onFiles: (files: File[]) => void; uploading: boolean }) => {
   const [highlight, setHighlight] = useState(false);
 
@@ -45,17 +50,13 @@ const PasteZone = ({
         if (f) files.push(f);
       }
     }
-    if (files.length) {
-      e.preventDefault();
-      onFiles(files);
-    }
+    if (files.length) { e.preventDefault(); onFiles(files); }
   }, [onFiles]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setHighlight(true); }, []);
-  const handleDragLeave = useCallback(() => { setHighlight(false); }, []);
+  const handleDragLeave = useCallback(() => setHighlight(false), []);
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setHighlight(false);
+    e.preventDefault(); setHighlight(false);
     const files = Array.from(e.dataTransfer.files || []).filter((f) => f.type.startsWith("image/"));
     if (files.length) onFiles(files);
   }, [onFiles]);
@@ -70,7 +71,7 @@ const PasteZone = ({
       onBlur={() => setHighlight(false)}
       tabIndex={0}
       role="button"
-      aria-label="Cole (Ctrl+V) ou arraste imagens aqui para enviar (várias permitidas)"
+      aria-label="Cole (Ctrl+V) ou arraste imagens aqui para enviar"
       aria-busy={uploading}
       className={`relative rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
         highlight ? "border-primary/60 bg-primary/5" : "border-border/30 hover:border-border/50 bg-transparent"
@@ -96,42 +97,46 @@ const AdminBanners = () => {
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
   const deleteBanner = useDeleteBanner();
+
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [scheduleMode, setScheduleMode] = useState<"none" | "00" | "06" | "12" | "custom">("00");
   const [scheduleDate, setScheduleDate] = useState(() => getScheduleDate(0));
+  const [defaultExpires, setDefaultExpires] = useState<string>("");
   const listEndRef = useRef<HTMLDivElement>(null);
 
-  // Confirmations
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState<null | "delete" | "deactivate" | "activate">(null);
 
-  // Live countdown tick (only relevant in "categories" tab)
   useLiveTick();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const handleSetSection = useCallback((section: "categories" | "programacao") => {
     setActiveSection(section);
     setSearchParams(section === "programacao" ? {} : { tab: section });
   }, [setSearchParams]);
 
-  // Schedule validation — applies to ALL modes (including 00/06/12 presets)
   const minDatetime = getScheduleDate(0).slice(0, 16);
   const scheduleInvalid = scheduleMode !== "none" && !isFutureSchedule(scheduleDate);
 
   const uploadMany = useCallback(async (files: File[]) => {
     if (!files.length) return;
-    if (scheduleInvalid) {
-      toast.error("Data de agendamento inválida (use uma data futura)");
-      return;
-    }
+    if (scheduleInvalid) { toast.error("Data de agendamento inválida (use uma data futura)"); return; }
 
-    // Validate
     const valid: File[] = [];
     const errors: string[] = [];
     for (const f of files) {
       const err = validateImageFile(f);
-      if (err) errors.push(err);
-      else valid.push(f);
+      if (err) errors.push(err); else valid.push(f);
     }
     if (errors.length) toast.error(`${errors.length} arquivo(s) ignorado(s)`, { description: errors.slice(0, 3).join("; ") });
     if (!valid.length) return;
@@ -139,23 +144,19 @@ const AdminBanners = () => {
     setUploading(true);
     setProgress({ current: 0, total: valid.length });
 
-    // Fetch current max sort_order from DB (avoids races vs cache)
     let baseOrder = 0;
     try {
       const { data: maxRow } = await supabase
-        .from("banners")
-        .select("sort_order")
+        .from("banners").select("sort_order")
         .eq("category", selectedCategory)
         .order("sort_order", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1).maybeSingle();
       baseOrder = maxRow?.sort_order ?? 0;
     } catch {
-      baseOrder = banners?.reduce((max, b) => Math.max(max, b.sort_order), 0) || 0;
+      baseOrder = banners?.reduce((m, b) => Math.max(m, b.sort_order), 0) || 0;
     }
-    let okCount = 0;
-    let failCount = 0;
 
+    let okCount = 0, failCount = 0;
     for (let i = 0; i < valid.length; i++) {
       const file = valid[i];
       try {
@@ -168,13 +169,15 @@ const AdminBanners = () => {
 
         baseOrder += 1;
         const bannerData: Parameters<typeof createBanner.mutateAsync>[0] = {
-          image_url: publicUrl,
-          category: selectedCategory,
-          sort_order: baseOrder,
+          image_url: publicUrl, category: selectedCategory, sort_order: baseOrder,
         };
         if (scheduleMode !== "none" && scheduleDate) {
           bannerData.publish_at = new Date(scheduleDate).toISOString();
           bannerData.active = false;
+        }
+        // expires_at via raw insert (not in Create payload type)
+        if (defaultExpires) {
+          (bannerData as any).expires_at = new Date(defaultExpires).toISOString();
         }
         await createBanner.mutateAsync(bannerData);
         okCount += 1;
@@ -191,7 +194,7 @@ const AdminBanners = () => {
     if (okCount && !failCount) toast.success(`${okCount} banner${okCount > 1 ? "s" : ""} ${scheduleMode !== "none" ? "agendado(s)" : "enviado(s)"}`);
     else if (okCount && failCount) toast.warning(`${okCount} enviado(s), ${failCount} com erro`);
     setTimeout(() => listEndRef.current?.scrollIntoView({ behavior: "smooth" }), 500);
-  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode, scheduleInvalid]);
+  }, [selectedCategory, banners, createBanner, scheduleDate, scheduleMode, scheduleInvalid, defaultExpires]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -200,33 +203,62 @@ const AdminBanners = () => {
     e.target.value = "";
   };
 
-  // Group banners by created_at date (used by both render + reorder scoping)
+  // Filter + search
+  const filteredBanners = useMemo(() => {
+    if (!banners) return [] as Banner[];
+    const now = Date.now();
+    return banners.filter((b) => {
+      // status
+      const expired = !!b.expires_at && new Date(b.expires_at).getTime() < now;
+      const scheduled = !!b.publish_at && !b.active;
+      if (statusFilter === "active" && (!b.active || expired)) return false;
+      if (statusFilter === "scheduled" && !scheduled) return false;
+      if (statusFilter === "inactive" && (b.active || scheduled)) return false;
+      if (statusFilter === "expired" && !expired) return false;
+      // search (title + filename in URL)
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const hay = `${b.title || ""} ${b.image_url}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [banners, statusFilter, search]);
+
+  // Group filtered banners by date
   const groupedByDate = useMemo(() => {
     const grouped: Record<string, Banner[]> = {};
-    (banners || []).forEach((b) => {
+    filteredBanners.forEach((b) => {
       const dateKey = new Date(b.created_at).toLocaleDateString("pt-BR");
       if (!grouped[dateKey]) grouped[dateKey] = [];
       grouped[dateKey]!.push(b);
     });
     return grouped;
-  }, [banners]);
+  }, [filteredBanners]);
 
-  // Reorder scoped to the same date group (matches what the user sees)
-  const moveBanner = async (id: string, direction: "up" | "down") => {
-    if (!banners) return;
-    const target = banners.find((b) => b.id === id);
-    if (!target) return;
-    const dateKey = new Date(target.created_at).toLocaleDateString("pt-BR");
+  // Drag-end handler — reorders within the same date group
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !banners) return;
+    const a = banners.find((b) => b.id === active.id);
+    const o = banners.find((b) => b.id === over.id);
+    if (!a || !o) return;
+    const dateKey = new Date(a.created_at).toLocaleDateString("pt-BR");
+    if (dateKey !== new Date(o.created_at).toLocaleDateString("pt-BR")) {
+      toast.info("Só é possível reordenar dentro do mesmo dia");
+      return;
+    }
     const group = groupedByDate[dateKey] || [];
-    const idx = group.findIndex((b) => b.id === id);
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= group.length) return;
-    const a = group[idx];
-    const b = group[swapIdx];
+    const oldIdx = group.findIndex((b) => b.id === active.id);
+    const newIdx = group.findIndex((b) => b.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reordered = arrayMove(group, oldIdx, newIdx);
+    // Reassign sort_order using existing values (preserves cross-group ordering)
+    const orderValues = group.map((b) => b.sort_order).sort((x, y) => x - y);
     try {
-      // Sequential to avoid double cache-invalidation flicker
-      await updateBanner.mutateAsync({ id: a.id, sort_order: b.sort_order });
-      await updateBanner.mutateAsync({ id: b.id, sort_order: a.sort_order });
+      await Promise.all(
+        reordered.map((b, i) => updateBanner.mutateAsync({ id: b.id, sort_order: orderValues[i] })),
+      );
     } catch {
       toast.error("Erro ao reordenar");
     }
@@ -236,9 +268,7 @@ const AdminBanners = () => {
     if (!banners) return;
     const activeOnes = banners.filter((b) => b.active);
     if (activeOnes.length === 0) { toast.info("Nenhum banner ativo nesta categoria"); return; }
-    const results = await Promise.allSettled(
-      activeOnes.map((b) => updateBanner.mutateAsync({ id: b.id, active: false }))
-    );
+    const results = await Promise.allSettled(activeOnes.map((b) => updateBanner.mutateAsync({ id: b.id, active: false })));
     const ok = results.filter((r) => r.status === "fulfilled").length;
     const fail = results.length - ok;
     if (fail === 0) toast.success(`${ok} banner(s) desativado(s)`);
@@ -246,15 +276,10 @@ const AdminBanners = () => {
   };
 
   const performDelete = async (id: string) => {
-    try {
-      await deleteBanner.mutateAsync(id);
-      toast.success("Banner excluído");
-    } catch {
-      toast.error("Erro ao excluir");
-    }
+    try { await deleteBanner.mutateAsync(id); toast.success("Banner excluído"); }
+    catch { toast.error("Erro ao excluir"); }
   };
 
-  // Toggle active — when activating an agendado, clear publish_at to avoid inconsistent state
   const toggleActive = async (banner: Banner, next: boolean) => {
     try {
       const updates: Partial<Banner> & { id: string } = { id: banner.id, active: next };
@@ -263,24 +288,69 @@ const AdminBanners = () => {
         toast.info("Agendamento removido — banner publicado agora");
       }
       await updateBanner.mutateAsync(updates);
-    } catch {
-      toast.error("Erro ao atualizar banner");
+    } catch { toast.error("Erro ao atualizar banner"); }
+  };
+
+  const updateTitle = async (id: string, title: string) => {
+    try {
+      await updateBanner.mutateAsync({ id, title: title || null });
+      toast.success("Título atualizado");
+    } catch { toast.error("Erro ao salvar título"); throw new Error(); }
+  };
+
+  const updateExpiresAt = async (id: string, value: string | null) => {
+    try {
+      await updateBanner.mutateAsync({ id, expires_at: value });
+      toast.success(value ? "Expiração atualizada" : "Expiração removida");
+    } catch { toast.error("Erro ao salvar expiração"); throw new Error(); }
+  };
+
+  const toggleSelect = (id: string, next: boolean) => {
+    setSelectedIds((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(id); else s.delete(id);
+      return s;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const selectAllVisible = () => setSelectedIds(new Set(filteredBanners.map((b) => b.id)));
+
+  const runBulk = async () => {
+    if (!confirmBulk || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    let results: PromiseSettledResult<unknown>[] = [];
+    if (confirmBulk === "delete") {
+      results = await Promise.allSettled(ids.map((id) => deleteBanner.mutateAsync(id)));
+    } else {
+      const active = confirmBulk === "activate";
+      results = await Promise.allSettled(ids.map((id) => updateBanner.mutateAsync({ id, active })));
     }
+    const ok = results.filter((r) => r.status === "fulfilled").length;
+    const fail = results.length - ok;
+    if (fail === 0) toast.success(`${ok} banner(s) atualizado(s)`);
+    else toast.warning(`${ok} ok, ${fail} com erro`);
+    clearSelection();
+    setConfirmBulk(null);
   };
 
   const activeBanners = banners?.filter((b) => b.active).length || 0;
   const scheduledBanners = banners?.filter((b) => b.publish_at && !b.active).length || 0;
   const inactiveBanners = banners?.filter((b) => !b.active && !b.publish_at).length || 0;
+  const expiredBanners = banners?.filter((b) => b.expires_at && new Date(b.expires_at) < new Date()).length || 0;
   const totalBanners = banners?.length || 0;
-  const isScheduled = (banner: Banner) => !!banner.publish_at && !banner.active;
+
+  const STATUS_CHIPS: { key: StatusFilter; label: string; count: number }[] = [
+    { key: "all", label: "Todos", count: totalBanners },
+    { key: "active", label: "Ativos", count: activeBanners },
+    { key: "scheduled", label: "Agendados", count: scheduledBanners },
+    { key: "inactive", label: "Inativos", count: inactiveBanners },
+    { key: "expired", label: "Expirados", count: expiredBanners },
+  ];
 
   return (
     <div className="space-y-4">
-      <div
-        role="tablist"
-        aria-label="Seções do admin"
-        className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0"
-      >
+      <div role="tablist" aria-label="Seções do admin"
+        className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
           { key: "programacao" as const, label: "📋 Programação" },
           { key: "categories" as const, label: "📁 Categorias" },
@@ -313,17 +383,14 @@ const AdminBanners = () => {
         <>
           <ExpiredBannersAlert banners={banners} isLoading={isLoading} />
 
-          <div
-            role="tablist"
-            aria-label="Categoria de banner"
-            className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]"
-          >
+          <div role="tablist" aria-label="Categoria de banner"
+            className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]">
             {CATEGORY_LIST.map((cat) => (
               <button
                 key={cat}
                 role="tab"
                 aria-selected={selectedCategory === cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => { setSelectedCategory(cat); clearSelection(); }}
                 className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[44px] ${
                   selectedCategory === cat
                     ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
@@ -343,6 +410,7 @@ const AdminBanners = () => {
                 <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[10px]">
                   <span className="text-emerald-400 font-semibold">{activeBanners} ativos</span>
                   {scheduledBanners > 0 && <span className="text-amber-400 font-semibold">{scheduledBanners} agendados</span>}
+                  {expiredBanners > 0 && <span className="text-red-400 font-semibold">{expiredBanners} expirados</span>}
                   {inactiveBanners > 0 && <span className="text-muted-foreground">{inactiveBanners} inativos</span>}
                   <span className="text-muted-foreground/50">{totalBanners} total</span>
                 </div>
@@ -351,26 +419,16 @@ const AdminBanners = () => {
               <div className="space-y-3">
                 <div className="flex gap-2 flex-wrap">
                   <label className="cursor-pointer shrink-0">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handleUpload}
-                      aria-label="Selecionar imagens para upload"
-                    />
+                    <input type="file" accept="image/*" multiple className="hidden"
+                      onChange={handleUpload} aria-label="Selecionar imagens para upload" />
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-4 min-h-[44px] text-xs font-semibold hover:brightness-110 transition-all active:scale-[0.97]">
                       {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                       Upload (vários)
                     </span>
                   </label>
                   {activeBanners > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConfirmDeactivate(true)}
-                      className="text-[11px] text-destructive hover:bg-destructive/10 gap-1.5 min-h-[44px]"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmDeactivate(true)}
+                      className="text-[11px] text-destructive hover:bg-destructive/10 gap-1.5 min-h-[44px]">
                       <PowerOff className="h-3.5 w-3.5" />
                       Desativar todos
                     </Button>
@@ -391,61 +449,129 @@ const AdminBanners = () => {
               </div>
             </div>
 
-            {/* Schedule */}
-            <div className="p-4 border-b border-amber-500/10 bg-amber-500/[0.03]">
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-[11px] font-semibold text-amber-400">Agendamento</span>
+            {/* Schedule + default expires */}
+            <div className="p-4 border-b border-amber-500/10 bg-amber-500/[0.03] space-y-3">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-3.5 w-3.5 text-amber-400" />
+                  <span className="text-[11px] font-semibold text-amber-400">Agendamento de publicação</span>
+                </div>
+                <div className="flex gap-1.5 flex-wrap mb-2">
+                  {([
+                    { key: "00" as const, label: "Amanhã 00h" },
+                    { key: "06" as const, label: "Amanhã 06h" },
+                    { key: "12" as const, label: "Amanhã 12h" },
+                    { key: "custom" as const, label: "Personalizado" },
+                    { key: "none" as const, label: "Sem agendamento" },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => {
+                        setScheduleMode(opt.key);
+                        if (opt.key === "00") setScheduleDate(getScheduleDate(0));
+                        else if (opt.key === "06") setScheduleDate(getScheduleDate(6));
+                        else if (opt.key === "12") setScheduleDate(getScheduleDate(12));
+                        else if (opt.key === "none") setScheduleDate("");
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${
+                        scheduleMode === opt.key
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          : "glass-panel text-muted-foreground/70 hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {scheduleMode === "custom" && (
+                  <Input type="datetime-local" value={scheduleDate} min={minDatetime}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="text-xs h-10 glass-panel border-amber-500/20 focus-visible:ring-amber-500/30"
+                    aria-invalid={scheduleInvalid} />
+                )}
+                {scheduleInvalid && (
+                  <div role="alert" className="flex items-center gap-1.5 text-[10px] text-destructive mt-2">
+                    <AlertCircle className="h-3 w-3" /><span>Selecione uma data e hora futuras.</span>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {scheduleMode === "none"
+                    ? "Banners serão publicados imediatamente"
+                    : `⏰ Agendado para ${scheduleDate ? new Date(scheduleDate).toLocaleString("pt-BR") : "—"}`}
+                </p>
               </div>
-              <div className="flex gap-1.5 flex-wrap mb-2">
-                {([
-                  { key: "00" as const, label: "Amanhã 00h" },
-                  { key: "06" as const, label: "Amanhã 06h" },
-                  { key: "12" as const, label: "Amanhã 12h" },
-                  { key: "custom" as const, label: "Personalizado" },
-                  { key: "none" as const, label: "Sem agendamento" },
-                ] as const).map((opt) => (
+
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5 mb-1.5">
+                  <Clock className="h-3 w-3" />
+                  Expira em (opcional, aplicado a novos uploads)
+                </label>
+                <Input type="datetime-local" value={defaultExpires}
+                  onChange={(e) => setDefaultExpires(e.target.value)}
+                  className="text-xs h-10 glass-panel" placeholder="Sem expiração" />
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="p-4 border-b border-white/[0.06] space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por título ou nome de arquivo"
+                  className="pl-9 pr-9 h-10 text-xs"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} aria-label="Limpar busca"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground/60 hover:text-foreground">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {STATUS_CHIPS.map((c) => (
                   <button
-                    key={opt.key}
-                    onClick={() => {
-                      setScheduleMode(opt.key);
-                      if (opt.key === "00") setScheduleDate(getScheduleDate(0));
-                      else if (opt.key === "06") setScheduleDate(getScheduleDate(6));
-                      else if (opt.key === "12") setScheduleDate(getScheduleDate(12));
-                      else if (opt.key === "none") setScheduleDate("");
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${
-                      scheduleMode === opt.key
-                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    key={c.key}
+                    onClick={() => setStatusFilter(c.key)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                      statusFilter === c.key
+                        ? "bg-primary/15 text-primary border border-primary/30"
                         : "glass-panel text-muted-foreground/70 hover:text-foreground"
                     }`}
                   >
-                    {opt.label}
+                    {c.label}
+                    <span className="ml-1 text-muted-foreground/60">({c.count})</span>
                   </button>
                 ))}
               </div>
-              {scheduleMode === "custom" && (
-                <Input
-                  type="datetime-local"
-                  value={scheduleDate}
-                  min={minDatetime}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="text-xs h-10 glass-panel border-amber-500/20 focus-visible:ring-amber-500/30 mb-2"
-                  aria-invalid={scheduleInvalid}
-                />
-              )}
-              {scheduleInvalid && (
-                <div role="alert" className="flex items-center gap-1.5 text-[10px] text-destructive mb-2">
-                  <AlertCircle className="h-3 w-3" />
-                  <span>Selecione uma data e hora futuras.</span>
-                </div>
-              )}
-              <p className="text-[10px] text-muted-foreground">
-                {scheduleMode === "none"
-                  ? "Banners serão publicados imediatamente"
-                  : `⏰ Agendado para ${scheduleDate ? new Date(scheduleDate).toLocaleString("pt-BR") : "—"}`}
-              </p>
             </div>
+
+            {/* Bulk action bar */}
+            {selectedIds.size > 0 && (
+              <div className="p-3 border-b border-primary/20 bg-primary/[0.04] flex items-center gap-2 flex-wrap sticky top-0 z-10 backdrop-blur">
+                <span className="text-[11px] font-semibold text-primary">{selectedIds.size} selecionado(s)</span>
+                <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={selectAllVisible}>
+                  Selecionar todos visíveis
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={clearSelection}>
+                  Limpar
+                </Button>
+                <div className="flex-1" />
+                <Button size="sm" variant="ghost" className="h-8 text-[11px] text-emerald-400 hover:bg-emerald-500/10"
+                  onClick={() => setConfirmBulk("activate")}>
+                  <Power className="h-3 w-3 mr-1" /> Ativar
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-[11px] text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => setConfirmBulk("deactivate")}>
+                  <PowerOff className="h-3 w-3 mr-1" /> Desativar
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-[11px] text-destructive hover:bg-destructive/10"
+                  onClick={() => setConfirmBulk("delete")}>
+                  <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                </Button>
+              </div>
+            )}
 
             {/* Banner list */}
             <div className="p-4">
@@ -455,117 +581,56 @@ const AdminBanners = () => {
                     <div key={i} className="aspect-[16/9] rounded-xl skeleton-shimmer" />
                   ))}
                 </div>
-              ) : !banners || banners.length === 0 ? (
+              ) : !filteredBanners.length ? (
                 <div className="py-12 text-center space-y-3">
-                  <div className="rounded-xl glass-panel p-4 inline-block"><Image className="h-8 w-8 text-muted-foreground/20" /></div>
-                  <p className="text-xs text-muted-foreground">Nenhum banner nesta categoria</p>
-                  <p className="text-[10px] text-muted-foreground/60">Cole, arraste ou clique em "Upload" para começar</p>
+                  <div className="rounded-xl glass-panel p-4 inline-block"><ImageIcon className="h-8 w-8 text-muted-foreground/20" /></div>
+                  <p className="text-xs text-muted-foreground">
+                    {totalBanners === 0 ? "Nenhum banner nesta categoria" : "Nenhum banner corresponde aos filtros"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    {totalBanners === 0 ? "Cole, arraste ou clique em \"Upload\" para começar" : "Ajuste a busca ou os filtros de status"}
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-5">
-                  {Object.keys(groupedByDate).map((dateKey) => {
-                    const group = groupedByDate[dateKey]!;
-                    return (
-                      <div key={dateKey}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[11px] font-bold text-foreground">📅 {dateKey}</span>
-                          <span className="text-[10px] text-muted-foreground">— {group.length} banner{group.length !== 1 ? "s" : ""}</span>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <div className="space-y-5">
+                    {Object.keys(groupedByDate).map((dateKey) => {
+                      const group = groupedByDate[dateKey]!;
+                      return (
+                        <div key={dateKey}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[11px] font-bold text-foreground">📅 {dateKey}</span>
+                            <span className="text-[10px] text-muted-foreground">— {group.length} banner{group.length !== 1 ? "s" : ""}</span>
+                          </div>
+                          <SortableContext items={group.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-3">
+                              {group.map((banner) => (
+                                <BannerCard
+                                  key={banner.id}
+                                  banner={banner}
+                                  selected={selectedIds.has(banner.id)}
+                                  onSelect={toggleSelect}
+                                  onToggleActive={toggleActive}
+                                  onDelete={(id) => setDeleteId(id)}
+                                  onUpdateTitle={updateTitle}
+                                  onUpdateExpiresAt={updateExpiresAt}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
                         </div>
-                        <div className="space-y-3">
-                          {group.map((banner, gIdx) => {
-                            const altText =
-                              banner.title?.trim() ||
-                              `Banner ${CATEGORY_LABELS[selectedCategory]} — ${dateKey}${banner.active ? "" : " (inativo)"}`;
-                            return (
-                              <div key={banner.id} className="rounded-xl glass-panel overflow-hidden">
-                                <div className="relative aspect-[16/9]">
-                                  <img
-                                    src={banner.image_url}
-                                    alt={altText}
-                                    className={`w-full h-full object-cover ${!banner.active ? "opacity-30 grayscale" : ""}`}
-                                    loading="lazy"
-                                  />
-                                  <div className="absolute top-2 right-2 flex items-center gap-1">
-                                    {isScheduled(banner) && (
-                                      <Badge className="bg-amber-500/90 text-white border-0 text-[9px] px-1.5 py-0.5">
-                                        <Clock className="h-2.5 w-2.5 mr-0.5" />
-                                        Agendado
-                                      </Badge>
-                                    )}
-                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${banner.active ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white"}`}>
-                                      {banner.active ? "✓ ATIVO" : "⏸ OFF"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="p-3 space-y-1">
-                                  {isScheduled(banner) && banner.publish_at && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <p className="text-[10px] text-amber-400/80">⏰ {new Date(banner.publish_at).toLocaleString("pt-BR")}</p>
-                                      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0">
-                                        {formatCountdown(banner.publish_at)}
-                                      </Badge>
-                                    </div>
-                                  )}
-                                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                                    <div className="flex items-center gap-2">
-                                      <Switch
-                                        checked={banner.active}
-                                        onCheckedChange={(v) => toggleActive(banner, v)}
-                                        aria-label={`${banner.active ? "Desativar" : "Ativar"} banner`}
-                                      />
-                                      <span className={`text-[10px] font-medium ${banner.active ? "text-emerald-400" : "text-muted-foreground/60"}`}>
-                                        {banner.active ? "Ativo" : "Off"}
-                                      </span>
-                                    </div>
-                                    <div role="toolbar" aria-label="Ações do banner" className="flex items-center gap-1">
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        aria-label="Mover para cima"
-                                        className="h-11 w-11 sm:h-9 sm:w-9 rounded-lg hover:bg-white/[0.06]"
-                                        disabled={gIdx === 0}
-                                        onClick={() => moveBanner(banner.id, "up")}
-                                      >
-                                        <ArrowUp className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        aria-label="Mover para baixo"
-                                        className="h-11 w-11 sm:h-9 sm:w-9 rounded-lg hover:bg-white/[0.06]"
-                                        disabled={gIdx === group.length - 1}
-                                        onClick={() => moveBanner(banner.id, "down")}
-                                      >
-                                        <ArrowDown className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        aria-label="Excluir banner"
-                                        className="h-11 w-11 sm:h-9 sm:w-9 rounded-lg text-destructive hover:bg-destructive/10"
-                                        onClick={() => setDeleteId(banner.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={listEndRef} />
-                </div>
+                      );
+                    })}
+                    <div ref={listEndRef} />
+                  </div>
+                </DndContext>
               )}
             </div>
           </div>
         </>
       )}
 
-      {/* Delete confirmation */}
+      {/* Single delete confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -593,8 +658,7 @@ const AdminBanners = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => { if (deleteId) performDelete(deleteId); setDeleteId(null); }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -614,6 +678,31 @@ const AdminBanners = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => { performDeactivateAll(); setConfirmDeactivate(false); }}>
               Desativar todos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk action confirmation */}
+      <AlertDialog open={!!confirmBulk} onOpenChange={(o) => !o && setConfirmBulk(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmBulk === "delete" && `Excluir ${selectedIds.size} banner(s)?`}
+              {confirmBulk === "deactivate" && `Desativar ${selectedIds.size} banner(s)?`}
+              {confirmBulk === "activate" && `Ativar ${selectedIds.size} banner(s)?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmBulk === "delete"
+                ? "Esta ação é permanente."
+                : "Você pode reverter depois individualmente."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={runBulk}
+              className={confirmBulk === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}>
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
