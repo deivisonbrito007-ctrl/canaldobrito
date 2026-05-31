@@ -69,10 +69,10 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|cubs|mets|astros|braves|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|royals|tigers|white sox|marlins)\b/i.test(c)) return 'baseball';
   if (/\b(rugby|sevens|svns|world rugby|super rugby)\b/i.test(c)) return 'rugby';
   if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
-  if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|stock car|e-prix|superbike|porsche|carrera cup)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
+  if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|indy nxt|stock car|e-prix|superbike|porsche|carrera cup|nascar|copa truck|truck series|motocross|mxgp)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';
   if (/\b(box[e]?|wbc|wba|wbo|ibf)\b/i.test(c)) return 'boxing';
-  if (/\b(superliga)\b/i.test(c) || /v[oô]lei/i.test(c) || /liga das na[çc][oõ]es.*v[oô]lei/i.test(c)) return 'volleyball';
+  if (/\b(superliga|beach pro tour|elite16)\b/i.test(c) || /v[oô]lei/i.test(c) || /liga das na[çc][oõ]es.*v[oô]lei/i.test(c)) return 'volleyball';
   if (/\b(wsl|surf|pipeline|tahiti pro)\b/i.test(c)) return 'surf';
   if (/\b(tour de france|giro|vuelta|ciclismo|cycling|paris.roubaix|uci)\b/i.test(c)) return 'cycling';
   if (/\b(nata[çc][aã]o|swimming|fina|world aquatics)\b/i.test(c)) return 'swimming';
