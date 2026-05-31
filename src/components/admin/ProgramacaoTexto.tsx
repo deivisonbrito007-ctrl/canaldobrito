@@ -477,7 +477,11 @@ export function parseScheduleText(
   options: { autoBumpMidnight?: boolean } = {}
 ): ParsedGame[] {
   const { autoBumpMidnight = false } = options;
-  const preprocessed = preprocessInlineFormatC(text);
+  // Normalize Unicode to avoid invisible chars (NBSP, ZWJ, BOM) breaking regex boundaries
+  const normalized = text
+    .normalize("NFKC")
+    .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, " ");
+  const preprocessed = preprocessInlineFormatC(normalized);
   const lines = preprocessed.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
