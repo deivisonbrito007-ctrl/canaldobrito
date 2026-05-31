@@ -393,6 +393,7 @@ Japão x Islândia
 📺 SporTV`;
       const games = parseScheduleText(text, fallback);
       expect(games[0].sport_type).toBe("football");
+    });
   });
 
   describe("agenda real 31/05 — sport classification ground truth", () => {
