@@ -1,71 +1,72 @@
-## Problema
+## Diagnóstico
 
-No texto enviado pelo usuário, cada esporte aparece com um cabeçalho como:
-- `⚽ FUTEBOL`, `🏀 BASQUETE`, `⚽ FUTSAL`, `⚾ BASEBALL`, `🎾 TÊNIS`, `🏐 VÔLEI DE PRAIA`, `🏎️ AUTOMOBILISMO`
+Analisando o código atual (`detectSportType` em `src/lib/gameUtils.ts` + lógica de prioridade em `parseScheduleText`), o jogo `Figueirense x Paysandu / Brasileirão Série C` **deveria** ser classificado como `football`:
 
-O parser (`src/components/admin/ProgramacaoTexto.tsx`) considera qualquer linha que comece com 🏀, 🎾, 🏎️, 🏐, ⚾, 🥊, 🏒, 🏉 como "linha de metadado" (`isMetadataLine`) e por isso `isSectionHeader` retorna `false`. O `currentSectionSport` nunca é setado, e a classificação cai inteiramente em `detectSportType` (que olha só a competição do jogo).
+- Está sob a seção `⚽ FUTEBOL` (define `currentSectionSport='football'`).
+- `detectSportType("Brasileirão Série C", "Figueirense Paysandu")` não casa com nenhum regex (basketball/baseball/tennis/etc.) → cai no fallback `football`.
+- Prioridade final: `meta.sport_type (null) → autoSport ('football') → currentSectionSport ('football')`.
 
-Como cada jogo vem com `🏆 <Competição>` (emoji genérico), o sport_type por emoji também não ajuda, e várias competições não estão no regex de `detectSportType`. Consequências observadas no texto enviado:
-
-- `🏐 VÔLEI DE PRAIA` → "Beach Pro Tour / Elite16 Ostrava" → vira **futebol**.
-- `🏎️ AUTOMOBILISMO` → "Mundial de Motocross / MXGP", "NASCAR Cup/Brasil", "Copa Truck", "Indy NXT" → viram **futebol**.
-- `⚽ FUTSAL` → "Liga Nacional de Futsal (LNF)" → vira futebol (não temos tipo futsal, mas pelo menos é coerente).
-- Demais seções funcionam só por coincidência (NBB, MLB, Roland Garros, MotoGP já estão nos regex).
+Se mesmo assim o preview está mostrando "basquete", os suspeitos são:
+1. **Preview com cache antigo** — o `parsed[]` no estado React foi gerado antes do meu fix. Basta clicar em "Processar texto" novamente. Mas isso é frágil — precisamos de proteção mais robusta.
+2. **Algum caminho secundário** ainda usando lógica antiga (`generateWhatsAppSummary`, fallback no display sem `currentSectionSport`).
+3. **Regex com falso-positivo invisível** — variantes Unicode no texto colado (NBSP, ZWJ) podem estar quebrando boundaries.
 
 ## Mudanças
 
-### 1. `src/components/admin/ProgramacaoTexto.tsx`
+### 1. Teste de integração com o texto real do usuário
+Em `src/components/admin/__tests__/ProgramacaoTexto.test.tsx`, adicionar um `describe("agenda real 31/05")` que cola o bloco completo enviado e valida que TODOS os 36 jogos saem com o `sport_type` esperado, mapeando esperado por linha:
+- Todos sob `⚽ FUTEBOL` → `football` (inclui Figueirense x Paysandu).
+- `🏀 BASQUETE` → `basketball`.
+- `⚽ FUTSAL` → `football` (não há tipo futsal).
+- `⚾ BASEBALL` → `baseball`.
+- `🎾 TÊNIS` → `tennis`.
+- `🏐 VÔLEI DE PRAIA` → `volleyball`.
+- `🏎️ AUTOMOBILISMO` → `f1`.
 
-a) Novo helper `detectSectionHeaderSport(line)` que reconhece o padrão `^<emoji_esporte>\s+<TEXTO MAIÚSCULO curto>$` (até ~30 chars, sem dígitos, sem " x ", sem `/`) e devolve o `SportType` correspondente ao emoji. Cobre: ⚽, 🏀, 🎾, 🏎️/🏎, 🏐, ⚾, 🏒, 🏉, 🥊, 🏄, 🚴, ⛳, 🏊.
+Esse teste é o "ground truth" — se passar, o bug está no preview/cache; se falhar, o assert vai apontar exatamente qual jogo o parser está errando.
 
-b) Em `parseScheduleText`, antes do bloco `isSectionHeader`, checar `detectSectionHeaderSport`. Se casar:
-- Setar `currentSectionSport` com o esporte do emoji (sobrepondo o fallback "futebol" do `detectSportType`).
-- Consumir a linha (`i++; continue`) — assim ela não é tratada como metadado nem como título de jogo.
+### 2. Endurecer o parser contra Unicode invisível
+Em `parseScheduleText` (`src/components/admin/ProgramacaoTexto.tsx`), normalizar cada linha antes da detecção:
+```text
+.normalize("NFKC").replace(/[\u00A0\u200B-\u200D\uFEFF]/g, " ")
+```
+Isso evita que NBSP/zero-width chars vindos do WhatsApp impeçam o match das regex de seção/competição.
 
-c) Ajustar a prioridade do `finalSport` para deixar o `currentSectionSport` ganhar quando vier do cabeçalho com emoji explícito (hoje ele só entra se `detectSportType` retornar `'football'`). Manter a lógica atual: emoji do jogo > detectSportType (≠ football) > section header > football. Isso já está correto; basta o section header ser preenchido.
+### 3. Reforçar a precedência da seção sobre o autodetect
+Hoje a prioridade é: `emoji do jogo > autoSport ≠ football > section > football`. Trocar para:
+```text
+emoji do jogo (não-genérico) > section header > autoSport (≠ football) > football
+```
+Justificativa: quando o usuário declara explicitamente `⚽ FUTEBOL`, isso vence qualquer falso-positivo de regex (ex.: se algum dia `detectSportType` casar "Paysandu" com algum termo, a seção continua mandando).
 
-### 2. `src/lib/gameUtils.ts` — ampliar `detectSportType`
+### 4. Forçar reprocessamento ao colar texto novo
+Sempre que `text` mudar via `onChange`, esvaziar `parsed[]`. Assim a UI nunca exibe um resultado stale relativo ao texto atual. Hoje `parsed` só é atualizado quando o admin clica "Processar texto" — se ele editar e olhar, vê resultado antigo.
 
-Adicionar tokens que aparecem no texto e que hoje caem no fallback:
-- `f1`/automobilismo: `motocross`, `mxgp`, `nascar`, `copa truck`, `indy nxt`, `truck series`.
-- `volleyball`: `beach pro tour`, `v[oô]lei de praia`, `elite16`.
-- `tennis`: já cobre Roland Garros (ok).
-- Comentário no fim sobre futsal continuar mapeado como `football` (não há tipo dedicado).
-
-### 3. Testes — `src/components/admin/__tests__/ProgramacaoTexto.test.tsx`
-
-Adicionar casos cobrindo o texto real enviado:
-- `🏐 VÔLEI DE PRAIA` + "Elite16 Ostrava / Beach Pro Tour" → `sport_type === 'volleyball'`.
-- `🏎️ AUTOMOBILISMO` + "MXGP / Mundial de Motocross" → `f1`.
-- `🏎️ AUTOMOBILISMO` + "Cracker Barrel 400 / NASCAR Cup Series" → `f1`.
-- `⚾ BASEBALL` + "Cardinals x Cubs / MLB" → `baseball` (já passa, regressão).
-- `🎾 TÊNIS` + "Roland Garros / Aberto da França" → `tennis`.
-- `🏀 BASQUETE` + "SESI Franca x Pinheiros / NBB" → `basketball`.
-
-### 4. Sugestões adicionais (não obrigatórias, peço confirmação)
-
-- Mostrar no preview da Programação um chip com o `sport_type` detectado em cada jogo e um aviso quando ele vier só do fallback "futebol", para o admin revisar antes de salvar.
-- Botão "Reclassificar" por jogo, alternando manualmente o esporte sem precisar reeditar o texto.
+### 5. Badge de origem do `sport_type` (opcional, peço confirmação)
+No card de preview, um pequeno chip mostrando como o sport_type foi decidido: `seção`, `emoji`, `regex`, `fallback`. Isso facilita diagnóstico futuro sem precisar abrir console.
 
 ## Detalhes técnicos
 
-Estrutura nova em `ProgramacaoTexto.tsx`:
+- Em `ProgramacaoTexto.tsx`, trocar:
+  ```text
+  const finalSport = (meta.sport_type && meta.sport_type !== 'football')
+    ? meta.sport_type
+    : (autoSport !== 'football') ? autoSport
+    : currentSectionSport || 'football';
+  ```
+  por:
+  ```text
+  const finalSport = (meta.sport_type && meta.sport_type !== 'football')
+    ? meta.sport_type
+    : currentSectionSport
+    ?? (autoSport !== 'football' ? autoSport : 'football');
+  ```
 
-```text
-const SECTION_HEADER_SPORT_RE =
-  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)\s+([A-ZÀ-Ý ÇÃÕÉÊÁÍÚ]{3,30})$/;
+- Mesmo ajuste na função `generateWhatsAppSummary` e no caminho de publicação (`finalSportType` ~ linha 935) para que a seção também vença ali.
 
-function detectSectionHeaderSport(line: string): SportType | null { ... }
-```
-
-No loop principal, antes de `isSectionHeader`:
-
-```text
-const sectionSport = detectSectionHeaderSport(line);
-if (sectionSport) { currentSectionSport = sectionSport; i++; continue; }
-```
+- Normalização Unicode aplicada uma única vez ao topo de `parseScheduleText`, antes de `split("\n")`.
 
 ## Riscos
 
-- Falso positivo: uma linha com `🏆 BRASILEIRÃO SÉRIE A` poderia parecer cabeçalho. Mitigação: regex só aceita os emojis de esporte (sem 🏆) e exige texto totalmente maiúsculo sem dígitos.
-- Testes existentes (multi-line e Format A) continuam passando — a checagem nova roda antes de `isMetadataLine` apenas para o padrão restrito.
+- Mudar a precedência para seção > autoSport pode subordinar algum caso onde a seção esteja mal rotulada e o regex acerte. Mitigação: o autoSport ainda entra quando a seção não está definida, e o admin tem o `<select>` para corrigir manualmente.
+- Limpar `parsed[]` ao editar texto força reclique em "Processar" — comportamento mais previsível e evita resultado fantasma.
