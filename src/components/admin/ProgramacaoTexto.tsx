@@ -59,6 +59,35 @@ function detectSportFromEmoji(compLine: string): SportType | null {
   return null;
 }
 
+/** Recognize a section header line like "🏀 BASQUETE", "🎾 TÊNIS", "🏐 VÔLEI DE PRAIA",
+ *  "🏎️ AUTOMOBILISMO", "⚾ BASEBALL", "⚽ FUTEBOL". Returns the SportType implied by the
+ *  emoji, or null if the line doesn't match the pattern. */
+const SECTION_HEADER_SPORT_RE =
+  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
+
+function detectSectionHeaderSport(line: string): SportType | null {
+  const m = line.match(SECTION_HEADER_SPORT_RE);
+  if (!m) return null;
+  const emoji = m[1];
+  switch (emoji) {
+    case '⚽': return 'football';
+    case '🏀': return 'basketball';
+    case '🎾': return 'tennis';
+    case '🏎️':
+    case '🏎': return 'f1';
+    case '🥊': return 'mma';
+    case '🏐': return 'volleyball';
+    case '🏒': return 'hockey';
+    case '⚾': return 'baseball';
+    case '🏉': return 'rugby';
+    case '🏄': return 'surf';
+    case '🚴': return 'cycling';
+    case '⛳': return 'golf';
+    case '🏊': return 'swimming';
+    default: return null;
+  }
+}
+
 function isCompetitionLine(line: string): boolean {
   return COMP_LINE_RE.test(line);
 }
