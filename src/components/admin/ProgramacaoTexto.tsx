@@ -517,6 +517,15 @@ export function parseScheduleText(
 
     const nextLine = i + 1 < lines.length ? lines[i + 1] : "";
 
+    // Sport-emoji + ALL-CAPS label (e.g. "🏐 VÔLEI DE PRAIA") — set section sport.
+    // Runs BEFORE isMetadataLine-based checks so these aren't discarded as metadata.
+    const emojiSectionSport = detectSectionHeaderSport(line);
+    if (emojiSectionSport) {
+      currentSectionSport = emojiSectionSport;
+      i++;
+      continue;
+    }
+
     // Capture section header sport and skip
     if (isSectionHeader(line, nextLine)) {
       currentSectionSport = detectSportType(line, "");
