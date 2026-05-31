@@ -583,12 +583,13 @@ export function parseScheduleText(
         meta.competition || "",
         `${home_team} ${away_team}`
       );
-      // Priority: emoji (non-generic) > detectSportType > section header > football
-      const finalSport = (meta.sport_type && meta.sport_type !== 'football')
+      // Priority: emoji do jogo (não-genérico) > section header explícito > regex auto > football.
+      // A seção vence o regex para que falsos-positivos (ex.: time com nome ambíguo)
+      // não troquem o esporte declarado pelo admin no cabeçalho.
+      const finalSport: SportType = (meta.sport_type && meta.sport_type !== 'football')
         ? meta.sport_type
-        : (autoSport !== 'football')
-          ? autoSport
-          : currentSectionSport || 'football';
+        : currentSectionSport
+          ?? (autoSport !== 'football' ? autoSport : 'football');
 
       // Auto-bump: opt-in. Só avança a data se o usuário ligou explicitamente
       // o toggle "Madrugada conta para o dia anterior" no admin.
