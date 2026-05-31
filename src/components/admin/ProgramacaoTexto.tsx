@@ -1205,7 +1205,7 @@ export const ProgramacaoTexto = () => {
 
           <Textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); setParsed([]); }}
             onPaste={(e) => {
               const items = e.clipboardData?.items;
               if (!items) return;
