@@ -313,4 +313,86 @@ Miami Open
     expect(games[2].home_team).toBe("Atlanta Hawks");
     expect(games[3].home_team).toBe("Miami Open");
   });
+
+  describe("sport classification via section headers (emoji + ALL CAPS)", () => {
+    it("classifies Beach volleyball under 🏐 VÔLEI DE PRAIA section", () => {
+      const text = `🏐 VÔLEI DE PRAIA
+
+Elite16 Ostrava
+🏆 Beach Pro Tour
+⏰ 04:00
+📺 SporTV 2`;
+      const games = parseScheduleText(text, fallback);
+      expect(games).toHaveLength(1);
+      expect(games[0].sport_type).toBe("volleyball");
+    });
+
+    it("classifies Motocross / NASCAR / IndyCar under 🏎️ AUTOMOBILISMO section", () => {
+      const text = `🏎️ AUTOMOBILISMO
+
+MXGP - Corrida 1
+🏆 Mundial de Motocross
+⏰ 09:00
+📺 BandSports
+
+Cracker Barrel 400
+🏆 NASCAR Cup Series
+⏰ 20:00
+📺 ESPN 4
+
+Detroit Grand Prix
+🏆 Indy NXT
+⏰ 11:30
+📺 ESPN 4`;
+      const games = parseScheduleText(text, fallback);
+      expect(games).toHaveLength(3);
+      expect(games[0].sport_type).toBe("f1");
+      expect(games[1].sport_type).toBe("f1");
+      expect(games[2].sport_type).toBe("f1");
+    });
+
+    it("classifies baseball under ⚾ BASEBALL section", () => {
+      const text = `⚾ BASEBALL
+
+St. Louis Cardinals x Chicago Cubs
+🏆 Major League Baseball (MLB)
+⏰ 20:20
+📺 ESPN 3`;
+      const games = parseScheduleText(text, fallback);
+      expect(games[0].sport_type).toBe("baseball");
+    });
+
+    it("classifies tennis under 🎾 TÊNIS section (single-event format)", () => {
+      const text = `🎾 TÊNIS
+
+Roland Garros
+🏆 Aberto da França
+⏰ 06:00
+📺 ESPN 2`;
+      const games = parseScheduleText(text, fallback);
+      expect(games[0].sport_type).toBe("tennis");
+    });
+
+    it("classifies basketball under 🏀 BASQUETE section", () => {
+      const text = `🏀 BASQUETE
+
+SESI Franca x Pinheiros
+🏆 NBB
+⏰ 11:00
+📺 SporTV 2`;
+      const games = parseScheduleText(text, fallback);
+      expect(games[0].sport_type).toBe("basketball");
+    });
+
+    it("keeps football for ⚽ FUTEBOL section", () => {
+      const text = `⚽ FUTEBOL
+
+Japão x Islândia
+🏆 Amistoso Internacional
+⏰ 07:25
+📺 SporTV`;
+      const games = parseScheduleText(text, fallback);
+      expect(games[0].sport_type).toBe("football");
+    });
+  });
 });
