@@ -219,6 +219,9 @@ function collectMetadata(lines: string[], startIdx: number): {
 
   let j = startIdx;
   while (j < lines.length && isMetadataLine(lines[j])) {
+    // Stop if this line is actually a section header (e.g. "🏀 BASQUETE"),
+    // not a metadata line for the current game.
+    if (detectSectionHeaderSport(lines[j])) break;
     const ml = lines[j];
 
     // 🏆 or sport emoji → competition line
