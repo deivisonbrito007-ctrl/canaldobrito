@@ -219,6 +219,9 @@ function collectMetadata(lines: string[], startIdx: number): {
 
   let j = startIdx;
   while (j < lines.length && isMetadataLine(lines[j])) {
+    // Stop if this line is actually a section header (e.g. "🏀 BASQUETE"),
+    // not a metadata line for the current game.
+    if (detectSectionHeaderSport(lines[j])) break;
     const ml = lines[j];
 
     // 🏆 or sport emoji → competition line
@@ -477,7 +480,11 @@ export function parseScheduleText(
   options: { autoBumpMidnight?: boolean } = {}
 ): ParsedGame[] {
   const { autoBumpMidnight = false } = options;
-  const preprocessed = preprocessInlineFormatC(text);
+  // Normalize Unicode to avoid invisible chars (NBSP, ZWJ, BOM) breaking regex boundaries
+  const normalized = text
+    .normalize("NFKC")
+    .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, " ");
+  const preprocessed = preprocessInlineFormatC(normalized);
   const lines = preprocessed.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
@@ -579,12 +586,13 @@ export function parseScheduleText(
         meta.competition || "",
         `${home_team} ${away_team}`
       );
-      // Priority: emoji (non-generic) > detectSportType > section header > football
-      const finalSport = (meta.sport_type && meta.sport_type !== 'football')
+      // Priority: emoji do jogo (não-genérico) > section header explícito > regex auto > football.
+      // A seção vence o regex para que falsos-positivos (ex.: time com nome ambíguo)
+      // não troquem o esporte declarado pelo admin no cabeçalho.
+      const finalSport: SportType = (meta.sport_type && meta.sport_type !== 'football')
         ? meta.sport_type
-        : (autoSport !== 'football')
-          ? autoSport
-          : currentSectionSport || 'football';
+        : currentSectionSport
+          ?? (autoSport !== 'football' ? autoSport : 'football');
 
       // Auto-bump: opt-in. Só avança a data se o usuário ligou explicitamente
       // o toggle "Madrugada conta para o dia anterior" no admin.
@@ -1200,7 +1208,7 @@ export const ProgramacaoTexto = () => {
 
           <Textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); setParsed([]); }}
             onPaste={(e) => {
               const items = e.clipboardData?.items;
               if (!items) return;

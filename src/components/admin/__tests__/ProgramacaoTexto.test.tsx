@@ -395,4 +395,87 @@ Japão x Islândia
       expect(games[0].sport_type).toBe("football");
     });
   });
+
+  describe("agenda real 31/05 — sport classification ground truth", () => {
+    const realText = `📅 31/05
+
+⚽ FUTEBOL
+
+Japão x Islândia
+🏆 Amistoso Internacional
+⏰ 07:25
+📺 SporTV
+
+Figueirense x Paysandu
+🏆 Brasileirão Série C
+⏰ 20:30
+📺 SNet
+
+🏀 BASQUETE
+
+SESI Franca x Pinheiros
+🏆 NBB
+⏰ 11:00
+📺 SporTV 2
+
+⚽ FUTSAL
+
+São Lourenço x São Miguel
+🏆 Liga Nacional de Futsal (LNF)
+⏰ 22:15
+📺 X Sports
+
+⚾ BASEBALL
+
+St. Louis Cardinals x Chicago Cubs
+🏆 Major League Baseball (MLB)
+⏰ 20:20
+📺 ESPN 3
+
+🎾 TÊNIS
+
+Roland Garros
+🏆 Aberto da França
+⏰ 06:00
+📺 ESPN 2
+
+🏐 VÔLEI DE PRAIA
+
+Elite16 Ostrava
+🏆 Beach Pro Tour
+⏰ 04:00
+📺 SporTV 2
+
+🏎️ AUTOMOBILISMO
+
+MXGP - Corrida 1
+🏆 Mundial de Motocross
+⏰ 09:00
+📺 BandSports
+
+Cracker Barrel 400
+🏆 NASCAR Cup Series
+⏰ 20:00
+📺 ESPN 4`;
+
+    const expected: Array<{ home: string; sport: string }> = [
+      { home: "Japão", sport: "football" },
+      { home: "Figueirense", sport: "football" },
+      { home: "SESI Franca", sport: "basketball" },
+      { home: "São Lourenço", sport: "football" }, // futsal → football (no dedicated type)
+      { home: "St. Louis Cardinals", sport: "baseball" },
+      { home: "Roland Garros", sport: "tennis" },
+      { home: "Elite16 Ostrava", sport: "volleyball" },
+      { home: "MXGP - Corrida 1", sport: "f1" },
+      { home: "Cracker Barrel 400", sport: "f1" },
+    ];
+
+    it("classifies every game per its section header", () => {
+      const games = parseScheduleText(realText, fallback);
+      expect(games).toHaveLength(expected.length);
+      games.forEach((g, idx) => {
+        expect({ home: g.home_team, sport: g.sport_type }).toEqual(expected[idx]);
+      });
+    });
+  });
 });
