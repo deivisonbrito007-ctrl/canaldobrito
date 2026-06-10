@@ -9,6 +9,14 @@ vi.mock("@/hooks/useChannelMappings", () => ({
   CHANNEL_MAPPINGS_QK: ["channel_logo_mappings"] as const,
 }));
 
+// Mock useWatchProgress globally since ContentDetailSheet now uses it
+// to track views for Continue Watching.
+vi.mock("@/hooks/useWatchProgress", () => ({
+  useWatchProgress: () => ({ data: [], isLoading: false }),
+  useUpsertProgress: () => ({ mutate: vi.fn() }),
+  useDeleteProgress: () => ({ mutate: vi.fn() }),
+}));
+
 // Polyfill ResizeObserver for jsdom (used by Recharts)
 (globalThis as any).ResizeObserver = class {
   observe() {}

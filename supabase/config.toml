@@ -2,7 +2,7 @@ project_id = "rryvwkqupkhpdlevopkk"
 
 
 [functions.tmdb-proxy]
-verify_jwt = false
+verify_jwt = true
 
 [functions.activate-scheduled]
 verify_jwt = false

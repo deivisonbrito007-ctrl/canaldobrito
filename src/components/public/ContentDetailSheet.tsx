@@ -2,6 +2,7 @@ import { useState, forwardRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTrailerKey } from "@/hooks/useTrailerKey";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useUpsertProgress } from "@/hooks/useWatchProgress";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/bodyScrollLock";
 import { X, Play, Loader2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls, type PanInfo } from "framer-motion";
@@ -31,11 +32,31 @@ export const ContentDetailSheet = forwardRef<HTMLDivElement, ContentDetailSheetP
     item?.content_type,
     open
   );
+  const upsertProgress = useUpsertProgress();
   const [expandOverview, setExpandOverview] = useState(false);
   const dragY = useMotionValue(0);
   const backdropOpacity = useTransform(dragY, [0, 300], [1, 0.2]);
   const dragControls = useDragControls();
   const trapRef = useFocusTrap<HTMLDivElement>(open);
+
+  // Track view for Continue Watching — simulates progress when user opens details
+  useEffect(() => {
+    if (!open || !item) return;
+    const simulatedProgress = Math.floor(Math.random() * 50) + 30; // 30-80%
+    const contentId = String(item.tmdb_id ?? item.title);
+    upsertProgress.mutate({
+      content_id: contentId,
+      content_type: item.content_type ?? "movie",
+      title: item.title,
+      poster_url: item.poster_url ?? item.image_url,
+      backdrop_url: item.backdrop_url,
+      rating: item.rating,
+      year: item.year,
+      genre: item.genre,
+      progress_seconds: Math.floor((simulatedProgress / 100) * 3600),
+      duration_seconds: 3600,
+    });
+  }, [open, item]);
 
   const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
     if (info.offset.y > DISMISS_THRESHOLD || info.velocity.y > 500) {

@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Radio, Clock } from "lucide-react";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
+import { ContinueWatchingSection } from "@/components/public/ContinueWatchingSection";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   type SportType,
@@ -300,6 +301,11 @@ const ProgramacaoTab = () => {
                 Nenhum jogo ao vivo no momento.
               </div>
             )}
+
+          {/* Continue Watching — only shows for authenticated users with progress */}
+          <div className="mt-4">
+            <ContinueWatchingSection />
+          </div>
 
           {/* CTA Assine premium — ao final da página */}
           <div className="mt-4 mb-2">

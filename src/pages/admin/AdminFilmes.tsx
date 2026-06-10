@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie, useReorderMovies, type FeaturedMovie } from "@/hooks/useMovies";
 import { useRealtimeMovies } from "@/hooks/useRealtimeMovies";
+import { usePagination } from "@/hooks/usePagination";
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink,
+  PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   DndContext,
   closestCenter,
@@ -157,6 +162,9 @@ const AdminFilmes = () => {
   const qc = useQueryClient();
 
   const batchActive = !!batchProgress || bulkRunning;
+
+  const pagination = usePagination({ total: movies?.length ?? 0, pageSize: 20 });
+  const paginatedMovies = movies?.slice(pagination.start, pagination.end);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -523,9 +531,9 @@ const AdminFilmes = () => {
             </div>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={movies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={paginatedMovies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
-                  {movies.map((m) => (
+                  {paginatedMovies.map((m) => (
                     <SortableMovieRow
                       key={m.id}
                       movie={m}
@@ -542,6 +550,49 @@ const AdminFilmes = () => {
                 </div>
               </SortableContext>
             </DndContext>
+          )}
+
+          {totalCount > 20 && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={pagination.hasPrev ? pagination.prevPage : undefined}
+                      className={!pagination.hasPrev ? "pointer-events-none opacity-40" : "cursor-pointer"}
+                      href="#"
+                    />
+                  </PaginationItem>
+                  {pagination.pageNumbers.map((p, i) =>
+                    p === -1 ? (
+                      <PaginationItem key={`e-${i}`}>
+                        <span className="flex h-9 w-9 items-center justify-center text-[10px] text-muted-foreground">…</span>
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          isActive={p === pagination.page}
+                          onClick={() => pagination.goToPage(p)}
+                          href="#"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={pagination.hasNext ? pagination.nextPage : undefined}
+                      className={!pagination.hasNext ? "pointer-events-none opacity-40" : "cursor-pointer"}
+                      href="#"
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+              <p className="text-center text-[10px] text-muted-foreground/60 mt-2">
+                {pagination.start + 1}–{pagination.end} de {totalCount} filme{totalCount !== 1 ? "s" : ""}
+              </p>
+            </div>
           )}
         </div>
       </div>

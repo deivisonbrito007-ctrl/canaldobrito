@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllSeries, useAddSeries, useToggleSeries, useDeleteSeries, useUpdateSeries } from "@/hooks/useSeries";
+import { useAllSeries, useAddSeries, useToggleSeries, useDeleteSeries, useUpdateSeries, type FeaturedSeries } from "@/hooks/useSeries";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2, Clapperboard, RefreshCw } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { usePagination } from "@/hooks/usePagination";
+import {
+  Pagination, PaginationContent, PaginationItem, PaginationLink,
+  PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Clapperboard, Search, Plus, Star, ImageOff, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
@@ -26,6 +35,7 @@ const AdminSeries = () => {
   const [addingId, setAddingId] = useState<number | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<FeaturedSeries | null>(null);
 
   const handleSearch = () => { if (query.trim()) search("search_tv", query); };
   const loadPopular = () => { setTab("popular"); setResults([]); search("popular_tv"); };
@@ -107,6 +117,15 @@ const AdminSeries = () => {
     if (!series || series.length === 0) return;
     await runBatch(series, "séries");
   };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    deleteSeries.mutate(pendingDelete.id);
+    setPendingDelete(null);
+  };
+
+  const pagination = usePagination({ total: series?.length ?? 0, pageSize: 20 });
+  const paginatedSeries = series?.slice(pagination.start, pagination.end);
 
   const activeCount = series?.filter((s) => s.active).length || 0;
   const totalCount = series?.length || 0;
@@ -207,7 +226,7 @@ const AdminSeries = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {series.map((s) => (
+              {paginatedSeries.map((s) => (
                 <div key={s.id} className="flex items-center gap-3 rounded-lg glass-panel p-3">
                   {s.poster_url ? (
                     <img src={s.poster_url} alt={s.title} className="h-12 w-9 rounded-md object-cover shrink-0" />
@@ -226,13 +245,70 @@ const AdminSeries = () => {
                     <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === s.id ? "animate-spin" : ""}`} />
                   </Button>
                   <Switch checked={s.active} onCheckedChange={(v) => { console.log("[AdminSeries:toggle]", { id: s.id, active: v }); toggleSeries.mutate({ id: s.id, active: v }); }} aria-label={`${s.active ? "Desativar" : "Ativar"} ${s.title}`} />
-                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0 transition-all duration-200" onClick={() => { if (confirm("Remover série?")) { console.log("[AdminSeries:delete]", { id: s.id, title: s.title }); deleteSeries.mutate(s.id); } }} aria-label={`Remover ${s.title}`}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10 shrink-0 transition-all duration-200" onClick={() => setPendingDelete(s)} aria-label={`Remover ${s.title}`}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>
           )}
+
+          {series && series.length > 20 && (
+            <div className="px-4 pb-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={pagination.hasPrev ? pagination.prevPage : undefined}
+                      className={!pagination.hasPrev ? "pointer-events-none opacity-40" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {pagination.pageNumbers.map((p, i) =>
+                    p === -1 ? (
+                      <PaginationItem key={`ellipsis-${i}`}>
+                        <span className="px-2 text-xs text-muted-foreground">…</span>
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          isActive={p === pagination.page}
+                          onClick={() => pagination.goToPage(p)}
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={pagination.hasNext ? pagination.nextPage : undefined}
+                      className={!pagination.hasNext ? "pointer-events-none opacity-40" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+              <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+                {pagination.start + 1}–{pagination.end} de {totalCount} série{totalCount !== 1 ? "s" : ""}
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover série?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete?.title ? `"${pendingDelete.title}" será removida permanentemente do catálogo.` : "Esta ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
