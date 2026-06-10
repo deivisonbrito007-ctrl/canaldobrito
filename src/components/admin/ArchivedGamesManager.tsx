@@ -3,6 +3,10 @@ import { useArchivedDailyGames, useUpdateDailyGame, useDeleteDailyGame } from "@
 import { SPORT_EMOJI, type SportType } from "@/lib/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Trash2, ArchiveRestore, Loader2, Archive, Filter } from "lucide-react";
 import { toast } from "sonner";
 
@@ -11,6 +15,7 @@ export const ArchivedGamesManager = () => {
   const updateGame = useUpdateDailyGame();
   const deleteGame = useDeleteDailyGame();
   const [dateFilter, setDateFilter] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const dates = useMemo(() => {
     if (!games) return [];
@@ -31,12 +36,17 @@ export const ArchivedGamesManager = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Excluir permanentemente este jogo?")) return;
-    deleteGame.mutate(id, { onSuccess: () => toast.success("Jogo excluído!") });
+    setPendingDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDeleteId) return;
+    deleteGame.mutate(pendingDeleteId, { onSuccess: () => toast.success("Jogo excluído!") });
+    setPendingDeleteId(null);
   };
 
   return (
-    <div className="glass-panel rounded-2xl overflow-hidden">
+    <><div className="glass-panel rounded-2xl overflow-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 border-b border-white/[0.06]">
         <div>
           <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
@@ -135,5 +145,23 @@ export const ArchivedGamesManager = () => {
         )}
       </div>
     </div>
+
+      <AlertDialog open={!!pendingDeleteId} onOpenChange={(o) => !o && setPendingDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir jogo permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O jogo será removido do banco de dados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

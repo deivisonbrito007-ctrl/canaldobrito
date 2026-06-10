@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Wand2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +35,7 @@ export const DailyGamesManager = () => {
   const [showSuspect, setShowSuspect] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkSport, setBulkSport] = useState<SportType>("football");
+  const [pendingConfirm, setPendingConfirm] = useState<{ kind: "archive-day" | "clear-day" | "delete-game" | "remove-duplicates"; payload: any } | null>(null);
 
   // Live countdown tick
   const [, setTick] = useState(0);
@@ -116,13 +121,35 @@ export const DailyGamesManager = () => {
     }
   };
 
-  const handleArchiveDay = async () => {
+  const handleArchiveDay = () => {
     const nonArchived = games?.filter((g) => !g.archived) || [];
     if (nonArchived.length === 0) {
       toast.info("Nenhum jogo para arquivar nesta data");
       return;
     }
-    if (!confirm(`Arquivar todos os ${nonArchived.length} jogos de ${selectedDate}?`)) return;
+    setPendingConfirm({ kind: "archive-day", payload: { count: nonArchived.length } });
+  };
+
+  const confirmRemoveDuplicates = async () => {
+    if (!pendingConfirm || pendingConfirm.kind !== "remove-duplicates") return;
+    const { ids, count } = pendingConfirm.payload;
+    setPendingConfirm(null);
+    try {
+      const { error } = await supabase
+        .from("daily_games")
+        .delete()
+        .in("id", ids);
+      if (error) throw error;
+      toast.success(`${count} duplicata(s) removida(s)!`);
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const confirmArchiveDay = async () => {
+    if (!pendingConfirm || pendingConfirm.kind !== "archive-day") return;
+    setPendingConfirm(null);
     try {
       const { error } = await supabase
         .from("daily_games")
@@ -130,7 +157,7 @@ export const DailyGamesManager = () => {
         .eq("date", selectedDate)
         .eq("archived", false);
       if (error) throw error;
-      toast.success(`${nonArchived.length} jogos arquivados!`);
+      toast.success(`${pendingConfirm.payload.count} jogos arquivados!`);
       queryClient.invalidateQueries({ queryKey: ["daily_games"] });
     } catch (err: any) {
       toast.error(err.message);
@@ -205,12 +232,7 @@ export const DailyGamesManager = () => {
         return;
       }
 
-      if (!confirm(`${dupeIds.length} duplicata(s) encontrada(s). Manter o registro mais antigo e remover os demais?`)) return;
-
-      const { error: delErr } = await supabase.from("daily_games").delete().in("id", dupeIds);
-      if (delErr) throw delErr;
-      toast.success(`${dupeIds.length} duplicata(s) removida(s)!`);
-      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+      setPendingConfirm({ kind: "remove-duplicates", payload: { ids: dupeIds, count: dupeIds.length } });
     } catch (err: any) {
       toast.error(err.message || "Erro ao verificar duplicatas");
     } finally {
@@ -218,8 +240,13 @@ export const DailyGamesManager = () => {
     }
   };
 
-  const handleClearDay = async () => {
-    if (!confirm(`Excluir todos os jogos de ${selectedDate}?`)) return;
+  const handleClearDay = () => {
+    setPendingConfirm({ kind: "clear-day", payload: {} });
+  };
+
+  const confirmClearDay = async () => {
+    if (!pendingConfirm || pendingConfirm.kind !== "clear-day") return;
+    setPendingConfirm(null);
     try {
       await deleteByDate.mutateAsync(selectedDate);
       toast.success("Jogos do dia removidos!");
@@ -231,8 +258,43 @@ export const DailyGamesManager = () => {
   const activeCount = games?.filter((g) => g.active).length || 0;
   const scheduledCount = games?.filter((g) => g.publish_at && !g.active && new Date(g.publish_at) > new Date()).length || 0;
 
+  const confirmTitle = pendingConfirm
+    ? pendingConfirm.kind === "archive-day"
+      ? `Arquivar ${pendingConfirm.payload.count} jogos?`
+      : pendingConfirm.kind === "clear-day"
+        ? `Excluir todos os jogos de ${selectedDate}?`
+        : pendingConfirm.kind === "delete-game"
+          ? "Excluir jogo?"
+          : `Remover ${pendingConfirm.payload.count} duplicata(s)?`
+    : "";
+
+  const confirmDescription = pendingConfirm
+    ? pendingConfirm.kind === "archive-day"
+      ? "Os jogos serão arquivados e deixarão de aparecer na programação ativa."
+      : pendingConfirm.kind === "clear-day"
+        ? "Todos os jogos desta data serão excluídos permanentemente."
+        : pendingConfirm.kind === "delete-game"
+          ? "Este jogo será removido permanentemente."
+          : "Será mantido o registro mais antigo e removidos os demais."
+    : "";
+
+  const handleConfirmAction = () => {
+    if (!pendingConfirm) return;
+    switch (pendingConfirm.kind) {
+      case "archive-day": confirmArchiveDay(); break;
+      case "clear-day": confirmClearDay(); break;
+      case "delete-game": {
+        const id = pendingConfirm.payload.id;
+        setPendingConfirm(null);
+        deleteGame.mutate(id, { onSuccess: () => toast.success("Jogo excluído!") });
+        break;
+      }
+      case "remove-duplicates": confirmRemoveDuplicates(); break;
+    }
+  };
+
   return (
-    <div className="glass-panel rounded-2xl overflow-hidden">
+        <><div className="glass-panel rounded-2xl overflow-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 border-b border-white/[0.06]">
         <div>
           <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
@@ -455,7 +517,7 @@ export const DailyGamesManager = () => {
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={() => { if (confirm("Excluir jogo?")) deleteGame.mutate(game.id); }}
+                              onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id } })}
                               className="p-1 rounded hover:bg-destructive/10 text-destructive"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -472,6 +534,23 @@ export const DailyGamesManager = () => {
         )}
       </div>
     </div>
+
+      <AlertDialog open={!!pendingConfirm} onOpenChange={(o) => !o && setPendingConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAction}
+              className={pendingConfirm?.kind === "delete-game" || pendingConfirm?.kind === "clear-day" || pendingConfirm?.kind === "remove-duplicates" ? "bg-destructive hover:bg-destructive/90" : ""}>
+              {pendingConfirm?.kind === "archive-day" ? "Arquivar" : pendingConfirm?.kind === "clear-day" ? "Excluir tudo" : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+        </>
   );
 };
 

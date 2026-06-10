@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Beaker, Copy, Check, MessageCircle, Plus, RotateCcw, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -156,10 +160,16 @@ export const ABTemplateLab = () => {
     ]);
   };
 
+  const [pendingReset, setPendingReset] = useState(false);
+
   const onReset = () => {
-    if (!window.confirm("Restaurar templates padrão? Suas edições serão perdidas.")) return;
+    setPendingReset(true);
+  };
+
+  const confirmReset = () => {
     setTemplates(resetABTemplates());
     toast.success("Templates restaurados");
+    setPendingReset(false);
   };
 
   // Fetch funnel metrics from analytics_events
@@ -358,6 +368,23 @@ export const ABTemplateLab = () => {
           </div>
         );
       })}
+
+      <AlertDialog open={pendingReset} onOpenChange={(o) => !o && setPendingReset(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar templates padrão?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Suas edições atuais serão perdidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReset}>
+              Restaurar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
