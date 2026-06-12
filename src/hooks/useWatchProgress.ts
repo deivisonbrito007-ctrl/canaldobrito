@@ -20,19 +20,20 @@ export interface WatchProgress {
 }
 
 const WATCH_PROGRESS_QK = ["watch_progress"];
+// Table is not in the generated types — cast to bypass the strict typings.
+const wp = () => (supabase as any).from("watch_progress");
 
 export const useWatchProgress = () =>
   useQuery({
     queryKey: WATCH_PROGRESS_QK,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("watch_progress")
+      const { data, error } = await wp()
         .select("*")
         .eq("is_finished", false)
         .order("updated_at", { ascending: false })
         .limit(10);
       if (error) throw error;
-      return data as WatchProgress[];
+      return (data ?? []) as WatchProgress[];
     },
     refetchInterval: 30_000,
   });
@@ -57,7 +58,7 @@ export const useUpsertProgress = () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Usuário não autenticado");
 
-      const { error } = await supabase.from("watch_progress").upsert(
+      const { error } = await wp().upsert(
         {
           user_id: user.user.id,
           content_id: item.content_id,
@@ -88,7 +89,7 @@ export const useDeleteProgress = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("watch_progress").delete().eq("id", id);
+      const { error } = await wp().delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
