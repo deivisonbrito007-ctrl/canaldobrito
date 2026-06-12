@@ -27,13 +27,17 @@ Nome do Evento ou Torneio
 - NUNCA coloque "x ?" em hipótese alguma. Se não há adversário, use FORMATO B.
 - Se houver múltiplos esportes no mesmo horário, liste CADA UM separadamente como entrada própria.
 - Inclua SEMPRE o detalhe entre parênteses quando disponível: fase, rodada, etapa, local do torneio (ex: "oitavas de final", "Indian Wells", "Classificação", "Card Principal").
+- ❌ NÃO emita cabeçalhos de seção (ex: "🏀 BASQUETE", "🥊 MMA") quando aquela seção não tem jogos identificados. Simplesmente OMITA a seção.
+- ❌ NUNCA escreva linhas como "Nenhum jogo identificado na imagem.", "Nenhum evento identificado", "Sem jogos hoje" ou variações. Se não há jogos para um esporte, OMITA a seção inteira (cabeçalho + texto).
+- ❌ NÃO repita o mesmo jogo duas vezes. Cada partida deve aparecer UMA única vez.
 
 Regras gerais:
 - Use "x" minúsculo para separar times APENAS no formato A
-- Horário no formato HHhMM (ex: 19h00, 16h30)
+- Horário SEMPRE no formato HHhMM (ex: 19h00, 16h30) — NUNCA use "HH:MM" (ex: nunca "19:00")
 - Se houver múltiplas datas, crie um bloco 📅 para cada
 - Se o jogo for feminino, adicione (F) após o time visitante
 - Liste TODOS os canais separados por vírgula
+- Os campos 🏆/⏰ devem ficar na MESMA linha separados por " / "; 📺 na linha seguinte
 - NÃO adicione texto extra, apenas o formato acima
 - Se não conseguir ler algum dado, use "?" como placeholder APENAS para times, horários ou canais — NUNCA como adversário em esportes individuais
 
@@ -43,6 +47,8 @@ Identificação de esportes:
 - Para Fórmula 1, automobilismo e motovelocidade (F1, GP, Grande Prêmio, MotoGP, Moto2, Moto3, Formula E, E-Prix, IndyCar, Stock Car, Automobilismo), use 🏎️ antes da competição → FORMATO B
 - Para MMA e luta (UFC, Bellator, PFL, Boxing, Boxe), use 🥊 antes da competição → FORMATO B
 - Para vôlei (Superliga, Liga das Nações, Champions), use 🏐 antes da competição → FORMATO A
+- Para baseball (MLB, NPB), use ⚾ antes da competição → FORMATO A
+- Para rugby (Super Rugby, Six Nations), use 🏉 antes da competição → FORMATO A
 - Para futebol, use 🏆 normalmente (padrão) → FORMATO A`;
 
 const DEFAULT_MODEL = "google/gemini-2.5-flash";

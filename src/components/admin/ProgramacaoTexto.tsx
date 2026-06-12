@@ -540,6 +540,14 @@ export function parseScheduleText(
       continue;
     }
 
+    // Skip placeholder lines emitted by the AI when a section has no games.
+    // e.g. "Nenhum jogo identificado na imagem.", "Nenhum evento identificado",
+    // "Sem jogos hoje", "Nenhuma partida identificada", etc.
+    if (/^(?:nenhum[ao]?\s+\S+\s+identificad[ao]|sem\s+jogos?|sem\s+partidas?|sem\s+eventos?|nada\s+identificad[ao])/i.test(line)) {
+      i++;
+      continue;
+    }
+
     // Check if this line is a game/event title (has metadata lines following)
     const hasMetadataAfter = i + 1 < lines.length && isMetadataLine(lines[i + 1]);
     // Also support old format: line with " x " followed by comp+time line
