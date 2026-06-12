@@ -611,6 +611,10 @@ export type Database = {
         Returns: undefined
       }
       reorder_channel_mappings: { Args: { _ids: string[] }; Returns: undefined }
+      upsert_push_subscription: {
+        Args: { _auth: string; _endpoint: string; _p256dh: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
