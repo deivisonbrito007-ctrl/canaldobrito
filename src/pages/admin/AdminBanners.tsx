@@ -247,11 +247,12 @@ const AdminBanners = () => {
     });
   }, [banners, statusFilter, search]);
 
-  // Group filtered banners by date
+  // Group filtered banners by effective date (publish_at when scheduled, else created_at)
   const groupedByDate = useMemo(() => {
     const grouped: Record<string, Banner[]> = {};
     filteredBanners.forEach((b) => {
-      const dateKey = new Date(b.created_at).toLocaleDateString("pt-BR");
+      const effective = b.publish_at ?? b.created_at;
+      const dateKey = new Date(effective).toLocaleDateString("pt-BR");
       if (!grouped[dateKey]) grouped[dateKey] = [];
       grouped[dateKey]!.push(b);
     });
