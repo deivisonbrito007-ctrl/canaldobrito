@@ -661,11 +661,18 @@ const AdminBanners = () => {
                   <div className="space-y-5">
                     {Object.keys(groupedByDate).map((dateKey) => {
                       const group = groupedByDate[dateKey]!;
+                      const [d, m, y] = dateKey.split("/").map(Number);
+                      const groupDate = new Date(y, (m || 1) - 1, d || 1);
+                      const today = new Date(); today.setHours(0, 0, 0, 0);
+                      const isFuture = groupDate.getTime() > today.getTime();
                       return (
                         <div key={dateKey}>
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-[11px] font-bold text-foreground">📅 {dateKey}</span>
                             <span className="text-[10px] text-muted-foreground">— {group.length} banner{group.length !== 1 ? "s" : ""}</span>
+                            {isFuture && (
+                              <span className="text-[10px] text-amber-400 font-semibold">⏰ agendado</span>
+                            )}
                           </div>
                           <SortableContext items={group.map((b) => b.id)} strategy={verticalListSortingStrategy}>
                             <div className="space-y-3">
