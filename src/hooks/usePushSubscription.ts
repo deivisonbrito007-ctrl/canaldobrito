@@ -15,14 +15,11 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 async function syncKeysToDb(sub: PushSubscription) {
   const json = sub.toJSON();
   const keys = json.keys as { p256dh: string; auth: string };
-  await supabase.from("push_subscriptions").upsert(
-    {
-      endpoint: sub.endpoint,
-      p256dh: keys.p256dh,
-      auth: keys.auth,
-    },
-    { onConflict: "endpoint" }
-  );
+  await supabase.rpc("upsert_push_subscription", {
+    _endpoint: sub.endpoint,
+    _p256dh: keys.p256dh,
+    _auth: keys.auth,
+  });
 }
 
 export function usePushSubscription() {
