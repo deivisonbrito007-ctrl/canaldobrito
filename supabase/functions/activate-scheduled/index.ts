@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
 
     const result = {
       activated_banners: activatedBanners?.length || 0,
+      deactivated_expired_banners: expiredBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
       archived_games: archivedGames?.length || 0,
       hard_deleted_games: deletedGames?.length || 0,
