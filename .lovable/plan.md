@@ -1,72 +1,54 @@
-## Diagnóstico
+## Diagnóstico do Admin de Banners
 
-Analisando o código atual (`detectSportType` em `src/lib/gameUtils.ts` + lógica de prioridade em `parseScheduleText`), o jogo `Figueirense x Paysandu / Brasileirão Série C` **deveria** ser classificado como `football`:
+Analisei `AdminBanners.tsx`, `useBanners.ts` e `activate-scheduled`. A UI de upload/admin funciona, mas encontrei **3 bugs reais** que afetam o que o público vê:
 
-- Está sob a seção `⚽ FUTEBOL` (define `currentSectionSport='football'`).
-- `detectSportType("Brasileirão Série C", "Figueirense Paysandu")` não casa com nenhum regex (basketball/baseball/tennis/etc.) → cai no fallback `football`.
-- Prioridade final: `meta.sport_type (null) → autoSport ('football') → currentSectionSport ('football')`.
+### Bug 1 — Banners expirados continuam aparecendo no site público
+`useActiveBanners` e `useBannersByCategory` filtram apenas `active=true`. Não checam `expires_at`. Resultado: um banner com `expires_at` no passado continua sendo exibido até alguém desativar manualmente. O cron `activate-scheduled` também só ativa agendados — nunca desativa expirados.
 
-Se mesmo assim o preview está mostrando "basquete", os suspeitos são:
-1. **Preview com cache antigo** — o `parsed[]` no estado React foi gerado antes do meu fix. Basta clicar em "Processar texto" novamente. Mas isso é frágil — precisamos de proteção mais robusta.
-2. **Algum caminho secundário** ainda usando lógica antiga (`generateWhatsAppSummary`, fallback no display sem `currentSectionSport`).
-3. **Regex com falso-positivo invisível** — variantes Unicode no texto colado (NBSP, ZWJ) podem estar quebrando boundaries.
+### Bug 2 — Banners agendados aparecem agrupados na data errada no admin
+A lista agrupa por `created_at` (data do upload). Um banner com upload hoje e `publish_at` para daqui a 3 dias aparece no grupo de hoje, escondido entre os demais. O admin pensa que o banner já saiu / não acha o agendado.
 
-## Mudanças
+### Bug 3 — Cron não limpa expirados
+`supabase/functions/activate-scheduled/index.ts` ativa `banners` e `daily_games` futuros, mas não tem o passo inverso `active=false` para `banners` com `expires_at <= now`. Combinado com o Bug 1, dá efeito de "banner zumbi".
 
-### 1. Teste de integração com o texto real do usuário
-Em `src/components/admin/__tests__/ProgramacaoTexto.test.tsx`, adicionar um `describe("agenda real 31/05")` que cola o bloco completo enviado e valida que TODOS os 36 jogos saem com o `sport_type` esperado, mapeando esperado por linha:
-- Todos sob `⚽ FUTEBOL` → `football` (inclui Figueirense x Paysandu).
-- `🏀 BASQUETE` → `basketball`.
-- `⚽ FUTSAL` → `football` (não há tipo futsal).
-- `⚾ BASEBALL` → `baseball`.
-- `🎾 TÊNIS` → `tennis`.
-- `🏐 VÔLEI DE PRAIA` → `volleyball`.
-- `🏎️ AUTOMOBILISMO` → `f1`.
+### Sugestão extra (opcional, pequena)
+Indicador visual no cabeçalho da categoria mostrando o `próximo evento` (próximo `publish_at` futuro ou próximo `expires_at`), tipo: `⏰ Próxima ativação: amanhã 06h00`. Já temos `UpcomingActivations` no admin geral, mas falta dentro da categoria.
 
-Esse teste é o "ground truth" — se passar, o bug está no preview/cache; se falhar, o assert vai apontar exatamente qual jogo o parser está errando.
+---
 
-### 2. Endurecer o parser contra Unicode invisível
-Em `parseScheduleText` (`src/components/admin/ProgramacaoTexto.tsx`), normalizar cada linha antes da detecção:
+## Mudanças propostas
+
+### 1. `src/hooks/useBanners.ts` — filtrar expirados no query
+Em `useActiveBanners` e `useBannersByCategory`, adicionar:
 ```text
-.normalize("NFKC").replace(/[\u00A0\u200B-\u200D\uFEFF]/g, " ")
+.or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
 ```
-Isso evita que NBSP/zero-width chars vindos do WhatsApp impeçam o match das regex de seção/competição.
+E reduzir `staleTime` de `useActiveBanners` para `30_000` (hoje é 60s — atrasa a expiração visual).
 
-### 3. Reforçar a precedência da seção sobre o autodetect
-Hoje a prioridade é: `emoji do jogo > autoSport ≠ football > section > football`. Trocar para:
+Também filtrar `publish_at` no client se vier `active=true` com `publish_at > now` (defesa em profundidade caso cron atrase).
+
+### 2. `src/pages/admin/AdminBanners.tsx` — agrupar pela data efetiva
+Trocar `groupedByDate` para usar:
 ```text
-emoji do jogo (não-genérico) > section header > autoSport (≠ football) > football
+const effectiveDate = banner.publish_at ?? banner.created_at;
 ```
-Justificativa: quando o usuário declara explicitamente `⚽ FUTEBOL`, isso vence qualquer falso-positivo de regex (ex.: se algum dia `detectSportType` casar "Paysandu" com algum termo, a seção continua mandando).
+Assim, banners agendados aparecem no grupo do dia em que vão ser publicados. Header do grupo ganha sufixo `(agendado)` quando o grupo é uma data futura.
 
-### 4. Forçar reprocessamento ao colar texto novo
-Sempre que `text` mudar via `onChange`, esvaziar `parsed[]`. Assim a UI nunca exibe um resultado stale relativo ao texto atual. Hoje `parsed` só é atualizado quando o admin clica "Processar texto" — se ele editar e olhar, vê resultado antigo.
+### 3. `supabase/functions/activate-scheduled/index.ts` — desativar expirados
+Adicionar um quarto bloco (depois de ativar agendados):
+```text
+UPDATE banners SET active = false WHERE active = true AND expires_at <= now()
+```
+Incluir contagem `deactivated_expired_banners` no resultado.
 
-### 5. Badge de origem do `sport_type` (opcional, peço confirmação)
-No card de preview, um pequeno chip mostrando como o sport_type foi decidido: `seção`, `emoji`, `regex`, `fallback`. Isso facilita diagnóstico futuro sem precisar abrir console.
+### 4. (Opcional, com confirmação) `BannerHealthPanel` ou um chip novo no cabeçalho da categoria mostrando próximo `publish_at`/`expires_at` da categoria atual.
 
-## Detalhes técnicos
+---
 
-- Em `ProgramacaoTexto.tsx`, trocar:
-  ```text
-  const finalSport = (meta.sport_type && meta.sport_type !== 'football')
-    ? meta.sport_type
-    : (autoSport !== 'football') ? autoSport
-    : currentSectionSport || 'football';
-  ```
-  por:
-  ```text
-  const finalSport = (meta.sport_type && meta.sport_type !== 'football')
-    ? meta.sport_type
-    : currentSectionSport
-    ?? (autoSport !== 'football' ? autoSport : 'football');
-  ```
+## Risco
 
-- Mesmo ajuste na função `generateWhatsAppSummary` e no caminho de publicação (`finalSportType` ~ linha 935) para que a seção também vença ali.
+- Filtrar expirados no client pode esconder banners cuja `expires_at` foi setada por engano. Mitigação: o admin continua vendo TUDO (`useAllBanners` não muda).
+- Reagrupar por `publish_at` muda o visual da lista. O `BannerCard` já mostra status "Agendado" individualmente, então a ordem nova fica mais coerente, não pior.
+- A migração no edge function é só lógica adicional — não toca schema, não precisa de migration SQL.
 
-- Normalização Unicode aplicada uma única vez ao topo de `parseScheduleText`, antes de `split("\n")`.
-
-## Riscos
-
-- Mudar a precedência para seção > autoSport pode subordinar algum caso onde a seção esteja mal rotulada e o regex acerte. Mitigação: o autoSport ainda entra quando a seção não está definida, e o admin tem o `<select>` para corrigir manualmente.
-- Limpar `parsed[]` ao editar texto força reclique em "Processar" — comportamento mais previsível e evita resultado fantasma.
+Confirma os 3 fixes (1, 2, 3) e me diz se quer também o item 4 (chip de próximo evento)?
