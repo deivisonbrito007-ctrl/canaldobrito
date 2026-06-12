@@ -31,36 +31,45 @@ export const useActiveBanners = () =>
   useQuery({
     queryKey: ["banners", "active-all"],
     queryFn: async () => {
+      const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from("banners")
         .select("*")
         .eq("active", true)
+        .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       const grouped: Record<BannerCategory, Banner[]> = {
         cover: [], football: [], basketball: [], ufc: [], other_sports: [], football_guide: [],
       };
       for (const b of (data as Banner[])) {
+        // Defense-in-depth: hide rows whose publish_at is still in the future
+        if (b.publish_at && new Date(b.publish_at).getTime() > Date.now()) continue;
         if (grouped[b.category]) grouped[b.category].push(b);
       }
       return grouped;
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 
 export const useBannersByCategory = (category: BannerCategory) =>
   useQuery({
     queryKey: ["banners", category],
     queryFn: async () => {
+      const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from("banners")
         .select("*")
         .eq("category", category)
         .eq("active", true)
+        .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return data as Banner[];
+      return (data as Banner[]).filter(
+        (b) => !b.publish_at || new Date(b.publish_at).getTime() <= Date.now(),
+      );
     },
+    staleTime: 30_000,
   });
 
 export const useAllBanners = (category?: BannerCategory) =>

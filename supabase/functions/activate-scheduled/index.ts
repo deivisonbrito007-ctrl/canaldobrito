@@ -33,6 +33,19 @@ Deno.serve(async (req) => {
       console.error("Error activating banners:", bannersError);
     }
 
+    // Deactivate banners whose expires_at has passed
+    const { data: expiredBanners, error: expiredBannersError } = await supabase
+      .from("banners")
+      .update({ active: false })
+      .eq("active", true)
+      .not("expires_at", "is", null)
+      .lte("expires_at", new Date().toISOString())
+      .select("id");
+
+    if (expiredBannersError) {
+      console.error("Error deactivating expired banners:", expiredBannersError);
+    }
+
     // Activate daily_games where publish_at <= now() and active = false
     const { data: activatedGames, error: gamesError } = await supabase
       .from("daily_games")
@@ -91,6 +104,7 @@ Deno.serve(async (req) => {
 
     const result = {
       activated_banners: activatedBanners?.length || 0,
+      deactivated_expired_banners: expiredBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
       archived_games: archivedGames?.length || 0,
       hard_deleted_games: deletedGames?.length || 0,
