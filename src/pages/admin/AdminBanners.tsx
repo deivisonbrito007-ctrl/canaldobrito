@@ -29,6 +29,74 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
+const BANNER_PROMPT_MODEL = `Você é um gerador de TEXTO DE BANNER para um app de programação esportiva.
+A partir da IMAGEM enviada, devolva SOMENTE o texto formatado abaixo — sem explicações, sem markdown, sem aspas.
+
+═══════════════════════════════════════════
+FORMATO OBRIGATÓRIO (exatamente assim):
+═══════════════════════════════════════════
+
+TÍTULO: <até 60 caracteres, com emoji do esporte no início>
+
+📅 <Dia DD/MM>
+
+<Time A> x <Time B>
+🏆 <Competição> / ⏰ <HHhMM>
+📺 <Canal1, Canal2>
+
+<próximo jogo...>
+
+═══════════════════════════════════════════
+REGRAS CRÍTICAS:
+═══════════════════════════════════════════
+1. TÍTULO sempre em UMA linha, ≤60 caracteres, começa com emoji do esporte principal (⚽ 🏀 🥊 🏐 🎾 🏎️ ⚾ 🏉).
+   Exemplos válidos:
+   • ⚽ Copa do Mundo — Quartas de Final
+   • 🥊 UFC 312 — Card Principal
+   • 🏀 NBA Playoffs — Jogo 7
+
+2. Horário SEMPRE no formato HHhMM (ex: 16h00, 22h30). NUNCA use "16:00".
+
+3. Use "x" minúsculo para separar times. Time feminino recebe "(F)" após o nome.
+
+4. Para esportes individuais (tênis, F1, MMA, surfe, automobilismo): use SOMENTE o nome do evento. NUNCA escreva "x ?" ou "x TBD".
+
+5. NÃO duplique jogos. Cada partida aparece UMA única vez.
+
+6. Se uma seção/esporte não tiver jogos, OMITA completamente. NUNCA escreva "Nenhum jogo identificado".
+
+7. Múltiplos canais separados por vírgula.
+
+8. Se houver múltiplas datas, crie um bloco 📅 para cada data, em ordem cronológica.
+
+9. Ordene jogos por horário crescente dentro de cada data.
+
+10. NÃO adicione introdução, rodapé, totalizadores ou comentários.
+
+═══════════════════════════════════════════
+EMOJIS POR ESPORTE (use no TÍTULO e antes do 🏆 quando não-futebol):
+═══════════════════════════════════════════
+⚽ Futebol  🏀 Basquete  🥊 MMA/Boxe  🏐 Vôlei
+🎾 Tênis    🏎️ F1/Automobilismo     ⚾ Baseball
+🏉 Rugby    🏄 Surfe   🚴 Ciclismo  ⛳ Golfe   🏊 Natação
+
+═══════════════════════════════════════════
+EXEMPLO DE SAÍDA VÁLIDA:
+═══════════════════════════════════════════
+TÍTULO: ⚽ Copa do Mundo — Sábado de Oitavas
+
+📅 Dia 21/06
+
+Canadá x Bósnia e Herz.
+🏆 Copa do Mundo (Oitavas) / ⏰ 16h00
+📺 Cazé TV
+
+EUA x Paraguai
+🏆 Copa do Mundo (Oitavas) / ⏰ 22h00
+📺 Globo, SporTV
+
+Agora processe a imagem e devolva APENAS o texto no formato acima.`;
+
 const validateImageFile = (file: File): string | null => {
   if (!file.type.startsWith("image/")) return `${file.name}: não é imagem`;
   if (file.size > MAX_FILE_BYTES) return `${file.name}: maior que 5MB`;
