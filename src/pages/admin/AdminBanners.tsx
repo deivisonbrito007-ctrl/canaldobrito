@@ -29,73 +29,138 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
-const BANNER_PROMPT_MODEL = `Você é um gerador de TEXTO DE BANNER para um app de programação esportiva.
-A partir da IMAGEM enviada, devolva SOMENTE o texto formatado abaixo — sem explicações, sem markdown, sem aspas.
+const BANNER_PROMPT_MODEL = `Você é um EXTRATOR de programação esportiva. A partir da IMAGEM enviada, identifique TODOS os eventos visíveis (jogos, treinos, classificações, sprints, corridas, lutas, rodadas) e devolva SOMENTE o texto formatado abaixo — sem explicações, sem markdown, sem aspas.
 
 ═══════════════════════════════════════════
-FORMATO OBRIGATÓRIO (exatamente assim):
+FORMATO OBRIGATÓRIO — siga ao pé da letra
 ═══════════════════════════════════════════
 
-TÍTULO: <até 60 caracteres, com emoji do esporte no início>
+TÍTULO: <até 60 caracteres, com emoji do esporte principal no início>
 
-📅 <Dia DD/MM>
+📅 Dia DD/MM
 
-<Time A> x <Time B>
-🏆 <Competição> / ⏰ <HHhMM>
+<linha 1 do evento>
+<emoji do esporte> <Competição (Sessão/Fase)> / ⏰ HHhMM
 📺 <Canal1, Canal2>
 
-<próximo jogo...>
+<linha em branco>
+
+<próximo evento...>
+
+⚠️ CADA EVENTO OCUPA EXATAMENTE 3 LINHAS + 1 LINHA EM BRANCO. NUNCA junte tudo numa única linha. Quebre as linhas de verdade (Enter), mesmo que a imagem da programação esteja em formato compacto.
 
 ═══════════════════════════════════════════
-REGRAS CRÍTICAS:
+TIPOS DE LINHA 1 (escolha UM por evento)
 ═══════════════════════════════════════════
-1. TÍTULO sempre em UMA linha, ≤60 caracteres, começa com emoji do esporte principal (⚽ 🏀 🥊 🏐 🎾 🏎️ ⚾ 🏉).
-   Exemplos válidos:
-   • ⚽ Copa do Mundo — Quartas de Final
-   • 🥊 UFC 312 — Card Principal
-   • 🏀 NBA Playoffs — Jogo 7
 
-2. Horário SEMPRE no formato HHhMM (ex: 16h00, 22h30). NUNCA use "16:00".
+▶ FORMATO A — confronto entre dois adversários (futebol, basquete, vôlei, baseball, rugby, hóquei, futsal):
+   Time A x Time B
+   (use "x" minúsculo. Times femininos recebem "(F)" depois do nome.)
 
-3. Use "x" minúsculo para separar times. Time feminino recebe "(F)" após o nome.
-
-4. Para esportes individuais (tênis, F1, MMA, surfe, automobilismo): use SOMENTE o nome do evento. NUNCA escreva "x ?" ou "x TBD".
-
-5. NÃO duplique jogos. Cada partida aparece UMA única vez.
-
-6. Se uma seção/esporte não tiver jogos, OMITA completamente. NUNCA escreva "Nenhum jogo identificado".
-
-7. Múltiplos canais separados por vírgula.
-
-8. Se houver múltiplas datas, crie um bloco 📅 para cada data, em ordem cronológica.
-
-9. Ordene jogos por horário crescente dentro de cada data.
-
-10. NÃO adicione introdução, rodapé, totalizadores ou comentários.
+▶ FORMATO B — eventos individuais ou de etapa (F1, MotoGP, Stock Car, Fórmula E, IndyCar, Tênis, Golfe, Boxe, MMA, Surfe, Ciclismo, Natação, Atletismo):
+   Nome do Evento — Sessão/Fase
+   (NUNCA use "x ?" / "x TBD" / "x A definir". Se não há adversário, use FORMATO B.)
+   Para Boxe/MMA com confronto nominado, use FORMATO A: "Lutador A x Lutador B".
 
 ═══════════════════════════════════════════
-EMOJIS POR ESPORTE (use no TÍTULO e antes do 🏆 quando não-futebol):
+REGRAS CRÍTICAS
 ═══════════════════════════════════════════
-⚽ Futebol  🏀 Basquete  🥊 MMA/Boxe  🏐 Vôlei
-🎾 Tênis    🏎️ F1/Automobilismo     ⚾ Baseball
-🏉 Rugby    🏄 Surfe   🚴 Ciclismo  ⛳ Golfe   🏊 Natação
+
+1. UMA ÚNICA data por bloco 📅. Se o dia 19/06 tem futebol, MotoGP, tênis e boxe, TUDO entra debaixo de UM único "📅 Dia 19/06". Nunca repita o mesmo dia em dois blocos.
+
+2. Dentro de cada bloco 📅, ordene TODOS os eventos por horário crescente (HHhMM), independente do esporte.
+
+3. Horário SEMPRE no padrão HHhMM (16h00, 04h45, 22h30). NUNCA "16:00".
+
+4. SESSÃO/FASE entre parênteses é OBRIGATÓRIA quando o esporte tem múltiplas sessões no mesmo dia:
+   • F1/MotoGP/Moto2/Moto3/Stock Car/Fórmula E/IndyCar: (Treino Livre 1), (Treino Livre 2), (Treino Livre 3), (Classificação), (Sprint Shootout), (Sprint), (Corrida), (Warm Up)
+   • Tênis: (1ª Rodada), (2ª Rodada), (Oitavas), (Quartas), (Semifinal), (Final)
+   • Golfe: (1ª Rodada), (2ª Rodada), (3ª Rodada), (Rodada Final)
+   • Boxe/MMA: (Card Preliminar), (Card Principal), (Luta Principal)
+   • Futebol/copas: (Fase de Grupos), (Oitavas), (Quartas), (Semifinal), (Final)
+
+5. ANTI-REDUNDÂNCIA: o que está na linha 1 NÃO se repete na linha do 🏆.
+   ✅ CORRETO:
+      MotoGP — GP da Chéquia (Classificação)
+      🏎️ MotoGP / ⏰ 09h00
+   ❌ ERRADO:
+      MotoGP — GP da Chéquia (Classificação)
+      🏎️ Grande Prêmio da Chéquia / ⏰ 09h00
+
+6. NÃO DUPLIQUE eventos. Mesmo evento + mesma sessão + mesmo horário só aparece UMA vez. Se aparecer duas vezes na imagem (canais diferentes), junte os canais com vírgula.
+
+7. Se uma seção/esporte não tem nenhum evento, OMITA. NUNCA escreva "Nenhum jogo identificado", "Sem eventos hoje", "—".
+
+8. NÃO filtre por relevância. Liste TUDO o que está visível: treinos livres, classificações, jogos secundários, ligas regionais, eventos noturnos.
+
+9. Múltiplos canais: separe por vírgula com espaço. Ex: "ESPN 4, Disney+, Cazé TV".
+
+10. NÃO adicione introdução, rodapé, totalizadores, comentários.
 
 ═══════════════════════════════════════════
-EXEMPLO DE SAÍDA VÁLIDA:
+REGRA DO TÍTULO (1ª linha)
 ═══════════════════════════════════════════
-TÍTULO: ⚽ Copa do Mundo — Sábado de Oitavas
 
-📅 Dia 21/06
+• Se o dia tem 1 evento dominante (ex: só Copa do Mundo): use esse evento.
+   Ex: "⚽ Copa do Mundo — Oitavas de Final"
+• Se o dia tem múltiplos esportes relevantes: use formato genérico.
+   Ex: "🗓️ Programação Esportiva — 19/06"
+• ≤60 caracteres, sempre começa com 1 emoji.
 
-Canadá x Bósnia e Herz.
+═══════════════════════════════════════════
+EMOJIS POR ESPORTE (use no 🏆 da linha 2)
+═══════════════════════════════════════════
+⚽ Futebol/Futsal   🏀 Basquete   🏐 Vôlei
+🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar
+🥊 MMA/Boxe   ⚾ Baseball   🏉 Rugby
+🏒 Hóquei   🏄 Surfe   🚴 Ciclismo
+⛳ Golfe   🏊 Natação
+
+═══════════════════════════════════════════
+EXEMPLO DE SAÍDA VÁLIDA (dia multi-esporte)
+═══════════════════════════════════════════
+TÍTULO: 🗓️ Programação Esportiva — 19/06
+
+📅 Dia 19/06
+
+Moto3 — GP da Chéquia (Treino Livre 1)
+🏎️ MotoGP / ⏰ 03h55
+📺 ESPN 4
+
+Halle Open (2ª Rodada)
+🎾 ATP 500 / ⏰ 06h30
+📺 ESPN 2
+
+França (F) x China (F)
+🏐 VNL Feminina / ⏰ 10h00
+📺 SporTV 2
+
+EUA x Austrália
 🏆 Copa do Mundo (Oitavas) / ⏰ 16h00
 📺 Cazé TV
 
-EUA x Paraguai
-🏆 Copa do Mundo (Oitavas) / ⏰ 22h00
-📺 Globo, SporTV
+Brasil x Haiti
+🏆 Copa do Mundo (Oitavas) / ⏰ 21h30
+📺 SBT, Globo
 
-Agora processe a imagem e devolva APENAS o texto no formato acima.`;
+Andrew Stewart x Zayne Havener
+🥊 Boxe (Card Principal) / ⏰ 22h00
+📺 ESPN 3
+
+═══════════════════════════════════════════
+CHECKLIST FINAL — antes de responder, confira:
+═══════════════════════════════════════════
+[ ] Cada evento tem EXATAMENTE 3 linhas + 1 linha em branco
+[ ] Apenas 1 bloco 📅 por data
+[ ] Eventos ordenados por horário crescente
+[ ] Nenhum evento duplicado
+[ ] Sessão/fase entre parênteses em F1, MotoGP, tênis, golfe, boxe
+[ ] Linha do 🏆 não repete o nome do evento da linha 1
+[ ] Nenhuma linha tem "x ?" ou "x TBD"
+[ ] Horários no formato HHhMM
+[ ] Nenhum texto extra (intro/rodapé/comentário)
+
+Agora processe a imagem e devolva APENAS o texto formatado.`;
 
 const validateImageFile = (file: File): string | null => {
   if (!file.type.startsWith("image/")) return `${file.name}: não é imagem`;
