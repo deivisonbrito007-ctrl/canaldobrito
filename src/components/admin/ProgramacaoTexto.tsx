@@ -474,6 +474,46 @@ export function preprocessInlineFormatC(text: string): string {
   return producedAnyGame ? out.join("\n") : text;
 }
 
+/**
+ * Some AI outputs (ChatGPT/Gemini copy-paste) collapse a 3-line event
+ * into a single line:
+ *   "Moto3 — GP (TL1) 🏎️ MotoGP / ⏰ 03h55 📺 ESPN 4"
+ * This expands such lines back into the canonical 3-line format
+ * that parseScheduleText understands.
+ */
+const SPORT_META_EMOJI_RE = /([🏆⚽🏀🥊🏐🎾⚾🏉🏒🏄🚴⛳🏊]|🏎️|🏎)/u;
+
+export function explodeSingleLineEvents(text: string): string {
+  const out: string[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) { out.push(raw); continue; }
+
+    // Must contain ⏰ + HHhMM AND 📺 AND a sport emoji on the SAME line.
+    const hasTime = /⏰\s*\d{1,2}h\d{2}/.test(line);
+    const hasTv = /📺/.test(line);
+    const sportEmojiMatch = line.match(SPORT_META_EMOJI_RE);
+    if (!hasTime || !hasTv || !sportEmojiMatch) { out.push(raw); continue; }
+
+    // Find split points: emoji of competition (start of metadata), 📺 (channels)
+    const sportIdx = line.indexOf(sportEmojiMatch[0]);
+    const tvIdx = line.indexOf("📺");
+    // Sanity: order should be title ... sportEmoji ... ⏰ ... 📺
+    if (sportIdx <= 0 || tvIdx <= sportIdx) { out.push(raw); continue; }
+
+    const title = line.slice(0, sportIdx).trim().replace(/[\s—-]+$/, "");
+    const meta = line.slice(sportIdx, tvIdx).trim();
+    const tv = line.slice(tvIdx).trim();
+    if (!title || !meta || !tv) { out.push(raw); continue; }
+
+    out.push(title);
+    out.push(meta);
+    out.push(tv);
+    out.push("");
+  }
+  return out.join("\n");
+}
+
 export function parseScheduleText(
   text: string,
   fallbackDate: string,
@@ -484,7 +524,8 @@ export function parseScheduleText(
   const normalized = text
     .normalize("NFKC")
     .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, " ");
-  const preprocessed = preprocessInlineFormatC(normalized);
+  const exploded = explodeSingleLineEvents(normalized);
+  const preprocessed = preprocessInlineFormatC(exploded);
   const lines = preprocessed.split("\n").map((l) => l.trim()).filter(Boolean);
   const games: ParsedGame[] = [];
   let currentDate = fallbackDate;
