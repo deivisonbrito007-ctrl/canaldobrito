@@ -464,6 +464,21 @@ const AdminBanners = () => {
 
       {activeSection === "programacao" && (
         <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              <span className="text-xs font-semibold text-amber-400">Gerar texto por imagem (GPT/Gemini)</span>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(BANNER_PROMPT_MODEL).then(() => toast.success("Prompt-modelo copiado! Cole no GPT/Gemini junto com a imagem."));
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20 transition-all active:scale-[0.97] min-h-[36px]"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Copiar prompt-modelo
+            </button>
+          </div>
           <ProgramacaoTexto />
           <DailyGamesManager />
           <ArchivedGamesManager />
