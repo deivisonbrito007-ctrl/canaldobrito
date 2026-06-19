@@ -17,7 +17,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Upload, Loader2, Image as ImageIcon, ClipboardPaste, Clock, PowerOff, AlertCircle, Search, X, Power, Trash2 } from "lucide-react";
+import { Upload, Loader2, Image as ImageIcon, ClipboardPaste, Clock, PowerOff, AlertCircle, Search, X, Power, Trash2, Copy, Sparkles } from "lucide-react";
 import { getScheduleDate, isFutureSchedule } from "@/lib/dateUtils";
 import { useLiveTick } from "@/hooks/useLiveTick";
 import { toast } from "sonner";
