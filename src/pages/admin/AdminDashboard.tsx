@@ -158,11 +158,11 @@ const AdminDashboard = () => {
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-foreground capitalize">{todayFormatted}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
           </div>
           <div className="flex items-center gap-1.5">
             {lastUpdated && (
-              <span className="text-[9px] text-muted-foreground/60" title={`Atualizado às ${format(new Date(lastUpdated), "HH:mm")}`}>
+              <span className="text-[10px] text-muted-foreground/70" title={`Atualizado às ${format(new Date(lastUpdated), "HH:mm")}`}>
                 <span className="hidden sm:inline">Atualizado </span>
                 {format(new Date(lastUpdated), "HH:mm")}
               </span>
