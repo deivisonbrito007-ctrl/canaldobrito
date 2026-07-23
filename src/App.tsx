@@ -25,6 +25,7 @@ const AdminGitHubDiagnostico = lazy(() => import("./pages/admin/AdminGitHubDiagn
 const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminCanaisLogos = lazy(() => import("./pages/admin/AdminCanaisLogos"));
+const AdminSecurity = lazy(() => import("./pages/admin/AdminSecurity"));
 const ShareRedirect = lazy(() => import("./pages/ShareRedirect"));
 const AgendaRedirect = () => {
   const location = useLocation();
