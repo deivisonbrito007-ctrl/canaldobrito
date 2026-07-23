@@ -80,7 +80,10 @@ export function buildDayText(
     }
   }
 
-  lines.push(`👉 ${buildDeepLink(siteUrl, "schedule", { short: true })}`);
+  // Include the selected date so the recipient lands on the exact day, not "Hoje".
+  const shortLink = buildDeepLink(siteUrl, "schedule", { short: true });
+  const sep = shortLink.includes("?") ? "&" : "?";
+  lines.push(`👉 ${shortLink}${sep}date=${dateStr}`);
   return lines.join("\n").trim();
 }
 
