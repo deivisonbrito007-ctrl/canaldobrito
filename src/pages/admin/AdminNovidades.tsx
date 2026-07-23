@@ -288,15 +288,15 @@ const AdminNovidades = () => {
         </div>
         <div className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <Select value={searchType} onValueChange={(v) => { setSearchType(v as any); setResults([]); }}>
-              <SelectTrigger className="glass-panel border-white/[0.1] h-10 text-xs"><SelectValue /></SelectTrigger>
+            <Select value={searchType} onValueChange={(v) => { setSearchType(v as any); setResults([]); setSearched(false); }}>
+              <SelectTrigger className="glass-panel border-white/[0.1] h-11 text-xs" aria-label="Tipo de conteúdo"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="movie">🎬 Filme</SelectItem>
                 <SelectItem value="series">📺 Série</SelectItem>
               </SelectContent>
             </Select>
             <Select value={badgeType} onValueChange={handleBadgeTypeChange}>
-              <SelectTrigger className="glass-panel border-white/[0.1] h-10 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="glass-panel border-white/[0.1] h-11 text-xs" aria-label="Tipo de badge"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {BADGE_OPTIONS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
               </SelectContent>
@@ -304,13 +304,40 @@ const AdminNovidades = () => {
           </div>
 
           <div className="flex gap-2">
-            <Input placeholder={searchType === "movie" ? "Nome do filme..." : "Nome da série..."} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="glass-panel border-white/[0.1] text-sm h-10" />
-            <Button onClick={handleSearch} disabled={searching} size="icon" className="shrink-0 h-10 w-10" aria-label="Buscar">
+            <div className="flex-1 relative">
+              <Input
+                placeholder={searchType === "movie" ? "Nome do filme..." : "Nome da série..."}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="glass-panel border-white/[0.1] text-sm h-11 pr-9"
+                aria-label={searchType === "movie" ? "Buscar filme por nome" : "Buscar série por nome"}
+                enterKeyHint="search"
+                inputMode="search"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={clearQuery}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.05] flex items-center justify-center"
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <Button onClick={handleSearch} disabled={searching || !query.trim()} size="icon" className="shrink-0 h-11 w-11" aria-label="Buscar">
               {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
 
           {searching && <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" />Buscando...</div>}
+
+          {!searching && searched && results.length === 0 && (
+            <div className="py-6 text-center">
+              <p className="text-xs text-muted-foreground">Nenhum resultado encontrado</p>
+            </div>
+          )}
 
           {results.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
