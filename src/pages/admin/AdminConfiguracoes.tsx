@@ -120,9 +120,9 @@ const AdminConfiguracoes = () => {
           </h3>
         </div>
         <div className="p-4 space-y-2">
-          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
-          <Input placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1] h-10" />
-          <p className="text-[10px] text-muted-foreground/50">Número completo com código do país (apenas números, 10-15 dígitos)</p>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
+          <Input inputMode="numeric" placeholder="5511940759046" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="glass-panel border-white/[0.1] h-11" />
+          <p className="text-[11px] text-muted-foreground/60">Número completo com código do país (apenas números, 10-15 dígitos)</p>
         </div>
       </div>
 
@@ -135,22 +135,23 @@ const AdminConfiguracoes = () => {
           </h3>
         </div>
         <div className="p-4 space-y-2">
-          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">URL Pública</Label>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">URL Pública</Label>
           <div className="flex gap-2">
-            <Input placeholder="https://meusite.lovable.app" value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="glass-panel border-white/[0.1] h-10 flex-1" />
+            <Input inputMode="url" placeholder="https://meusite.lovable.app" value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="glass-panel border-white/[0.1] h-11 flex-1" />
             <Button
               type="button"
               variant="outline"
               size="icon"
               onClick={handleCopyUrl}
               disabled={!siteUrl}
-              className="h-10 w-10 shrink-0"
+              className="h-11 w-11 shrink-0"
+              aria-label="Copiar URL do site"
               title="Copiar URL"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground/50">URL pública do site usada nos links de compartilhamento (WhatsApp, etc). Publique o app e cole a URL aqui.</p>
+          <p className="text-[11px] text-muted-foreground/60">URL pública do site usada nos links de compartilhamento (WhatsApp, etc). Publique o app e cole a URL aqui.</p>
         </div>
       </div>
 
@@ -163,9 +164,9 @@ const AdminConfiguracoes = () => {
           </h3>
         </div>
         <div className="p-4 space-y-2">
-          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">TMDB API Key</Label>
-          <Input placeholder="Sua chave da API do TMDB" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} type="password" className="glass-panel border-white/[0.1] h-10" />
-          <p className="text-[10px] text-muted-foreground/50">
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">TMDB API Key</Label>
+          <Input placeholder="Sua chave da API do TMDB" value={tmdbKey} onChange={(e) => setTmdbKey(e.target.value)} type="password" autoComplete="off" className="glass-panel border-white/[0.1] h-11" />
+          <p className="text-[11px] text-muted-foreground/60">
             Obtenha em{" "}
             <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">themoviedb.org</a>
           </p>
@@ -184,14 +185,14 @@ const AdminConfiguracoes = () => {
             variant="ghost"
             size="sm"
             onClick={() => setTvChannelsJson(DEFAULT_TV_CHANNELS_JSON)}
-            className="h-7 px-2 text-[10px]"
+            className="h-9 px-2 text-[11px] min-h-9"
             title="Restaurar padrão"
           >
-            <RotateCcw className="h-3 w-3 mr-1" /> Padrão
+            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Padrão
           </Button>
         </div>
         <div className="p-4 space-y-2">
-          <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Lista (JSON)</Label>
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Lista (JSON)</Label>
           <Textarea
             value={tvChannelsJson}
             onChange={(e) => setTvChannelsJson(e.target.value)}
@@ -199,7 +200,7 @@ const AdminConfiguracoes = () => {
             spellCheck={false}
             className="glass-panel border-white/[0.1] font-mono text-[11px] leading-snug"
           />
-          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
+          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
             Cada canal: <code className="text-primary/80">{`{ name, domain, localLogo }`}</code>. O <code>localLogo</code> aceita caminhos de <code>/channels/*.svg</code>; se ausente, o ícone é buscado pelo <code>domain</code>.
           </p>
         </div>
@@ -209,7 +210,7 @@ const AdminConfiguracoes = () => {
       <div className="glass-panel rounded-xl p-4">
         <div className="flex items-center gap-2">
           <Info className="h-3.5 w-3.5 text-muted-foreground" />
-          <p className="text-[10px] text-muted-foreground">Brito Solutions — Painel v1.0</p>
+          <p className="text-[11px] text-muted-foreground">Brito Solutions — Painel v1.0</p>
         </div>
       </div>
 
