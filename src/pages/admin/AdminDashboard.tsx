@@ -79,7 +79,7 @@ const quickActions = [
 ];
 
 const getGreeting = () => {
-  const h = getSPDate().getHours();
+  const h = getSPHour();
   if (h < 12) return "Bom dia";
   if (h < 18) return "Boa tarde";
   return "Boa noite";
