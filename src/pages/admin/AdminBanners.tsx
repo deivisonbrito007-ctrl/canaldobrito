@@ -776,14 +776,15 @@ const AdminBanners = () => {
                   <button
                     key={c.key}
                     onClick={() => setStatusFilter(c.key)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all min-h-9 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none ${
                       statusFilter === c.key
                         ? "bg-primary/15 text-primary border border-primary/30"
-                        : "glass-panel text-muted-foreground/70 hover:text-foreground"
+                        : "glass-panel text-muted-foreground/80 hover:text-foreground"
                     }`}
+                    aria-pressed={statusFilter === c.key}
                   >
                     {c.label}
-                    <span className="ml-1 text-muted-foreground/60">({c.count})</span>
+                    <span className="ml-1 text-muted-foreground/70">({c.count})</span>
                   </button>
                 ))}
               </div>
