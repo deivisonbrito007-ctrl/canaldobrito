@@ -6,11 +6,19 @@ import { useAllSeries } from "@/hooks/useSeries";
 import { useAllNewsReleases } from "@/hooks/useNewsReleases";
 import { useAllDailyGames } from "@/hooks/useDailyGames";
 
-// Returns current Date adjusted to America/Sao_Paulo (UTC-3) for hour-based logic.
-const getSPDate = () => {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + -3 * 3600000);
+// Returns current hour in America/Sao_Paulo timezone via Intl (safe on any host TZ).
+const getSPHour = () => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const h = parts.find((p) => p.type === "hour")?.value ?? "0";
+    return parseInt(h, 10) || 0;
+  } catch {
+    return new Date().getHours();
+  }
 };
 
 const prefersReducedMotion = () =>
