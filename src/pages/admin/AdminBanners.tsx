@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type Banner, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
