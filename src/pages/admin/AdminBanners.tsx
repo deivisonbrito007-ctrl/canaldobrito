@@ -255,6 +255,11 @@ const AdminBanners = () => {
 
   useLiveTick();
 
+  // Clear multi-select whenever the visible list changes (filters/search/tab)
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [selectedCategory, statusFilter, search, activeSection]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
