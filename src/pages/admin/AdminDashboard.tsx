@@ -6,11 +6,19 @@ import { useAllSeries } from "@/hooks/useSeries";
 import { useAllNewsReleases } from "@/hooks/useNewsReleases";
 import { useAllDailyGames } from "@/hooks/useDailyGames";
 
-// Returns current Date adjusted to America/Sao_Paulo (UTC-3) for hour-based logic.
-const getSPDate = () => {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + -3 * 3600000);
+// Returns current hour in America/Sao_Paulo timezone via Intl (safe on any host TZ).
+const getSPHour = () => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const h = parts.find((p) => p.type === "hour")?.value ?? "0";
+    return parseInt(h, 10) || 0;
+  } catch {
+    return new Date().getHours();
+  }
 };
 
 const prefersReducedMotion = () =>
@@ -71,7 +79,7 @@ const quickActions = [
 ];
 
 const getGreeting = () => {
-  const h = getSPDate().getHours();
+  const h = getSPHour();
   if (h < 12) return "Bom dia";
   if (h < 18) return "Boa tarde";
   return "Boa noite";
@@ -150,11 +158,11 @@ const AdminDashboard = () => {
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-foreground capitalize">{todayFormatted}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{getGreeting()} 👋</p>
           </div>
           <div className="flex items-center gap-1.5">
             {lastUpdated && (
-              <span className="text-[9px] text-muted-foreground/60" title={`Atualizado às ${format(new Date(lastUpdated), "HH:mm")}`}>
+              <span className="text-[10px] text-muted-foreground/70" title={`Atualizado às ${format(new Date(lastUpdated), "HH:mm")}`}>
                 <span className="hidden sm:inline">Atualizado </span>
                 {format(new Date(lastUpdated), "HH:mm")}
               </span>
@@ -162,11 +170,11 @@ const AdminDashboard = () => {
             <button
               onClick={handleRetry}
               disabled={isFetching}
-              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-60 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-60 min-h-11 min-w-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
               aria-label="Atualizar dados do dashboard"
               data-testid="dashboard-refresh"
             >
-              <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground/60 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 text-muted-foreground/70 ${isFetching ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -240,10 +248,10 @@ const AdminDashboard = () => {
                   <card.icon className={`h-5 w-5 ${card.color}`} />
                   <p className={`text-xl sm:text-2xl font-black tabular-nums ${card.color}`}>{counts[card.key]}</p>
                   <div className="w-full">
-                    <p className="text-[10px] text-muted-foreground">{card.label}</p>
-                    <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
+                    <p className="text-[11px] font-medium text-muted-foreground">{card.label}</p>
+                    <p className="text-[11px] text-muted-foreground/70">{active} ativos</p>
                     {(scheduledMap[card.key] || 0) > 0 && (
-                      <p className="text-[9px] text-amber-400/70">
+                      <p className="text-[11px] text-amber-400/80">
                         {scheduledMap[card.key]} agendado{scheduledMap[card.key] !== 1 ? "s" : ""}
                       </p>
                     )}
