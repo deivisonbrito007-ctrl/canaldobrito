@@ -51,10 +51,21 @@ const CopyButton = ({ text, label, onAfterCopy, className }: { text: string; lab
   );
 };
 
-const openWhatsApp = (text: string, share: ShareProps) => {
+const openWhatsApp = async (text: string, share: ShareProps) => {
   trackShare(share);
-  const win = window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-  if (!win) toast.error("Popup bloqueado. Permita pop-ups para enviar.");
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if (win && !win.closed) return;
+  // Popup blocked → copy text to clipboard and offer manual link.
+  const copied = await safeCopy(text);
+  if (copied) {
+    toast.success("Popup bloqueado. Mensagem copiada — cole no WhatsApp.", {
+      action: { label: "Abrir WhatsApp", onClick: () => { window.location.href = url; } },
+      duration: 6000,
+    });
+  } else {
+    toast.error("Popup bloqueado e não foi possível copiar. Permita pop-ups para enviar.");
+  }
 };
 
 const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string; accessCount?: number }) => {
