@@ -170,11 +170,11 @@ const AdminDashboard = () => {
             <button
               onClick={handleRetry}
               disabled={isFetching}
-              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-60 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-60 min-h-11 min-w-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
               aria-label="Atualizar dados do dashboard"
               data-testid="dashboard-refresh"
             >
-              <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground/60 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 text-muted-foreground/70 ${isFetching ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
