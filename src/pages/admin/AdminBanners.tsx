@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type Banner, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
@@ -253,6 +254,11 @@ const AdminBanners = () => {
   const [confirmBulk, setConfirmBulk] = useState<null | "delete" | "deactivate" | "activate">(null);
 
   useLiveTick();
+
+  // Clear multi-select whenever the visible list changes (filters/search/tab)
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [selectedCategory, statusFilter, search, activeSection]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -529,20 +535,43 @@ const AdminBanners = () => {
 
       {activeSection === "programacao" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-amber-400" />
               <span className="text-xs font-semibold text-amber-400">Gerar texto por imagem (GPT/Gemini)</span>
             </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(BANNER_PROMPT_MODEL).then(() => toast.success("Prompt-modelo copiado! Cole no GPT/Gemini junto com a imagem."));
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20 transition-all active:scale-[0.97] min-h-[36px]"
-            >
-              <Copy className="h-3.5 w-3.5" />
-              Copiar prompt-modelo
-            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20 transition-all active:scale-[0.97] min-h-11 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                  aria-label="Ver e copiar prompt-modelo"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Prompt-modelo
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[min(92vw,520px)] p-0 overflow-hidden">
+                <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] px-3 py-2">
+                  <p className="text-[11px] font-semibold text-foreground">Prompt para imagem → texto</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 gap-1 text-[11px] text-primary hover:bg-primary/10"
+                    onClick={() =>
+                      navigator.clipboard
+                        .writeText(BANNER_PROMPT_MODEL)
+                        .then(() => toast.success("Prompt-modelo copiado!"))
+                        .catch(() => toast.error("Falha ao copiar"))
+                    }
+                  >
+                    <Copy className="h-3 w-3" /> Copiar
+                  </Button>
+                </div>
+                <pre className="max-h-72 overflow-auto whitespace-pre-wrap p-3 text-[10.5px] leading-relaxed text-muted-foreground">
+                  {BANNER_PROMPT_MODEL}
+                </pre>
+              </PopoverContent>
+            </Popover>
           </div>
           <ProgramacaoTexto />
           <DailyGamesManager />
@@ -747,14 +776,15 @@ const AdminBanners = () => {
                   <button
                     key={c.key}
                     onClick={() => setStatusFilter(c.key)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all min-h-9 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none ${
                       statusFilter === c.key
                         ? "bg-primary/15 text-primary border border-primary/30"
-                        : "glass-panel text-muted-foreground/70 hover:text-foreground"
+                        : "glass-panel text-muted-foreground/80 hover:text-foreground"
                     }`}
+                    aria-pressed={statusFilter === c.key}
                   >
                     {c.label}
-                    <span className="ml-1 text-muted-foreground/60">({c.count})</span>
+                    <span className="ml-1 text-muted-foreground/70">({c.count})</span>
                   </button>
                 ))}
               </div>
