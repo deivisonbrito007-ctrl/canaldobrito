@@ -248,10 +248,10 @@ const AdminDashboard = () => {
                   <card.icon className={`h-5 w-5 ${card.color}`} />
                   <p className={`text-xl sm:text-2xl font-black tabular-nums ${card.color}`}>{counts[card.key]}</p>
                   <div className="w-full">
-                    <p className="text-[10px] text-muted-foreground">{card.label}</p>
-                    <p className="text-[9px] text-muted-foreground/60">{active} ativos</p>
+                    <p className="text-[11px] font-medium text-muted-foreground">{card.label}</p>
+                    <p className="text-[11px] text-muted-foreground/70">{active} ativos</p>
                     {(scheduledMap[card.key] || 0) > 0 && (
-                      <p className="text-[9px] text-amber-400/70">
+                      <p className="text-[11px] text-amber-400/80">
                         {scheduledMap[card.key]} agendado{scheduledMap[card.key] !== 1 ? "s" : ""}
                       </p>
                     )}
