@@ -110,8 +110,11 @@ const AdminNovidades = () => {
   };
 
   const handleSearch = () => {
-    if (query.trim()) search(searchType === "movie" ? "search_movie" : "search_tv", query);
+    if (!query.trim()) return;
+    setSearched(true);
+    search(searchType === "movie" ? "search_movie" : "search_tv", query);
   };
+  const clearQuery = () => { setQuery(""); setResults([]); setSearched(false); };
 
   const handleAdd = async (r: TMDBResult) => {
     const existing = items?.find((m) => m.tmdb_id === r.id && m.content_type === searchType);
