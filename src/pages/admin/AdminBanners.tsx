@@ -540,15 +540,43 @@ const AdminBanners = () => {
               <Sparkles className="h-4 w-4 text-amber-400" />
               <span className="text-xs font-semibold text-amber-400">Gerar texto por imagem (GPT/Gemini)</span>
             </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(BANNER_PROMPT_MODEL).then(() => toast.success("Prompt-modelo copiado! Cole no GPT/Gemini junto com a imagem."));
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20 transition-all active:scale-[0.97] min-h-[36px]"
-            >
-              <Copy className="h-3.5 w-3.5" />
-              Copiar prompt-modelo
-            </button>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              <span className="text-xs font-semibold text-amber-400">Gerar texto por imagem (GPT/Gemini)</span>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-3 py-2 text-[11px] font-semibold hover:bg-primary/20 transition-all active:scale-[0.97] min-h-11 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                  aria-label="Ver e copiar prompt-modelo"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Prompt-modelo
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[min(92vw,520px)] p-0 overflow-hidden">
+                <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] px-3 py-2">
+                  <p className="text-[11px] font-semibold text-foreground">Prompt para imagem → texto</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 gap-1 text-[11px] text-primary hover:bg-primary/10"
+                    onClick={() =>
+                      navigator.clipboard
+                        .writeText(BANNER_PROMPT_MODEL)
+                        .then(() => toast.success("Prompt-modelo copiado!"))
+                        .catch(() => toast.error("Falha ao copiar"))
+                    }
+                  >
+                    <Copy className="h-3 w-3" /> Copiar
+                  </Button>
+                </div>
+                <pre className="max-h-72 overflow-auto whitespace-pre-wrap p-3 text-[10.5px] leading-relaxed text-muted-foreground">
+                  {BANNER_PROMPT_MODEL}
+                </pre>
+              </PopoverContent>
+            </Popover>
           </div>
           <ProgramacaoTexto />
           <DailyGamesManager />
