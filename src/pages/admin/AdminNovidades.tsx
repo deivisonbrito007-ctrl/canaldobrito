@@ -57,6 +57,7 @@ const AdminNovidades = () => {
   const updateItem = useUpdateNewsRelease();
   const deleteItem = useDeleteNewsRelease();
   const [query, setQuery] = useState("");
+  const [searched, setSearched] = useState(false);
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
   const [badgeType, setBadgeType] = useState<string>(() => {
     if (typeof window === "undefined") return "novidade";
