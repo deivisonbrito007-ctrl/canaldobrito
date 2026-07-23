@@ -144,7 +144,7 @@ const AdminSecurity = () => {
       </header>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {(["resolved", "accepted", "monitoring"] as FindingStatus[]).map((key) => {
           const meta = statusMeta[key];
           const Icon = meta.icon;
