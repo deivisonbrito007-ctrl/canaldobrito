@@ -535,11 +535,6 @@ const AdminBanners = () => {
 
       {activeSection === "programacao" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              <span className="text-xs font-semibold text-amber-400">Gerar texto por imagem (GPT/Gemini)</span>
-            </div>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-amber-400" />
