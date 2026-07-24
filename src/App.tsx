@@ -62,6 +62,7 @@ const App = () => (
               <Route path="/programacao" element={<Index />} />
               <Route path="/filmes-e-series" element={<Index />} />
               <Route path="/agenda" element={<AgendaRedirect />} />
+              <Route path="/agenda-esportiva" element={<SchedulePage />} />
               <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
