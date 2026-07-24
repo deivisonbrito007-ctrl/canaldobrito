@@ -42,6 +42,7 @@ const AgendaRedirect = () => {
   return <Navigate to={target} replace />;
 };
 const E2EModals = lazy(() => import("./pages/E2EModals"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
 const UpdateAvailableBanner = lazy(() => import("./components/UpdateAvailableBanner"));
 
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/programacao" element={<Index />} />
               <Route path="/filmes-e-series" element={<Index />} />
               <Route path="/agenda" element={<AgendaRedirect />} />
+              <Route path="/agenda-esportiva" element={<SchedulePage />} />
               <Route path="/s/:slug" element={<ShareRedirect />} />
               <Route path="/assinar" element={<Assinar />} />
               <Route path="/login" element={<Login />} />
