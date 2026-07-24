@@ -42,6 +42,7 @@ const AgendaRedirect = () => {
   return <Navigate to={target} replace />;
 };
 const E2EModals = lazy(() => import("./pages/E2EModals"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const SlugFallback = lazy(() => import("./components/SlugFallback"));
 const UpdateAvailableBanner = lazy(() => import("./components/UpdateAvailableBanner"));
 
