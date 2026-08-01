@@ -37,6 +37,7 @@ export const DailyGamesManager = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [showSuspect, setShowSuspect] = useState(false);
+  const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkSport, setBulkSport] = useState<SportType>("football");
   const [pendingConfirm, setPendingConfirm] = useState<{ kind: "archive-day" | "clear-day" | "delete-game" | "remove-duplicates"; payload: any } | null>(null);
