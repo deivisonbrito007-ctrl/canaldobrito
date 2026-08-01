@@ -1,35 +1,52 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllSeries, useAddSeries, useToggleSeries, useDeleteSeries, useUpdateSeries, type FeaturedSeries } from "@/hooks/useSeries";
+import {
+  useAllSeries, useAddSeries, useToggleSeries, useDeleteSeries, useUpdateSeries,
+  useReorderSeries, type FeaturedSeries,
+} from "@/hooks/useSeries";
+import { useRealtimeSeries } from "@/hooks/useRealtimeContent";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { usePagination } from "@/hooks/usePagination";
 import {
-  Pagination, PaginationContent, PaginationItem, PaginationLink,
-  PaginationNext, PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Clapperboard, Search, Plus, Star, ImageOff, Loader2, RefreshCw, Trash2, X, Check } from "lucide-react";
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { ContentListFilters } from "@/components/admin/content/ContentListFilters";
+import { ContentListHeader } from "@/components/admin/content/ContentListHeader";
+import { ContentPagination } from "@/components/admin/content/ContentPagination";
+import { SortableContentRow } from "@/components/admin/content/SortableContentRow";
+import { TMDBSearchGrid } from "@/components/admin/content/TMDBSearchGrid";
+import { sortContent, usePersistedSort, useContentSelection } from "@/components/admin/content/contentListUtils";
+import { Clapperboard, Search, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
 const TMDB_BACKDROP = "https://image.tmdb.org/t/p/w780";
-const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
+const ratingColor = (r: number) => (r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400");
 
 const AdminSeries = () => {
   const { user } = useAuth();
   const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
-  const { data: series } = useAllSeries();
+  const { data: series, isLoading } = useAllSeries();
+  useRealtimeSeries();
   const addSeries = useAddSeries();
   const toggleSeries = useToggleSeries();
   const deleteSeries = useDeleteSeries();
   const updateSeries = useUpdateSeries();
+  const reorderSeries = useReorderSeries();
+  const qc = useQueryClient();
+
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"search" | "popular">("search");
   const [addingId, setAddingId] = useState<number | null>(null);
@@ -37,6 +54,81 @@ const AdminSeries = () => {
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [searched, setSearched] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<FeaturedSeries | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [listSearch, setListSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "incomplete">("all");
+  const { sortMode, setSortMode } = usePersistedSort("admin:series:sort");
+  const selection = useContentSelection();
+
+  const batchActive = !!batchProgress || bulkRunning;
+  const all = series ?? [];
+
+  const filtered = useMemo(() => {
+    const term = listSearch.trim().toLocaleLowerCase("pt-BR");
+    const byStatus = all.filter((s) => {
+      if (statusFilter === "active") return s.active;
+      if (statusFilter === "inactive") return !s.active;
+      if (statusFilter === "incomplete") return !s.genre || !s.backdrop_url;
+      return true;
+    });
+    const bySearch = term
+      ? byStatus.filter(
+          (s) =>
+            s.title.toLocaleLowerCase("pt-BR").includes(term) ||
+            (s.genre || "").toLocaleLowerCase("pt-BR").includes(term)
+        )
+      : byStatus;
+    return sortContent(bySearch, sortMode);
+  }, [all, listSearch, statusFilter, sortMode]);
+
+  const isFiltering = listSearch.trim() !== "" || statusFilter !== "all" || sortMode !== "manual";
+  const pagination = usePagination({ total: filtered.length, pageSize: 20 });
+  const paginated = filtered.slice(pagination.start, pagination.end);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || isFiltering) return;
+    const oldIndex = all.findIndex((s) => s.id === active.id);
+    const newIndex = all.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newOrder = arrayMove(all, oldIndex, newIndex);
+    reorderSeries.mutate(newOrder.map((s) => s.id), {
+      onError: (e: any) => toast.error(e?.message || "Falha ao salvar ordem"),
+      onSuccess: () => toast.success("Ordem atualizada"),
+    });
+  };
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selection.selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selection.selectedIds);
+    const { error } = await supabase.from("featured_series").update({ active }).in("id", ids);
+    setBulkRunning(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["featured_series"] });
+    toast.success(`${ids.length} série(s) ${active ? "ativada(s)" : "desativada(s)"}`);
+    selection.exitSelection();
+  };
+
+  const bulkDelete = async () => {
+    if (selection.selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selection.selectedIds);
+    const { error } = await supabase.from("featured_series").delete().in("id", ids);
+    setBulkRunning(false);
+    setConfirmBulkDelete(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["featured_series"] });
+    toast.success(`${ids.length} série(s) removida(s)`);
+    selection.exitSelection();
+  };
 
   const handleSearch = () => {
     if (!query.trim()) return;
@@ -48,28 +140,28 @@ const AdminSeries = () => {
   const clearQuery = () => { setQuery(""); setResults([]); setSearched(false); };
 
   const handleAdd = async (r: TMDBResult) => {
-    const existing = series?.find((s) => s.tmdb_id === r.id);
-    if (existing) { toast.info("Série já adicionada"); return; }
+    if (all.some((s) => s.tmdb_id === r.id)) { toast.info("Série já adicionada"); return; }
     setAddingId(r.id);
     try {
       const details = await fetchDetails("tv_details", r.id);
       const genreText = details?.genres?.map((g) => g.name).join(", ") || null;
-
       await addSeries.mutateAsync({
-        tmdb_id: r.id, title: r.name || r.title || "",
+        tmdb_id: r.id,
+        title: r.name || r.title || "",
         poster_url: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
         backdrop_url: (r as any).backdrop_path ? `${TMDB_BACKDROP}${(r as any).backdrop_path}` : null,
         overview: r.overview || null,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
         year: r.first_air_date ? parseInt(r.first_air_date) : null,
-        genre: genreText, added_by: user?.id || null,
+        genre: genreText,
+        added_by: user?.id || null,
       });
       toast.success("Série adicionada!");
     } catch (err: any) { toast.error(err.message); }
     finally { setAddingId(null); }
   };
 
-  const handleRefreshOne = async (s: NonNullable<typeof series>[number]) => {
+  const handleRefreshOne = async (s: FeaturedSeries) => {
     setRefreshingId(s.id);
     try {
       const details = await fetchDetails("tv_details", s.tmdb_id);
@@ -82,12 +174,12 @@ const AdminSeries = () => {
         overview: (details as any).overview || s.overview,
         backdrop_url: (details as any).backdrop_path ? `${TMDB_BACKDROP}${(details as any).backdrop_path}` : s.backdrop_url,
       });
-      toast.success(`"${s.title}" atualizado!`);
+      toast.success(`"${s.title}" atualizada!`);
     } catch (err: any) { toast.error(err.message); }
     finally { setRefreshingId(null); }
   };
 
-  const runBatch = async (list: NonNullable<typeof series>, label: string) => {
+  const runBatch = async (list: FeaturedSeries[], label: string) => {
     setBatchProgress({ current: 0, total: list.length });
     let updated = 0;
     for (let i = 0; i < list.length; i++) {
@@ -112,34 +204,11 @@ const AdminSeries = () => {
     toast.success(`${updated} de ${list.length} ${label} atualizadas!`);
   };
 
-  const handleBatchUpdate = async () => {
-    if (!series || series.length === 0) return;
-    const needsUpdate = series.filter((s) => !s.genre || !s.backdrop_url);
-    if (needsUpdate.length === 0) { toast.info("Todas as séries já estão completas"); return; }
-    await runBatch(needsUpdate, "séries incompletas");
-  };
-
-  const handleBatchUpdateAll = async () => {
-    if (!series || series.length === 0) return;
-    await runBatch(series, "séries");
-  };
-
-  const confirmDelete = () => {
-    if (!pendingDelete) return;
-    deleteSeries.mutate(pendingDelete.id);
-    setPendingDelete(null);
-  };
-
-  const pagination = usePagination({ total: series?.length ?? 0, pageSize: 20 });
-  const paginatedSeries = series?.slice(pagination.start, pagination.end);
-
-  const activeCount = series?.filter((s) => s.active).length || 0;
-  const totalCount = series?.length || 0;
-  const missingDataCount = series?.filter((s) => !s.genre || !s.backdrop_url).length || 0;
-  const ratedCount = series?.filter((s) => s.rating != null).length || 0;
-  const avgRating = ratedCount
-    ? (series!.reduce((sum, s) => sum + (s.rating || 0), 0) / ratedCount)
-    : 0;
+  const incomplete = all.filter((s) => !s.genre || !s.backdrop_url);
+  const activeCount = all.filter((s) => s.active).length;
+  const totalCount = all.length;
+  const ratedCount = all.filter((s) => s.rating != null).length;
+  const avgRating = ratedCount ? all.reduce((acc, s) => acc + (s.rating || 0), 0) / ratedCount : 0;
 
   return (
     <div className="space-y-5">
@@ -216,10 +285,14 @@ const AdminSeries = () => {
               </Button>
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/60 italic px-1">Mostrando séries populares no momento — clique em "Buscar" para voltar.</p>
+            <p className="text-[11px] text-muted-foreground/60 italic px-1">Mostrando séries populares — clique em "Buscar" para voltar.</p>
           )}
 
-          {searching && <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" />Buscando...</div>}
+          {searching && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" />Buscando...
+            </div>
+          )}
 
           {!searching && searched && results.length === 0 && (
             <div className="py-6 text-center">
@@ -227,147 +300,129 @@ const AdminSeries = () => {
             </div>
           )}
 
-          {results.length > 0 && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-              {results.map((r) => {
-                const alreadyAdded = series?.some((s) => s.tmdb_id === r.id);
-                return (
-                  <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden group">
-                    {r.poster_path ? (
-                      <img src={`${TMDB_IMG}${r.poster_path}`} alt={r.name || r.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
-                    ) : (
-                      <div className="w-full aspect-[2/3] flex items-center justify-center bg-white/[0.02]"><ImageOff className="h-6 w-6 text-muted-foreground/20" /></div>
-                    )}
-                    {alreadyAdded && (
-                      <div className="absolute top-1 right-1 px-1 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center" aria-label="Já adicionado">
-                        <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                      </div>
-                    )}
-                    <div className="p-2">
-                      <p className="text-[10px] font-semibold truncate">{r.name || r.title}</p>
-                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-0.5">
-                        <Star className={`h-2 w-2 fill-current ${ratingColor(r.vote_average || 0)}`} />
-                        <span>{r.vote_average?.toFixed(1)}</span>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      disabled={addingId === r.id || alreadyAdded}
-                      className="absolute bottom-0 left-0 right-0 rounded-none h-9 text-[10px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity"
-                      onClick={() => handleAdd(r)}
-                      aria-label={`Adicionar ${r.name || r.title} ao catálogo`}
-                    >
-                      {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
-                      {alreadyAdded ? "Adicionada" : "Add"}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <TMDBSearchGrid
+            results={results}
+            addingId={addingId}
+            isAdded={(r) => all.some((s) => s.tmdb_id === r.id)}
+            onAdd={handleAdd}
+            addedLabel="Adicionada"
+          />
         </div>
       </div>
 
       <div className="glass-panel rounded-xl overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-white/[0.06]">
-          <h3 className="text-sm font-bold text-foreground">Adicionadas</h3>
-          <div className="flex items-center gap-2 flex-wrap">
-            {missingDataCount > 0 && (
-              <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-9 text-[11px] gap-1">
-                {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                Atualizar {missingDataCount} incompletas
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={handleBatchUpdateAll} disabled={!!batchProgress} className="h-9 text-[11px] gap-1">
-              {batchProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Atualizar Todas
-            </Button>
-            <span className="text-[11px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full px-2.5 py-0.5">
-              {activeCount} ativas / {totalCount}
-            </span>
-          </div>
-        </div>
+        <ContentListHeader
+          title={`Adicionadas (${activeCount} ativas / ${totalCount})`}
+          selectionMode={selection.selectionMode}
+          selectedCount={selection.selectedIds.size}
+          totalCount={totalCount}
+          incompleteCount={incomplete.length}
+          incompleteLabel="incompletas"
+          busy={batchActive}
+          bulkRunning={bulkRunning}
+          batchProgress={batchProgress}
+          accentClass="text-purple-400"
+          onBatchIncomplete={() => incomplete.length ? runBatch(incomplete, "séries incompletas") : toast.info("Todas as séries já estão completas")}
+          onBatchAll={() => runBatch(all, "séries")}
+          onEnterSelection={selection.enterSelection}
+          onExitSelection={selection.exitSelection}
+          onSelectAll={() => selection.selectAll(filtered.map((s) => s.id))}
+          onClearSelection={selection.clearSelection}
+          onBulkActive={bulkSetActive}
+          onBulkDelete={() => setConfirmBulkDelete(true)}
+        />
 
-        {batchProgress && (
-          <div className="px-4 pt-3 space-y-1">
-            <p className="text-[11px] text-muted-foreground">Atualizando {batchProgress.current}/{batchProgress.total}...</p>
-            <Progress value={(batchProgress.current / batchProgress.total) * 100} className="h-1.5" />
-          </div>
+        {totalCount > 0 && (
+          <ContentListFilters
+            search={listSearch}
+            onSearchChange={(v) => { setListSearch(v); pagination.goToPage(1); }}
+            sortMode={sortMode}
+            onSortChange={(v) => { setSortMode(v); pagination.goToPage(1); }}
+            chips={[
+              { value: "all", label: "Todas", count: totalCount },
+              { value: "active", label: "Ativas", count: activeCount },
+              { value: "inactive", label: "Inativas", count: totalCount - activeCount },
+              { value: "incomplete", label: "Incompletas", count: incomplete.length },
+            ]}
+            activeChip={statusFilter}
+            onChipChange={(v) => { setStatusFilter(v as typeof statusFilter); pagination.goToPage(1); }}
+          />
         )}
 
         <div className="p-4">
-          {!series || series.length === 0 ? (
-            <div className="py-10 text-center space-y-3">
-              <Clapperboard className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-              <p className="text-xs text-muted-foreground">Nenhuma série adicionada</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {paginatedSeries.map((s) => (
-                <div key={s.id} className="flex items-center gap-2 rounded-lg glass-panel p-3">
-                  {s.poster_url ? (
-                    <img src={s.poster_url} alt={s.title} className="h-14 w-10 rounded-md object-cover shrink-0" loading="lazy" />
-                  ) : (
-                    <div className="h-14 w-10 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">{s.title}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
-                      {s.year && <span>{s.year}</span>}
-                      {s.rating != null && <><Star className={`h-2 w-2 fill-current ${ratingColor(s.rating)}`} /><span className={ratingColor(s.rating)}>{s.rating}</span></>}
-                      {s.genre ? <span className="text-purple-400/70 truncate">• {s.genre}</span> : <span className="text-amber-400/70 italic">• sem gênero</span>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-11 w-11 rounded-lg text-muted-foreground hover:text-purple-400 transition-all duration-200" disabled={refreshingId === s.id} onClick={() => handleRefreshOne(s)} aria-label={`Atualizar dados de ${s.title} via TMDB`}>
-                      <RefreshCw className={`h-3.5 w-3.5 ${refreshingId === s.id ? "animate-spin" : ""}`} />
-                    </Button>
-                    <Switch checked={s.active} onCheckedChange={(v) => toggleSeries.mutate({ id: s.id, active: v })} aria-label={`${s.active ? "Desativar" : "Ativar"} ${s.title}`} />
-                    <Button size="icon" variant="ghost" className="h-11 w-11 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200" onClick={() => setPendingDelete(s)} aria-label={`Remover ${s.title}`}><Trash2 className="h-4 w-4" /></Button>
+          {isLoading ? (
+            <div className="space-y-2" aria-busy="true">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg glass-panel p-3 shimmer-skeleton">
+                  <div className="h-14 w-10 rounded-md bg-white/[0.04]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-1/2 bg-white/[0.04] rounded" />
+                    <div className="h-2 w-1/3 bg-white/[0.04] rounded" />
                   </div>
                 </div>
               ))}
             </div>
+          ) : totalCount === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <Clapperboard className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+              <p className="text-xs text-muted-foreground">Nenhuma série adicionada</p>
+              <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar séries do TMDB</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <Search className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+              <p className="text-xs text-muted-foreground">Nenhuma série encontrada com esses filtros</p>
+              <Button size="sm" variant="outline" className="text-[10px]" onClick={() => { setListSearch(""); setStatusFilter("all"); }}>
+                Limpar filtros
+              </Button>
+            </div>
+          ) : (
+            <>
+              {isFiltering && (
+                <p className="text-[10px] text-muted-foreground/60 mb-2">
+                  Reordenação por arrastar fica disponível na ordem manual sem filtros.
+                </p>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={paginated.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {paginated.map((s) => (
+                      <SortableContentRow
+                        key={s.id}
+                        item={s}
+                        refreshing={refreshingId === s.id}
+                        disabled={batchActive}
+                        selected={selection.selectedIds.has(s.id)}
+                        selectionMode={selection.selectionMode}
+                        dragDisabled={isFiltering}
+                        genreClass="text-purple-400/70"
+                        hoverClass="hover:text-purple-400"
+                        onSelectChange={selection.toggleSelect}
+                        onRefresh={() => handleRefreshOne(s)}
+                        onToggle={(v) => toggleSeries.mutate({ id: s.id, active: v })}
+                        onDelete={() => setPendingDelete(s)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
           )}
 
-          {series && series.length > 20 && (
-            <div className="px-4 pb-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={pagination.hasPrev ? pagination.prevPage : undefined}
-                      className={!pagination.hasPrev ? "pointer-events-none opacity-40" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                  {pagination.pageNumbers.map((p, i) =>
-                    p === -1 ? (
-                      <PaginationItem key={`ellipsis-${i}`}>
-                        <span className="px-2 text-xs text-muted-foreground">…</span>
-                      </PaginationItem>
-                    ) : (
-                      <PaginationItem key={p}>
-                        <PaginationLink
-                          isActive={p === pagination.page}
-                          onClick={() => pagination.goToPage(p)}
-                        >
-                          {p}
-                        </PaginationLink>
-                      </PaginationItem>
-                    )
-                  )}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={pagination.hasNext ? pagination.nextPage : undefined}
-                      className={!pagination.hasNext ? "pointer-events-none opacity-40" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-              <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
-                {pagination.start + 1}–{pagination.end} de {totalCount} série{totalCount !== 1 ? "s" : ""}
-              </p>
-            </div>
+          {filtered.length > 20 && (
+            <ContentPagination
+              page={pagination.page}
+              pageNumbers={pagination.pageNumbers}
+              hasPrev={pagination.hasPrev}
+              hasNext={pagination.hasNext}
+              onPrev={pagination.prevPage}
+              onNext={pagination.nextPage}
+              onGoTo={pagination.goToPage}
+              start={pagination.start}
+              end={pagination.end}
+              total={filtered.length}
+              noun={["série", "séries"]}
+            />
           )}
         </div>
       </div>
@@ -377,12 +432,33 @@ const AdminSeries = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover série?</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingDelete?.title ? `"${pendingDelete.title}" será removida permanentemente do catálogo.` : "Esta ação não pode ser desfeita."}
+              {pendingDelete?.title ? `"${pendingDelete.title}" será removida permanentemente do catálogo.` : "Essa ação não pode ser desfeita."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={() => { if (pendingDelete) deleteSeries.mutate(pendingDelete.id); setPendingDelete(null); }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmBulkDelete} onOpenChange={(o) => !o && !bulkRunning && setConfirmBulkDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover {selection.selectedIds.size} série(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. As séries selecionadas serão removidas permanentemente do catálogo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRunning}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={bulkDelete} disabled={bulkRunning} className="bg-destructive hover:bg-destructive/90">
+              {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
               Remover
             </AlertDialogAction>
           </AlertDialogFooter>
