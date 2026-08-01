@@ -67,7 +67,7 @@ describe("AdminCanaisLogos", () => {
   it("renders header and stat cards", async () => {
     renderPage();
     expect(screen.getByText("Canais & Logos")).toBeInTheDocument();
-    expect(screen.getByText("Detectados (30d)")).toBeInTheDocument();
+    expect(screen.getByText("Detectados (90d)")).toBeInTheDocument();
     expect(screen.getAllByText("Sem logo").length).toBeGreaterThan(0);
   });
 
