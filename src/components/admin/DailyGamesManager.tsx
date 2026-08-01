@@ -487,7 +487,7 @@ export const DailyGamesManager = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-bold text-foreground truncate">
-                            {game.home_team} x {game.away_team}
+                            {game.away_team?.trim() ? `${game.home_team} x ${game.away_team}` : game.home_team}
                           </p>
                           <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[9px] px-1.5 py-0 shrink-0">
                             {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
