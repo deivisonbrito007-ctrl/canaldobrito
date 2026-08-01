@@ -1,32 +1,40 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
-import { useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease, useUpdateNewsRelease, type NewsRelease } from "@/hooks/useNewsReleases";
+import {
+  useAllNewsReleases, useAddNewsRelease, useToggleNewsRelease, useDeleteNewsRelease,
+  useUpdateNewsRelease, useReorderNewsReleases, type NewsRelease,
+} from "@/hooks/useNewsReleases";
+import { useRealtimeNewsReleases } from "@/hooks/useRealtimeContent";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Plus, Trash2, Star, ImageOff, Loader2, Sparkles, ArrowUp, ArrowDown, RefreshCw, X } from "lucide-react";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { usePagination } from "@/hooks/usePagination";
+import { ContentListFilters } from "@/components/admin/content/ContentListFilters";
+import { ContentListHeader } from "@/components/admin/content/ContentListHeader";
+import { ContentPagination } from "@/components/admin/content/ContentPagination";
+import { sortContent, usePersistedSort, useContentSelection } from "@/components/admin/content/contentListUtils";
+import { Search, Plus, Trash2, Star, ImageOff, Loader2, Sparkles, GripVertical, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { NovidadesStatsBar } from "@/components/admin/NovidadesStatsBar";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w780";
-const ratingColor = (r: number) => r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400";
+const ratingColor = (r: number) => (r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400");
 
 type FilterMode = "all" | "movie" | "series" | "inactive" | "no_genre";
-type SortMode = "manual" | "newest" | "oldest" | "title_asc" | "title_desc" | "rating_desc" | "rating_asc";
-
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-  { value: "manual", label: "Ordem manual" },
-  { value: "newest", label: "Mais novos" },
-  { value: "oldest", label: "Mais antigos" },
-  { value: "title_asc", label: "Título (A-Z)" },
-  { value: "title_desc", label: "Título (Z-A)" },
-  { value: "rating_desc", label: "Nota (maior)" },
-  { value: "rating_asc", label: "Nota (menor)" },
-];
 
 const BADGE_OPTIONS = [
   { value: "novidade", label: "🔥 Novidade" },
@@ -48,14 +56,157 @@ async function runInChunks<T>(arr: T[], concurrency: number, worker: (item: T, i
   await Promise.all(runners);
 }
 
+interface NovidadeRowProps {
+  item: NewsRelease;
+  refreshing: boolean;
+  disabled: boolean;
+  selected: boolean;
+  selectionMode: boolean;
+  dragDisabled: boolean;
+  onSelectChange: (id: string, checked: boolean) => void;
+  onBadgeChange: (v: string) => void;
+  onRefresh: () => void;
+  onToggle: (v: boolean) => void;
+  onDelete: () => void;
+}
+
+const NovidadeRow = ({
+  item: m, refreshing, disabled, selected, selectionMode, dragDisabled,
+  onSelectChange, onBadgeChange, onRefresh, onToggle, onDelete,
+}: NovidadeRowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: m.id,
+    disabled: disabled || dragDisabled,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : ("auto" as const),
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-lg glass-panel p-3 transition-all duration-200 space-y-2 ${selected ? "ring-1 ring-primary/40 bg-primary/[0.04]" : ""}`}
+    >
+      <div className="flex items-start gap-2">
+        <div className="flex items-center justify-center h-11 w-7 -ml-1 shrink-0">
+          {selectionMode ? (
+            <Checkbox
+              checked={selected}
+              onCheckedChange={(v) => onSelectChange(m.id, !!v)}
+              disabled={disabled}
+              aria-label={`Selecionar ${m.title}`}
+            />
+          ) : (
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              disabled={disabled || dragDisabled}
+              className="touch-none h-11 w-7 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label={dragDisabled ? "Reordenar indisponível com filtros ativos" : `Arrastar para reordenar ${m.title}`}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {m.image_url ? (
+          <img src={m.image_url} alt={m.title} className="h-16 w-12 rounded-md object-cover shrink-0" loading="lazy" />
+        ) : (
+          <div className="h-16 w-12 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0">
+            <ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate leading-tight">{m.title}</p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <span className={`rounded px-1.5 py-0.5 font-bold text-white text-[10px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
+              {m.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
+            </span>
+            <Select value={m.badge_type} onValueChange={onBadgeChange} disabled={disabled}>
+              <SelectTrigger className="h-9 w-auto min-w-[120px] text-[11px] font-bold border-white/[0.1] bg-white/[0.03] px-2 py-0 gap-1" aria-label={`Badge de ${m.title}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BADGE_OPTIONS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {m.year && <span className="text-[11px] text-muted-foreground/70">{m.year}</span>}
+            {m.rating != null && m.rating > 0 && (
+              <span className={`flex items-center gap-0.5 text-[11px] font-bold ${ratingColor(m.rating)}`}>
+                <Star className="h-2.5 w-2.5 fill-current" />
+                {m.rating.toFixed(1)}
+              </span>
+            )}
+          </div>
+          {m.genres ? (
+            <p className="text-[11px] text-muted-foreground/60 mt-1 truncate">{m.genres}</p>
+          ) : (
+            <p className="text-[11px] text-amber-400/80 italic mt-1">sem gênero</p>
+          )}
+          {(m.runtime || m.seasons) && (
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">
+              {m.runtime ? `${Math.floor(m.runtime / 60)}h ${m.runtime % 60}min` : ""}
+              {m.runtime && m.seasons ? " · " : ""}
+              {m.seasons ? `${m.seasons} temporada${m.seasons > 1 ? "s" : ""}` : ""}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-11 w-11 rounded-md text-muted-foreground hover:text-amber-400"
+          disabled={refreshing || disabled}
+          onClick={onRefresh}
+          aria-label={`Atualizar dados de ${m.title}`}
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+        </Button>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 cursor-pointer min-h-11 px-1">
+            <span className="text-[11px] text-muted-foreground">{m.active ? "Ativo" : "Inativo"}</span>
+            <Switch
+              checked={m.active}
+              disabled={disabled}
+              onCheckedChange={onToggle}
+              aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`}
+            />
+          </label>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-11 w-11 rounded-md text-destructive hover:bg-destructive/10"
+            disabled={disabled}
+            onClick={onDelete}
+            aria-label={`Remover ${m.title}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminNovidades = () => {
   const { user } = useAuth();
   const { results, loading: searching, search, setResults, fetchDetails } = useTMDBSearch();
   const { data: items, isLoading } = useAllNewsReleases();
+  useRealtimeNewsReleases();
   const addItem = useAddNewsRelease();
   const toggleItem = useToggleNewsRelease();
   const updateItem = useUpdateNewsRelease();
   const deleteItem = useDeleteNewsRelease();
+  const reorderItems = useReorderNewsReleases();
+  const qc = useQueryClient();
+
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const [searchType, setSearchType] = useState<"movie" | "series">("movie");
@@ -67,46 +218,25 @@ const AdminNovidades = () => {
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [filter, setFilter] = useState<FilterMode>("all");
-  const [sortMode, setSortMode] = useState<SortMode>(() => {
-    if (typeof window === "undefined") return "manual";
-    return (localStorage.getItem("admin:novidadesSort") as SortMode) || "manual";
-  });
+  const { sortMode, setSortMode } = usePersistedSort("admin:novidadesSort");
   const [listSearch, setListSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<NewsRelease | null>(null);
-  const PAGE_SIZE = 20;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const selection = useContentSelection();
+
+  const all = items ?? [];
+  const busy = !!batchProgress || bulkRunning;
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(listSearch.trim().toLowerCase()), 250);
     return () => clearTimeout(t);
   }, [listSearch]);
 
-  // Reset pagination when filters/search/sort change
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, debouncedSearch, sortMode]);
-
-  // Infinite scroll observer
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) {
-        setVisibleCount((c) => c + PAGE_SIZE);
-      }
-    }, { rootMargin: "300px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [filter, debouncedSearch, sortMode, items?.length]);
-
   const handleBadgeTypeChange = (v: string) => {
     setBadgeType(v);
     try { localStorage.setItem("admin:lastBadgeType", v); } catch { /* ignore */ }
-  };
-
-  const handleSortChange = (v: SortMode) => {
-    setSortMode(v);
-    try { localStorage.setItem("admin:novidadesSort", v); } catch { /* ignore */ }
   };
 
   const handleSearch = () => {
@@ -117,7 +247,7 @@ const AdminNovidades = () => {
   const clearQuery = () => { setQuery(""); setResults([]); setSearched(false); };
 
   const handleAdd = async (r: TMDBResult) => {
-    const existing = items?.find((m) => m.tmdb_id === r.id && m.content_type === searchType);
+    const existing = all.find((m) => m.tmdb_id === r.id && m.content_type === searchType);
     if (existing) { toast.info("Item já adicionado"); return; }
     setAddingId(r.id);
     try {
@@ -133,7 +263,7 @@ const AdminNovidades = () => {
         overview: r.overview || null,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : null,
         year: (r.release_date || r.first_air_date) ? parseInt(r.release_date || r.first_air_date || "") : null,
-        display_order: items?.length ?? 0,
+        display_order: all.length,
         added_by: user?.id || null,
         genres: genreText,
         runtime: searchType === "movie" ? ((details as any)?.runtime || null) : null,
@@ -176,62 +306,40 @@ const AdminNovidades = () => {
     finally { setRefreshingId(null); }
   };
 
-  const handleBatchUpdate = async () => {
-    if (!items || items.length === 0) return;
-    const needsUpdate = items.filter((m) => !m.genres);
-    if (needsUpdate.length === 0) { toast.info("Todos os itens já têm gênero"); return; }
-    setBatchProgress({ current: 0, total: needsUpdate.length });
+  const runBatch = async (list: NewsRelease[]) => {
+    if (list.length === 0) return;
+    setBatchProgress({ current: 0, total: list.length });
     let updated = 0;
     let done = 0;
-    await runInChunks(needsUpdate, 3, async (m) => {
+    await runInChunks(list, 3, async (m) => {
       try {
         if (!m.tmdb_id) return;
         const action = m.content_type === "movie" ? "movie_details" : "tv_details";
         const details = await fetchDetails(action as "movie_details" | "tv_details", m.tmdb_id);
         if (details) {
           const genreText = details.genres?.map((g) => g.name).join(", ") || null;
+          const backdropUrl = (details as any)?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${(details as any).backdrop_path}` : null;
           await updateItem.mutateAsync({
             id: m.id,
             genres: genreText,
             rating: (details as any).vote_average ? Math.round((details as any).vote_average * 10) / 10 : m.rating,
             overview: (details as any).overview || m.overview,
+            backdrop_url: backdropUrl || m.backdrop_url,
           });
           updated++;
         }
       } catch { /* continue */ }
       finally {
         done++;
-        setBatchProgress({ current: done, total: needsUpdate.length });
+        setBatchProgress({ current: done, total: list.length });
       }
     });
     setBatchProgress(null);
-    toast.success(`${updated} de ${needsUpdate.length} itens atualizados!`);
-  };
-
-  const handleReorder = async (index: number, direction: "up" | "down") => {
-    if (!items) return;
-    const swapIndex = direction === "up" ? index - 1 : index + 1;
-    if (swapIndex < 0 || swapIndex >= items.length) return;
-    const a = items[index];
-    const b = items[swapIndex];
-    try {
-      await Promise.all([
-        updateItem.mutateAsync({ id: a.id, display_order: b.display_order }),
-        updateItem.mutateAsync({ id: b.id, display_order: a.display_order }),
-      ]);
-      toast.success("Ordem atualizada!");
-    } catch (err: any) { toast.error(err.message); }
-  };
-
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    deleteItem.mutate(deleteTarget.id);
-    setDeleteTarget(null);
+    toast.success(`${updated} de ${list.length} itens atualizados!`);
   };
 
   const filteredItems = useMemo(() => {
-    if (!items) return [];
-    const filtered = items.filter((m) => {
+    const filtered = all.filter((m) => {
       if (filter === "movie" && m.content_type !== "movie") return false;
       if (filter === "series" && m.content_type !== "series" && m.content_type !== "tv") return false;
       if (filter === "inactive" && m.active) return false;
@@ -242,41 +350,68 @@ const AdminNovidades = () => {
       }
       return true;
     });
-    if (sortMode === "manual") return filtered;
-    const sorted = [...filtered];
-    const t = (s: string | null | undefined) => (s || "").toLocaleLowerCase("pt-BR");
-    const d = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);
-    switch (sortMode) {
-      case "newest": sorted.sort((a, b) => d(b.created_at) - d(a.created_at)); break;
-      case "oldest": sorted.sort((a, b) => d(a.created_at) - d(b.created_at)); break;
-      case "title_asc": sorted.sort((a, b) => t(a.title).localeCompare(t(b.title), "pt-BR")); break;
-      case "title_desc": sorted.sort((a, b) => t(b.title).localeCompare(t(a.title), "pt-BR")); break;
-      case "rating_desc": sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1)); break;
-      case "rating_asc": sorted.sort((a, b) => (a.rating ?? Infinity) - (b.rating ?? Infinity)); break;
-    }
-    return sorted;
-  }, [items, filter, debouncedSearch, sortMode]);
+    return sortContent(filtered, sortMode);
+  }, [all, filter, debouncedSearch, sortMode]);
 
-  const missingGenreCount = items?.filter((m) => !m.genres).length || 0;
+  const isFiltering = filter !== "all" || debouncedSearch !== "" || sortMode !== "manual";
+  const pagination = usePagination({ total: filteredItems.length, pageSize: 20 });
+  const paginated = filteredItems.slice(pagination.start, pagination.end);
 
-  const FilterChip = ({ value, label, count }: { value: FilterMode; label: string; count?: number }) => (
-    <button
-      type="button"
-      onClick={() => setFilter(value)}
-      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-11 ${
-        filter === value
-          ? "bg-primary/20 border-primary/40 text-primary"
-          : "border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-white/[0.18]"
-      }`}
-    >
-      {label}{typeof count === "number" && count > 0 ? ` · ${count}` : ""}
-    </button>
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || isFiltering) return;
+    const oldIndex = all.findIndex((m) => m.id === active.id);
+    const newIndex = all.findIndex((m) => m.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newOrder = arrayMove(all, oldIndex, newIndex);
+    reorderItems.mutate(newOrder.map((m) => m.id), {
+      onError: (e: any) => toast.error(e?.message || "Falha ao salvar ordem"),
+      onSuccess: () => toast.success("Ordem atualizada"),
+    });
+  };
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selection.selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selection.selectedIds);
+    const { error } = await supabase.from("news_releases").update({ active }).in("id", ids);
+    setBulkRunning(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["news_releases"] });
+    toast.success(`${ids.length} item(ns) ${active ? "ativado(s)" : "desativado(s)"}`);
+    selection.exitSelection();
+  };
+
+  const bulkDelete = async () => {
+    if (selection.selectedIds.size === 0) return;
+    setBulkRunning(true);
+    const ids = Array.from(selection.selectedIds);
+    const { error } = await supabase.from("news_releases").delete().in("id", ids);
+    setBulkRunning(false);
+    setConfirmBulkDelete(false);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["news_releases"] });
+    toast.success(`${ids.length} item(ns) removido(s)`);
+    selection.exitSelection();
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteItem.mutate(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  const missingGenreCount = all.filter((m) => !m.genres).length;
 
   return (
     <div className="space-y-5">
-      {/* Stats */}
-      {items && items.length > 0 && <NovidadesStatsBar items={items} />}
+      {all.length > 0 && <NovidadesStatsBar items={all} />}
 
       {/* Search TMDB */}
       <div className="glass-panel rounded-xl overflow-hidden">
@@ -342,7 +477,7 @@ const AdminNovidades = () => {
           {results.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {results.map((r) => {
-                const already = items?.some((m) => m.tmdb_id === r.id && m.content_type === searchType);
+                const already = all.some((m) => m.tmdb_id === r.id && m.content_type === searchType);
                 return (
                   <div key={r.id} className="relative rounded-lg glass-panel overflow-hidden group">
                     {r.poster_path ? (
@@ -359,10 +494,10 @@ const AdminNovidades = () => {
                     </div>
                     <Button
                       size="sm"
-                      className="absolute bottom-1.5 right-1.5 h-7 px-2 rounded-full text-[10px] shadow-lg"
+                      className="absolute bottom-1.5 right-1.5 h-9 px-2.5 rounded-full text-[10px] shadow-lg"
                       onClick={() => handleAdd(r)}
                       disabled={addingId === r.id || already}
-                      aria-label={already ? "Já adicionado" : `Adicionar ${r.title || r.name}`}
+                      aria-label={already ? `${r.title || r.name} já adicionado` : `Adicionar ${r.title || r.name}`}
                     >
                       {addingId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : already ? "✓" : <Plus className="h-3 w-3" />}
                     </Button>
@@ -376,179 +511,111 @@ const AdminNovidades = () => {
 
       {/* Items list */}
       <div className="glass-panel rounded-xl overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-white/[0.06]">
-          <h3 className="text-sm font-bold text-foreground">Adicionados</h3>
-          {missingGenreCount > 0 && (
-            <Button size="sm" variant="outline" onClick={handleBatchUpdate} disabled={!!batchProgress} className="h-8 text-[11px] gap-1.5">
-              {batchProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Atualizar {missingGenreCount} sem gênero</span>
-              <span className="sm:hidden">Atualizar {missingGenreCount}</span>
-            </Button>
-          )}
-        </div>
+        <ContentListHeader
+          title="Adicionados"
+          selectionMode={selection.selectionMode}
+          selectedCount={selection.selectedIds.size}
+          totalCount={all.length}
+          incompleteCount={missingGenreCount}
+          incompleteLabel="sem gênero"
+          busy={busy}
+          bulkRunning={bulkRunning}
+          batchProgress={batchProgress}
+          accentClass="text-amber-400"
+          onBatchIncomplete={() => missingGenreCount ? runBatch(all.filter((m) => !m.genres)) : toast.info("Todos os itens já têm gênero")}
+          onBatchAll={() => runBatch(all)}
+          onEnterSelection={selection.enterSelection}
+          onExitSelection={selection.exitSelection}
+          onSelectAll={() => selection.selectAll(filteredItems.map((m) => m.id))}
+          onClearSelection={selection.clearSelection}
+          onBulkActive={bulkSetActive}
+          onBulkDelete={() => setConfirmBulkDelete(true)}
+        />
 
-        {batchProgress && (
-          <div className="px-4 pt-3 space-y-1">
-            <p className="text-[11px] text-muted-foreground">Atualizando {batchProgress.current}/{batchProgress.total}...</p>
-            <Progress value={(batchProgress.current / batchProgress.total) * 100} className="h-1.5" />
-          </div>
+        {all.length > 0 && (
+          <ContentListFilters
+            search={listSearch}
+            onSearchChange={(v) => { setListSearch(v); pagination.goToPage(1); }}
+            sortMode={sortMode}
+            onSortChange={(v) => { setSortMode(v); pagination.goToPage(1); }}
+            chips={[
+              { value: "all", label: "Todos", count: all.length },
+              { value: "movie", label: "🎬 Filmes", count: all.filter((i) => i.content_type === "movie").length },
+              { value: "series", label: "📺 Séries", count: all.filter((i) => i.content_type === "series" || i.content_type === "tv").length },
+              { value: "inactive", label: "Inativos", count: all.filter((i) => !i.active).length },
+              { value: "no_genre", label: "Sem gênero", count: missingGenreCount },
+            ]}
+            activeChip={filter}
+            onChipChange={(v) => { setFilter(v as FilterMode); pagination.goToPage(1); }}
+          />
         )}
-
-        {/* Filters */}
-        <div className="px-4 pt-3 space-y-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={listSearch}
-              onChange={(e) => setListSearch(e.target.value)}
-              placeholder="Buscar por título ou gênero..."
-              className="pl-8 pr-8 h-9 text-xs glass-panel border-white/[0.08]"
-              aria-label="Buscar nos itens adicionados"
-            />
-            {listSearch && (
-              <button
-                type="button"
-                onClick={() => setListSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Limpar busca"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={sortMode} onValueChange={(v) => handleSortChange(v as SortMode)}>
-              <SelectTrigger className="h-9 text-[11px] glass-panel border-white/[0.08] flex-1 sm:flex-none sm:w-44" aria-label="Ordenar por">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-            <FilterChip value="all" label="Todos" count={items?.length} />
-            <FilterChip value="movie" label="🎬 Filmes" count={items?.filter((i) => i.content_type === "movie").length} />
-            <FilterChip value="series" label="📺 Séries" count={items?.filter((i) => i.content_type === "series" || i.content_type === "tv").length} />
-            <FilterChip value="inactive" label="Inativos" count={items?.filter((i) => !i.active).length} />
-            <FilterChip value="no_genre" label="Sem gênero" count={missingGenreCount} />
-          </div>
-        </div>
 
         <div className="p-4">
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-2" aria-busy="true">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-24 rounded-lg shimmer" />
+                <div key={i} className="h-24 rounded-lg shimmer-skeleton bg-white/[0.02]" />
               ))}
             </div>
-          ) : !items || items.length === 0 ? (
+          ) : all.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <Sparkles className="h-8 w-8 text-muted-foreground/20 mx-auto" />
               <p className="text-xs text-muted-foreground">Nenhum item adicionado</p>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="py-8 text-center">
+            <div className="py-10 text-center space-y-2">
+              <Search className="h-8 w-8 text-muted-foreground/20 mx-auto" />
               <p className="text-xs text-muted-foreground">Nenhum item corresponde aos filtros</p>
+              <Button size="sm" variant="outline" className="text-[10px]" onClick={() => { setListSearch(""); setFilter("all"); }}>
+                Limpar filtros
+              </Button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredItems.slice(0, visibleCount).map((m) => {
-                const idx = items.indexOf(m);
-                return (
-                  <div key={m.id} className="rounded-lg glass-panel p-3 transition-all duration-200 space-y-2">
-                    {/* Top row: poster + info */}
-                    <div className="flex items-start gap-3">
-                      {m.image_url ? (
-                        <img src={m.image_url} alt={m.title} className="h-16 w-12 rounded-md object-cover shrink-0" loading="lazy" />
-                      ) : (
-                        <div className="h-16 w-12 rounded-md bg-white/[0.03] flex items-center justify-center shrink-0"><ImageOff className="h-3.5 w-3.5 text-muted-foreground/20" /></div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate leading-tight">{m.title}</p>
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          <span className={`rounded px-1.5 py-0.5 font-bold text-white text-[10px] ${m.content_type === "movie" ? "bg-emerald-500/80" : "bg-blue-500/80"}`}>
-                            {m.content_type === "movie" ? "🎬 Filme" : "📺 Série"}
-                          </span>
-                          <Select value={m.badge_type} onValueChange={(v) => updateItem.mutate({ id: m.id, badge_type: v })}>
-                            <SelectTrigger className="h-7 w-auto min-w-[120px] text-[11px] font-bold border-white/[0.1] bg-white/[0.03] px-2 py-0 gap-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {BADGE_OPTIONS.map((b) => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          {m.year && <span className="text-[11px] text-muted-foreground/70">{m.year}</span>}
-                          {m.rating != null && m.rating > 0 && (
-                            <span className={`flex items-center gap-0.5 text-[11px] font-bold ${ratingColor(m.rating)}`}>
-                              <Star className="h-2.5 w-2.5 fill-current" />
-                              {m.rating.toFixed(1)}
-                            </span>
-                          )}
-                        </div>
-                        {m.genres ? (
-                          <p className="text-[11px] text-muted-foreground/60 mt-1 truncate">{m.genres}</p>
-                        ) : (
-                          <p className="text-[11px] text-amber-400/80 italic mt-1">sem gênero</p>
-                        )}
-                        {(m.runtime || m.seasons) && (
-                          <p className="text-[11px] text-muted-foreground/50 mt-0.5">
-                            {m.runtime ? `${Math.floor(m.runtime / 60)}h ${m.runtime % 60}min` : ""}
-                            {m.runtime && m.seasons ? " · " : ""}
-                            {m.seasons ? `${m.seasons} temporada${m.seasons > 1 ? "s" : ""}` : ""}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Bottom row: controls */}
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === 0 || filter !== "all" || debouncedSearch !== "" || sortMode !== "manual"} onClick={() => handleReorder(idx, "up")} aria-label={`Mover ${m.title} para cima`}>
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md" disabled={idx === items.length - 1 || filter !== "all" || debouncedSearch !== "" || sortMode !== "manual"} onClick={() => handleReorder(idx, "down")} aria-label={`Mover ${m.title} para baixo`}>
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md text-muted-foreground hover:text-amber-400" disabled={refreshingId === m.id} onClick={() => handleRefreshOne(m)} aria-label={`Atualizar dados de ${m.title}`}>
-                          <RefreshCw className={`h-4 w-4 ${refreshingId === m.id ? "animate-spin" : ""}`} />
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-1.5 cursor-pointer min-h-11 px-1">
-                          <span className="text-[11px] text-muted-foreground">{m.active ? "Ativo" : "Inativo"}</span>
-                          <Switch checked={m.active} onCheckedChange={(v) => toggleItem.mutate({ id: m.id, active: v })} aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`} />
-                        </label>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md text-destructive hover:bg-destructive/10" onClick={() => setDeleteTarget(m)} aria-label={`Remover ${m.title}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {visibleCount < filteredItems.length && (
-                <div ref={sentinelRef} className="py-4 flex flex-col items-center justify-center gap-2">
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Carregando mais ({visibleCount}/{filteredItems.length})...
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-[11px]"
-                    onClick={() => setVisibleCount(filteredItems.length)}
-                  >
-                    Carregar tudo ({filteredItems.length - visibleCount} restantes)
-                  </Button>
-                </div>
-              )}
-              {visibleCount >= filteredItems.length && filteredItems.length > PAGE_SIZE && (
-                <p className="py-3 text-center text-[11px] text-muted-foreground/60">
-                  {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"} carregado{filteredItems.length === 1 ? "" : "s"}
+            <>
+              {isFiltering && (
+                <p className="text-[10px] text-muted-foreground/60 mb-2">
+                  Reordenação por arrastar fica disponível na ordem manual sem filtros.
                 </p>
               )}
-            </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={paginated.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {paginated.map((m) => (
+                      <NovidadeRow
+                        key={m.id}
+                        item={m}
+                        refreshing={refreshingId === m.id}
+                        disabled={busy}
+                        selected={selection.selectedIds.has(m.id)}
+                        selectionMode={selection.selectionMode}
+                        dragDisabled={isFiltering}
+                        onSelectChange={selection.toggleSelect}
+                        onBadgeChange={(v) => updateItem.mutate({ id: m.id, badge_type: v })}
+                        onRefresh={() => handleRefreshOne(m)}
+                        onToggle={(v) => toggleItem.mutate({ id: m.id, active: v })}
+                        onDelete={() => setDeleteTarget(m)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
+          )}
+
+          {filteredItems.length > 20 && (
+            <ContentPagination
+              page={pagination.page}
+              pageNumbers={pagination.pageNumbers}
+              hasPrev={pagination.hasPrev}
+              hasNext={pagination.hasNext}
+              onPrev={pagination.prevPage}
+              onNext={pagination.nextPage}
+              onGoTo={pagination.goToPage}
+              start={pagination.start}
+              end={pagination.end}
+              total={filteredItems.length}
+              noun={["item", "itens"]}
+            />
           )}
         </div>
       </div>
@@ -564,6 +631,24 @@ const AdminNovidades = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmBulkDelete} onOpenChange={(o) => !o && !bulkRunning && setConfirmBulkDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover {selection.selectedIds.size} item(ns)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Os itens selecionados serão removidos permanentemente das novidades.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRunning}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={bulkDelete} disabled={bulkRunning} className="bg-destructive hover:bg-destructive/90">
+              {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              Remover
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
