@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate } from "@/hooks/useDailyGames";
+import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate, normalizeChannelsList } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
 import { detectSportType, SPORT_EMOJI, SPORT_LABEL, getLocalDateString, type SportType } from "@/lib/gameUtils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
