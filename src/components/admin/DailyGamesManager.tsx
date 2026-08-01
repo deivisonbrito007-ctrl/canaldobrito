@@ -670,7 +670,8 @@ const InlineEditForm = ({
     const publishIso = publishAt ? new Date(publishAt).toISOString() : null;
 
     if (trimmedHome !== game.home_team) next.home_team = trimmedHome;
-    if (trimmedAway !== game.away_team) next.away_team = trimmedAway;
+    const effectiveAway = singleEvent ? "" : trimmedAway;
+    if (effectiveAway !== (game.away_team ?? "")) next.away_team = effectiveAway;
     if (comp.trim() !== (game.competition ?? "")) next.competition = comp.trim();
     if (detail.trim() !== (game.competition_detail ?? "")) next.competition_detail = detail.trim();
     if (date !== game.date) next.date = date;
