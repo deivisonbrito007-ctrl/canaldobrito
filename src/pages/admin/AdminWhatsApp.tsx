@@ -81,7 +81,7 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
   };
 
   return (
-    <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3">
+    <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3 min-w-0">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-bold text-foreground">{template.label}</span>
         <div className="flex items-center gap-1.5">
@@ -97,7 +97,7 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
           )}
         </div>
       </div>
-      <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
+      <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
         {finalText}
       </pre>
       <div className="flex gap-2">
@@ -127,7 +127,7 @@ const ProblemList = ({ items, label, onJump }: { items: DailyGame[]; label: stri
       <button
         type="button"
         onClick={onJump}
-        className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 min-h-[28px]"
+        className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 min-h-11 px-1 -mx-1"
       >
         <ExternalLink className="h-3 w-3" /> Abrir Programação
       </button>
@@ -531,7 +531,7 @@ const AdminWhatsApp = () => {
           </div>
           <span className="text-sm font-bold text-foreground">Textos Prontos</span>
         </div>
-        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
           {templates.map((t) => (
             <MessageCard key={t.id} template={t} siteUrl={siteUrl} accessCount={landingCounts[`tpl-${t.id}`] ?? 0} />
           ))}
