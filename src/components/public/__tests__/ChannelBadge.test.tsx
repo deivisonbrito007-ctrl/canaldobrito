@@ -18,11 +18,11 @@ describe("ChannelBadge", () => {
     expect(screen.getByText("SporTV")).toBeInTheDocument();
   });
 
-  it("renders unknown channel with name and fallback emoji", () => {
+  it("renders unknown channel with name and initials chip", () => {
     render(<ChannelBadge name="Canal Desconhecido" />);
     const badge = screen.getByText("Canal Desconhecido");
     expect(badge).toBeInTheDocument();
-    expect(badge.closest("span")).toHaveTextContent("📺");
+    expect(badge.closest("span")).toHaveTextContent("DES");
   });
 
   it("renders Prime Video full name (never abbreviated)", () => {
