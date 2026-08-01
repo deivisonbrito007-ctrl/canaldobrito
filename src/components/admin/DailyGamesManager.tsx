@@ -343,7 +343,7 @@ export const DailyGamesManager = () => {
       : pendingConfirm.kind === "clear-day"
         ? `Excluir todos os jogos de ${selectedDate}?`
         : pendingConfirm.kind === "delete-game"
-          ? "Excluir jogo?"
+          ? `Excluir "${pendingConfirm.payload.label || "jogo"}"?`
           : `Remover ${pendingConfirm.payload.count} duplicata(s)?`
     : "";
 
