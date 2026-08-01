@@ -31,7 +31,13 @@ vi.mock("@/hooks/useNewsReleases", () => ({
   useAddNewsRelease: () => ({ mutateAsync: addMutateAsync }),
   useToggleNewsRelease: () => ({ mutate: toggleMutate }),
   useDeleteNewsRelease: () => ({ mutate: deleteMutate }),
+  useReorderNewsReleases: () => ({ mutate: vi.fn() }),
   useUpdateNewsRelease: () => ({ mutate: updateMutate, mutateAsync: updateMutateAsync }),
+}));
+
+vi.mock("@/hooks/useRealtimeContent", () => ({
+  useRealtimeSeries: () => undefined,
+  useRealtimeNewsReleases: () => undefined,
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
