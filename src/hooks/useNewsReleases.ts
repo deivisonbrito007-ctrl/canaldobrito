@@ -93,3 +93,31 @@ export const useDeleteNewsRelease = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["news_releases"] }),
   });
 };
+
+export const useReorderNewsReleases = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const updates = orderedIds.map((id, index) =>
+        supabase.from("news_releases").update({ display_order: index }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const firstError = results.find((r) => r.error)?.error;
+      if (firstError) throw firstError;
+    },
+    onMutate: async (orderedIds) => {
+      await qc.cancelQueries({ queryKey: ["news_releases"] });
+      const prev = qc.getQueryData<NewsRelease[]>(["news_releases"]);
+      if (prev) {
+        const map = new Map(prev.map((i) => [i.id, i]));
+        const next = orderedIds.map((id, i) => ({ ...(map.get(id) as NewsRelease), display_order: i }));
+        qc.setQueryData(["news_releases"], next);
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["news_releases"], ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["news_releases"] }),
+  });
+};

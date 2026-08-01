@@ -1,45 +1,53 @@
-## Diagnóstico (confirmado no código)
+## O que encontrei (verificado no código e no banco)
 
-O print corresponde ao `DailyGamesManager` (lista "Jogos Publicados"), usado na tela de Programação/Banners do admin.
+Comparando `AdminFilmes.tsx` (638 linhas), `AdminSeries.tsx` (395) e `AdminNovidades.tsx` (574), as três fazem a mesma coisa (buscar no TMDB → adicionar → ativar/desativar → atualizar metadados → remover), mas cada uma evoluiu separadamente:
 
-1. **Linha do jogo quebrada** — `src/components/admin/DailyGamesManager.tsx:498-632`: cada jogo é uma única linha `flex` horizontal com checkbox + bloco de texto + **6 controles** (select de esporte de 110px, varinha, switch, duplicar, editar, excluir). Isso soma ~250px fixos; em 384px o bloco de texto é comprimido e os controles ficam sobrepostos ao título/horário — exatamente o efeito do print.
-2. **Barra de ações do dia empilhada feia** — `:393-417`: 6 botões *ghost* com `flex-wrap` viram uma coluna desalinhada ("Arquivar Dia / Limpar Dia / Re-classificar / Verificar duplicatas").
-3. Textos em `text-[9px]/[10px]` (badges, canais) abaixo do mínimo legível no mobile.
+| Recurso | Filmes | Séries | Novidades |
+|---|---|---|---|
+| Reordenar itens | Drag & drop (@dnd-kit, teclado + toque) | **não tem** | Setas ↑↓ (só na ordem manual) |
+| Seleção múltipla (ativar/desativar/excluir em lote) | Sim | **não tem** | **não tem** |
+| Skeleton de carregamento | Sim (shimmer) | **não tem** (`isLoading` nem é lido) | Sim |
+| Realtime (`useRealtimeMovies`) | Sim | **não tem** | **não tem** |
+| Busca dentro da lista adicionada | **não tem** | **não tem** | Sim (com debounce) |
+| Filtros (tipo/inativos/sem gênero) | **não tem** | **não tem** | Sim (chips) |
+| Ordenação (A-Z, nota, data) | **não tem** | **não tem** | Sim (persistida em localStorage) |
+| Botão "Atualizar todos" (lote completo) | Sim | Sim | **só "sem gênero"** |
+| Paginação | Paginação numérica (20) | Paginação numérica (20) | Scroll infinito |
+| Stats no topo | 3 cards (total/ativos/nota) | 3 cards | `NovidadesStatsBar` |
+| Badge "já adicionado" nos resultados | Sim (✓ no card) | Sim | Sim (botão "✓") |
 
-## O que vou fazer
+Confirmações no banco: `featured_movies` tem `sort_order`; **`featured_series` não tem nenhuma coluna de ordem**; `news_releases` usa `display_order`. Ou seja, ordenar séries exige uma coluna nova.
 
-### 1. Reestruturar o card do jogo (mobile-first)
-- No mobile: layout em **duas linhas** dentro de um card — topo com checkbox + título/badges + horário; base com uma faixa de ações separada por borda (`h-11` cada, ícones com `aria-label`).
-- Select de esporte sai da faixa de ações no mobile e vira **badge clicável** (abre o mesmo Select) — libera ~110px.
-- Ações secundárias (duplicar, re-classificar, excluir) vão para um **menu "⋯"**; ficam visíveis diretas no `sm:` para cima.
-- `min-w-0` + `break-words` no bloco de texto; sem `truncate` agressivo em título de evento único.
+Além das diferenças, dois pontos de qualidade: em Séries os botões de lote ficam `h-9` sem contagem de progresso consistente, e em Novidades a atualização em lote só cobre itens sem gênero (não repõe backdrop/tagline faltando).
 
-### 2. Barra de ações do dia
-- Data + "Adicionar" ficam sempre visíveis; **Arquivar / Limpar / Re-classificar / Verificar duplicatas** entram num `DropdownMenu` "Ações do dia" no mobile, e permanecem como botões no desktop.
-- Barra de seleção em massa fica *sticky* no topo da lista, com contagem e botões `h-11`.
+## Plano de padronização
 
-### 3. Sweep no restante do admin
-Passagem por `AdminLayout`, `AdminDashboard`, `AdminBanners`, `AdminFilmes/Series/Novidades`, `AdminWhatsApp`, `AdminCanaisLogos`, `AdminAnalytics`, `AdminAudit`, `AdminConfiguracoes`, `ProgramacaoTexto` para:
-- eliminar linhas de ação horizontais que estouram/sobrepõem (mesmo padrão do item 1);
-- promover `text-[9px]/[10px]` para `text-[11px]` mínimo em textos informativos;
-- garantir `min-h-11` em tudo clicável e `min-w-0` em containers de texto;
-- verificar `Select`/`Popover`/`Dialog` acima do conteúdo (z-index) e `SelectTrigger` com largura fluida.
+**1. Camada de dados (hooks)**
+- Migração: adicionar `sort_order integer` em `featured_series` (backfill pela ordem atual de `created_at`), mantendo os GRANTs/RLS existentes.
+- Criar `useReorderSeries` (espelho de `useReorderMovies`) e `useReorderNewsReleases` (persistência em lote de `display_order`).
+- Criar `useRealtimeSeries` e `useRealtimeNewsReleases` reaproveitando o padrão de `useRealtimeMovies`.
 
-### 4. Melhorias de funcionalidade (baixo risco)
-- **Filtro/busca por time ou competição** na lista de jogos (hoje só há filtro por esporte).
-- **Contador de resultados** e estado vazio explícito quando o filtro não retorna nada (`AdminEmptyState`).
-- **Toast com desfazer** ao alternar ativo/inativo e ao duplicar para amanhã.
-- Confirmação de exclusão mantendo o nome do jogo no diálogo (hoje é genérica).
+**2. Componentes compartilhados**
+- Extrair de Filmes um `ContentListToolbar` (busca na lista + chips de filtro + select de ordenação + ações em lote + modo seleção) e uma `SortableContentRow` genérica (grip, poster, título/metadados, ações), parametrizados por cores/rótulos (azul/filmes, roxo/séries, âmbar/novidades).
+- Extrair `TMDBSearchGrid` (grade de resultados + badge "já adicionado" + botão adicionar), hoje triplicada com pequenas divergências.
 
-### 5. Validação
-- Playwright em 320px / 384px / 768px nas rotas do admin: checar `scrollWidth === clientWidth`, medir todos os elementos clicáveis (≥44px) e detectar sobreposição de retângulos dentro dos cards de jogo.
-- Rodar a suíte de testes existente (`DailyGamesManager.singleEvent`, `AdminBanners`, `AdminWhatsApp`, etc.) para garantir que nada regride.
+**3. Aplicar às três abas**
+- **Séries**: ganha drag & drop, seleção múltipla em lote, skeleton de carregamento, realtime, busca/filtros/ordenação na lista.
+- **Filmes**: ganha busca na lista, chips de filtro (inativos / sem gênero / sem backdrop) e ordenação persistida.
+- **Novidades**: troca as setas ↑↓ por drag & drop (mantendo as setas como fallback acessível), ganha seleção múltipla em lote, realtime e "Atualizar todos" (não só os sem gênero).
+- Padronizar rótulos, `aria-label`, toasts e diálogos de confirmação (sempre com o título do item) nas três.
+
+**4. Paginação**
+Unificar em paginação numérica de 20 itens (padrão de Filmes/Séries), porque drag & drop e scroll infinito conflitam — reordenar dentro de uma lista que cresce por observer causa saltos. Novidades mantém contador "x–y de N".
+
+**5. Validação**
+- Typecheck + suíte de testes (há testes para as três páginas em `src/pages/admin/__tests__`), atualizando-os para a nova estrutura.
+- Auditoria Playwright a 384px: sem overflow horizontal e alvos de toque de 44px nas três abas.
+
+## Sugestões extras (posso incluir se quiser)
+- **Editar título/nota/gênero inline** nas três abas (hoje só é possível re-sincronizar do TMDB).
+- **Alerta de saúde do conteúdo** (itens sem backdrop/sinopse/gênero) com botão "corrigir todos", como já existe no painel de Banners.
+- **Ação "enviar para Novidades"** direto de um filme/série já cadastrado, evitando buscar de novo no TMDB.
 
 ## Detalhes técnicos
-- Sem alteração de banco, hooks ou regras de negócio — apenas apresentação, mais o filtro de texto local e os toasts de desfazer (client-side, reaproveitando `updateGame`/`insertGames` já existentes).
-- Componentes reutilizados: `DropdownMenu` (shadcn, já no projeto), `AdminEmptyState`, tokens semânticos do design system — nenhuma cor hardcoded.
-- Convenções seguidas conforme `docs/admin-refactor.md`; documento atualizado no fim com o novo padrão de card de lista.
-
-## Sugestões extras (fora do escopo, se quiser)
-- `content-visibility: auto` nas listas longas do admin (dias com 40+ jogos) para acelerar o render no mobile.
-- Ações em massa também para "arquivar" e "mover para outro dia".
+Sem mudança de contrato público: as páginas públicas continuam lendo `active` + ordem (`sort_order`/`display_order`). Reordenação em lote via um único `update` por índice em transação de mutação otimista, com rollback e toast de erro — igual ao já usado em `useReorderMovies`.

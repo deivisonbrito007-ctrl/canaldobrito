@@ -13,6 +13,7 @@ export interface FeaturedSeries {
   genre: string | null;
   active: boolean;
   created_at: string;
+  sort_order: number;
 }
 
 export const useActiveSeries = () =>
@@ -23,6 +24,7 @@ export const useActiveSeries = () =>
         .from("featured_series")
         .select("*")
         .eq("active", true)
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as FeaturedSeries[];
@@ -36,6 +38,7 @@ export const useAllSeries = () =>
       const { data, error } = await supabase
         .from("featured_series")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as FeaturedSeries[];
@@ -46,8 +49,16 @@ export const useAllSeries = () =>
 export const useAddSeries = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (series: Omit<FeaturedSeries, "id" | "active" | "created_at"> & { added_by?: string | null }) => {
-      const { error } = await supabase.from("featured_series").insert(series);
+    mutationFn: async (series: Omit<FeaturedSeries, "id" | "active" | "created_at" | "sort_order"> & { added_by?: string | null }) => {
+      // Novas séries entram no topo (menor sort_order - 1), igual a Filmes
+      const { data: minRow } = await supabase
+        .from("featured_series")
+        .select("sort_order")
+        .order("sort_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      const nextOrder = (minRow?.sort_order ?? 0) - 1;
+      const { error } = await supabase.from("featured_series").insert({ ...series, sort_order: nextOrder });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
@@ -84,5 +95,33 @@ export const useDeleteSeries = () => {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
+  });
+};
+
+export const useReorderSeries = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const updates = orderedIds.map((id, index) =>
+        supabase.from("featured_series").update({ sort_order: index }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const firstError = results.find((r) => r.error)?.error;
+      if (firstError) throw firstError;
+    },
+    onMutate: async (orderedIds) => {
+      await qc.cancelQueries({ queryKey: ["featured_series"] });
+      const prev = qc.getQueryData<FeaturedSeries[]>(["featured_series"]);
+      if (prev) {
+        const map = new Map(prev.map((s) => [s.id, s]));
+        const next = orderedIds.map((id, i) => ({ ...(map.get(id) as FeaturedSeries), sort_order: i }));
+        qc.setQueryData(["featured_series"], next);
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["featured_series"], ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["featured_series"] }),
   });
 };

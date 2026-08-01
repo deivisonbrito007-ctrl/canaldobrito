@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie, useReorderMovies, type FeaturedMovie } from "@/hooks/useMovies";
 import { useRealtimeMovies } from "@/hooks/useRealtimeMovies";
 import { usePagination } from "@/hooks/usePagination";
+import { ContentListFilters } from "@/components/admin/content/ContentListFilters";
+import { sortContent, usePersistedSort } from "@/components/admin/content/contentListUtils";
+
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
   PaginationNext, PaginationPrevious,
@@ -57,14 +60,16 @@ interface SortableMovieRowProps {
   batchActive: boolean;
   selected: boolean;
   selectionMode: boolean;
+  dragDisabled?: boolean;
   onSelectChange: (id: string, checked: boolean) => void;
   onRefresh: (m: FeaturedMovie) => void;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (m: FeaturedMovie) => void;
 }
 
-const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selectionMode, onSelectChange, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive });
+const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selectionMode, dragDisabled, onSelectChange, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive || dragDisabled });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -86,10 +91,11 @@ const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selec
             type="button"
             {...attributes}
             {...listeners}
-            disabled={batchActive}
+            disabled={batchActive || dragDisabled}
             className="touch-none h-11 w-7 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label={`Arrastar para reordenar ${m.title}`}
+            aria-label={dragDisabled ? "Reordenar indisponível com filtros ativos" : `Arrastar para reordenar ${m.title}`}
           >
+
             <GripVertical className="h-4 w-4" />
           </button>
         )}
@@ -159,12 +165,35 @@ const AdminFilmes = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [listSearch, setListSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "incomplete">("all");
+  const { sortMode, setSortMode } = usePersistedSort("admin:filmes:sort");
   const qc = useQueryClient();
 
   const batchActive = !!batchProgress || bulkRunning;
+  const allMovies = movies ?? [];
 
-  const pagination = usePagination({ total: movies?.length ?? 0, pageSize: 20 });
-  const paginatedMovies = movies?.slice(pagination.start, pagination.end);
+  const filteredMovies = useMemo(() => {
+    const term = listSearch.trim().toLocaleLowerCase("pt-BR");
+    const byStatus = allMovies.filter((m) => {
+      if (statusFilter === "active") return m.active;
+      if (statusFilter === "inactive") return !m.active;
+      if (statusFilter === "incomplete") return !m.genre || !m.backdrop_url;
+      return true;
+    });
+    const bySearch = term
+      ? byStatus.filter(
+          (m) =>
+            m.title.toLocaleLowerCase("pt-BR").includes(term) ||
+            (m.genre || "").toLocaleLowerCase("pt-BR").includes(term)
+        )
+      : byStatus;
+    return sortContent(bySearch, sortMode);
+  }, [allMovies, listSearch, statusFilter, sortMode]);
+
+  const isFiltering = listSearch.trim() !== "" || statusFilter !== "all" || sortMode !== "manual";
+  const pagination = usePagination({ total: filteredMovies.length, pageSize: 20 });
+  const paginatedMovies = filteredMovies.slice(pagination.start, pagination.end);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -174,11 +203,12 @@ const AdminFilmes = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id || !movies) return;
+    if (!over || active.id === over.id || !movies || isFiltering) return;
     const oldIndex = movies.findIndex((m) => m.id === active.id);
     const newIndex = movies.findIndex((m) => m.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
     const newOrder = arrayMove(movies, oldIndex, newIndex);
+
     reorderMovies.mutate(newOrder.map((m) => m.id), {
       onError: (e: any) => toast.error(e?.message || "Falha ao salvar ordem"),
       onSuccess: () => toast.success("Ordem atualizada"),
@@ -194,7 +224,7 @@ const AdminFilmes = () => {
       return next;
     });
   };
-  const selectAllVisible = () => { if (movies) setSelectedIds(new Set(movies.map((m) => m.id))); };
+  const selectAllVisible = () => setSelectedIds(new Set(filteredMovies.map((m) => m.id)));
   const clearSelection = () => setSelectedIds(new Set());
 
   const bulkSetActive = async (active: boolean) => {
@@ -510,6 +540,23 @@ const AdminFilmes = () => {
           </div>
         )}
 
+        {totalCount > 0 && (
+          <ContentListFilters
+            search={listSearch}
+            onSearchChange={(v) => { setListSearch(v); pagination.goToPage(1); }}
+            sortMode={sortMode}
+            onSortChange={(v) => { setSortMode(v); pagination.goToPage(1); }}
+            chips={[
+              { value: "all", label: "Todos", count: totalCount },
+              { value: "active", label: "Ativos", count: activeCount },
+              { value: "inactive", label: "Inativos", count: totalCount - activeCount },
+              { value: "incomplete", label: "Incompletos", count: missingDataCount },
+            ]}
+            activeChip={statusFilter}
+            onChipChange={(v) => { setStatusFilter(v as typeof statusFilter); pagination.goToPage(1); }}
+          />
+        )}
+
         <div className="p-4">
           {isLoading ? (
             <div className="space-y-2" aria-busy="true">
@@ -523,36 +570,52 @@ const AdminFilmes = () => {
                 </div>
               ))}
             </div>
-          ) : !movies || movies.length === 0 ? (
+          ) : totalCount === 0 ? (
             <div className="py-10 text-center space-y-2">
               <Film className="h-8 w-8 text-muted-foreground/20 mx-auto" />
               <p className="text-xs text-muted-foreground">Nenhum filme adicionado</p>
               <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar filmes do TMDB</p>
             </div>
+          ) : filteredMovies.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <Search className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+              <p className="text-xs text-muted-foreground">Nenhum filme encontrado com esses filtros</p>
+              <Button size="sm" variant="outline" className="text-[10px]" onClick={() => { setListSearch(""); setStatusFilter("all"); }}>
+                Limpar filtros
+              </Button>
+            </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={paginatedMovies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {paginatedMovies.map((m) => (
-                    <SortableMovieRow
-                      key={m.id}
-                      movie={m}
-                      refreshingId={refreshingId}
-                      batchActive={batchActive}
-                      selected={selectedIds.has(m.id)}
-                      selectionMode={selectionMode}
-                      onSelectChange={toggleSelect}
-                      onRefresh={handleRefreshOne}
-                      onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
-                      onDelete={setPendingDelete}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            <>
+              {isFiltering && (
+                <p className="text-[10px] text-muted-foreground/60 mb-2">
+                  Reordenação por arrastar fica disponível na ordem manual sem filtros.
+                </p>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={paginatedMovies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {paginatedMovies.map((m) => (
+                      <SortableMovieRow
+                        key={m.id}
+                        movie={m}
+                        refreshingId={refreshingId}
+                        batchActive={batchActive}
+                        selected={selectedIds.has(m.id)}
+                        selectionMode={selectionMode}
+                        dragDisabled={isFiltering}
+                        onSelectChange={toggleSelect}
+                        onRefresh={handleRefreshOne}
+                        onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
+                        onDelete={setPendingDelete}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
           )}
 
-          {totalCount > 20 && (
+          {filteredMovies.length > 20 && (
             <div className="mt-4">
               <Pagination>
                 <PaginationContent>
@@ -589,11 +652,12 @@ const AdminFilmes = () => {
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
-              <p className="text-center text-[10px] text-muted-foreground/60 mt-2">
-                {pagination.start + 1}–{pagination.end} de {totalCount} filme{totalCount !== 1 ? "s" : ""}
+              <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+                {pagination.start + 1}–{pagination.end} de {filteredMovies.length} filme{filteredMovies.length !== 1 ? "s" : ""}
               </p>
             </div>
           )}
+
         </div>
       </div>
 

@@ -31,7 +31,13 @@ vi.mock("@/hooks/useNewsReleases", () => ({
   useAddNewsRelease: () => ({ mutateAsync: addMutateAsync }),
   useToggleNewsRelease: () => ({ mutate: toggleMutate }),
   useDeleteNewsRelease: () => ({ mutate: deleteMutate }),
+  useReorderNewsReleases: () => ({ mutate: vi.fn() }),
   useUpdateNewsRelease: () => ({ mutate: updateMutate, mutateAsync: updateMutateAsync }),
+}));
+
+vi.mock("@/hooks/useRealtimeContent", () => ({
+  useRealtimeSeries: () => undefined,
+  useRealtimeNewsReleases: () => undefined,
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -101,7 +107,7 @@ describe("AdminNovidades", () => {
       baseItem({ id: "2", tmdb_id: 2, title: "Y", content_type: "series", genres: null, display_order: 1 }),
     ];
     wrap(<AdminNovidades />);
-    expect(screen.getByText("Atualizar 2 sem gênero")).toBeInTheDocument();
+    expect(screen.getByText(/2 sem gênero/)).toBeInTheDocument();
     expect(screen.getAllByText("sem gênero").length).toBe(2);
   });
 
@@ -156,7 +162,7 @@ describe("AdminNovidades", () => {
     itemList = [baseItem({ tmdb_id: 555, content_type: "movie" })];
     tmdbResults = [{ id: 555, title: "Duplicado", poster_path: null, overview: null, vote_average: 5 }];
     wrap(<AdminNovidades />);
-    const btn = screen.getByLabelText(/Já adicionado|Adicionar Duplicado/);
+    const btn = screen.getByLabelText(/já adicionado|Adicionar Duplicado/i);
     expect(btn).toBeDisabled();
   });
 });

@@ -31,6 +31,12 @@ vi.mock("@/hooks/useSeries", () => ({
   useToggleSeries: () => ({ mutate: toggleMutate }),
   useDeleteSeries: () => ({ mutate: deleteMutate }),
   useUpdateSeries: () => ({ mutateAsync: updateMutateAsync }),
+  useReorderSeries: () => ({ mutate: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useRealtimeContent", () => ({
+  useRealtimeSeries: () => undefined,
+  useRealtimeNewsReleases: () => undefined,
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -61,7 +67,7 @@ describe("AdminSeries", () => {
     wrap(<AdminSeries />);
     expect(screen.getByText("Buscar Séries")).toBeInTheDocument();
     expect(screen.getByText("Nenhuma série adicionada")).toBeInTheDocument();
-    expect(screen.getByText("0 ativas / 0")).toBeInTheDocument();
+    expect(screen.getByText(/0 ativas \/ 0/)).toBeInTheDocument();
   });
 
   it("dispara busca TMDB ao pressionar Enter", () => {
@@ -86,12 +92,12 @@ describe("AdminSeries", () => {
     wrap(<AdminSeries />);
     expect(screen.getByText("Breaking Bad")).toBeInTheDocument();
     expect(screen.getByText("Lost")).toBeInTheDocument();
-    expect(screen.getByText("2 ativas / 2")).toBeInTheDocument();
+    expect(screen.getByText(/2 ativas \/ 2/)).toBeInTheDocument();
   });
 
   it("mostra alerta de séries incompletas", () => {
     seriesList = [{ id: "1", tmdb_id: 1, title: "X", active: true, genre: null, backdrop_url: null }];
     wrap(<AdminSeries />);
-    expect(screen.getByText(/Atualizar 1 incompletas/)).toBeInTheDocument();
+    expect(screen.getByText(/1 incompletas/)).toBeInTheDocument();
   });
 });
