@@ -1,50 +1,39 @@
 ## Problema
 
-No painel de programação (`src/components/admin/DailyGamesManager.tsx`), o formulário de edição inline (`InlineEditForm`) só expõe 6 campos: times, competição, horário, canais e esporte.
+O formulário novo de edição (e o de adicionar jogo manual) exige **os dois times**. Isso bloqueia eventos que não têm confronto "A x B": Kings League (rodada única), F1, UFC/MMA, surf, ciclismo, natação, golfe, tênis (torneio) e qualquer competição com formato diferente.
 
-Ficam de fora campos que existem no jogo e que o hook de update já aceita (`sanitizeGame` em `useDailyGames.ts` permite todos eles):
+Confirmado no código:
+- `DailyGamesManager.tsx` — validação do formulário inline: erro "Informe os dois times." quando `away_team` está vazio.
+- `DailyGamesManager.tsx` — `AddGameForm`: `if (!home || !away || !time)` → "Preencha times e horário".
+- `DailyGamesManager.tsx` — a lista sempre renderiza `{home} x {away}`, mostrando "Evento x " quando não há visitante.
+- Em contraste, o resto do sistema **já suporta** evento único: o parser de WhatsApp cria jogos sem `away_team`, o formulário do parser tem placeholder "Time visitante (vazio = evento)", e os cards públicos (`GamePremiumCard`, `LiveHeroCard`, `HighlightsCarousel`) já usam `isVs = !!game.away_team`. Existe também o helper `isNonAdversarial(sport)` em `src/lib/gameUtils.ts` cobrindo f1, tênis, mma, surf, ciclismo, natação e golfe.
 
-- `competition_detail` (fase/rodada — hoje só é editável recolando o texto)
-- `date` (não é possível mover um jogo para outro dia)
-- `game_time` sem validação — aceita texto livre e pode gravar horário inválido
-- `is_womens` (badge feminino)
-- `is_live` / `status_short` / `elapsed_minutes`
-- `publish_at` (agendamento de publicação — só editável no fluxo em massa)
-- `active` (existe fora do form, mas não dentro dele)
+Ou seja: só o admin (edição/criação) está fora do padrão.
 
-Além disso: campos sem rótulo (só dá para adivinhar qual input é qual), alturas de 32px (abaixo do mínimo de 44px do padrão admin), sem `Salvar` desabilitado quando nada mudou e sem bloqueio de salvar com campos obrigatórios vazios.
+## O que muda
 
-## O que será feito
+1. **Segundo time opcional**
+   - Validação passa a exigir apenas: nome do evento/time da casa + horário válido.
+   - Campo visitante ganha rótulo "(opcional)" e dica "deixe vazio para evento único".
 
-### 1. Formulário de edição completo
-Reescrever `InlineEditForm` com todos os campos editáveis, cada um com rótulo `text-[11px] uppercase tracking-wider`:
+2. **Formulário adaptativo por esporte**
+   - Quando o esporte é não-adversarial (F1, MMA, surf, ciclismo, natação, golfe, tênis), os rótulos mudam para "Evento / prova" e o campo visitante fica recolhido atrás de um link "adicionar adversário" — sem sumir para quem precisar.
+   - Para esportes de confronto, rótulos seguem "Time casa" / "Time visitante (opcional)".
 
-- **Times**: casa / visitante (obrigatórios)
-- **Competição** e **Detalhe da competição**
-- **Data** (`type="date"`) e **Horário** (`type="time"`, validado)
-- **Canais** (texto por vírgula, normalizado pelo mesmo helper `normalizeChannelsList` já usado na inserção — evita divergência entre inserir e editar)
-- **Esporte** (select existente)
-- **Switches**: Ativo, Ao vivo, Feminino
-- **Agendar publicação** (`datetime-local`, opcional, com botão "limpar")
+3. **Modo evento explícito**
+   - Um toggle "Evento único (sem confronto)" no formulário. Ao ligar, o campo visitante é limpo e escondido; ao salvar grava `away_team` vazio.
 
-### 2. Validação e UX
-- Bloquear `Salvar` se times ou horário estiverem vazios, com mensagem inline.
-- `Salvar` desabilitado quando não houver alteração (comparação com o registro original).
-- Enviar apenas os campos alterados no update.
-- `Esc` cancela, `Ctrl/Cmd+Enter` salva.
-- Toast de erro caso o update falhe (hoje a falha passa silenciosa).
+4. **Exibição correta na lista do admin**
+   - Passa a mostrar `Casa x Visitante` só quando houver visitante; caso contrário mostra apenas o nome do evento (igual aos cards públicos).
 
-### 3. Layout mobile
-- Inputs e selects em `h-11`, botões `min-h-11`, grid 1 coluna no mobile e 2 no desktop.
-- Card de edição ocupa a largura toda (hoje o `flex items-center` do card externo aperta o form) — o wrapper do card passa a usar `items-start` quando em modo edição.
+5. **Adicionar jogo manual (`AddGameForm`)**
+   - Mesma regra: visitante opcional, detecção de esporte usando só os campos preenchidos, e `is_womens` avaliado sobre os nomes existentes.
 
-### 4. Sugestões extras (incluídas)
-- Mostrar o esporte sugerido pelo detector dentro do form, com botão "usar sugestão".
-- Botão "Duplicar para amanhã" no card do jogo (reaproveita o form de inserção com a data +1) — pedido recorrente ao montar programação repetida.
+6. **Duplicar para amanhã** continua funcionando com evento único (já copia o valor vazio).
 
 ## Detalhes técnicos
 
-- Arquivo principal: `src/components/admin/DailyGamesManager.tsx` (apenas `InlineEditForm` + wrapper do card).
-- `useUpdateDailyGame` já sanitiza e aceita todos os campos citados; nenhuma migration é necessária.
-- `channels` passa a usar `normalizeChannelsList` importado de `src/hooks/useDailyGames.ts` em vez do `split(",")` local.
-- Sem alteração de RLS, schema ou edge functions.
+- Arquivos: `src/components/admin/DailyGamesManager.tsx` (validação, rótulos, toggle, render da lista, `AddGameForm`).
+- Reutilizar `isNonAdversarial` de `src/lib/gameUtils.ts` em vez de criar nova lista.
+- Nenhuma mudança de banco: `away_team` é `not null` com default de string vazia no fluxo atual (o parser já grava `""`), então continuamos gravando string vazia — não `null`.
+- Testes: adicionar casos em `src/components/admin/__tests__/` cobrindo salvar um evento sem visitante e a renderização sem o "x".

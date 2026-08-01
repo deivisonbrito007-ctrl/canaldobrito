@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAllDailyGames, useUpdateDailyGame, useDeleteDailyGame, useInsertDailyGames, useDeleteDailyGamesByDate, normalizeChannelsList } from "@/hooks/useDailyGames";
 import { formatCountdown } from "@/lib/dateUtils";
-import { detectSportType, SPORT_EMOJI, SPORT_LABEL, getLocalDateString, type SportType } from "@/lib/gameUtils";
+import { detectSportType, SPORT_EMOJI, SPORT_LABEL, getLocalDateString, isNonAdversarial, type SportType } from "@/lib/gameUtils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { gameKey } from "@/lib/dedup";
@@ -487,7 +487,7 @@ export const DailyGamesManager = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-bold text-foreground truncate">
-                            {game.home_team} x {game.away_team}
+                            {game.away_team?.trim() ? `${game.home_team} x ${game.away_team}` : game.home_team}
                           </p>
                           <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[9px] px-1.5 py-0 shrink-0">
                             {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
@@ -652,12 +652,16 @@ const InlineEditForm = ({
 
   const trimmedHome = home.trim();
   const trimmedAway = away.trim();
+  const nonAdversarial = isNonAdversarial(sport);
+  // Evento único: sem adversário. Ligado por padrão quando o jogo já não tem visitante.
+  const [singleEvent, setSingleEvent] = useState(!((game.away_team ?? "").trim()));
   const validTime = /^\d{2}:\d{2}$/.test(time);
-  const error = !trimmedHome || !trimmedAway
-    ? "Informe os dois times."
+  const error = !trimmedHome
+    ? (nonAdversarial || singleEvent ? "Informe o nome do evento." : "Informe o time da casa.")
     : !validTime
       ? "Informe um horário válido (HH:MM)."
       : null;
+
 
   const buildUpdates = () => {
     const next: Record<string, any> = {};
@@ -666,7 +670,8 @@ const InlineEditForm = ({
     const publishIso = publishAt ? new Date(publishAt).toISOString() : null;
 
     if (trimmedHome !== game.home_team) next.home_team = trimmedHome;
-    if (trimmedAway !== game.away_team) next.away_team = trimmedAway;
+    const effectiveAway = singleEvent ? "" : trimmedAway;
+    if (effectiveAway !== (game.away_team ?? "")) next.away_team = effectiveAway;
     if (comp.trim() !== (game.competition ?? "")) next.competition = comp.trim();
     if (detail.trim() !== (game.competition_detail ?? "")) next.competition_detail = detail.trim();
     if (date !== game.date) next.date = date;
@@ -703,14 +708,43 @@ const InlineEditForm = ({
 
   return (
     <div className="flex-1 min-w-0 space-y-3" onKeyDown={handleKeyDown}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Field label="Time casa">
-          <Input value={home} onChange={(e) => setHome(e.target.value)} maxLength={120} className="h-11 text-sm" />
+      <label className="flex items-center justify-between gap-2 min-h-11 rounded-lg border border-white/[0.06] px-3">
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          Evento único (sem confronto)
+        </span>
+        <Switch
+          checked={singleEvent}
+          onCheckedChange={(v) => {
+            setSingleEvent(v);
+            if (v) setAway("");
+          }}
+          aria-label="Evento único (sem confronto)"
+        />
+      </label>
+
+      <div className={`grid grid-cols-1 gap-2 ${singleEvent ? "" : "sm:grid-cols-2"}`}>
+        <Field label={singleEvent || nonAdversarial ? "Evento / prova" : "Time casa"}>
+          <Input
+            value={home}
+            onChange={(e) => setHome(e.target.value)}
+            maxLength={120}
+            placeholder={singleEvent || nonAdversarial ? "Ex.: GP do Brasil · UFC 300 · Kings League" : "Ex.: Flamengo"}
+            className="h-11 text-sm"
+          />
         </Field>
-        <Field label="Time visitante">
-          <Input value={away} onChange={(e) => setAway(e.target.value)} maxLength={120} className="h-11 text-sm" />
-        </Field>
+        {!singleEvent && (
+          <Field label="Time visitante (opcional)">
+            <Input
+              value={away}
+              onChange={(e) => setAway(e.target.value)}
+              maxLength={120}
+              placeholder="Deixe vazio para evento único"
+              className="h-11 text-sm"
+            />
+          </Field>
+        )}
       </div>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Field label="Competição">
@@ -830,26 +864,30 @@ const AddGameForm = ({
   const [sportMode, setSportMode] = useState<"auto" | SportType>("auto");
 
   const handleAdd = async () => {
-    if (!home || !away || !time) {
-      toast.error("Preencha times e horário");
+    const trimmedHome = home.trim();
+    const trimmedAway = away.trim();
+    if (!trimmedHome || !/^\d{2}:\d{2}$/.test(time)) {
+      toast.error("Preencha o evento/time e o horário (HH:MM)");
       return;
     }
 
     const resolvedSport: SportType =
-      sportMode === "auto" ? detectSportType(comp, `${home} ${away}`) : sportMode;
+      sportMode === "auto"
+        ? detectSportType(comp, `${trimmedHome} ${trimmedAway}`.trim())
+        : sportMode;
 
     try {
       const result = await insertGames.mutateAsync([
         {
           date,
-          home_team: home,
-          away_team: away,
+          home_team: trimmedHome,
+          away_team: trimmedAway,
           competition: comp,
           competition_detail: "",
           game_time: time,
           channels: channels.split(",").map((c) => c.trim()).filter(Boolean),
           is_live: false,
-          is_womens: home.includes("(F)") || away.includes("(F)"),
+          is_womens: trimmedHome.includes("(F)") || trimmedAway.includes("(F)"),
           active: true,
           archived: false,
           sport_type: resolvedSport,
@@ -859,7 +897,7 @@ const AddGameForm = ({
       if (result.skipped > 0) {
         toast.warning("Jogo já existe — não foi adicionado");
       } else {
-        toast.success("Jogo adicionado!");
+        toast.success(trimmedAway ? "Jogo adicionado!" : "Evento adicionado!");
       }
       onClose();
     } catch (err: any) {
@@ -869,11 +907,12 @@ const AddGameForm = ({
 
   return (
     <div className="rounded-xl glass-panel p-4 space-y-3 border border-emerald-500/20">
-      <p className="text-xs font-bold text-foreground">Adicionar Jogo Avulso</p>
+      <p className="text-xs font-bold text-foreground">Adicionar Jogo / Evento Avulso</p>
       <div className="grid grid-cols-2 gap-2">
-        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa" className="h-8 text-xs" />
-        <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Time visitante" className="h-8 text-xs" />
+        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa / Evento" className="h-8 text-xs" />
+        <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Visitante (vazio = evento)" className="h-8 text-xs" />
       </div>
+
       <div className="grid grid-cols-2 gap-2">
         <Input value={comp} onChange={(e) => setComp(e.target.value)} placeholder="Competição" className="h-8 text-xs" />
         <Input value={time} onChange={(e) => setTime(e.target.value)} placeholder="HH:MM" className="h-8 text-xs" />
