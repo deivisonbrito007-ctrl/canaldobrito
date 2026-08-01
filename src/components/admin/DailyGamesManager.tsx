@@ -652,12 +652,16 @@ const InlineEditForm = ({
 
   const trimmedHome = home.trim();
   const trimmedAway = away.trim();
+  const nonAdversarial = isNonAdversarial(sport);
+  // Evento único: sem adversário. Ligado por padrão quando o jogo já não tem visitante.
+  const [singleEvent, setSingleEvent] = useState(!((game.away_team ?? "").trim()));
   const validTime = /^\d{2}:\d{2}$/.test(time);
-  const error = !trimmedHome || !trimmedAway
-    ? "Informe os dois times."
+  const error = !trimmedHome
+    ? (nonAdversarial || singleEvent ? "Informe o nome do evento." : "Informe o time da casa.")
     : !validTime
       ? "Informe um horário válido (HH:MM)."
       : null;
+
 
   const buildUpdates = () => {
     const next: Record<string, any> = {};
