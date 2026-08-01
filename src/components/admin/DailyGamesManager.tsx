@@ -14,7 +14,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Wand2, AlertTriangle } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AdminEmptyState } from "@/components/admin/AdminStates";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Wand2, AlertTriangle, MoreVertical, Search, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
