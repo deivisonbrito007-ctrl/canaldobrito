@@ -424,12 +424,24 @@ export const DailyGamesManager = () => {
                   {editingId === game.id ? (
                     <InlineEditForm
                       game={game}
+                      suggestedSport={suggested}
                       onSave={(updates) => {
-                        updateGame.mutate({ id: game.id, ...updates });
+                        if (Object.keys(updates).length === 0) {
+                          setEditingId(null);
+                          return;
+                        }
+                        updateGame.mutate(
+                          { id: game.id, ...updates },
+                          {
+                            onSuccess: () => toast.success("Jogo atualizado"),
+                            onError: (err: any) => toast.error(err?.message || "Erro ao salvar o jogo"),
+                          }
+                        );
                         setEditingId(null);
                       }}
                       onCancel={() => setEditingId(null)}
                     />
+
                   ) : (
                     <>
                       {!isArchived && (
