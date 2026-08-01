@@ -556,7 +556,7 @@ const AdminBanners = () => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8 gap-1 text-[11px] text-primary hover:bg-primary/10"
+                    className="min-h-11 gap-1 text-[11px] text-primary hover:bg-primary/10"
                     onClick={() =>
                       navigator.clipboard
                         .writeText(BANNER_PROMPT_MODEL)
@@ -794,22 +794,22 @@ const AdminBanners = () => {
             {selectedIds.size > 0 && (
               <div className="p-3 border-b border-primary/20 bg-primary/[0.04] flex items-center gap-2 flex-wrap sticky top-0 z-10 backdrop-blur">
                 <span className="text-[11px] font-semibold text-primary">{selectedIds.size} selecionado(s)</span>
-                <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={selectAllVisible}>
+                <Button size="sm" variant="ghost" className="min-h-11 text-[11px]" onClick={selectAllVisible}>
                   Selecionar todos visíveis
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={clearSelection}>
+                <Button size="sm" variant="ghost" className="min-h-11 text-[11px]" onClick={clearSelection}>
                   Limpar
                 </Button>
                 <div className="flex-1" />
-                <Button size="sm" variant="ghost" className="h-8 text-[11px] text-emerald-400 hover:bg-emerald-500/10"
+                <Button size="sm" variant="ghost" className="min-h-11 text-[11px] text-emerald-400 hover:bg-emerald-500/10"
                   onClick={() => setConfirmBulk("activate")}>
                   <Power className="h-3 w-3 mr-1" /> Ativar
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-[11px] text-amber-400 hover:bg-amber-500/10"
+                <Button size="sm" variant="ghost" className="min-h-11 text-[11px] text-amber-400 hover:bg-amber-500/10"
                   onClick={() => setConfirmBulk("deactivate")}>
                   <PowerOff className="h-3 w-3 mr-1" /> Desativar
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-[11px] text-destructive hover:bg-destructive/10"
+                <Button size="sm" variant="ghost" className="min-h-11 text-[11px] text-destructive hover:bg-destructive/10"
                   onClick={() => setConfirmBulk("delete")}>
                   <Trash2 className="h-3 w-3 mr-1" /> Excluir
                 </Button>
