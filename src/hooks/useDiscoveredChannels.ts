@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeChannelName } from "@/components/public/channelLogos";
+import { normalizeChannelName, isChannelFragment } from "@/components/public/channelLogos";
 import { BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
 import { useChannelMappings, type ChannelMapping } from "./useChannelMappings";
+
+export type OrphanReason = "no-mapping" | "logo-none" | null;
 
 export type DiscoveredChannel = {
   name: string;
@@ -12,26 +14,31 @@ export type DiscoveredChannel = {
   mapping?: ChannelMapping;
   isBuiltin: boolean;
   isOrphan: boolean;
+  /** Por que está sem logo: sem mapeamento, ou mapeado com "sem logo". */
+  orphanReason: OrphanReason;
 };
 
 const BUILTIN_NORMALIZED = new Set(
   Object.keys(BUILTIN_CHANNEL_MAP).map(normalizeChannelName)
 );
 
-export function useDiscoveredChannels() {
+/** Janela padrão de descoberta (dias). */
+export const DISCOVERY_WINDOW_DAYS = 90;
+
+export function useDiscoveredChannels(windowDays: number = DISCOVERY_WINDOW_DAYS) {
   const { data: mappings } = useChannelMappings();
 
   const { data: rawChannels, isLoading, refetch } = useQuery({
-    queryKey: ["discovered-channels"],
+    queryKey: ["discovered-channels", windowDays],
     staleTime: 60_000,
     queryFn: async () => {
       const since = new Date();
-      since.setDate(since.getDate() - 30);
+      since.setDate(since.getDate() - windowDays);
       const { data, error } = await supabase
         .from("daily_games")
         .select("channels")
         .gte("date", since.toISOString().slice(0, 10))
-        .limit(2000);
+        .limit(5000);
       if (error) throw error;
 
       const counts = new Map<string, { name: string; count: number }>();
@@ -40,6 +47,8 @@ export function useDiscoveredChannels() {
           if (!ch || typeof ch !== "string") continue;
           const trimmed = ch.trim();
           if (!trimmed) continue;
+          // Fragmentos de parênteses ("MG)", "PR") não são canais.
+          if (isChannelFragment(trimmed)) continue;
           const norm = normalizeChannelName(trimmed);
           if (!norm) continue;
           const existing = counts.get(norm);
@@ -57,7 +66,13 @@ export function useDiscoveredChannels() {
       for (const [normalized, { name, count }] of rawChannels.entries()) {
         const mapping = mappings?.get(normalized);
         const isBuiltin = BUILTIN_NORMALIZED.has(normalized);
-        const hasLogo = !!mapping?.custom_logo_url || (mapping && mapping.logo_key !== "none") || isBuiltin;
+        const hasCustom = !!mapping?.custom_logo_url;
+        const mappedToNone = !!mapping && mapping.logo_key === "none" && !hasCustom;
+        // Um mapeamento com logo_key "none" sobrescreve o built-in e deixa o
+        // canal sem logo — por isso conta como órfão mesmo sendo built-in.
+        const hasLogo =
+          hasCustom || (!!mapping && mapping.logo_key !== "none") || (isBuiltin && !mappedToNone);
+        const orphanReason: OrphanReason = hasLogo ? null : mappedToNone ? "logo-none" : "no-mapping";
         items.push({
           name,
           normalized,
@@ -65,17 +80,24 @@ export function useDiscoveredChannels() {
           mapping,
           isBuiltin,
           isOrphan: !hasLogo,
+          orphanReason,
         });
       }
     }
     items.sort((a, b) => b.count - a.count);
+    const orphans = items.filter((i) => i.isOrphan);
+    const coverage = items.length
+      ? Math.round(((items.length - orphans.length) / items.length) * 100)
+      : 100;
     return {
       isLoading,
       refetch,
       all: items,
-      orphans: items.filter((i) => i.isOrphan),
+      orphans,
       mapped: items.filter((i) => !!i.mapping),
       builtin: items.filter((i) => i.isBuiltin && !i.mapping),
+      coverage,
+      topOrphans: orphans.slice(0, 5),
     };
   }, [rawChannels, mappings, isLoading, refetch]);
 }
