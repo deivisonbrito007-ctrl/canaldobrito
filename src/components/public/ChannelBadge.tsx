@@ -156,11 +156,18 @@ interface ChannelBadgeProps {
   className?: string;
 }
 
+const INITIALS_TEXT: Record<BadgeSize, string> = {
+  sm: "text-[8px]",
+  md: "text-[9px]",
+  lg: "text-[10px]",
+};
+
 const ChannelIcon = ({
   logoKey,
   emoji,
   size,
   alt,
+  channelName,
   customUrl,
   forceLightChip,
   version,
@@ -169,6 +176,7 @@ const ChannelIcon = ({
   emoji: string;
   size: BadgeSize;
   alt: string;
+  channelName: string;
   customUrl?: string | null;
   forceLightChip?: boolean;
   version?: string | null;
@@ -186,18 +194,23 @@ const ChannelIcon = ({
   const lightChip = forceLightChip ?? registryEntry?.lightChip;
 
   if (!src || failed) {
+    // Sem arte disponível: chip de iniciais (mais legível que o emoji genérico).
     return (
       <span
         className={cn(
-          "inline-flex items-center justify-center shrink-0 leading-none",
-          ICON_WRAP[size]
+          "inline-flex items-center justify-center shrink-0 leading-none font-extrabold tracking-tight",
+          "bg-white/10 ring-1 ring-white/10",
+          ICON_WRAP[size],
+          INITIALS_TEXT[size]
         )}
+        title={channelName}
         aria-hidden
       >
-        {emoji}
+        {channelInitials(channelName) || emoji}
       </span>
     );
   }
+
 
   return (
     <span
