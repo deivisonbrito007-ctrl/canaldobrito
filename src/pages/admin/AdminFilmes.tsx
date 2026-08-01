@@ -224,7 +224,7 @@ const AdminFilmes = () => {
       return next;
     });
   };
-  const selectAllVisible = () => { if (movies) setSelectedIds(new Set(movies.map((m) => m.id))); };
+  const selectAllVisible = () => setSelectedIds(new Set(filteredMovies.map((m) => m.id)));
   const clearSelection = () => setSelectedIds(new Set());
 
   const bulkSetActive = async (active: boolean) => {
