@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { detectSportType, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { gameKey } from "@/lib/dedup";
+import { isChannelFragment } from "@/components/public/channelLogos";
 import { getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
