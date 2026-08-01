@@ -157,7 +157,10 @@ export const DailyGamesManager = () => {
         } as any,
       ]);
       if (result.skipped > 0) toast.warning(`Já existe em ${nextDate}`);
-      else toast.success(`Duplicado para ${nextDate}`);
+      else
+        toast.success(`Duplicado para ${nextDate}`, {
+          action: { label: "Ver dia", onClick: () => setSelectedDate(nextDate) },
+        });
     } catch (err: any) {
       toast.error(err?.message || "Erro ao duplicar");
     }
