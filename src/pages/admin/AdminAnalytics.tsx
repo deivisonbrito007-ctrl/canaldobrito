@@ -649,35 +649,88 @@ export default function AdminAnalytics() {
             Sem shares/landings registrados ainda. Compartilhe um link rápido em /admin/whatsapp para começar.
           </p>
         ) : (
-          <ScrollHint>
-            <table className="w-full text-xs font-body min-w-[480px]">
-              <thead>
-                <tr className="text-left text-muted-foreground border-b border-border">
-                  <th className="py-2 pr-3 sticky left-0 bg-card">Campaign</th>
-                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
-                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
-                  <th className="py-2 px-3 text-right">CTR</th>
-                  <th className="py-2 px-3 text-right">Tab views</th>
-                  <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {funnelA.map((r) => {
-                  const b = funnelB.find((x) => x.campaign === r.campaign);
-                  return (
-                    <tr key={r.campaign} className="border-b border-border/30">
-                      <td className="py-2 pr-3 font-mono text-[11px] text-foreground sticky left-0 bg-card">{r.campaign}</td>
-                      <td className="py-2 px-3 text-right tabular-nums">{r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}</td>
-                      <td className="py-2 px-3 text-right tabular-nums">{r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}</td>
-                      <td className="py-2 px-3 text-right tabular-nums text-primary font-bold">{(r.ctr * 100).toFixed(1)}%</td>
-                      <td className="py-2 px-3 text-right tabular-nums">{r.tabViews}</td>
-                      <td className="py-2 pl-3 text-right tabular-nums text-primary font-bold">{(r.conversion * 100).toFixed(0)}%</td>
+          <>
+            {/* Mobile: cards empilhados (sem rolagem horizontal) */}
+            <ul className="space-y-2 sm:hidden">
+              {funnelA.map((r) => {
+                const b = funnelB.find((x) => x.campaign === r.campaign);
+                return (
+                  <li
+                    key={r.campaign}
+                    className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 font-body"
+                  >
+                    <p className="break-all font-mono text-[11px] font-bold text-foreground">{r.campaign}</p>
+                    <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2">
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                          <Send className="mr-1 inline h-3 w-3" />Shares
+                        </dt>
+                        <dd className="text-sm tabular-nums text-foreground">
+                          {r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                          <MousePointer2 className="mr-1 inline h-3 w-3" />Landings
+                        </dt>
+                        <dd className="text-sm tabular-nums text-foreground">
+                          {r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">CTR</dt>
+                        <dd className="text-sm font-bold tabular-nums text-primary">{(r.ctr * 100).toFixed(1)}%</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">Tab views</dt>
+                        <dd className="text-sm tabular-nums text-foreground">{r.tabViews}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                          <Target className="mr-1 inline h-3 w-3" />Conversão
+                        </dt>
+                        <dd className="text-sm font-bold tabular-nums text-primary">{(r.conversion * 100).toFixed(0)}%</dd>
+                      </div>
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Desktop: tabela completa */}
+            <div className="hidden sm:block">
+              <ScrollHint>
+                <table className="w-full text-xs font-body min-w-[480px]">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b border-border">
+                      <th className="py-2 pr-3 sticky left-0 bg-card">Campaign</th>
+                      <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
+                      <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
+                      <th className="py-2 px-3 text-right">CTR</th>
+                      <th className="py-2 px-3 text-right">Tab views</th>
+                      <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </ScrollHint>
+                  </thead>
+                  <tbody>
+                    {funnelA.map((r) => {
+                      const b = funnelB.find((x) => x.campaign === r.campaign);
+                      return (
+                        <tr key={r.campaign} className="border-b border-border/30">
+                          <td className="py-2 pr-3 font-mono text-[11px] text-foreground sticky left-0 bg-card">{r.campaign}</td>
+                          <td className="py-2 px-3 text-right tabular-nums">{r.shares}{compareOn && <Delta a={r.shares} b={b?.shares ?? 0} />}</td>
+                          <td className="py-2 px-3 text-right tabular-nums">{r.landings}{compareOn && <Delta a={r.landings} b={b?.landings ?? 0} />}</td>
+                          <td className="py-2 px-3 text-right tabular-nums text-primary font-bold">{(r.ctr * 100).toFixed(1)}%</td>
+                          <td className="py-2 px-3 text-right tabular-nums">{r.tabViews}</td>
+                          <td className="py-2 pl-3 text-right tabular-nums text-primary font-bold">{(r.conversion * 100).toFixed(0)}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </ScrollHint>
+            </div>
+          </>
+
         )}
       </Card>
 
