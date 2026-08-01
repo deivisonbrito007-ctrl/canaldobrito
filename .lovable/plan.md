@@ -1,41 +1,45 @@
-## O que a auditoria mostrou
+## Diagnóstico (confirmado no código)
 
-Rodei uma varredura automatizada (Chromium mobile 384x715 e 320x700) em todas as telas públicas e do admin, medindo largura do documento, elementos fora da tela e altura dos controles.
+O print corresponde ao `DailyGamesManager` (lista "Jogos Publicados"), usado na tela de Programação/Banners do admin.
 
-Boa notícia: **nenhuma página tem rolagem horizontal indevida em 384px** — não há layout "quebrando" a tela. Os elementos que aparecem fora do viewport são decorativos (blobs de fundo) ou trilhas de rolagem horizontal intencionais (filtros de esporte, marquee da página Assine).
+1. **Linha do jogo quebrada** — `src/components/admin/DailyGamesManager.tsx:498-632`: cada jogo é uma única linha `flex` horizontal com checkbox + bloco de texto + **6 controles** (select de esporte de 110px, varinha, switch, duplicar, editar, excluir). Isso soma ~250px fixos; em 384px o bloco de texto é comprimido e os controles ficam sobrepostos ao título/horário — exatamente o efeito do print.
+2. **Barra de ações do dia empilhada feia** — `:393-417`: 6 botões *ghost* com `flex-wrap` viram uma coluna desalinhada ("Arquivar Dia / Limpar Dia / Re-classificar / Verificar duplicatas").
+3. Textos em `text-[9px]/[10px]` (badges, canais) abaixo do mínimo legível no mobile.
 
-Problemas reais confirmados:
+## O que vou fazer
 
-1. **`/admin/whatsapp` em 320px** — o documento fica com 326px de largura, gerando rolagem horizontal lateral na tela (algum elemento com largura mínima fixa).
-2. **`/admin/canais-logos`** — a lista de abas mede 406px dentro de um container de 320px e não é rolável: parte das abas fica inacessível em telas pequenas.
-3. **Toques abaixo de 44px** (regra do projeto) em vários pontos:
-   - Admin Banners: chips de filtro/esporte com 19px e switches de 24px.
-   - Admin Auditoria: botões de expandir payload com 28px.
-   - Admin Novidades / WhatsApp: inputs e selects com 36px, botões com 28-36px.
-   - Público: setas do carrossel de Novidades com 36px e "dots" de 6px sem área de toque ampliada.
-4. **Tabela de Analytics** (`min-w-[480px]`) rola dentro do card, mas sem nenhuma indicação visual de que há mais conteúdo à direita.
-5. **Transição entre abas na home** desloca todo o conteúdo horizontalmente durante a animação (medido em -60px). Não sobra rolagem depois, mas em aparelhos lentos aparece como um "salto" lateral.
+### 1. Reestruturar o card do jogo (mobile-first)
+- No mobile: layout em **duas linhas** dentro de um card — topo com checkbox + título/badges + horário; base com uma faixa de ações separada por borda (`h-11` cada, ícones com `aria-label`).
+- Select de esporte sai da faixa de ações no mobile e vira **badge clicável** (abre o mesmo Select) — libera ~110px.
+- Ações secundárias (duplicar, re-classificar, excluir) vão para um **menu "⋯"**; ficam visíveis diretas no `sm:` para cima.
+- `min-w-0` + `break-words` no bloco de texto; sem `truncate` agressivo em título de evento único.
 
-## O que pretendo corrigir
+### 2. Barra de ações do dia
+- Data + "Adicionar" ficam sempre visíveis; **Arquivar / Limpar / Re-classificar / Verificar duplicatas** entram num `DropdownMenu` "Ações do dia" no mobile, e permanecem como botões no desktop.
+- Barra de seleção em massa fica *sticky* no topo da lista, com contagem e botões `h-11`.
 
-**Correções de layout**
-- Localizar e remover a largura fixa que causa o overflow de 6px em `/admin/whatsapp` (provável `min-w`/tabela/`grid` sem `min-w-0`).
-- Tornar a `TabsList` de `/admin/canais-logos` rolável horizontalmente (ou em grade de 2 colunas no mobile), garantindo acesso a todas as abas em 320px.
-- Adicionar `overflow-hidden` nos containers dos blobs decorativos da página `/assinar` para evitar qualquer vazamento em telas futuras.
-- Adicionar máscara/gradiente de "há mais conteúdo" nas tabelas e trilhas roláveis (Analytics, filtros de esporte, chips de banners).
+### 3. Sweep no restante do admin
+Passagem por `AdminLayout`, `AdminDashboard`, `AdminBanners`, `AdminFilmes/Series/Novidades`, `AdminWhatsApp`, `AdminCanaisLogos`, `AdminAnalytics`, `AdminAudit`, `AdminConfiguracoes`, `ProgramacaoTexto` para:
+- eliminar linhas de ação horizontais que estouram/sobrepõem (mesmo padrão do item 1);
+- promover `text-[9px]/[10px]` para `text-[11px]` mínimo em textos informativos;
+- garantir `min-h-11` em tudo clicável e `min-w-0` em containers de texto;
+- verificar `Select`/`Popover`/`Dialog` acima do conteúdo (z-index) e `SelectTrigger` com largura fluida.
 
-**Padronização de toque (44px)**
-- Elevar chips, botões-ícone, switches e inputs abaixo de 40px para `min-h-11` (ou área de toque ampliada via padding/`::after`) nas telas: Banners, Auditoria, Novidades, WhatsApp, Canais/Logos, Analytics.
-- Setas do carrossel público: 44px; dots mantêm o visual de 6px mas ganham área de toque de 44px.
+### 4. Melhorias de funcionalidade (baixo risco)
+- **Filtro/busca por time ou competição** na lista de jogos (hoje só há filtro por esporte).
+- **Contador de resultados** e estado vazio explícito quando o filtro não retorna nada (`AdminEmptyState`).
+- **Toast com desfazer** ao alternar ativo/inativo e ao duplicar para amanhã.
+- Confirmação de exclusão mantendo o nome do jogo no diálogo (hoje é genérica).
 
-**Estabilidade da animação**
-- Trocar o deslize horizontal da troca de abas por fade/deslize vertical curto (coerente com a regra do projeto de evitar interações horizontais), eliminando o salto lateral.
-
-**Verificação**
-- Reexecutar a varredura em 320px, 384px e 430px em todas as rotas, conferindo: largura do documento igual à do viewport, zero controles abaixo de 44px e nenhuma sobreposição do menu inferior sobre o conteúdo (área segura do iOS).
+### 5. Validação
+- Playwright em 320px / 384px / 768px nas rotas do admin: checar `scrollWidth === clientWidth`, medir todos os elementos clicáveis (≥44px) e detectar sobreposição de retângulos dentro dos cards de jogo.
+- Rodar a suíte de testes existente (`DailyGamesManager.singleEvent`, `AdminBanners`, `AdminWhatsApp`, etc.) para garantir que nada regride.
 
 ## Detalhes técnicos
+- Sem alteração de banco, hooks ou regras de negócio — apenas apresentação, mais o filtro de texto local e os toasts de desfazer (client-side, reaproveitando `updateGame`/`insertGames` já existentes).
+- Componentes reutilizados: `DropdownMenu` (shadcn, já no projeto), `AdminEmptyState`, tokens semânticos do design system — nenhuma cor hardcoded.
+- Convenções seguidas conforme `docs/admin-refactor.md`; documento atualizado no fim com o novo padrão de card de lista.
 
-- Arquivos previstos: `src/pages/admin/AdminWhatsApp.tsx`, `AdminCanaisLogos.tsx`, `AdminBanners.tsx`, `AdminAudit.tsx`, `AdminAnalytics.tsx`, `AdminNovidades.tsx`, `src/pages/Assinar.tsx`, `src/components/public/cinema/CinemaHero.tsx`, além do container de abas da home.
-- Sem mudanças de banco, de regras de negócio ou de conteúdo — apenas CSS/JSX de apresentação.
-- Tokens semânticos existentes serão reutilizados; nenhuma cor nova será adicionada.
+## Sugestões extras (fora do escopo, se quiser)
+- `content-visibility: auto` nas listas longas do admin (dias com 40+ jogos) para acelerar o render no mobile.
+- Ações em massa também para "arquivar" e "mover para outro dia".
