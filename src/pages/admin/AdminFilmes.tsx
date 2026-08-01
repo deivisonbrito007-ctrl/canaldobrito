@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTMDBSearch, type TMDBResult } from "@/hooks/useTMDB";
 import { useAllMovies, useAddMovie, useToggleMovie, useDeleteMovie, useUpdateMovie, useReorderMovies, type FeaturedMovie } from "@/hooks/useMovies";
 import { useRealtimeMovies } from "@/hooks/useRealtimeMovies";
 import { usePagination } from "@/hooks/usePagination";
+import { ContentListFilters } from "@/components/admin/content/ContentListFilters";
+import { sortContent, usePersistedSort } from "@/components/admin/content/contentListUtils";
+
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
   PaginationNext, PaginationPrevious,
