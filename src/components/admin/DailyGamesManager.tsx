@@ -494,16 +494,18 @@ export const DailyGamesManager = () => {
               const suggested = suggestionMap.get(game.id) || currentSport;
               const isDivergent = suggested !== currentSport;
               const isSelected = selectedIds.has(game.id);
+              const isEditing = editingId === game.id;
+              const gameLabel = game.away_team?.trim() ? `${game.home_team} x ${game.away_team}` : game.home_team;
               return (
                 <div
                   key={game.id}
-                  className={`rounded-xl glass-panel p-3 flex gap-3 transition-all ${
-                    editingId === game.id ? "items-start" : "items-center"
+                  className={`rounded-xl glass-panel p-3 transition-all ${
+                    isEditing ? "flex items-start gap-3" : "flex flex-col"
                   } ${
                     isArchived ? "opacity-30 border border-dashed border-muted-foreground/20" : !game.active && !isScheduled ? "opacity-40" : ""
                   } ${isDivergent && !isArchived ? "border border-amber-500/30" : ""} ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
-                  {editingId === game.id ? (
+                  {isEditing ? (
                     <InlineEditForm
                       game={game}
                       suggestedSport={suggested}
@@ -523,71 +525,83 @@ export const DailyGamesManager = () => {
                       }}
                       onCancel={() => setEditingId(null)}
                     />
-
                   ) : (
                     <>
-                      {!isArchived && (
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelected(game.id)}
-                          className="shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-bold text-foreground truncate">
-                            {game.away_team?.trim() ? `${game.home_team} x ${game.away_team}` : game.home_team}
+                      {/* ---- Linha 1: identificação ---- */}
+                      <div className="flex items-start gap-3">
+                        {!isArchived && (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelected(game.id)}
+                            aria-label={`Selecionar ${gameLabel}`}
+                            className="mt-1 shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-sm font-bold leading-snug text-foreground">
+                            {gameLabel}
                           </p>
-                          <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[9px] px-1.5 py-0 shrink-0">
-                            {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
-                          </Badge>
-                          {isArchived && (
-                            <Badge className="bg-muted/50 text-muted-foreground border-muted text-[9px] px-1.5 py-0 shrink-0">
-                              Arquivado
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[11px] px-1.5 py-0 shrink-0 font-normal">
+                              {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
                             </Badge>
-                          )}
-                          {isScheduled && (
-                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0 shrink-0">
-                              <Clock className="h-2.5 w-2.5 mr-0.5" />
-                              {formatCountdown(game.publish_at!)}
-                            </Badge>
+                            {isArchived && (
+                              <Badge className="bg-muted/50 text-muted-foreground border-muted text-[11px] px-1.5 py-0 shrink-0 font-normal">
+                                Arquivado
+                              </Badge>
+                            )}
+                            {isScheduled && (
+                              <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[11px] px-1.5 py-0 shrink-0 font-normal">
+                                <Clock className="h-2.5 w-2.5 mr-0.5" />
+                                {formatCountdown(game.publish_at!)}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="mt-1 break-words text-[11px] text-muted-foreground">
+                            {game.competition}
+                            {game.competition_detail ? ` · ${game.competition_detail}` : ""}
+                          </p>
+                          <p className="break-words text-[11px] text-muted-foreground/60">
+                            📺 {game.channels?.join(", ") || "—"}
+                          </p>
+                          {isDivergent && !isArchived && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-amber-400">
+                              <span className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3 shrink-0" />
+                                Sugestão: {SPORT_EMOJI[suggested]} {SPORT_LABEL[suggested]}
+                              </span>
+                              <button
+                                onClick={() => handleQuickSportChange(game.id, suggested)}
+                                className="min-h-8 rounded bg-amber-500/20 px-2 font-semibold text-amber-300 hover:bg-amber-500/30"
+                              >
+                                Aceitar
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          ⏰ {game.game_time?.slice(0, 5)} • {game.competition}
-                          {game.competition_detail ? ` · ${game.competition_detail}` : ""}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/60">
-                          📺 {game.channels?.join(", ") || "—"}
-                        </p>
-                        {isDivergent && !isArchived && (
-                          <div className="mt-1.5 flex items-center gap-2 text-[10px] text-amber-400">
-                            <AlertTriangle className="h-3 w-3" />
-                            <span>Sugestão: {SPORT_EMOJI[suggested]} {SPORT_LABEL[suggested]}</span>
-                            <button
-                              onClick={() => handleQuickSportChange(game.id, suggested)}
-                              className="px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold"
-                            >
-                              Aceitar
-                            </button>
-                          </div>
-                        )}
+                        <span className="shrink-0 font-display text-base leading-none tabular-nums text-foreground/80">
+                          {game.game_time?.slice(0, 5)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+
+                      {/* ---- Linha 2: ações ---- */}
+                      <div className="mt-2.5 flex items-center gap-1.5 border-t border-white/[0.06] pt-2">
                         {isArchived ? (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => updateGame.mutate({ id: game.id, archived: false, active: true })}
-                            className="h-7 text-xs text-primary"
+                            className="min-h-11 text-xs text-primary"
                           >
                             Desarquivar
                           </Button>
                         ) : (
                           <>
-                            {/* Quick sport dropdown (1-click change) */}
                             <Select value={currentSport} onValueChange={(v) => handleQuickSportChange(game.id, v as SportType)}>
-                              <SelectTrigger className="h-7 w-[110px] text-[10px] px-2">
+                              <SelectTrigger
+                                aria-label="Esporte do jogo"
+                                className="h-11 min-w-0 flex-1 text-xs sm:max-w-[180px]"
+                              >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="z-[100] bg-popover">
@@ -598,35 +612,76 @@ export const DailyGamesManager = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <button
-                              onClick={() => handleAutoOne(game)}
-                              title="Re-classificar este jogo"
-                              className="p-1 rounded hover:bg-blue-500/10 text-blue-400"
-                            >
-                              <Wand2 className="h-3.5 w-3.5" />
-                            </button>
-                            <Switch
-                              checked={game.active}
-                              onCheckedChange={() => handleToggleActive(game.id, game.active)}
-                            />
-                            <button
-                              onClick={() => handleDuplicateTomorrow(game)}
-                              title="Duplicar para amanhã"
-                              aria-label="Duplicar para amanhã"
-                              className="p-1 rounded hover:bg-emerald-500/10 text-emerald-400"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => setEditingId(game.id)} aria-label="Editar jogo" className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
 
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex h-11 shrink-0 items-center px-1">
+                              <Switch
+                                checked={game.active}
+                                onCheckedChange={() => handleToggleActive(game.id, game.active)}
+                                aria-label={game.active ? "Desativar jogo" : "Ativar jogo"}
+                              />
+                            </div>
+
                             <button
-                              onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id } })}
-                              className="p-1 rounded hover:bg-destructive/10 text-destructive"
+                              onClick={() => setEditingId(game.id)}
+                              aria-label="Editar jogo"
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Pencil className="h-4 w-4" />
                             </button>
+
+                            {/* Ações secundárias diretas no desktop */}
+                            <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+                              <button
+                                onClick={() => handleAutoOne(game)}
+                                aria-label="Re-classificar este jogo"
+                                title="Re-classificar este jogo"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-blue-400 hover:bg-blue-500/10"
+                              >
+                                <Wand2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDuplicateTomorrow(game)}
+                                aria-label="Duplicar para amanhã"
+                                title="Duplicar para amanhã"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-emerald-400 hover:bg-emerald-500/10"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id, label: gameLabel } })}
+                                aria-label="Excluir jogo"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            {/* Menu compacto no mobile */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  aria-label="Mais ações"
+                                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/[0.06] hover:text-foreground sm:hidden"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="z-[100] w-52 bg-popover">
+                                <DropdownMenuItem onClick={() => handleAutoOne(game)} className="min-h-11 gap-2 text-xs">
+                                  <Wand2 className="h-4 w-4 text-blue-400" /> Re-classificar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDuplicateTomorrow(game)} className="min-h-11 gap-2 text-xs">
+                                  <Plus className="h-4 w-4 text-emerald-400" /> Duplicar para amanhã
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id, label: gameLabel } })}
+                                  className="min-h-11 gap-2 text-xs text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Excluir jogo
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </>
                         )}
                       </div>
@@ -635,6 +690,7 @@ export const DailyGamesManager = () => {
                 </div>
               );
             })}
+
           </div>
         )}
       </div>
