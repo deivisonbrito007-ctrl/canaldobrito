@@ -263,7 +263,7 @@ export const ABTemplateLab = () => {
               <button
                 key={d}
                 onClick={() => setWindowDays(d as 7 | 30)}
-                className={`px-2 py-1 rounded-md text-[10px] font-bold border min-h-[32px] ${
+                className={`px-2 py-1 rounded-md text-[10px] font-bold border min-h-11 ${
                   windowDays === d ? "bg-primary/20 border-primary/40 text-primary" : "border-white/[0.08] text-muted-foreground"
                 }`}
               >
