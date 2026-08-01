@@ -560,7 +560,16 @@ export const DailyGamesManager = () => {
                               checked={game.active}
                               onCheckedChange={() => handleToggleActive(game.id, game.active)}
                             />
-                            <button onClick={() => setEditingId(game.id)} className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
+                            <button
+                              onClick={() => handleDuplicateTomorrow(game)}
+                              title="Duplicar para amanhã"
+                              aria-label="Duplicar para amanhã"
+                              className="p-1 rounded hover:bg-emerald-500/10 text-emerald-400"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => setEditingId(game.id)} aria-label="Editar jogo" className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
+
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
