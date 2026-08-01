@@ -91,10 +91,11 @@ const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selec
             type="button"
             {...attributes}
             {...listeners}
-            disabled={batchActive}
+            disabled={batchActive || dragDisabled}
             className="touch-none h-11 w-7 flex items-center justify-center text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label={`Arrastar para reordenar ${m.title}`}
+            aria-label={dragDisabled ? "Reordenar indisponível com filtros ativos" : `Arrastar para reordenar ${m.title}`}
           >
+
             <GripVertical className="h-4 w-4" />
           </button>
         )}
