@@ -503,7 +503,7 @@ const AdminCanaisLogos = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
           icon={<Sparkles className="h-4 w-4" />}
-          label="Detectados (30d)"
+          label="Detectados (90d)"
           value={stats.discovered}
           onClick={() => setTab("all")}
         />
@@ -529,6 +529,41 @@ const AdminCanaisLogos = () => {
         />
       </div>
 
+      {/* Cobertura de logos */}
+      <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-2">
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="font-semibold">Cobertura de logos</span>
+          <span className="tabular-nums font-bold text-primary">{discovered.coverage}%</span>
+        </div>
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-muted/40"
+          role="progressbar"
+          aria-valuenow={discovered.coverage}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Cobertura de logos dos canais em uso"
+        >
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all"
+            style={{ width: `${discovered.coverage}%` }}
+          />
+        </div>
+        {discovered.topOrphans.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <span className="text-[11px] text-muted-foreground">Mais frequentes sem logo:</span>
+            {discovered.topOrphans.map((o) => (
+              <button
+                key={o.normalized}
+                onClick={() => openNew(o.name)}
+                className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-100 hover:bg-amber-500/20"
+              >
+                {o.name} · {o.count}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {stats.orphans > 0 && (
         <button
           onClick={() => setTab("orphans")}
@@ -538,6 +573,7 @@ const AdminCanaisLogos = () => {
           aparece{stats.orphans > 1 ? "m" : ""} nos jogos. Toque para resolver →
         </button>
       )}
+
 
       {/* Teste de matching */}
       <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-3">
