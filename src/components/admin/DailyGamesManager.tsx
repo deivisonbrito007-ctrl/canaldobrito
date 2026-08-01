@@ -415,7 +415,9 @@ export const DailyGamesManager = () => {
               return (
                 <div
                   key={game.id}
-                  className={`rounded-xl glass-panel p-3 flex items-center gap-3 transition-all ${
+                  className={`rounded-xl glass-panel p-3 flex gap-3 transition-all ${
+                    editingId === game.id ? "items-start" : "items-center"
+                  } ${
                     isArchived ? "opacity-30 border border-dashed border-muted-foreground/20" : !game.active && !isScheduled ? "opacity-40" : ""
                   } ${isDivergent && !isArchived ? "border border-amber-500/30" : ""} ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
