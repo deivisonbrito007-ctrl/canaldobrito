@@ -291,6 +291,29 @@ export const DailyGamesManager = () => {
   const activeCount = games?.filter((g) => g.active).length || 0;
   const scheduledCount = games?.filter((g) => g.publish_at && !g.active && new Date(g.publish_at) > new Date()).length || 0;
 
+  const [publishingNow, setPublishingNow] = useState(false);
+
+  const handlePublishScheduledNow = async () => {
+    const ids = (games || [])
+      .filter((g) => g.publish_at && !g.active && !g.archived)
+      .map((g) => g.id);
+    if (ids.length === 0) return;
+    setPublishingNow(true);
+    try {
+      const { error } = await supabase
+        .from("daily_games")
+        .update({ active: true, publish_at: null } as any)
+        .in("id", ids);
+      if (error) throw error;
+      toast.success(`${ids.length} jogo(s) publicado(s) agora`);
+      queryClient.invalidateQueries({ queryKey: ["daily_games"] });
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao publicar");
+    } finally {
+      setPublishingNow(false);
+    }
+  };
+
   const confirmTitle = pendingConfirm
     ? pendingConfirm.kind === "archive-day"
       ? `Arquivar ${pendingConfirm.payload.count} jogos?`
@@ -418,6 +441,32 @@ export const DailyGamesManager = () => {
           </Button>
         </div>
       )}
+
+      {/* Scheduled games alert — they exist but are invisible to the public until publish_at */}
+      {scheduledCount > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-5 sm:px-6 py-3 bg-amber-500/[0.08] border-b border-amber-500/20">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              {scheduledCount} jogo(s) agendado(s) — ainda invisíveis no site
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Eles não foram apagados: só aparecem para o público no horário agendado.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={handlePublishScheduledNow}
+            disabled={publishingNow}
+            className="min-h-11 sm:min-h-9 text-xs bg-amber-500 text-black hover:bg-amber-400 font-bold"
+          >
+            {publishingNow ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : null}
+            Publicar agora
+          </Button>
+        </div>
+      )}
+
+
 
       <div className="p-5 sm:p-6 space-y-3">
         {showAddForm && (
