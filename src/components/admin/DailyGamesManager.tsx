@@ -568,69 +568,208 @@ export const DailyGamesManager = () => {
   );
 };
 
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1">
+    <label className="block text-[11px] uppercase tracking-wider text-muted-foreground">{label}</label>
+    {children}
+  </div>
+);
+
+/** ISO -> value for <input type="datetime-local"> in local time */
+function toLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const InlineEditForm = ({
   game,
+  suggestedSport,
   onSave,
   onCancel,
 }: {
   game: any;
+  suggestedSport?: SportType;
   onSave: (u: any) => void;
   onCancel: () => void;
 }) => {
-  const [home, setHome] = useState(game.home_team);
-  const [away, setAway] = useState(game.away_team);
-  const [comp, setComp] = useState(game.competition);
+  const [home, setHome] = useState(game.home_team ?? "");
+  const [away, setAway] = useState(game.away_team ?? "");
+  const [comp, setComp] = useState(game.competition ?? "");
+  const [detail, setDetail] = useState(game.competition_detail ?? "");
+  const [date, setDate] = useState(game.date ?? "");
   const [time, setTime] = useState(game.game_time?.slice(0, 5) || "");
   const [channels, setChannels] = useState(game.channels?.join(", ") || "");
   const [sport, setSport] = useState<SportType>((game.sport_type || "football") as SportType);
+  const [active, setActive] = useState(!!game.active);
+  const [isLive, setIsLive] = useState(!!game.is_live);
+  const [isWomens, setIsWomens] = useState(!!game.is_womens);
+  const [publishAt, setPublishAt] = useState(toLocalInput(game.publish_at));
+
+  const trimmedHome = home.trim();
+  const trimmedAway = away.trim();
+  const validTime = /^\d{2}:\d{2}$/.test(time);
+  const error = !trimmedHome || !trimmedAway
+    ? "Informe os dois times."
+    : !validTime
+      ? "Informe um horário válido (HH:MM)."
+      : null;
+
+  const buildUpdates = () => {
+    const next: Record<string, any> = {};
+    const nextChannels = normalizeChannelsList(channels);
+    const currentChannels: string[] = game.channels || [];
+    const publishIso = publishAt ? new Date(publishAt).toISOString() : null;
+
+    if (trimmedHome !== game.home_team) next.home_team = trimmedHome;
+    if (trimmedAway !== game.away_team) next.away_team = trimmedAway;
+    if (comp.trim() !== (game.competition ?? "")) next.competition = comp.trim();
+    if (detail.trim() !== (game.competition_detail ?? "")) next.competition_detail = detail.trim();
+    if (date !== game.date) next.date = date;
+    if (time !== game.game_time?.slice(0, 5)) next.game_time = time;
+    if (nextChannels.join("|") !== currentChannels.join("|")) next.channels = nextChannels;
+    if (sport !== (game.sport_type || "football")) next.sport_type = sport;
+    if (active !== !!game.active) next.active = active;
+    if (isLive !== !!game.is_live) {
+      next.is_live = isLive;
+      next.status_short = isLive ? "LIVE" : "NS";
+      if (!isLive) next.elapsed_minutes = null;
+    }
+    if (isWomens !== !!game.is_womens) next.is_womens = isWomens;
+    if (publishIso !== (game.publish_at ?? null)) next.publish_at = publishIso;
+    return next;
+  };
+
+  const isDirty = Object.keys(buildUpdates()).length > 0;
+
+  const handleSave = () => {
+    if (error) return;
+    onSave(buildUpdates());
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSave();
+    }
+  };
 
   return (
-    <div className="flex-1 space-y-2">
-      <div className="grid grid-cols-2 gap-2">
-        <Input value={home} onChange={(e) => setHome(e.target.value)} className="h-8 text-xs" />
-        <Input value={away} onChange={(e) => setAway(e.target.value)} className="h-8 text-xs" />
+    <div className="flex-1 min-w-0 space-y-3" onKeyDown={handleKeyDown}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Field label="Time casa">
+          <Input value={home} onChange={(e) => setHome(e.target.value)} maxLength={120} className="h-11 text-sm" />
+        </Field>
+        <Field label="Time visitante">
+          <Input value={away} onChange={(e) => setAway(e.target.value)} maxLength={120} className="h-11 text-sm" />
+        </Field>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Input value={comp} onChange={(e) => setComp(e.target.value)} className="h-8 text-xs" />
-        <Input value={time} onChange={(e) => setTime(e.target.value)} className="h-8 text-xs" />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Field label="Competição">
+          <Input value={comp} onChange={(e) => setComp(e.target.value)} maxLength={120} className="h-11 text-sm" />
+        </Field>
+        <Field label="Detalhe / fase">
+          <Input value={detail} onChange={(e) => setDetail(e.target.value)} maxLength={120} placeholder="Ex.: 12ª rodada" className="h-11 text-sm" />
+        </Field>
       </div>
-      <Input value={channels} onChange={(e) => setChannels(e.target.value)} placeholder="Canais" className="h-8 text-xs" />
-      <Select value={sport} onValueChange={(v) => setSport(v as SportType)}>
-        <SelectTrigger className="h-8 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="z-[100] bg-popover">
-          {SPORT_OPTIONS.map((s) => (
-            <SelectItem key={s} value={s} className="text-xs">
-              {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <div className="flex gap-2">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Field label="Data">
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 text-sm" />
+        </Field>
+        <Field label="Horário">
+          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-11 text-sm" />
+        </Field>
+      </div>
+
+      <Field label="Canais (separados por vírgula)">
+        <Input value={channels} onChange={(e) => setChannels(e.target.value)} maxLength={300} placeholder="Globo, SporTV" className="h-11 text-sm" />
+      </Field>
+
+      <Field label="Esporte">
+        <Select value={sport} onValueChange={(v) => setSport(v as SportType)}>
+          <SelectTrigger className="h-11 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="z-[100] bg-popover">
+            {SPORT_OPTIONS.map((s) => (
+              <SelectItem key={s} value={s} className="text-sm">
+                {SPORT_EMOJI[s]} {SPORT_LABEL[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
+      {suggestedSport && suggestedSport !== sport && (
+        <button
+          type="button"
+          onClick={() => setSport(suggestedSport)}
+          className="flex items-center gap-1.5 text-[11px] text-amber-400 hover:text-amber-300 min-h-11"
+        >
+          <Wand2 className="h-3 w-3" />
+          Usar sugestão: {SPORT_EMOJI[suggestedSport]} {SPORT_LABEL[suggestedSport]}
+        </button>
+      )}
+
+      <Field label="Agendar publicação (opcional)">
+        <div className="flex items-center gap-2">
+          <Input
+            type="datetime-local"
+            value={publishAt}
+            onChange={(e) => setPublishAt(e.target.value)}
+            className="h-11 text-sm"
+          />
+          {publishAt && (
+            <Button size="sm" variant="ghost" onClick={() => setPublishAt("")} className="min-h-11 text-xs shrink-0">
+              Limpar
+            </Button>
+          )}
+        </div>
+      </Field>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {[
+          { label: "Ativo", value: active, set: setActive },
+          { label: "Ao vivo", value: isLive, set: setIsLive },
+          { label: "Feminino", value: isWomens, set: setIsWomens },
+        ].map((s) => (
+          <label key={s.label} className="flex items-center justify-between gap-2 min-h-11 rounded-lg border border-white/[0.06] px-3">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
+            <Switch checked={s.value} onCheckedChange={(v) => s.set(v)} aria-label={s.label} />
+          </label>
+        ))}
+      </div>
+
+      {error && (
+        <p className="text-[11px] text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="flex gap-2 pt-1">
         <Button
           size="sm"
-          onClick={() =>
-            onSave({
-              home_team: home,
-              away_team: away,
-              competition: comp,
-              game_time: time,
-              channels: channels.split(",").map((c: string) => c.trim()).filter(Boolean),
-              sport_type: sport,
-            })
-          }
-          className="h-7 text-xs bg-emerald-600"
+          onClick={handleSave}
+          disabled={!!error || !isDirty}
+          className="min-h-11 text-xs bg-emerald-600 hover:bg-emerald-600/90"
         >
           <Check className="h-3 w-3 mr-1" /> Salvar
         </Button>
-        <Button size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs">
+        <Button size="sm" variant="ghost" onClick={onCancel} className="min-h-11 text-xs">
           <X className="h-3 w-3 mr-1" /> Cancelar
         </Button>
       </div>
     </div>
   );
 };
+
 
 const AddGameForm = ({
   date,
