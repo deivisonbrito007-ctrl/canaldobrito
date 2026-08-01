@@ -1596,8 +1596,12 @@ export const ProgramacaoTexto = () => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar republicação</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Isso vai <strong>apagar todos os jogos existentes</strong> das datas selecionadas e publicar {selectedCount} novo(s). Essa ação não pode ser desfeita.
+                      Isso vai <strong>apagar todos os jogos já publicados</strong> das datas{" "}
+                      {[...new Set(parsed.filter((g) => g.selected).map((g) => g.date))].join(", ")} — inclusive os que
+                      você postou antes e não estão neste texto — e publicar {selectedCount} novo(s). Se quer apenas
+                      acrescentar jogos, use <strong>Publicar</strong> (duplicatas são ignoradas). Essa ação não pode ser desfeita.
                     </AlertDialogDescription>
+
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
