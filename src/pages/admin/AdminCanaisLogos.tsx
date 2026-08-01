@@ -1034,7 +1034,13 @@ const ChannelCard = ({
 }) => {
   const m = channel.mapping;
   const tag = channel.isOrphan
-    ? { label: "Sem logo", cls: "bg-amber-500/20 text-amber-200" }
+    ? {
+        label:
+          channel.orphanReason === "logo-none"
+            ? 'Mapeado como "sem logo"'
+            : "Sem mapeamento",
+        cls: "bg-amber-500/20 text-amber-200",
+      }
     : m
     ? { label: "Personalizado", cls: "bg-emerald-500/20 text-emerald-200" }
     : channel.isBuiltin
