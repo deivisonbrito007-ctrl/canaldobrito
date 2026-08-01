@@ -374,78 +374,129 @@ export const DailyGamesManager = () => {
 
   return (
         <><div className="glass-panel rounded-2xl overflow-hidden">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 border-b border-white/[0.06]">
-        <div>
-          <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
-            <Calendar className="h-4 w-4 text-emerald-400" />
-            Jogos Publicados
-          </h3>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-xs text-emerald-400 font-semibold">{activeCount} ativos</span>
-            {scheduledCount > 0 && (
-              <span className="text-xs text-amber-400 font-semibold">{scheduledCount} agendados</span>
-            )}
-            <span className="text-xs text-muted-foreground/50">{games?.length || 0} total</span>
+      <div className="border-b border-white/[0.06] p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold text-foreground">
+              <Calendar className="h-4 w-4 shrink-0 text-emerald-400" />
+              Jogos Publicados
+            </h3>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+              <span className="font-semibold text-emerald-400">{activeCount} ativos</span>
+              {scheduledCount > 0 && (
+                <span className="font-semibold text-amber-400">{scheduledCount} agendados</span>
+              )}
+              <span className="text-muted-foreground/60">{games?.length || 0} total</span>
+            </div>
+          </div>
+
+          {/* Ações do dia — data + adicionar sempre visíveis; resto no menu */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              aria-label="Data da programação"
+              className="glass-panel h-11 w-auto min-w-0 flex-1 border-white/[0.1] text-xs sm:flex-none"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="min-h-11 shrink-0 text-xs"
+            >
+              <Plus className="mr-1 h-4 w-4" /> Adicionar
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Ações do dia"
+                  className="min-h-11 shrink-0 gap-1 text-xs"
+                >
+                  <Settings2 className="h-4 w-4" /> Ações
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="z-[100] w-56 bg-popover">
+                <DropdownMenuItem onClick={handleReclassifySports} disabled={reclassifying} className="min-h-11 gap-2 text-xs">
+                  {reclassifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 text-blue-400" />}
+                  Re-classificar esportes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCheckDuplicates} disabled={checkingDupes} className="min-h-11 gap-2 text-xs">
+                  {checkingDupes ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4 text-emerald-400" />}
+                  Verificar duplicatas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleArchiveDay} className="min-h-11 gap-2 text-xs text-amber-400 focus:text-amber-300">
+                  <Archive className="h-4 w-4" /> Arquivar o dia
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleClearDay} className="min-h-11 gap-2 text-xs text-destructive focus:text-destructive">
+                  <Trash2 className="h-4 w-4" /> Limpar o dia
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Busca + filtros por esporte */}
+        <div className="mt-3 space-y-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar time, competição ou canal…"
+              aria-label="Buscar jogos"
+              className="glass-panel h-11 border-white/[0.1] pl-9 text-xs"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
             {Object.entries(sportCounts).map(([sport, count]) => (
               <button
                 key={sport}
                 onClick={() => setSportFilter(sportFilter === sport ? null : sport)}
-                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
+                aria-pressed={sportFilter === sport}
+                className={`min-h-8 rounded-full px-2.5 text-[11px] transition-colors ${
                   sportFilter === sport
-                    ? "bg-primary/20 text-primary font-bold"
+                    ? "bg-primary/20 font-bold text-primary"
                     : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1]"
                 }`}
               >
-                {SPORT_EMOJI[sport as SportType] || "⚽"} {count}
+                {SPORT_EMOJI[sport as SportType] || "⚽"} {SPORT_LABEL[sport as SportType] || sport} {count}
               </button>
             ))}
             {suspectCount > 0 && (
               <button
                 onClick={() => setShowSuspect((s) => !s)}
-                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                aria-pressed={showSuspect}
+                className={`flex min-h-8 items-center gap-1 rounded-full px-2.5 text-[11px] transition-colors ${
                   showSuspect
-                    ? "bg-amber-500/20 text-amber-300 font-bold"
+                    ? "bg-amber-500/20 font-bold text-amber-300"
                     : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
                 }`}
               >
-                <AlertTriangle className="h-2.5 w-2.5" /> Suspeitos {suspectCount}
+                <AlertTriangle className="h-3 w-3" /> Suspeitos {suspectCount}
+              </button>
+            )}
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="min-h-8 rounded-full px-2.5 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Limpar filtros
               </button>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-2 mt-3 sm:mt-0 flex-wrap">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto text-xs h-9 glass-panel border-white/[0.1]"
-          />
-          <Button size="sm" variant="ghost" onClick={() => setShowAddForm(!showAddForm)} className="text-xs">
-            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleArchiveDay} className="text-xs text-amber-400 hover:text-amber-300">
-            <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar Dia
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleReclassifySports} disabled={reclassifying} className="text-xs text-blue-400 hover:text-blue-300">
-            {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
-            Re-classificar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleCheckDuplicates} disabled={checkingDupes} className="text-xs text-emerald-400 hover:text-emerald-300">
-            {checkingDupes ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />}
-            Verificar duplicatas
-          </Button>
         </div>
       </div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 px-5 sm:px-6 py-3 bg-primary/10 border-b border-primary/20 flex-wrap">
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-primary/20 bg-primary/10 px-4 py-3 backdrop-blur-md sm:px-6">
           <span className="text-xs font-bold text-primary">{selectedIds.size} selecionado(s)</span>
           <Select value={bulkSport} onValueChange={(v) => setBulkSport(v as SportType)}>
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label="Esporte para aplicar em massa" className="h-11 min-w-0 flex-1 text-xs sm:w-44 sm:flex-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[100] bg-popover">
@@ -456,14 +507,15 @@ export const DailyGamesManager = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={handleBulkSport} className="h-8 text-xs bg-primary text-primary-foreground">
+          <Button size="sm" onClick={handleBulkSport} className="min-h-11 bg-primary text-xs text-primary-foreground">
             Aplicar esporte
           </Button>
-          <Button size="sm" variant="ghost" onClick={clearSelection} className="h-8 text-xs">
+          <Button size="sm" variant="ghost" onClick={clearSelection} className="min-h-11 text-xs">
             Limpar seleção
           </Button>
         </div>
       )}
+
 
       {/* Scheduled games alert — they exist but are invisible to the public until publish_at */}
       {scheduledCount > 0 && (
