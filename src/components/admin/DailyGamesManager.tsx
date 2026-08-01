@@ -79,8 +79,26 @@ export const DailyGamesManager = () => {
     let list = games;
     if (sportFilter) list = list.filter((g) => (g.sport_type || "football") === sportFilter);
     if (showSuspect) list = list.filter((g) => suggestionMap.get(g.id) !== (g.sport_type || "football"));
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((g) =>
+        [g.home_team, g.away_team, g.competition, g.competition_detail, ...(g.channels || [])]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
+      );
+    }
     return list;
-  }, [games, sportFilter, showSuspect, suggestionMap]);
+  }, [games, sportFilter, showSuspect, suggestionMap, search]);
+
+  const hasFilters = !!sportFilter || showSuspect || !!search.trim();
+  const clearFilters = () => {
+    setSportFilter(null);
+    setShowSuspect(false);
+    setSearch("");
+  };
+
 
   const handleToggleActive = (id: string, current: boolean) => {
     updateGame.mutate({ id, active: !current });
