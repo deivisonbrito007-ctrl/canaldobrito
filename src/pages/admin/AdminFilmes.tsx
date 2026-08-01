@@ -165,12 +165,35 @@ const AdminFilmes = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [listSearch, setListSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "incomplete">("all");
+  const { sortMode, setSortMode } = usePersistedSort("admin:filmes:sort");
   const qc = useQueryClient();
 
   const batchActive = !!batchProgress || bulkRunning;
+  const allMovies = movies ?? [];
 
-  const pagination = usePagination({ total: movies?.length ?? 0, pageSize: 20 });
-  const paginatedMovies = movies?.slice(pagination.start, pagination.end);
+  const filteredMovies = useMemo(() => {
+    const term = listSearch.trim().toLocaleLowerCase("pt-BR");
+    const byStatus = allMovies.filter((m) => {
+      if (statusFilter === "active") return m.active;
+      if (statusFilter === "inactive") return !m.active;
+      if (statusFilter === "incomplete") return !m.genre || !m.backdrop_url;
+      return true;
+    });
+    const bySearch = term
+      ? byStatus.filter(
+          (m) =>
+            m.title.toLocaleLowerCase("pt-BR").includes(term) ||
+            (m.genre || "").toLocaleLowerCase("pt-BR").includes(term)
+        )
+      : byStatus;
+    return sortContent(bySearch, sortMode);
+  }, [allMovies, listSearch, statusFilter, sortMode]);
+
+  const isFiltering = listSearch.trim() !== "" || statusFilter !== "all" || sortMode !== "manual";
+  const pagination = usePagination({ total: filteredMovies.length, pageSize: 20 });
+  const paginatedMovies = filteredMovies.slice(pagination.start, pagination.end);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -180,11 +203,12 @@ const AdminFilmes = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id || !movies) return;
+    if (!over || active.id === over.id || !movies || isFiltering) return;
     const oldIndex = movies.findIndex((m) => m.id === active.id);
     const newIndex = movies.findIndex((m) => m.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
     const newOrder = arrayMove(movies, oldIndex, newIndex);
+
     reorderMovies.mutate(newOrder.map((m) => m.id), {
       onError: (e: any) => toast.error(e?.message || "Falha ao salvar ordem"),
       onSuccess: () => toast.success("Ordem atualizada"),
