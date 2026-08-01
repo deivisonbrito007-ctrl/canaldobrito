@@ -540,6 +540,23 @@ const AdminFilmes = () => {
           </div>
         )}
 
+        {totalCount > 0 && (
+          <ContentListFilters
+            search={listSearch}
+            onSearchChange={(v) => { setListSearch(v); pagination.goToPage(1); }}
+            sortMode={sortMode}
+            onSortChange={(v) => { setSortMode(v); pagination.goToPage(1); }}
+            chips={[
+              { value: "all", label: "Todos", count: totalCount },
+              { value: "active", label: "Ativos", count: activeCount },
+              { value: "inactive", label: "Inativos", count: totalCount - activeCount },
+              { value: "incomplete", label: "Incompletos", count: missingDataCount },
+            ]}
+            activeChip={statusFilter}
+            onChipChange={(v) => { setStatusFilter(v as typeof statusFilter); pagination.goToPage(1); }}
+          />
+        )}
+
         <div className="p-4">
           {isLoading ? (
             <div className="space-y-2" aria-busy="true">
@@ -553,36 +570,52 @@ const AdminFilmes = () => {
                 </div>
               ))}
             </div>
-          ) : !movies || movies.length === 0 ? (
+          ) : totalCount === 0 ? (
             <div className="py-10 text-center space-y-2">
               <Film className="h-8 w-8 text-muted-foreground/20 mx-auto" />
               <p className="text-xs text-muted-foreground">Nenhum filme adicionado</p>
               <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar filmes do TMDB</p>
             </div>
+          ) : filteredMovies.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <Search className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+              <p className="text-xs text-muted-foreground">Nenhum filme encontrado com esses filtros</p>
+              <Button size="sm" variant="outline" className="text-[10px]" onClick={() => { setListSearch(""); setStatusFilter("all"); }}>
+                Limpar filtros
+              </Button>
+            </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={paginatedMovies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {paginatedMovies.map((m) => (
-                    <SortableMovieRow
-                      key={m.id}
-                      movie={m}
-                      refreshingId={refreshingId}
-                      batchActive={batchActive}
-                      selected={selectedIds.has(m.id)}
-                      selectionMode={selectionMode}
-                      onSelectChange={toggleSelect}
-                      onRefresh={handleRefreshOne}
-                      onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
-                      onDelete={setPendingDelete}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            <>
+              {isFiltering && (
+                <p className="text-[10px] text-muted-foreground/60 mb-2">
+                  Reordenação por arrastar fica disponível na ordem manual sem filtros.
+                </p>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={paginatedMovies.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {paginatedMovies.map((m) => (
+                      <SortableMovieRow
+                        key={m.id}
+                        movie={m}
+                        refreshingId={refreshingId}
+                        batchActive={batchActive}
+                        selected={selectedIds.has(m.id)}
+                        selectionMode={selectionMode}
+                        dragDisabled={isFiltering}
+                        onSelectChange={toggleSelect}
+                        onRefresh={handleRefreshOne}
+                        onToggle={(id, v) => toggleMovie.mutate({ id, active: v })}
+                        onDelete={setPendingDelete}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
           )}
 
-          {totalCount > 20 && (
+          {filteredMovies.length > 20 && (
             <div className="mt-4">
               <Pagination>
                 <PaginationContent>
@@ -619,11 +652,12 @@ const AdminFilmes = () => {
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
-              <p className="text-center text-[10px] text-muted-foreground/60 mt-2">
-                {pagination.start + 1}–{pagination.end} de {totalCount} filme{totalCount !== 1 ? "s" : ""}
+              <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+                {pagination.start + 1}–{pagination.end} de {filteredMovies.length} filme{filteredMovies.length !== 1 ? "s" : ""}
               </p>
             </div>
           )}
+
         </div>
       </div>
 
