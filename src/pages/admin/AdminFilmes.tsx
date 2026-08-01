@@ -60,14 +60,16 @@ interface SortableMovieRowProps {
   batchActive: boolean;
   selected: boolean;
   selectionMode: boolean;
+  dragDisabled?: boolean;
   onSelectChange: (id: string, checked: boolean) => void;
   onRefresh: (m: FeaturedMovie) => void;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (m: FeaturedMovie) => void;
 }
 
-const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selectionMode, onSelectChange, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive });
+const SortableMovieRow = ({ movie: m, refreshingId, batchActive, selected, selectionMode, dragDisabled, onSelectChange, onRefresh, onToggle, onDelete }: SortableMovieRowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id, disabled: batchActive || dragDisabled });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
