@@ -1,53 +1,42 @@
-## O que encontrei (verificado no código e no banco)
+## Diagnóstico (verificado no banco e no código)
 
-Comparando `AdminFilmes.tsx` (638 linhas), `AdminSeries.tsx` (395) e `AdminNovidades.tsx` (574), as três fazem a mesma coisa (buscar no TMDB → adicionar → ativar/desativar → atualizar metadados → remover), mas cada uma evoluiu separadamente:
+Consultei os canais realmente usados em `daily_games` (últimos 60 dias) e comparei com o mapa embutido (`ChannelBadge.tsx`) e com a tabela de mapeamentos (que hoje tem **apenas 6 linhas**: espn, Globo, Max, premiere, Record, sportv — sendo que "Max" está com `logo_key: none`, ou seja, sem logo mesmo tendo asset disponível).
 
-| Recurso | Filmes | Séries | Novidades |
-|---|---|---|---|
-| Reordenar itens | Drag & drop (@dnd-kit, teclado + toque) | **não tem** | Setas ↑↓ (só na ordem manual) |
-| Seleção múltipla (ativar/desativar/excluir em lote) | Sim | **não tem** | **não tem** |
-| Skeleton de carregamento | Sim (shimmer) | **não tem** (`isLoading` nem é lido) | Sim |
-| Realtime (`useRealtimeMovies`) | Sim | **não tem** | **não tem** |
-| Busca dentro da lista adicionada | **não tem** | **não tem** | Sim (com debounce) |
-| Filtros (tipo/inativos/sem gênero) | **não tem** | **não tem** | Sim (chips) |
-| Ordenação (A-Z, nota, data) | **não tem** | **não tem** | Sim (persistida em localStorage) |
-| Botão "Atualizar todos" (lote completo) | Sim | Sim | **só "sem gênero"** |
-| Paginação | Paginação numérica (20) | Paginação numérica (20) | Scroll infinito |
-| Stats no topo | 3 cards (total/ativos/nota) | 3 cards | `NovidadesStatsBar` |
-| Badge "já adicionado" nos resultados | Sim (✓ no card) | Sim | Sim (botão "✓") |
+Três problemas distintos:
 
-Confirmações no banco: `featured_movies` tem `sort_order`; **`featured_series` não tem nenhuma coluna de ordem**; `news_releases` usa `display_order`. Ou seja, ordenar séries exige uma coluna nova.
+**1. Nomes quebrados pelo parser entram como canal**
+Existem "canais" gravados como `MG)`, `MA)`, `PR`, `Globo (SP`, `Globo (RS`, `SporTV-PFC`, `SporTV-Premiere 6`. São quebras de split por vírgula/hífen dentro de parênteses. Além de poluir a aba Canais e Logos, `PR` casa por substring com **Premiere** (a busca por substring aceita 2 letras), mostrando a logo errada.
 
-Além das diferenças, dois pontos de qualidade: em Séries os botões de lote ficam `h-9` sem contagem de progresso consistente, e em Novidades a atualização em lote só cobre itens sem gênero (não repõe backdrop/tagline faltando).
+**2. Matching por substring gera logo errada e é imprevisível**
+`matchChannel` percorre o mapa e aceita qualquer `key.includes(k) || k.includes(key)`, sem ordenar por tamanho e sem mínimo de caracteres. Consequências: `PR` → Premiere; `GE` → GE TV (por sorte); a primeira chave da iteração ganha, então o resultado depende da ordem de declaração do objeto. Também a normalização não remove `(`, `)`, `.`, `/`, `,`, então `Globo (PE)` e `RedeTV!` variantes não casam de forma consistente.
 
-## Plano de padronização
+**3. Canais reais sem logo nenhuma (só emoji 📺)**
+Com contagem de uso nos últimos 60 dias: `SportyNet` (46) e `SportyNet+` — casam com `snet`, mas a arte usada é a antiga; `YouTube Metrópoles` (25), `LNF TV` / `YouTube LNF TV` (40), `YouTube UOL Esporte` / `UOL Play` (19), `GPTV` (9), `PhizTV` (9), `TV Brasil` (10), `GE` / `GETV` variantes, `CBFS TV` (5), `Record News`, `TV ALERJ`, `YouTube Stock Car`, `YouTube Vôlei Brasil`, `YouTube NBA Brasil`, `YouTube LiveBasketBR`, `YouTube Lance!`, `YouTube Flamengo TV`, `YouTube Botafogo TV`, `YouTube Massa Bruta`, `YouTube Paulistão`, `YouTube STU Channel`, `YouTube Canal Gol BR`, `YouTube Ulisses TV`.
+Para todos os `YouTube <algo>` o correto é cair na logo do YouTube quando não houver arte própria — hoje isso é acidental.
 
-**1. Camada de dados (hooks)**
-- Migração: adicionar `sort_order integer` em `featured_series` (backfill pela ordem atual de `created_at`), mantendo os GRANTs/RLS existentes.
-- Criar `useReorderSeries` (espelho de `useReorderMovies`) e `useReorderNewsReleases` (persistência em lote de `display_order`).
-- Criar `useRealtimeSeries` e `useRealtimeNewsReleases` reaproveitando o padrão de `useRealtimeMovies`.
+## O que vou fazer
 
-**2. Componentes compartilhados**
-- Extrair de Filmes um `ContentListToolbar` (busca na lista + chips de filtro + select de ordenação + ações em lote + modo seleção) e uma `SortableContentRow` genérica (grip, poster, título/metadados, ações), parametrizados por cores/rótulos (azul/filmes, roxo/séries, âmbar/novidades).
-- Extrair `TMDBSearchGrid` (grade de resultados + badge "já adicionado" + botão adicionar), hoje triplicada com pequenas divergências.
+### Etapa 1 — Matching confiável (frontend)
+- `normalizeChannelName`: remover também `( ) . , / & '` e sufixos numéricos de canal (`SporTV 2`, `ESPN4`, `Premiere 6`) passam a resolver para a marca base de forma explícita, não por acidente.
+- Reescrever `matchChannel`: 1) match exato normalizado → 2) alias do banco → 3) regra de prefixo `youtube*` → 4) match por substring **apenas com chave de 4+ caracteres e ordenado do mais longo para o mais curto**. Isso elimina `PR` → Premiere e torna o resultado determinístico.
+- Regras derivadas: `SporTV N`, `ESPN N`, `Premiere N`, `Combate N`, `SportyNet+` herdam a marca e ganham o número como sufixo no rótulo (`SporTV 2` continua escrito por extenso, só a logo é herdada).
 
-**3. Aplicar às três abas**
-- **Séries**: ganha drag & drop, seleção múltipla em lote, skeleton de carregamento, realtime, busca/filtros/ordenação na lista.
-- **Filmes**: ganha busca na lista, chips de filtro (inativos / sem gênero / sem backdrop) e ordenação persistida.
-- **Novidades**: troca as setas ↑↓ por drag & drop (mantendo as setas como fallback acessível), ganha seleção múltipla em lote, realtime e "Atualizar todos" (não só os sem gênero).
-- Padronizar rótulos, `aria-label`, toasts e diálogos de confirmação (sempre com o título do item) nas três.
+### Etapa 2 — Cobertura de logos
+- Cadastrar mapeamentos + aliases para todos os canais reais listados acima, apontando para logos existentes quando houver marca-mãe (YouTube, GE/Globo, Record News → Record, TV Brasil, SportyNet → SNet, Combate 2 → Combate, Premiere 2-6 → Premiere, HBO Max → Max).
+- Corrigir o mapeamento "Max" que está com `logo_key: none` para usar o asset `max.png`.
+- Para os canais sem nenhuma arte disponível (PhizTV, GPTV, CBFS TV, LNF TV, TV ALERJ, Metrópoles, UOL), aplicar um **chip de iniciais** consistente (ex.: "LNF", "PHZ") em vez do emoji 📺 genérico — legível e sem parecer erro.
 
-**4. Paginação**
-Unificar em paginação numérica de 20 itens (padrão de Filmes/Séries), porque drag & drop e scroll infinito conflitam — reordenar dentro de uma lista que cresce por observer causa saltos. Novidades mantém contador "x–y de N".
+### Etapa 3 — Limpeza dos nomes quebrados
+- Normalizar na leitura: canais que são só UF/fragmento (`PR`, `MG)`, `MA)`, `SP`) ou `Globo (XX` são reconhectados ao canal anterior/base e não aparecem mais como badge separado.
+- Corrigir o split de canais no parser (`ProgramacaoTexto.tsx` / `gameUtils.ts`) para não quebrar dentro de parênteses, evitando novos casos.
+- Migração de limpeza dos registros já gravados nesses formatos.
 
-**5. Validação**
-- Typecheck + suíte de testes (há testes para as três páginas em `src/pages/admin/__tests__`), atualizando-os para a nova estrutura.
-- Auditoria Playwright a 384px: sem overflow horizontal e alvos de toque de 44px nas três abas.
-
-## Sugestões extras (posso incluir se quiser)
-- **Editar título/nota/gênero inline** nas três abas (hoje só é possível re-sincronizar do TMDB).
-- **Alerta de saúde do conteúdo** (itens sem backdrop/sinopse/gênero) com botão "corrigir todos", como já existe no painel de Banners.
-- **Ação "enviar para Novidades"** direto de um filme/série já cadastrado, evitando buscar de novo no TMDB.
+### Etapa 4 — Melhorias na aba Canais e Logos
+- Aba **Órfãos** passa a mostrar por que está órfão (sem mapeamento / mapeamento com `logo_key: none` / arte quebrada) — hoje "Max" não aparece como problema mesmo estando sem logo.
+- Janela de descoberta de 30 → 90 dias, com seletor, para não esconder canais de campeonatos sazonais.
+- Botão **"Auditar logos"**: testa o carregamento de cada `custom_logo_url`/asset e marca as que retornam 404 ou imagem vazia.
+- Contadores de cobertura no topo: `X% dos canais em uso têm logo` + lista dos 5 órfãos mais frequentes.
+- Melhorar o auto-vínculo para sugerir também as regras de marca-mãe (YouTube/Premiere/ESPN numerados), não só similaridade de texto.
 
 ## Detalhes técnicos
-Sem mudança de contrato público: as páginas públicas continuam lendo `active` + ordem (`sort_order`/`display_order`). Reordenação em lote via um único `update` por índice em transação de mutação otimista, com rollback e toast de erro — igual ao já usado em `useReorderMovies`.
+Arquivos afetados: `src/components/public/channelLogos.ts` (normalização e regras), `src/components/public/ChannelBadge.tsx` (matching + chip de iniciais), `src/hooks/useDiscoveredChannels.ts` (janela e classificação de órfão), `src/pages/admin/AdminCanaisLogos.tsx` (auditoria, cobertura, auto-vínculo), `src/lib/gameUtils.ts` e `src/components/admin/ProgramacaoTexto.tsx` (split de canais). Duas migrações: seed/correção de `channel_logo_mappings` + `channel_aliases`, e limpeza dos canais quebrados em `daily_games`. Testes novos em `ChannelBadge.test.tsx` cobrindo `PR`, `SporTV 2`, `YouTube <algo>` e `Globo (PE)`.

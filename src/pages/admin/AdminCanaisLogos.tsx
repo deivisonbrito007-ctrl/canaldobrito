@@ -462,6 +462,9 @@ const AdminCanaisLogos = () => {
     );
   }, [tab, search, discovered, rows, builtinList]);
 
+  const coverage = discovered.coverage ?? 100;
+  const topOrphans = discovered.topOrphans ?? [];
+
   return (
     <div className="space-y-6 pb-[env(safe-area-inset-bottom)]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -503,7 +506,7 @@ const AdminCanaisLogos = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
           icon={<Sparkles className="h-4 w-4" />}
-          label="Detectados (30d)"
+          label="Detectados (90d)"
           value={stats.discovered}
           onClick={() => setTab("all")}
         />
@@ -529,6 +532,41 @@ const AdminCanaisLogos = () => {
         />
       </div>
 
+      {/* Cobertura de logos */}
+      <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-2">
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="font-semibold">Cobertura de logos</span>
+          <span className="tabular-nums font-bold text-primary">{coverage}%</span>
+        </div>
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-muted/40"
+          role="progressbar"
+          aria-valuenow={coverage}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Cobertura de logos dos canais em uso"
+        >
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all"
+            style={{ width: `${coverage}%` }}
+          />
+        </div>
+        {topOrphans.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <span className="text-[11px] text-muted-foreground">Mais frequentes sem logo:</span>
+            {topOrphans.map((o) => (
+              <button
+                key={o.normalized}
+                onClick={() => openNew(o.name)}
+                className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-100 hover:bg-amber-500/20"
+              >
+                {o.name} · {o.count}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {stats.orphans > 0 && (
         <button
           onClick={() => setTab("orphans")}
@@ -538,6 +576,7 @@ const AdminCanaisLogos = () => {
           aparece{stats.orphans > 1 ? "m" : ""} nos jogos. Toque para resolver →
         </button>
       )}
+
 
       {/* Teste de matching */}
       <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-3">
@@ -1034,7 +1073,13 @@ const ChannelCard = ({
 }) => {
   const m = channel.mapping;
   const tag = channel.isOrphan
-    ? { label: "Sem logo", cls: "bg-amber-500/20 text-amber-200" }
+    ? {
+        label:
+          channel.orphanReason === "logo-none"
+            ? 'Mapeado como "sem logo"'
+            : "Sem mapeamento",
+        cls: "bg-amber-500/20 text-amber-200",
+      }
     : m
     ? { label: "Personalizado", cls: "bg-emerald-500/20 text-emerald-200" }
     : channel.isBuiltin

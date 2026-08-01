@@ -73,9 +73,50 @@ export const LOGO_OPTIONS: Array<{ key: LogoKey; label: string }> = [
   ...Object.entries(LOGO_REGISTRY).map(([k, v]) => ({ key: k as LogoKey, label: v.label })),
 ];
 
+/**
+ * Normaliza o nome de um canal removendo acentos e TODO caractere
+ * não alfanumérico — igual à normalização usada no banco
+ * (`lower(regexp_replace(unaccent(x), '[^a-z0-9]+', '', 'g'))`),
+ * garantindo que front e back cheguem sempre à mesma chave.
+ */
 export const normalizeChannelName = (s: string) =>
-  s.toLowerCase()
+  s
+    .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\s\-_!+]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
     .trim();
+
+/** UFs e fragmentos que sobram quando o parser quebra "Globo (SP, MG)". */
+const UF_FRAGMENTS = new Set([
+  "ac","al","ap","am","ba","ce","df","es","go","ma","mt","ms","mg","pa","pb",
+  "pr","pe","pi","rj","rn","rs","ro","rr","sc","sp","se","to",
+]);
+
+/**
+ * Detecta "canais" que na verdade são resto de split de parênteses
+ * (ex.: "MG)", "PR", "RS") e não devem gerar badge nem virar órfão.
+ */
+export function isChannelFragment(name: string): boolean {
+  const norm = normalizeChannelName(name);
+  if (!norm) return true;
+  if (UF_FRAGMENTS.has(norm)) return true;
+  return norm.length <= 1;
+}
+
+const INITIALS_STOPWORDS = new Set([
+  "tv","canal","canais","youtube","do","da","de","dos","das","e","the","oficial",
+]);
+
+/** Iniciais legíveis para canais sem arte (ex.: "LNF TV" -> "LNF"). */
+export function channelInitials(name: string): string {
+  const cleaned = name.replace(/\(.*?\)?/g, " ").replace(/[^\p{L}\p{N}\s]/gu, " ").trim();
+  const all = cleaned.split(/\s+/).filter(Boolean);
+  const words = all.filter((w) => !INITIALS_STOPWORDS.has(w.toLowerCase()));
+  const base = words.length ? words : all;
+  if (base.length >= 2) {
+    return base.slice(0, 3).map((w) => w[0]).join("").toUpperCase();
+  }
+  const single = base[0] ?? name;
+  return single.slice(0, 3).toUpperCase() || "TV";
+}

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { withCacheBust } from "@/lib/cacheBust";
-import { LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "./channelLogos";
+import { LOGO_REGISTRY, normalizeChannelName, channelInitials, type LogoKey } from "./channelLogos";
 import { useChannelMappings } from "@/hooks/useChannelMappings";
 
 declare const __APP_VERSION__: string;
@@ -77,20 +77,51 @@ const NORMALIZED_MAP: Record<string, ChannelConfig> = Object.fromEntries(
   Object.entries(CHANNEL_MAP).map(([k, v]) => [normalizeChannelName(k), v])
 );
 
+/** Chaves ordenadas do mais longo para o mais curto: match determinístico. */
+const SORTED_ENTRIES: Array<[string, ChannelConfig]> = Object.entries(NORMALIZED_MAP)
+  .filter(([k]) => k.length >= 4)
+  .sort((a, b) => b[0].length - a[0].length);
+
+const MIN_FUZZY_LEN = 4;
+
+function exact(key: string): ChannelConfig | undefined {
+  return key ? NORMALIZED_MAP[key] : undefined;
+}
+
+/** Resolve marca base: exato -> sem sufixo numérico (SporTV 2) -> substring longa. */
+function resolveBase(key: string): ChannelConfig | undefined {
+  if (!key) return undefined;
+  const hit = exact(key);
+  if (hit) return hit;
+
+  const stripped = key.replace(/\d+$/, "");
+  if (stripped && stripped !== key) {
+    const numbered = exact(stripped);
+    if (numbered) return numbered;
+  }
+
+  if (key.length < MIN_FUZZY_LEN) return undefined;
+  for (const [k, v] of SORTED_ENTRIES) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return undefined;
+}
+
+/** "YouTube CazéTV" -> logo da CazéTV; "YouTube Metrópoles" -> logo do YouTube. */
+function resolveWithYoutube(key: string): ChannelConfig | undefined {
+  const direct = exact(key);
+  if (direct) return direct;
+  if (key.startsWith("youtube") && key.length > "youtube".length) {
+    const rest = key.slice("youtube".length);
+    return resolveBase(rest) ?? NORMALIZED_MAP["youtube"];
+  }
+  return resolveBase(key);
+}
+
 function matchChannel(name: string, overrideLogoKey?: LogoKey, overrideShort?: string | null): ChannelConfig {
   const key = normalizeChannelName(name);
-  let base: ChannelConfig = FALLBACK;
-  if (key) {
-    if (NORMALIZED_MAP[key]) base = NORMALIZED_MAP[key];
-    else {
-      for (const [k, v] of Object.entries(NORMALIZED_MAP)) {
-        if (key.includes(k) || k.includes(key)) {
-          base = v;
-          break;
-        }
-      }
-    }
-  }
+  const base: ChannelConfig = resolveWithYoutube(key) ?? FALLBACK;
+
   if (overrideLogoKey && overrideLogoKey !== "none") {
     return { ...base, logoKey: overrideLogoKey, short: overrideShort ?? base.short };
   }
@@ -125,11 +156,18 @@ interface ChannelBadgeProps {
   className?: string;
 }
 
+const INITIALS_TEXT: Record<BadgeSize, string> = {
+  sm: "text-[8px]",
+  md: "text-[9px]",
+  lg: "text-[10px]",
+};
+
 const ChannelIcon = ({
   logoKey,
   emoji,
   size,
   alt,
+  channelName,
   customUrl,
   forceLightChip,
   version,
@@ -138,6 +176,7 @@ const ChannelIcon = ({
   emoji: string;
   size: BadgeSize;
   alt: string;
+  channelName: string;
   customUrl?: string | null;
   forceLightChip?: boolean;
   version?: string | null;
@@ -155,18 +194,23 @@ const ChannelIcon = ({
   const lightChip = forceLightChip ?? registryEntry?.lightChip;
 
   if (!src || failed) {
+    // Sem arte disponível: chip de iniciais (mais legível que o emoji genérico).
     return (
       <span
         className={cn(
-          "inline-flex items-center justify-center shrink-0 leading-none",
-          ICON_WRAP[size]
+          "inline-flex items-center justify-center shrink-0 leading-none font-extrabold tracking-tight",
+          "bg-white/10 ring-1 ring-white/10",
+          ICON_WRAP[size],
+          INITIALS_TEXT[size]
         )}
+        title={channelName}
         aria-hidden
       >
-        {emoji}
+        {channelInitials(channelName) || emoji}
       </span>
     );
   }
+
 
   return (
     <span
@@ -238,6 +282,7 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
           emoji={config.emoji}
           size={size}
           alt={`${name} logo`}
+          channelName={name}
           customUrl={override?.custom_logo_url}
           forceLightChip={override?.light_chip}
           version={override?.updated_at}
