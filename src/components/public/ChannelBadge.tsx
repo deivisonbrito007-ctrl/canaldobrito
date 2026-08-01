@@ -77,20 +77,51 @@ const NORMALIZED_MAP: Record<string, ChannelConfig> = Object.fromEntries(
   Object.entries(CHANNEL_MAP).map(([k, v]) => [normalizeChannelName(k), v])
 );
 
+/** Chaves ordenadas do mais longo para o mais curto: match determinístico. */
+const SORTED_ENTRIES: Array<[string, ChannelConfig]> = Object.entries(NORMALIZED_MAP)
+  .filter(([k]) => k.length >= 4)
+  .sort((a, b) => b[0].length - a[0].length);
+
+const MIN_FUZZY_LEN = 4;
+
+function exact(key: string): ChannelConfig | undefined {
+  return key ? NORMALIZED_MAP[key] : undefined;
+}
+
+/** Resolve marca base: exato -> sem sufixo numérico (SporTV 2) -> substring longa. */
+function resolveBase(key: string): ChannelConfig | undefined {
+  if (!key) return undefined;
+  const hit = exact(key);
+  if (hit) return hit;
+
+  const stripped = key.replace(/\d+$/, "");
+  if (stripped && stripped !== key) {
+    const numbered = exact(stripped);
+    if (numbered) return numbered;
+  }
+
+  if (key.length < MIN_FUZZY_LEN) return undefined;
+  for (const [k, v] of SORTED_ENTRIES) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return undefined;
+}
+
+/** "YouTube CazéTV" -> logo da CazéTV; "YouTube Metrópoles" -> logo do YouTube. */
+function resolveWithYoutube(key: string): ChannelConfig | undefined {
+  const direct = exact(key);
+  if (direct) return direct;
+  if (key.startsWith("youtube") && key.length > "youtube".length) {
+    const rest = key.slice("youtube".length);
+    return resolveBase(rest) ?? NORMALIZED_MAP["youtube"];
+  }
+  return resolveBase(key);
+}
+
 function matchChannel(name: string, overrideLogoKey?: LogoKey, overrideShort?: string | null): ChannelConfig {
   const key = normalizeChannelName(name);
-  let base: ChannelConfig = FALLBACK;
-  if (key) {
-    if (NORMALIZED_MAP[key]) base = NORMALIZED_MAP[key];
-    else {
-      for (const [k, v] of Object.entries(NORMALIZED_MAP)) {
-        if (key.includes(k) || k.includes(key)) {
-          base = v;
-          break;
-        }
-      }
-    }
-  }
+  const base: ChannelConfig = resolveWithYoutube(key) ?? FALLBACK;
+
   if (overrideLogoKey && overrideLogoKey !== "none") {
     return { ...base, logoKey: overrideLogoKey, short: overrideShort ?? base.short };
   }
