@@ -543,7 +543,7 @@ export const DailyGamesManager = () => {
 
 
 
-      <div className="p-5 sm:p-6 space-y-3">
+      <div className="space-y-3 p-4 sm:p-6">
         {showAddForm && (
           <AddGameForm
             date={selectedDate}
@@ -557,11 +557,30 @@ export const DailyGamesManager = () => {
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : !games || games.length === 0 ? (
-          <div className="py-10 text-center">
-            <p className="text-sm text-muted-foreground">Nenhum jogo para {selectedDate}</p>
-          </div>
+          <AdminEmptyState
+            icon={Calendar}
+            title={`Nenhum jogo para ${selectedDate}`}
+            description="Adicione jogos manualmente ou processe um texto de programação."
+          />
+        ) : filteredGames.length === 0 ? (
+          <AdminEmptyState
+            icon={Search}
+            title="Nenhum jogo com esses filtros"
+            description="Ajuste a busca ou remova os filtros de esporte."
+            action={
+              <Button size="sm" variant="outline" onClick={clearFilters} className="min-h-11 text-xs">
+                Limpar filtros
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-2">
+            {hasFilters && (
+              <p className="px-1 text-[11px] text-muted-foreground" aria-live="polite">
+                Mostrando {filteredGames.length} de {games.length} jogos
+              </p>
+            )}
+
             {filteredGames.map((game) => {
               const isScheduled = game.publish_at && !game.active && new Date(game.publish_at) > new Date();
               const isArchived = game.archived;
