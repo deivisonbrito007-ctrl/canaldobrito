@@ -220,7 +220,7 @@ const SportChip = ({
   <button
     onClick={onClick}
     aria-pressed={active}
-    className={`shrink-0 min-h-[36px] px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all border whitespace-nowrap ${
+    className={`shrink-0 min-h-11 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all border whitespace-nowrap ${
       active
         ? "bg-primary/15 border-primary/40 text-primary"
         : "bg-card/40 border-border/20 text-muted-foreground hover:text-foreground hover:border-border/40"

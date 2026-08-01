@@ -290,7 +290,7 @@ export const NovidadesPage = () => {
                 id="novidades-sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortId)}
-                className="text-xs bg-surface-2 border border-border/50 rounded-lg px-2 py-1.5 text-muted-foreground font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[36px]"
+                className="text-xs bg-surface-2 border border-border/50 rounded-lg px-2 py-1.5 text-muted-foreground font-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-11"
                 aria-label="Ordenar resultados"
               >
                 {SORT_OPTIONS.map((o) => (

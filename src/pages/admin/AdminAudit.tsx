@@ -365,7 +365,7 @@ const AdminAudit = () => {
                   </span>
                   <button
                     onClick={() => toggleExpand(row.id)}
-                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors min-h-[28px] px-1"
+                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors min-h-11 px-1 -mx-1"
                     aria-expanded={isOpen}
                     aria-label="Mostrar JSON completo"
                   >

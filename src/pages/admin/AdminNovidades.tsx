@@ -263,7 +263,7 @@ const AdminNovidades = () => {
     <button
       type="button"
       onClick={() => setFilter(value)}
-      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-[32px] ${
+      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-11 ${
         filter === value
           ? "bg-primary/20 border-primary/40 text-primary"
           : "border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-white/[0.18]"
@@ -515,7 +515,7 @@ const AdminNovidades = () => {
                         </Button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-1.5 cursor-pointer min-h-[36px] px-1">
+                        <label className="flex items-center gap-1.5 cursor-pointer min-h-11 px-1">
                           <span className="text-[11px] text-muted-foreground">{m.active ? "Ativo" : "Inativo"}</span>
                           <Switch checked={m.active} onCheckedChange={(v) => toggleItem.mutate({ id: m.id, active: v })} aria-label={`${m.active ? "Desativar" : "Ativar"} ${m.title}`} />
                         </label>

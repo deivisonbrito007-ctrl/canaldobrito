@@ -81,7 +81,7 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
   };
 
   return (
-    <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3">
+    <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3 min-w-0">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-bold text-foreground">{template.label}</span>
         <div className="flex items-center gap-1.5">
@@ -97,7 +97,7 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
           )}
         </div>
       </div>
-      <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
+      <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed bg-background/50 rounded-lg p-3 max-h-[140px] overflow-y-auto">
         {finalText}
       </pre>
       <div className="flex gap-2">
@@ -127,7 +127,7 @@ const ProblemList = ({ items, label, onJump }: { items: DailyGame[]; label: stri
       <button
         type="button"
         onClick={onJump}
-        className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 min-h-[28px]"
+        className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 min-h-11 px-1 -mx-1"
       >
         <ExternalLink className="h-3 w-3" /> Abrir Programação
       </button>
@@ -202,7 +202,7 @@ const DayPreviewCard = ({
         <button
           type="button"
           onClick={() => setShowProblems((v) => !v)}
-          className="text-[11px] text-amber-300 hover:underline inline-flex items-center gap-1 min-h-[32px] self-start"
+          className="text-[11px] text-amber-300 hover:underline inline-flex items-center gap-1 min-h-11 self-start"
         >
           {showProblems ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           {showProblems ? "Ocultar problemas" : "Ver problemas"}
@@ -427,7 +427,7 @@ const AdminWhatsApp = () => {
                 key={c.value}
                 type="button"
                 onClick={() => setSelectedDate(c.value)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-[36px] ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-11 ${
                   selectedDate === c.value
                     ? "bg-primary/20 border-primary/40 text-primary"
                     : "border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-white/[0.18]"
@@ -471,7 +471,7 @@ const AdminWhatsApp = () => {
                 key={t}
                 type="button"
                 onClick={() => setLinkTab(t)}
-                className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors min-h-[32px] ${
+                className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors min-h-11 ${
                   linkTab === t
                     ? "bg-primary/20 border-primary/40 text-primary"
                     : "border-white/[0.08] text-muted-foreground hover:text-foreground"
@@ -531,7 +531,7 @@ const AdminWhatsApp = () => {
           </div>
           <span className="text-sm font-bold text-foreground">Textos Prontos</span>
         </div>
-        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
           {templates.map((t) => (
             <MessageCard key={t.id} template={t} siteUrl={siteUrl} accessCount={landingCounts[`tpl-${t.id}`] ?? 0} />
           ))}
