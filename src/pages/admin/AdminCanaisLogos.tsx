@@ -462,6 +462,9 @@ const AdminCanaisLogos = () => {
     );
   }, [tab, search, discovered, rows, builtinList]);
 
+  const coverage = discovered.coverage ?? 100;
+  const topOrphans = discovered.topOrphans ?? [];
+
   return (
     <div className="space-y-6 pb-[env(safe-area-inset-bottom)]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -533,25 +536,25 @@ const AdminCanaisLogos = () => {
       <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-2">
         <div className="flex items-center justify-between gap-2 text-sm">
           <span className="font-semibold">Cobertura de logos</span>
-          <span className="tabular-nums font-bold text-primary">{discovered.coverage}%</span>
+          <span className="tabular-nums font-bold text-primary">{coverage}%</span>
         </div>
         <div
           className="h-2 w-full overflow-hidden rounded-full bg-muted/40"
           role="progressbar"
-          aria-valuenow={discovered.coverage}
+          aria-valuenow={coverage}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Cobertura de logos dos canais em uso"
         >
           <div
             className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all"
-            style={{ width: `${discovered.coverage}%` }}
+            style={{ width: `${coverage}%` }}
           />
         </div>
-        {discovered.topOrphans.length > 0 && (
+        {topOrphans.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             <span className="text-[11px] text-muted-foreground">Mais frequentes sem logo:</span>
-            {discovered.topOrphans.map((o) => (
+            {topOrphans.map((o) => (
               <button
                 key={o.normalized}
                 onClick={() => openNew(o.name)}
