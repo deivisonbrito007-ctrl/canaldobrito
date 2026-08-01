@@ -708,14 +708,43 @@ const InlineEditForm = ({
 
   return (
     <div className="flex-1 min-w-0 space-y-3" onKeyDown={handleKeyDown}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Field label="Time casa">
-          <Input value={home} onChange={(e) => setHome(e.target.value)} maxLength={120} className="h-11 text-sm" />
+      <label className="flex items-center justify-between gap-2 min-h-11 rounded-lg border border-white/[0.06] px-3">
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          Evento único (sem confronto)
+        </span>
+        <Switch
+          checked={singleEvent}
+          onCheckedChange={(v) => {
+            setSingleEvent(v);
+            if (v) setAway("");
+          }}
+          aria-label="Evento único (sem confronto)"
+        />
+      </label>
+
+      <div className={`grid grid-cols-1 gap-2 ${singleEvent ? "" : "sm:grid-cols-2"}`}>
+        <Field label={singleEvent || nonAdversarial ? "Evento / prova" : "Time casa"}>
+          <Input
+            value={home}
+            onChange={(e) => setHome(e.target.value)}
+            maxLength={120}
+            placeholder={singleEvent || nonAdversarial ? "Ex.: GP do Brasil · UFC 300 · Kings League" : "Ex.: Flamengo"}
+            className="h-11 text-sm"
+          />
         </Field>
-        <Field label="Time visitante">
-          <Input value={away} onChange={(e) => setAway(e.target.value)} maxLength={120} className="h-11 text-sm" />
-        </Field>
+        {!singleEvent && (
+          <Field label="Time visitante (opcional)">
+            <Input
+              value={away}
+              onChange={(e) => setAway(e.target.value)}
+              maxLength={120}
+              placeholder="Deixe vazio para evento único"
+              className="h-11 text-sm"
+            />
+          </Field>
+        )}
       </div>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Field label="Competição">
