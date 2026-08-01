@@ -864,26 +864,30 @@ const AddGameForm = ({
   const [sportMode, setSportMode] = useState<"auto" | SportType>("auto");
 
   const handleAdd = async () => {
-    if (!home || !away || !time) {
-      toast.error("Preencha times e horário");
+    const trimmedHome = home.trim();
+    const trimmedAway = away.trim();
+    if (!trimmedHome || !/^\d{2}:\d{2}$/.test(time)) {
+      toast.error("Preencha o evento/time e o horário (HH:MM)");
       return;
     }
 
     const resolvedSport: SportType =
-      sportMode === "auto" ? detectSportType(comp, `${home} ${away}`) : sportMode;
+      sportMode === "auto"
+        ? detectSportType(comp, `${trimmedHome} ${trimmedAway}`.trim())
+        : sportMode;
 
     try {
       const result = await insertGames.mutateAsync([
         {
           date,
-          home_team: home,
-          away_team: away,
+          home_team: trimmedHome,
+          away_team: trimmedAway,
           competition: comp,
           competition_detail: "",
           game_time: time,
           channels: channels.split(",").map((c) => c.trim()).filter(Boolean),
           is_live: false,
-          is_womens: home.includes("(F)") || away.includes("(F)"),
+          is_womens: trimmedHome.includes("(F)") || trimmedAway.includes("(F)"),
           active: true,
           archived: false,
           sport_type: resolvedSport,
@@ -893,7 +897,7 @@ const AddGameForm = ({
       if (result.skipped > 0) {
         toast.warning("Jogo já existe — não foi adicionado");
       } else {
-        toast.success("Jogo adicionado!");
+        toast.success(trimmedAway ? "Jogo adicionado!" : "Evento adicionado!");
       }
       onClose();
     } catch (err: any) {
@@ -903,11 +907,12 @@ const AddGameForm = ({
 
   return (
     <div className="rounded-xl glass-panel p-4 space-y-3 border border-emerald-500/20">
-      <p className="text-xs font-bold text-foreground">Adicionar Jogo Avulso</p>
+      <p className="text-xs font-bold text-foreground">Adicionar Jogo / Evento Avulso</p>
       <div className="grid grid-cols-2 gap-2">
-        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa" className="h-8 text-xs" />
-        <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Time visitante" className="h-8 text-xs" />
+        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Time casa / Evento" className="h-8 text-xs" />
+        <Input value={away} onChange={(e) => setAway(e.target.value)} placeholder="Visitante (vazio = evento)" className="h-8 text-xs" />
       </div>
+
       <div className="grid grid-cols-2 gap-2">
         <Input value={comp} onChange={(e) => setComp(e.target.value)} placeholder="Competição" className="h-8 text-xs" />
         <Input value={time} onChange={(e) => setTime(e.target.value)} placeholder="HH:MM" className="h-8 text-xs" />
