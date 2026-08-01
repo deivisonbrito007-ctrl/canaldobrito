@@ -95,6 +95,39 @@ export const DailyGamesManager = () => {
     toast.success(`${SPORT_EMOJI[correct]} ${SPORT_LABEL[correct]}`);
   };
 
+  const handleDuplicateTomorrow = async (game: any) => {
+    const d = new Date(`${game.date}T12:00:00`);
+    d.setDate(d.getDate() + 1);
+    const nextDate = d.toISOString().slice(0, 10);
+    try {
+      const result = await insertGames.mutateAsync([
+        {
+          date: nextDate,
+          home_team: game.home_team,
+          away_team: game.away_team,
+          competition: game.competition || "",
+          competition_detail: game.competition_detail || "",
+          game_time: game.game_time,
+          channels: game.channels || [],
+          is_live: false,
+          is_womens: !!game.is_womens,
+          active: true,
+          archived: false,
+          sport_type: game.sport_type || "football",
+          status_short: "NS",
+          elapsed_minutes: null,
+          publish_at: null,
+        } as any,
+      ]);
+      if (result.skipped > 0) toast.warning(`Já existe em ${nextDate}`);
+      else toast.success(`Duplicado para ${nextDate}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao duplicar");
+    }
+  };
+
+
+
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
