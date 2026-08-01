@@ -192,13 +192,31 @@ function isSectionHeader(line: string, nextLine?: string): boolean {
 }
 
 /** Split a channel list string by `,`, `/`, ` | `, ` e ` into individual channels.
+ *  Respeita parênteses, para não quebrar "Globo (SP, MG)" em "Globo (SP" + "MG)".
  *  Ex: "Globo / Paramount+, ESPN e SporTV" -> ["Globo","Paramount+","ESPN","SporTV"] */
 function splitChannels(raw: string): string[] {
-  return raw
-    .split(/[,/|]/)
-    .flatMap((part) => part.split(/ e (?=[A-Za-z0-9])/))
+  const parts: string[] = [];
+  let buf = "";
+  let depth = 0;
+  for (const ch of raw) {
+    if (ch === "(" || ch === "[") depth++;
+    else if (ch === ")" || ch === "]") depth = Math.max(0, depth - 1);
+    if (depth === 0 && (ch === "," || ch === "/" || ch === "|")) {
+      parts.push(buf);
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  parts.push(buf);
+
+  return parts
+    .flatMap((part) =>
+      part.includes("(") ? [part] : part.split(/ e (?=[A-Za-z0-9])/)
+    )
     .map((c) => c.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((c) => !isChannelFragment(c));
 }
 
 /** Collect metadata from lines following a game title */
