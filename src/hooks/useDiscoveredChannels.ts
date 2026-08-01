@@ -15,7 +15,7 @@ export type DiscoveredChannel = {
   isBuiltin: boolean;
   isOrphan: boolean;
   /** Por que está sem logo: sem mapeamento, ou mapeado com "sem logo". */
-  orphanReason: OrphanReason;
+  orphanReason?: OrphanReason;
 };
 
 const BUILTIN_NORMALIZED = new Set(
