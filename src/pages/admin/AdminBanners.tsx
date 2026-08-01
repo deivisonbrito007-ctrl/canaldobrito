@@ -674,7 +674,7 @@ const AdminBanners = () => {
                         else if (opt.key === "12") setScheduleDate(getScheduleDate(12));
                         else if (opt.key === "none") setScheduleDate("");
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all min-h-[36px] ${
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all min-h-11 ${
                         scheduleMode === opt.key
                           ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                           : "glass-panel text-muted-foreground/70 hover:text-foreground"

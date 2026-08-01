@@ -202,7 +202,7 @@ const DayPreviewCard = ({
         <button
           type="button"
           onClick={() => setShowProblems((v) => !v)}
-          className="text-[11px] text-amber-300 hover:underline inline-flex items-center gap-1 min-h-[32px] self-start"
+          className="text-[11px] text-amber-300 hover:underline inline-flex items-center gap-1 min-h-11 self-start"
         >
           {showProblems ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           {showProblems ? "Ocultar problemas" : "Ver problemas"}
@@ -427,7 +427,7 @@ const AdminWhatsApp = () => {
                 key={c.value}
                 type="button"
                 onClick={() => setSelectedDate(c.value)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-[36px] ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors min-h-11 ${
                   selectedDate === c.value
                     ? "bg-primary/20 border-primary/40 text-primary"
                     : "border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-white/[0.18]"
@@ -471,7 +471,7 @@ const AdminWhatsApp = () => {
                 key={t}
                 type="button"
                 onClick={() => setLinkTab(t)}
-                className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors min-h-[32px] ${
+                className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors min-h-11 ${
                   linkTab === t
                     ? "bg-primary/20 border-primary/40 text-primary"
                     : "border-white/[0.08] text-muted-foreground hover:text-foreground"

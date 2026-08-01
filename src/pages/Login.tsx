@@ -153,7 +153,7 @@ const Login = () => {
           <div className="flex flex-col items-center gap-2.5">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[36px]"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-11"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Voltar para a agenda
