@@ -14,7 +14,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Wand2, AlertTriangle } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AdminEmptyState } from "@/components/admin/AdminStates";
+import { Trash2, Pencil, Check, X, Plus, Loader2, Calendar, Clock, Archive, RefreshCw, ShieldCheck, Wand2, AlertTriangle, MoreVertical, Search, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -33,6 +37,7 @@ export const DailyGamesManager = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [sportFilter, setSportFilter] = useState<string | null>(null);
   const [showSuspect, setShowSuspect] = useState(false);
+  const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkSport, setBulkSport] = useState<SportType>("football");
   const [pendingConfirm, setPendingConfirm] = useState<{ kind: "archive-day" | "clear-day" | "delete-game" | "remove-duplicates"; payload: any } | null>(null);
@@ -74,12 +79,44 @@ export const DailyGamesManager = () => {
     let list = games;
     if (sportFilter) list = list.filter((g) => (g.sport_type || "football") === sportFilter);
     if (showSuspect) list = list.filter((g) => suggestionMap.get(g.id) !== (g.sport_type || "football"));
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((g) =>
+        [g.home_team, g.away_team, g.competition, g.competition_detail, ...(g.channels || [])]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
+      );
+    }
     return list;
-  }, [games, sportFilter, showSuspect, suggestionMap]);
+  }, [games, sportFilter, showSuspect, suggestionMap, search]);
+
+  const hasFilters = !!sportFilter || showSuspect || !!search.trim();
+  const clearFilters = () => {
+    setSportFilter(null);
+    setShowSuspect(false);
+    setSearch("");
+  };
+
 
   const handleToggleActive = (id: string, current: boolean) => {
-    updateGame.mutate({ id, active: !current });
+    updateGame.mutate(
+      { id, active: !current },
+      {
+        onSuccess: () => {
+          toast.success(current ? "Jogo desativado" : "Jogo ativado", {
+            action: {
+              label: "Desfazer",
+              onClick: () => updateGame.mutate({ id, active: current }),
+            },
+          });
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao atualizar o jogo"),
+      }
+    );
   };
+
 
   const handleQuickSportChange = (id: string, sport: SportType) => {
     updateGame.mutate({ id, sport_type: sport });
@@ -120,7 +157,10 @@ export const DailyGamesManager = () => {
         } as any,
       ]);
       if (result.skipped > 0) toast.warning(`Já existe em ${nextDate}`);
-      else toast.success(`Duplicado para ${nextDate}`);
+      else
+        toast.success(`Duplicado para ${nextDate}`, {
+          action: { label: "Ver dia", onClick: () => setSelectedDate(nextDate) },
+        });
     } catch (err: any) {
       toast.error(err?.message || "Erro ao duplicar");
     }
@@ -320,7 +360,7 @@ export const DailyGamesManager = () => {
       : pendingConfirm.kind === "clear-day"
         ? `Excluir todos os jogos de ${selectedDate}?`
         : pendingConfirm.kind === "delete-game"
-          ? "Excluir jogo?"
+          ? `Excluir "${pendingConfirm.payload.label || "jogo"}"?`
           : `Remover ${pendingConfirm.payload.count} duplicata(s)?`
     : "";
 
@@ -351,78 +391,129 @@ export const DailyGamesManager = () => {
 
   return (
         <><div className="glass-panel rounded-2xl overflow-hidden">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 border-b border-white/[0.06]">
-        <div>
-          <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
-            <Calendar className="h-4 w-4 text-emerald-400" />
-            Jogos Publicados
-          </h3>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-xs text-emerald-400 font-semibold">{activeCount} ativos</span>
-            {scheduledCount > 0 && (
-              <span className="text-xs text-amber-400 font-semibold">{scheduledCount} agendados</span>
-            )}
-            <span className="text-xs text-muted-foreground/50">{games?.length || 0} total</span>
+      <div className="border-b border-white/[0.06] p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h3 className="flex items-center gap-2 font-display text-lg font-bold text-foreground">
+              <Calendar className="h-4 w-4 shrink-0 text-emerald-400" />
+              Jogos Publicados
+            </h3>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+              <span className="font-semibold text-emerald-400">{activeCount} ativos</span>
+              {scheduledCount > 0 && (
+                <span className="font-semibold text-amber-400">{scheduledCount} agendados</span>
+              )}
+              <span className="text-muted-foreground/60">{games?.length || 0} total</span>
+            </div>
+          </div>
+
+          {/* Ações do dia — data + adicionar sempre visíveis; resto no menu */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              aria-label="Data da programação"
+              className="glass-panel h-11 w-auto min-w-0 flex-1 border-white/[0.1] text-xs sm:flex-none"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="min-h-11 shrink-0 text-xs"
+            >
+              <Plus className="mr-1 h-4 w-4" /> Adicionar
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Ações do dia"
+                  className="min-h-11 shrink-0 gap-1 text-xs"
+                >
+                  <Settings2 className="h-4 w-4" /> Ações
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="z-[100] w-56 bg-popover">
+                <DropdownMenuItem onClick={handleReclassifySports} disabled={reclassifying} className="min-h-11 gap-2 text-xs">
+                  {reclassifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 text-blue-400" />}
+                  Re-classificar esportes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCheckDuplicates} disabled={checkingDupes} className="min-h-11 gap-2 text-xs">
+                  {checkingDupes ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4 text-emerald-400" />}
+                  Verificar duplicatas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleArchiveDay} className="min-h-11 gap-2 text-xs text-amber-400 focus:text-amber-300">
+                  <Archive className="h-4 w-4" /> Arquivar o dia
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleClearDay} className="min-h-11 gap-2 text-xs text-destructive focus:text-destructive">
+                  <Trash2 className="h-4 w-4" /> Limpar o dia
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Busca + filtros por esporte */}
+        <div className="mt-3 space-y-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar time, competição ou canal…"
+              aria-label="Buscar jogos"
+              className="glass-panel h-11 border-white/[0.1] pl-9 text-xs"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
             {Object.entries(sportCounts).map(([sport, count]) => (
               <button
                 key={sport}
                 onClick={() => setSportFilter(sportFilter === sport ? null : sport)}
-                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
+                aria-pressed={sportFilter === sport}
+                className={`min-h-8 rounded-full px-2.5 text-[11px] transition-colors ${
                   sportFilter === sport
-                    ? "bg-primary/20 text-primary font-bold"
+                    ? "bg-primary/20 font-bold text-primary"
                     : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1]"
                 }`}
               >
-                {SPORT_EMOJI[sport as SportType] || "⚽"} {count}
+                {SPORT_EMOJI[sport as SportType] || "⚽"} {SPORT_LABEL[sport as SportType] || sport} {count}
               </button>
             ))}
             {suspectCount > 0 && (
               <button
                 onClick={() => setShowSuspect((s) => !s)}
-                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                aria-pressed={showSuspect}
+                className={`flex min-h-8 items-center gap-1 rounded-full px-2.5 text-[11px] transition-colors ${
                   showSuspect
-                    ? "bg-amber-500/20 text-amber-300 font-bold"
+                    ? "bg-amber-500/20 font-bold text-amber-300"
                     : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
                 }`}
               >
-                <AlertTriangle className="h-2.5 w-2.5" /> Suspeitos {suspectCount}
+                <AlertTriangle className="h-3 w-3" /> Suspeitos {suspectCount}
+              </button>
+            )}
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="min-h-8 rounded-full px-2.5 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Limpar filtros
               </button>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-2 mt-3 sm:mt-0 flex-wrap">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto text-xs h-9 glass-panel border-white/[0.1]"
-          />
-          <Button size="sm" variant="ghost" onClick={() => setShowAddForm(!showAddForm)} className="text-xs">
-            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleArchiveDay} className="text-xs text-amber-400 hover:text-amber-300">
-            <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar Dia
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleClearDay} className="text-xs text-destructive">
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Limpar Dia
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleReclassifySports} disabled={reclassifying} className="text-xs text-blue-400 hover:text-blue-300">
-            {reclassifying ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
-            Re-classificar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleCheckDuplicates} disabled={checkingDupes} className="text-xs text-emerald-400 hover:text-emerald-300">
-            {checkingDupes ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />}
-            Verificar duplicatas
-          </Button>
         </div>
       </div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 px-5 sm:px-6 py-3 bg-primary/10 border-b border-primary/20 flex-wrap">
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-primary/20 bg-primary/10 px-4 py-3 backdrop-blur-md sm:px-6">
           <span className="text-xs font-bold text-primary">{selectedIds.size} selecionado(s)</span>
           <Select value={bulkSport} onValueChange={(v) => setBulkSport(v as SportType)}>
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label="Esporte para aplicar em massa" className="h-11 min-w-0 flex-1 text-xs sm:w-44 sm:flex-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[100] bg-popover">
@@ -433,14 +524,15 @@ export const DailyGamesManager = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={handleBulkSport} className="h-8 text-xs bg-primary text-primary-foreground">
+          <Button size="sm" onClick={handleBulkSport} className="min-h-11 bg-primary text-xs text-primary-foreground">
             Aplicar esporte
           </Button>
-          <Button size="sm" variant="ghost" onClick={clearSelection} className="h-8 text-xs">
+          <Button size="sm" variant="ghost" onClick={clearSelection} className="min-h-11 text-xs">
             Limpar seleção
           </Button>
         </div>
       )}
+
 
       {/* Scheduled games alert — they exist but are invisible to the public until publish_at */}
       {scheduledCount > 0 && (
@@ -468,7 +560,7 @@ export const DailyGamesManager = () => {
 
 
 
-      <div className="p-5 sm:p-6 space-y-3">
+      <div className="space-y-3 p-4 sm:p-6">
         {showAddForm && (
           <AddGameForm
             date={selectedDate}
@@ -482,11 +574,30 @@ export const DailyGamesManager = () => {
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : !games || games.length === 0 ? (
-          <div className="py-10 text-center">
-            <p className="text-sm text-muted-foreground">Nenhum jogo para {selectedDate}</p>
-          </div>
+          <AdminEmptyState
+            icon={Calendar}
+            title={`Nenhum jogo para ${selectedDate}`}
+            description="Adicione jogos manualmente ou processe um texto de programação."
+          />
+        ) : filteredGames.length === 0 ? (
+          <AdminEmptyState
+            icon={Search}
+            title="Nenhum jogo com esses filtros"
+            description="Ajuste a busca ou remova os filtros de esporte."
+            action={
+              <Button size="sm" variant="outline" onClick={clearFilters} className="min-h-11 text-xs">
+                Limpar filtros
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-2">
+            {hasFilters && (
+              <p className="px-1 text-[11px] text-muted-foreground" aria-live="polite">
+                Mostrando {filteredGames.length} de {games.length} jogos
+              </p>
+            )}
+
             {filteredGames.map((game) => {
               const isScheduled = game.publish_at && !game.active && new Date(game.publish_at) > new Date();
               const isArchived = game.archived;
@@ -494,16 +605,18 @@ export const DailyGamesManager = () => {
               const suggested = suggestionMap.get(game.id) || currentSport;
               const isDivergent = suggested !== currentSport;
               const isSelected = selectedIds.has(game.id);
+              const isEditing = editingId === game.id;
+              const gameLabel = game.away_team?.trim() ? `${game.home_team} x ${game.away_team}` : game.home_team;
               return (
                 <div
                   key={game.id}
-                  className={`rounded-xl glass-panel p-3 flex gap-3 transition-all ${
-                    editingId === game.id ? "items-start" : "items-center"
+                  className={`rounded-xl glass-panel p-3 transition-all ${
+                    isEditing ? "flex items-start gap-3" : "flex flex-col"
                   } ${
                     isArchived ? "opacity-30 border border-dashed border-muted-foreground/20" : !game.active && !isScheduled ? "opacity-40" : ""
                   } ${isDivergent && !isArchived ? "border border-amber-500/30" : ""} ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
-                  {editingId === game.id ? (
+                  {isEditing ? (
                     <InlineEditForm
                       game={game}
                       suggestedSport={suggested}
@@ -523,71 +636,83 @@ export const DailyGamesManager = () => {
                       }}
                       onCancel={() => setEditingId(null)}
                     />
-
                   ) : (
                     <>
-                      {!isArchived && (
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelected(game.id)}
-                          className="shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-bold text-foreground truncate">
-                            {game.away_team?.trim() ? `${game.home_team} x ${game.away_team}` : game.home_team}
+                      {/* ---- Linha 1: identificação ---- */}
+                      <div className="flex items-start gap-3">
+                        {!isArchived && (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelected(game.id)}
+                            aria-label={`Selecionar ${gameLabel}`}
+                            className="mt-1 shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-sm font-bold leading-snug text-foreground">
+                            {gameLabel}
                           </p>
-                          <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[9px] px-1.5 py-0 shrink-0">
-                            {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
-                          </Badge>
-                          {isArchived && (
-                            <Badge className="bg-muted/50 text-muted-foreground border-muted text-[9px] px-1.5 py-0 shrink-0">
-                              Arquivado
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <Badge className="bg-white/[0.06] text-muted-foreground border-white/[0.08] text-[11px] px-1.5 py-0 shrink-0 font-normal">
+                              {SPORT_EMOJI[currentSport]} {SPORT_LABEL[currentSport]}
                             </Badge>
-                          )}
-                          {isScheduled && (
-                            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0 shrink-0">
-                              <Clock className="h-2.5 w-2.5 mr-0.5" />
-                              {formatCountdown(game.publish_at!)}
-                            </Badge>
+                            {isArchived && (
+                              <Badge className="bg-muted/50 text-muted-foreground border-muted text-[11px] px-1.5 py-0 shrink-0 font-normal">
+                                Arquivado
+                              </Badge>
+                            )}
+                            {isScheduled && (
+                              <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[11px] px-1.5 py-0 shrink-0 font-normal">
+                                <Clock className="h-2.5 w-2.5 mr-0.5" />
+                                {formatCountdown(game.publish_at!)}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="mt-1 break-words text-[11px] text-muted-foreground">
+                            {game.competition}
+                            {game.competition_detail ? ` · ${game.competition_detail}` : ""}
+                          </p>
+                          <p className="break-words text-[11px] text-muted-foreground/60">
+                            📺 {game.channels?.join(", ") || "—"}
+                          </p>
+                          {isDivergent && !isArchived && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-amber-400">
+                              <span className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3 shrink-0" />
+                                Sugestão: {SPORT_EMOJI[suggested]} {SPORT_LABEL[suggested]}
+                              </span>
+                              <button
+                                onClick={() => handleQuickSportChange(game.id, suggested)}
+                                className="min-h-8 rounded bg-amber-500/20 px-2 font-semibold text-amber-300 hover:bg-amber-500/30"
+                              >
+                                Aceitar
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          ⏰ {game.game_time?.slice(0, 5)} • {game.competition}
-                          {game.competition_detail ? ` · ${game.competition_detail}` : ""}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/60">
-                          📺 {game.channels?.join(", ") || "—"}
-                        </p>
-                        {isDivergent && !isArchived && (
-                          <div className="mt-1.5 flex items-center gap-2 text-[10px] text-amber-400">
-                            <AlertTriangle className="h-3 w-3" />
-                            <span>Sugestão: {SPORT_EMOJI[suggested]} {SPORT_LABEL[suggested]}</span>
-                            <button
-                              onClick={() => handleQuickSportChange(game.id, suggested)}
-                              className="px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold"
-                            >
-                              Aceitar
-                            </button>
-                          </div>
-                        )}
+                        <span className="shrink-0 font-display text-base leading-none tabular-nums text-foreground/80">
+                          {game.game_time?.slice(0, 5)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+
+                      {/* ---- Linha 2: ações ---- */}
+                      <div className="mt-2.5 flex items-center gap-1.5 border-t border-white/[0.06] pt-2">
                         {isArchived ? (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => updateGame.mutate({ id: game.id, archived: false, active: true })}
-                            className="h-7 text-xs text-primary"
+                            className="min-h-11 text-xs text-primary"
                           >
                             Desarquivar
                           </Button>
                         ) : (
                           <>
-                            {/* Quick sport dropdown (1-click change) */}
                             <Select value={currentSport} onValueChange={(v) => handleQuickSportChange(game.id, v as SportType)}>
-                              <SelectTrigger className="h-7 w-[110px] text-[10px] px-2">
+                              <SelectTrigger
+                                aria-label="Esporte do jogo"
+                                className="h-11 min-w-0 flex-1 text-xs sm:max-w-[180px]"
+                              >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="z-[100] bg-popover">
@@ -598,35 +723,76 @@ export const DailyGamesManager = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <button
-                              onClick={() => handleAutoOne(game)}
-                              title="Re-classificar este jogo"
-                              className="p-1 rounded hover:bg-blue-500/10 text-blue-400"
-                            >
-                              <Wand2 className="h-3.5 w-3.5" />
-                            </button>
-                            <Switch
-                              checked={game.active}
-                              onCheckedChange={() => handleToggleActive(game.id, game.active)}
-                            />
-                            <button
-                              onClick={() => handleDuplicateTomorrow(game)}
-                              title="Duplicar para amanhã"
-                              aria-label="Duplicar para amanhã"
-                              className="p-1 rounded hover:bg-emerald-500/10 text-emerald-400"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => setEditingId(game.id)} aria-label="Editar jogo" className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground">
 
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex h-11 shrink-0 items-center px-1">
+                              <Switch
+                                checked={game.active}
+                                onCheckedChange={() => handleToggleActive(game.id, game.active)}
+                                aria-label={game.active ? "Desativar jogo" : "Ativar jogo"}
+                              />
+                            </div>
+
                             <button
-                              onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id } })}
-                              className="p-1 rounded hover:bg-destructive/10 text-destructive"
+                              onClick={() => setEditingId(game.id)}
+                              aria-label="Editar jogo"
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Pencil className="h-4 w-4" />
                             </button>
+
+                            {/* Ações secundárias diretas no desktop */}
+                            <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+                              <button
+                                onClick={() => handleAutoOne(game)}
+                                aria-label="Re-classificar este jogo"
+                                title="Re-classificar este jogo"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-blue-400 hover:bg-blue-500/10"
+                              >
+                                <Wand2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDuplicateTomorrow(game)}
+                                aria-label="Duplicar para amanhã"
+                                title="Duplicar para amanhã"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-emerald-400 hover:bg-emerald-500/10"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id, label: gameLabel } })}
+                                aria-label="Excluir jogo"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            {/* Menu compacto no mobile */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  aria-label="Mais ações"
+                                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/[0.06] hover:text-foreground sm:hidden"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="z-[100] w-52 bg-popover">
+                                <DropdownMenuItem onClick={() => handleAutoOne(game)} className="min-h-11 gap-2 text-xs">
+                                  <Wand2 className="h-4 w-4 text-blue-400" /> Re-classificar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDuplicateTomorrow(game)} className="min-h-11 gap-2 text-xs">
+                                  <Plus className="h-4 w-4 text-emerald-400" /> Duplicar para amanhã
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id, label: gameLabel } })}
+                                  className="min-h-11 gap-2 text-xs text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" /> Excluir jogo
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </>
                         )}
                       </div>
@@ -635,6 +801,7 @@ export const DailyGamesManager = () => {
                 </div>
               );
             })}
+
           </div>
         )}
       </div>
