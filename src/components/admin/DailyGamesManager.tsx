@@ -101,8 +101,22 @@ export const DailyGamesManager = () => {
 
 
   const handleToggleActive = (id: string, current: boolean) => {
-    updateGame.mutate({ id, active: !current });
+    updateGame.mutate(
+      { id, active: !current },
+      {
+        onSuccess: () => {
+          toast.success(current ? "Jogo desativado" : "Jogo ativado", {
+            action: {
+              label: "Desfazer",
+              onClick: () => updateGame.mutate({ id, active: current }),
+            },
+          });
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao atualizar o jogo"),
+      }
+    );
   };
+
 
   const handleQuickSportChange = (id: string, sport: SportType) => {
     updateGame.mutate({ id, sport_type: sport });
