@@ -56,6 +56,7 @@ function detectSportFromEmoji(compLine: string): SportType | null {
   if (/^⛳/.test(compLine)) return 'golf';
   if (/^🏊/.test(compLine)) return 'swimming';
   if (/^🏃/.test(compLine)) return 'athletics';
+  if (/^🤸/.test(compLine)) return 'gymnastics';
   if (/^🤾/.test(compLine)) return 'handball';
   if (/^🎮/.test(compLine)) return 'esports';
   if (/^🥅/.test(compLine)) return 'futsal';
