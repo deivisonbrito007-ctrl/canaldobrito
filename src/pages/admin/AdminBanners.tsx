@@ -155,6 +155,25 @@ REGRAS CRÍTICAS
 
 10. NÃO adicione introdução, rodapé, totalizadores, comentários.
 
+11. CÉLULA COM VÁRIOS CONFRONTOS → VÁRIOS EVENTOS. Se uma linha da tabela traz
+   "Santo André x Jaraguá, Campo Mourão x Cascavel, Tubarão x ACBF", gere UM bloco de
+   3 linhas para CADA confronto, repetindo horário, competição e canais.
+
+12. HORÁRIO EMBUTIDO NA CÉLULA. Em "Barcelona x Nottingham F., 17h00 Udinese x Barcelona",
+   o segundo confronto é um evento próprio com horário 17h00.
+
+13. PREFIXO DE FASE VAI PARA OS PARÊNTESES DA LINHA 2, nunca fica na linha 1:
+   • "QF (ida) - São José-RS x Gama" → linha 1 "São José-RS x Gama", linha 2 "(Quartas — Ida)"
+   • "SF - Brasil x ARG ou CHI" → "(Semifinal)"   • "OF - Lehecka x Jodar" → "(Oitavas)"
+   • "classificação" → "(Classificação)"   • "corrida 1" → "(Corrida 1)"   • "sprint" → "(Sprint)"
+   • "card preliminar" → "(Card Preliminar)"
+
+14. FEMININO: "Atlético-MG F" → "Atlético-MG (F)". Se a tabela indicar competição feminina,
+   inclua "Feminino" no nome da competição.
+
+15. CANAIS: "youtube Canal GOAT" → "YouTube Canal GOAT"; "SPORTV-PREMIERE" → "SporTV, Premiere".
+   Mantenha parênteses regionais como estão: "BAND (N, NE, int. SP)".
+
 ═══════════════════════════════════════════
 REGRA DO TÍTULO (1ª linha)
 ═══════════════════════════════════════════
@@ -166,7 +185,7 @@ REGRA DO TÍTULO (1ª linha)
 • ≤60 caracteres, sempre começa com 1 emoji.
 
 ═══════════════════════════════════════════
-EMOJIS POR ESPORTE (use no 🏆 da linha 2)
+EMOJIS POR ESPORTE (use no início da linha 2)
 ═══════════════════════════════════════════
 ⚽ Futebol   🥅 Futsal   🏀 Basquete   🏐 Vôlei
 🤾 Handebol   🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar/NASCAR
@@ -175,13 +194,13 @@ EMOJIS POR ESPORTE (use no 🏆 da linha 2)
 ⛳ Golfe   🏊 Natação   🏃 Atletismo   🤸 Ginástica   🎮 eSports
 
 ⚠️ O HORÁRIO NUNCA VAI NA LINHA 1. A linha 1 é só o nome do evento/confronto.
-⚠️ A linha 2 (<emoji> Competição / ⏰ HHhMM) é OBRIGATÓRIA em TODO evento, inclusive
-   em evento único. Se não houver competição nomeada, repita o nome do esporte:
+⚠️ A linha 2 (<emoji> Competição / ⏰ HHhMM / #esporte) é OBRIGATÓRIA em TODO evento,
+   inclusive em evento único. Se não houver competição nomeada, repita o nome do esporte:
    ✅ CORRETO:
       Camp. Mundial Sub-20 — Dia 4
-      🏃 Atletismo / ⏰ 13h00
+      🏃 Atletismo / ⏰ 13h00 / #atletismo
       📺 SporTV 3
-   ❌ ERRADO (horário na linha 1, sem linha de competição):
+   ❌ ERRADO (horário na linha 1, sem linha de competição, sem tag):
       Atletismo / 13h00
       📺 SporTV 3
 
@@ -189,48 +208,56 @@ EMOJIS POR ESPORTE (use no 🏆 da linha 2)
 ═══════════════════════════════════════════
 EXEMPLO DE SAÍDA VÁLIDA (dia multi-esporte)
 ═══════════════════════════════════════════
-TÍTULO: 🗓️ Programação Esportiva — 19/06
+TÍTULO: 🗓️ Programação Esportiva — 08/08
 
-📅 Dia 19/06
+📅 Dia 08/08
 
-Moto3 — GP da Chéquia (Treino Livre 1)
-🏎️ MotoGP / ⏰ 03h55
+MotoGP — GP da Grã-Bretanha (Classificação)
+🏎️ MotoGP / ⏰ 07h50 / #motogp
 📺 ESPN 4
 
-Halle Open (2ª Rodada)
-🎾 ATP 500 / ⏰ 06h30
-📺 ESPN 2
-
-França (F) x China (F)
-🏐 VNL Feminina / ⏰ 10h00
+Lehecka x Jodar
+🎾 Masters 1000 Montreal (Oitavas) / ⏰ 13h00 / #tenis
 📺 SporTV 2
 
-EUA x Austrália
-🏆 Copa do Mundo (Oitavas) / ⏰ 16h00
-📺 Cazé TV
+Camp. Mundial Sub-20 — Dia 4
+🏃 Atletismo / ⏰ 13h00 / #atletismo
+📺 SporTV 3
 
-Brasil x Haiti
-🏆 Copa do Mundo (Oitavas) / ⏰ 21h30
-📺 SBT, Globo
+São José-RS x Gama
+⚽ Série D (Quartas — Ida) / ⏰ 17h00 / #futebol
+📺 YouTube Canal GOAT
 
-Andrew Stewart x Zayne Havener
-🥊 Boxe (Card Principal) / ⏰ 22h00
-📺 ESPN 3
+Santo André x Jaraguá
+🥅 LNF Futsal / ⏰ 19h00 / #futsal
+📺 SporTV
+
+Brasil x ARG ou CHI
+🏐 Copa Sul-Americana Masc. (Semifinal) / ⏰ 21h30 / #volei
+📺 SporTV 2
+
+Mateusz Gamrot x Quillan Salkilld
+🥊 UFC Fight Night (Luta Principal) / ⏰ 21h00 / #mma
+📺 UFC Fight Pass
 
 ═══════════════════════════════════════════
 CHECKLIST FINAL — antes de responder, confira:
 ═══════════════════════════════════════════
 [ ] Cada evento tem EXATAMENTE 3 linhas + 1 linha em branco
+[ ] TODA linha 2 termina com " / #esporte" de tag válida
+[ ] Nenhum 🏆 usado como emoji de esporte
+[ ] Célula com vírgulas foi expandida em vários eventos
+[ ] Prefixo de fase (QF/SF/OF/classificação) movido para os parênteses da linha 2
 [ ] Apenas 1 bloco 📅 por data
 [ ] Eventos ordenados por horário crescente
 [ ] Nenhum evento duplicado
-[ ] Sessão/fase entre parênteses em F1, MotoGP, tênis, golfe, boxe
-[ ] Linha do 🏆 não repete o nome do evento da linha 1
+[ ] Linha 2 não repete o nome do evento da linha 1
 [ ] Nenhuma linha tem "x ?" ou "x TBD"
 [ ] Horários no formato HHhMM
 [ ] Nenhum texto extra (intro/rodapé/comentário)
 
 Agora processe a imagem e devolva APENAS o texto formatado.`;
+
 
 const validateImageFile = (file: File): string | null => {
   if (!file.type.startsWith("image/")) return `${file.name}: não é imagem`;
