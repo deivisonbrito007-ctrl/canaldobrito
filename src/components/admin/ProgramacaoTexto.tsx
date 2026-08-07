@@ -96,6 +96,7 @@ function detectSectionHeaderSport(line: string): SportType | null {
     case '⛳': return 'golf';
     case '🏊': return 'swimming';
     case '🏃': return 'athletics';
+    case '🤸': return 'gymnastics';
     case '🎮': return 'esports';
     default: return null;
   }
