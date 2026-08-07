@@ -679,6 +679,17 @@ export function parseScheduleText(
         }
       }
 
+      // Rede de segurança: título no formato compacto "Atletismo / 13h00" ou
+      // "Evento - 13h00" — extrai o horário do título e o remove do nome.
+      if (meta.game_time === "00:00") {
+        const inlineTime = home_team.match(/[\/\-–—\s]\s*(\d{1,2})[hH:](\d{2})\s*$/);
+        if (inlineTime) {
+          meta.game_time = `${inlineTime[1].padStart(2, "0")}:${inlineTime[2]}`;
+          home_team = home_team.slice(0, inlineTime.index).replace(/[\s\/\-–—]+$/, "").trim();
+        }
+      }
+
+
       // Use detectSportType with competition + team names for accurate detection
       const autoSport = detectSportType(
         meta.competition || "",
