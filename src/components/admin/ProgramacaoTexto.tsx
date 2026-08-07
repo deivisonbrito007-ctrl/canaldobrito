@@ -333,9 +333,10 @@ const TIME_TOKEN_RE = /^(\d{1,2})[h:](\d{2})$/;
 const TIME_ANYWHERE_RE = /\b(\d{1,2})[h:](\d{2})\b/;
 
 const KNOWN_SUBSECTIONS_RE =
-  /^(WNBA|NBA|NBB|NBL|EuroLeague|MotoGP|Moto2|Moto3|F1|Fórmula 1|Formula 1|IndyCar|Stock Car|Formula E|UFC|Bellator|Boxe|Boxing|MMA|ATP|WTA|PGA Tour|LPGA|Italian Open|Roland Garros|Wimbledon|US Open|Australian Open|Masters|Brasileir[aã]o(?: Feminino)?|Champions League|Premier League|La Liga|Bundesliga|Serie A|Libertadores|Sul-Americana|Copa do Brasil|Eurocopa|Liga das Na[çc][oõ]es)$/i;
+  /^(WNBA|NBA|NBB|NBL|EuroLeague|MotoGP|Moto2|Moto3|F1|Fórmula 1|Formula 1|IndyCar|Stock Car|NASCAR|Formula E|Motocross|MXGP|UFC|Bellator|PFL|Boxe|Boxing|MMA|ATP|WTA|PGA Tour|LPGA|Italian Open|Roland Garros|Wimbledon|US Open|Australian Open|Masters|Diamond League|Atletismo|Maratona|LNF|CBFS|Futsal|Handebol|EHF|Superliga|CBLOL|LoL|CS2|CS:GO|Valorant|Free Fire|Brasileir[aã]o(?: Feminino)?|Champions League|Premier League|La Liga|Bundesliga|Serie A|Libertadores|Sul-Americana|Copa do Brasil|Eurocopa|Liga das Na[çc][oõ]es)$/i;
 
-const SPORT_EMOJI_LIST = ["🏀", "🎾", "🏎️", "🏎", "🥊", "🏐", "🏒", "⚾", "🏉", "🏄", "🚴", "⛳", "🏊", "🏆", "🏁", "⚽"];
+const SPORT_EMOJI_LIST = ["🏀", "🎾", "🏎️", "🏎", "🥊", "🏐", "🏒", "⚾", "🏉", "🏄", "🚴", "⛳", "🏊", "🏃", "🤾", "🎮", "🥅", "🏆", "🏁", "⚽"];
+
 
 function startsWithSportEmoji(s: string): { emoji: string; rest: string } | null {
   for (const e of SPORT_EMOJI_LIST) {
