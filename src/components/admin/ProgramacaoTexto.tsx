@@ -515,7 +515,7 @@ export function preprocessInlineFormatC(text: string): string {
  * This expands such lines back into the canonical 3-line format
  * that parseScheduleText understands.
  */
-const SPORT_META_EMOJI_RE = /([🏆⚽🏀🥊🏐🎾⚾🏉🏒🏄🚴⛳🏊]|🏎️|🏎)/u;
+const SPORT_META_EMOJI_RE = /([🏆⚽🏀🥊🏐🎾⚾🏉🏒🏄🚴⛳🏊🏃🤸🤾🎮🥅]|🏎️|🏎)/u;
 
 export function explodeSingleLineEvents(text: string): string {
   const out: string[] = [];
