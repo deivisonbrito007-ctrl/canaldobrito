@@ -147,11 +147,12 @@ REGRA DO TÍTULO (1ª linha)
 ═══════════════════════════════════════════
 EMOJIS POR ESPORTE (use no 🏆 da linha 2)
 ═══════════════════════════════════════════
-⚽ Futebol/Futsal   🏀 Basquete   🏐 Vôlei
-🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar
+⚽ Futebol   🥅 Futsal   🏀 Basquete   🏐 Vôlei
+🤾 Handebol   🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar/NASCAR
 🥊 MMA/Boxe   ⚾ Baseball   🏉 Rugby
 🏒 Hóquei   🏄 Surfe   🚴 Ciclismo
-⛳ Golfe   🏊 Natação
+⛳ Golfe   🏊 Natação   🏃 Atletismo   🎮 eSports
+
 
 ═══════════════════════════════════════════
 EXEMPLO DE SAÍDA VÁLIDA (dia multi-esporte)
