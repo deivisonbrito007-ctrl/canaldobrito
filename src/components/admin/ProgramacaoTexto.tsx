@@ -40,7 +40,7 @@ Flamengo x Palmeiras
 🏆 Brasileirão / ⏰ 19h00
 📺 Sportv, Premiere`;
 
-const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤾|🎮|🥅|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
 
 /** Map emoji at start of competition line to sport_type */
 function detectSportFromEmoji(compLine: string): SportType | null {
@@ -55,29 +55,38 @@ function detectSportFromEmoji(compLine: string): SportType | null {
   if (/^🚴/.test(compLine)) return 'cycling';
   if (/^⛳/.test(compLine)) return 'golf';
   if (/^🏊/.test(compLine)) return 'swimming';
+  if (/^🏃/.test(compLine)) return 'athletics';
+  if (/^🤾/.test(compLine)) return 'handball';
+  if (/^🎮/.test(compLine)) return 'esports';
+  if (/^🥅/.test(compLine)) return 'futsal';
+  if (/^⚽/.test(compLine) && /futsal/i.test(compLine)) return 'futsal';
   if (/^🥊/.test(compLine)) return null; // boxing or mma — let detectSportType decide
   if (/^🏆/.test(compLine)) return null; // generic trophy — skip
   return null;
 }
 
+
 /** Recognize a section header line like "🏀 BASQUETE", "🎾 TÊNIS", "🏐 VÔLEI DE PRAIA",
  *  "🏎️ AUTOMOBILISMO", "⚾ BASEBALL", "⚽ FUTEBOL". Returns the SportType implied by the
  *  emoji, or null if the line doesn't match the pattern. */
 const SECTION_HEADER_SPORT_RE =
-  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
+  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤾|🎮|🥅)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
 
 function detectSectionHeaderSport(line: string): SportType | null {
   const m = line.match(SECTION_HEADER_SPORT_RE);
   if (!m) return null;
   const emoji = m[1];
+  const title = m[2];
   switch (emoji) {
-    case '⚽': return 'football';
+    case '⚽': return /futsal/i.test(title) ? 'futsal' : 'football';
+    case '🥅': return 'futsal';
     case '🏀': return 'basketball';
     case '🎾': return 'tennis';
     case '🏎️':
     case '🏎': return 'f1';
     case '🥊': return 'mma';
     case '🏐': return 'volleyball';
+    case '🤾': return 'handball';
     case '🏒': return 'hockey';
     case '⚾': return 'baseball';
     case '🏉': return 'rugby';
@@ -85,9 +94,12 @@ function detectSectionHeaderSport(line: string): SportType | null {
     case '🚴': return 'cycling';
     case '⛳': return 'golf';
     case '🏊': return 'swimming';
+    case '🏃': return 'athletics';
+    case '🎮': return 'esports';
     default: return null;
   }
 }
+
 
 function isCompetitionLine(line: string): boolean {
   return COMP_LINE_RE.test(line);
