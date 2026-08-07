@@ -1,4 +1,4 @@
-export type SportType = 'football' | 'futsal' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'handball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf' | 'athletics' | 'esports';
+export type SportType = 'football' | 'futsal' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'handball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf' | 'athletics' | 'gymnastics' | 'esports';
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
@@ -19,6 +19,7 @@ export const SPORT_DURATION: Record<SportType, number> = {
   swimming: 180,
   golf: 300,
   athletics: 180,
+  gymnastics: 180,
   esports: 180,
 };
 
@@ -44,6 +45,7 @@ export const SPORT_EMOJI: Record<SportType, string> = {
   swimming: '🏊',
   golf: '⛳',
   athletics: '🏃',
+  gymnastics: '🤸',
   esports: '🎮',
 };
 
@@ -66,11 +68,12 @@ export const SPORT_LABEL: Record<SportType, string> = {
   swimming: 'Natação',
   golf: 'Golf',
   athletics: 'Atletismo',
+  gymnastics: 'Ginástica',
   esports: 'eSports',
 };
 
 /** Sports that don't have two adversarial teams (e.g. motorsport) */
-const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf', 'athletics'];
+const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf', 'athletics', 'gymnastics'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
 
 
@@ -83,6 +86,7 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(rugby|sevens|svns|world rugby|super rugby)\b/i.test(c)) return 'rugby';
   if (/\b(futsal|lnf|cbfs|liga nacional de futsal)\b/i.test(c)) return 'futsal';
   if (/\b(handebol|handball|ehf|balonmano)\b/i.test(c)) return 'handball';
+  if (/\b(gin[aá]stica|gymnastics|art[ií]stica|r[ií]tmica|trampolim|fig)\b/i.test(c)) return 'gymnastics';
   if (/\b(atletismo|athletics|diamond league|world athletics|maratona|meia.maratona|marathon|revezamento|heptatlo|decatlo|arremesso de peso|salto (?:em )?(?:dist[aâ]ncia|triplo|com vara|em altura))\b/i.test(c) || /\b\d{2,4}\s?m\s?(?:rasos|com barreiras|livres)\b/i.test(c)) return 'athletics';
   if (/\b(e[- ]?sports|esports|cblol|lol|league of legends|cs2|cs:?go|counter[- ]strike|valorant|dota\s?2?|free fire|rainbow six|r6|rocket league|fifa\s?e?sports|overwatch)\b/i.test(c)) return 'esports';
 

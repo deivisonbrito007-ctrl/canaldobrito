@@ -88,11 +88,22 @@ REGRA DO TÍTULO (1ª linha)
 ═══════════════════════════════════════════
 EMOJIS POR ESPORTE (use no 🏆 da linha 2)
 ═══════════════════════════════════════════
-⚽ Futebol/Futsal   🏀 Basquete   🏐 Vôlei
-🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar
+⚽ Futebol   🥅 Futsal   🏀 Basquete   🏐 Vôlei
+🤾 Handebol   🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar/NASCAR
 🥊 MMA/Boxe   ⚾ Baseball   🏉 Rugby
 🏒 Hóquei   🏄 Surfe   🚴 Ciclismo
-⛳ Golfe   🏊 Natação
+⛳ Golfe   🏊 Natação   🏃 Atletismo   🤸 Ginástica   🎮 eSports
+
+⚠️ O HORÁRIO NUNCA VAI NA LINHA 1. A linha 1 é só o nome do evento/confronto.
+⚠️ A linha 2 (<emoji> Competição / ⏰ HHhMM) é OBRIGATÓRIA em TODO evento, inclusive
+   em evento único. Se não houver competição nomeada, repita o nome do esporte:
+   ✅ CORRETO:
+      Camp. Mundial Sub-20 — Dia 4
+      🏃 Atletismo / ⏰ 13h00
+      📺 SporTV 3
+   ❌ ERRADO:
+      Atletismo / 13h00
+      📺 SporTV 3
 
 ═══════════════════════════════════════════
 EXEMPLO DE SAÍDA VÁLIDA (dia multi-esporte)

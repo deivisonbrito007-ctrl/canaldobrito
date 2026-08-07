@@ -151,7 +151,18 @@ EMOJIS POR ESPORTE (use no 🏆 da linha 2)
 🤾 Handebol   🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar/NASCAR
 🥊 MMA/Boxe   ⚾ Baseball   🏉 Rugby
 🏒 Hóquei   🏄 Surfe   🚴 Ciclismo
-⛳ Golfe   🏊 Natação   🏃 Atletismo   🎮 eSports
+⛳ Golfe   🏊 Natação   🏃 Atletismo   🤸 Ginástica   🎮 eSports
+
+⚠️ O HORÁRIO NUNCA VAI NA LINHA 1. A linha 1 é só o nome do evento/confronto.
+⚠️ A linha 2 (<emoji> Competição / ⏰ HHhMM) é OBRIGATÓRIA em TODO evento, inclusive
+   em evento único. Se não houver competição nomeada, repita o nome do esporte:
+   ✅ CORRETO:
+      Camp. Mundial Sub-20 — Dia 4
+      🏃 Atletismo / ⏰ 13h00
+      📺 SporTV 3
+   ❌ ERRADO (horário na linha 1, sem linha de competição):
+      Atletismo / 13h00
+      📺 SporTV 3
 
 
 ═══════════════════════════════════════════

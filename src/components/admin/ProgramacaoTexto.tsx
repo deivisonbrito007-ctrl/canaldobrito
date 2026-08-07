@@ -40,7 +40,7 @@ Flamengo x Palmeiras
 🏆 Brasileirão / ⏰ 19h00
 📺 Sportv, Premiere`;
 
-const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤾|🎮|🥅|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
+const COMP_LINE_RE = /(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅|[⏰🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]|\/)/;
 
 /** Map emoji at start of competition line to sport_type */
 function detectSportFromEmoji(compLine: string): SportType | null {
@@ -56,6 +56,7 @@ function detectSportFromEmoji(compLine: string): SportType | null {
   if (/^⛳/.test(compLine)) return 'golf';
   if (/^🏊/.test(compLine)) return 'swimming';
   if (/^🏃/.test(compLine)) return 'athletics';
+  if (/^🤸/.test(compLine)) return 'gymnastics';
   if (/^🤾/.test(compLine)) return 'handball';
   if (/^🎮/.test(compLine)) return 'esports';
   if (/^🥅/.test(compLine)) return 'futsal';
@@ -70,7 +71,7 @@ function detectSportFromEmoji(compLine: string): SportType | null {
  *  "🏎️ AUTOMOBILISMO", "⚾ BASEBALL", "⚽ FUTEBOL". Returns the SportType implied by the
  *  emoji, or null if the line doesn't match the pattern. */
 const SECTION_HEADER_SPORT_RE =
-  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤾|🎮|🥅)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
+  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
 
 function detectSectionHeaderSport(line: string): SportType | null {
   const m = line.match(SECTION_HEADER_SPORT_RE);
@@ -95,6 +96,7 @@ function detectSectionHeaderSport(line: string): SportType | null {
     case '⛳': return 'golf';
     case '🏊': return 'swimming';
     case '🏃': return 'athletics';
+    case '🤸': return 'gymnastics';
     case '🎮': return 'esports';
     default: return null;
   }
@@ -110,7 +112,7 @@ function parseCompAndTime(compLine: string) {
   let competition_detail = "";
   let game_time = "00:00";
 
-  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊]/g, "");
+  const cleaned = compLine.replace(/[🏆🎾🏎🏎️🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊🏃🤸🤾🎮🥅]/g, "");
   const beforeSlash = cleaned.split("/")[0].trim();
 
   const detailMatch = beforeSlash.match(/\(([^)]+)\)/);
@@ -140,7 +142,7 @@ function cleanText(s: string): string {
   return s
     .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold** → bold
     .replace(/\*/g, "")                  // stray asterisks
-    .replace(/[🏆🎾🏎️🏎🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊📺⏰]/g, "") // residual sport/channel emojis
+    .replace(/[🏆🎾🏎️🏎🥊🏀🏐🏒⚾🏉🏄🚴⛳🏊🏃🤸🤾🎮🥅📺⏰]/g, "") // residual sport/channel emojis
     .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")  // remove flag emojis (🇧🇷, 🇫🇷, etc.)
     .replace(/[\u{1F3F4}\u{E0067}-\u{E007F}]/gu, "") // remove subdivision flags
     .replace(/[\uD800-\uDFFF]/g, "")     // remove broken UTF-16 surrogates
@@ -177,7 +179,7 @@ function cleanupGame(game: ParsedGame): ParsedGame {
 
 /** Check if a line is a metadata line (🏆, 📍, ⏰, 📺) */
 function isMetadataLine(line: string): boolean {
-  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
+  return /^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅|📍|⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|📺)/.test(line);
 }
 
 /** Check if a line is a section header (e.g. FUTEBOL, NBA, Brasileirão Feminino) */
@@ -256,9 +258,9 @@ function collectMetadata(lines: string[], startIdx: number): {
     const ml = lines[j];
 
     // 🏆 or sport emoji → competition line
-    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)/.test(ml)) {
+    if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)/.test(ml)) {
       sport_type = detectSportFromEmoji(ml);
-      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊)\s*/, "").trim();
+      const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)\s*/, "").trim();
       // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
       if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
         const parsed = parseCompAndTime(ml);
@@ -335,7 +337,7 @@ const TIME_ANYWHERE_RE = /\b(\d{1,2})[h:](\d{2})\b/;
 const KNOWN_SUBSECTIONS_RE =
   /^(WNBA|NBA|NBB|NBL|EuroLeague|MotoGP|Moto2|Moto3|F1|Fórmula 1|Formula 1|IndyCar|Stock Car|NASCAR|Formula E|Motocross|MXGP|UFC|Bellator|PFL|Boxe|Boxing|MMA|ATP|WTA|PGA Tour|LPGA|Italian Open|Roland Garros|Wimbledon|US Open|Australian Open|Masters|Diamond League|Atletismo|Maratona|LNF|CBFS|Futsal|Handebol|EHF|Superliga|CBLOL|LoL|CS2|CS:GO|Valorant|Free Fire|Brasileir[aã]o(?: Feminino)?|Champions League|Premier League|La Liga|Bundesliga|Serie A|Libertadores|Sul-Americana|Copa do Brasil|Eurocopa|Liga das Na[çc][oõ]es)$/i;
 
-const SPORT_EMOJI_LIST = ["🏀", "🎾", "🏎️", "🏎", "🥊", "🏐", "🏒", "⚾", "🏉", "🏄", "🚴", "⛳", "🏊", "🏃", "🤾", "🎮", "🥅", "🏆", "🏁", "⚽"];
+const SPORT_EMOJI_LIST = ["🏀", "🎾", "🏎️", "🏎", "🥊", "🏐", "🏒", "⚾", "🏉", "🏄", "🚴", "⛳", "🏊", "🏃", "🤸", "🤾", "🎮", "🥅", "🏆", "🏁", "⚽"];
 
 
 function startsWithSportEmoji(s: string): { emoji: string; rest: string } | null {
@@ -372,8 +374,15 @@ export function preprocessInlineFormatC(text: string): string {
     }
   };
 
-  for (const raw of rawLines) {
+  for (let li = 0; li < rawLines.length; li++) {
+    const raw = rawLines[li];
     const line = raw.trim();
+    // Next non-empty line (lookahead), used to tell an event title from a section header
+    let nextNonEmpty = "";
+    for (let k = li + 1; k < rawLines.length; k++) {
+      const cand = rawLines[k].trim();
+      if (cand) { nextNonEmpty = cand; break; }
+    }
     if (!line) {
       out.push("");
       continue;
@@ -476,7 +485,14 @@ export function preprocessInlineFormatC(text: string): string {
 
       // Em-dash line with no time → competition / event header with detail
       // e.g. "PGA Tour — Terceira Rodada"
+      // BUT: when the next line is a metadata line (🏎️ MotoGP / ⏰ 07h50),
+      // this em-dash line is the EVENT TITLE — keep it, don't swallow it.
       if (!TIME_ANYWHERE_RE.test(line)) {
+        if (isMetadataLine(nextNonEmpty)) {
+          out.push(line);
+          currentEvent = parts[0];
+          continue;
+        }
         currentCompetition = parts[0];
         currentEvent = parts[0];
         currentDetail = parts.slice(1).join(" — ");
@@ -485,7 +501,8 @@ export function preprocessInlineFormatC(text: string): string {
     }
 
     // Plain subsection competition (no separator, no time, no " x ")
-    if (!EM_DASH_TEST_RE.test(line) && !/\sx\s/i.test(line) && !TIME_ANYWHERE_RE.test(line)) {
+    // Skipped when the next line is metadata — then this line is the event title.
+    if (!EM_DASH_TEST_RE.test(line) && !/\sx\s/i.test(line) && !TIME_ANYWHERE_RE.test(line) && !isMetadataLine(nextNonEmpty)) {
       // Known competition or short-ish title-case label
       const isKnown = KNOWN_SUBSECTIONS_RE.test(line);
       const looksLikeLabel = line.length <= 40 && /^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .'+\-/]*$/.test(line);
@@ -513,7 +530,7 @@ export function preprocessInlineFormatC(text: string): string {
  * This expands such lines back into the canonical 3-line format
  * that parseScheduleText understands.
  */
-const SPORT_META_EMOJI_RE = /([🏆⚽🏀🥊🏐🎾⚾🏉🏒🏄🚴⛳🏊]|🏎️|🏎)/u;
+const SPORT_META_EMOJI_RE = /([🏆⚽🏀🥊🏐🎾⚾🏉🏒🏄🚴⛳🏊🏃🤸🤾🎮🥅]|🏎️|🏎)/u;
 
 export function explodeSingleLineEvents(text: string): string {
   const out: string[] = [];
@@ -662,6 +679,17 @@ export function parseScheduleText(
         }
       }
 
+      // Rede de segurança: título no formato compacto "Atletismo / 13h00" ou
+      // "Evento - 13h00" — extrai o horário do título e o remove do nome.
+      if (meta.game_time === "00:00") {
+        const inlineTime = home_team.match(/[\/\-–—\s]\s*(\d{1,2})[hH:](\d{2})\s*$/);
+        if (inlineTime) {
+          meta.game_time = `${inlineTime[1].padStart(2, "0")}:${inlineTime[2]}`;
+          home_team = home_team.slice(0, inlineTime.index).replace(/[\s\/\-–—]+$/, "").trim();
+        }
+      }
+
+
       // Use detectSportType with competition + team names for accurate detection
       const autoSport = detectSportType(
         meta.competition || "",
@@ -674,6 +702,12 @@ export function parseScheduleText(
         ? meta.sport_type
         : currentSectionSport
           ?? (autoSport !== 'football' ? autoSport : 'football');
+
+      // Sem competição declarada → herda o rótulo do esporte (ex.: "Atletismo")
+      if (!meta.competition.trim()) {
+        meta.competition = SPORT_LABEL[finalSport] || "";
+      }
+
 
       // Auto-bump: opt-in. Só avança a data se o usuário ligou explicitamente
       // o toggle "Madrugada conta para o dia anterior" no admin.
