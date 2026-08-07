@@ -703,6 +703,12 @@ export function parseScheduleText(
         : currentSectionSport
           ?? (autoSport !== 'football' ? autoSport : 'football');
 
+      // Sem competição declarada → herda o rótulo do esporte (ex.: "Atletismo")
+      if (!meta.competition.trim()) {
+        meta.competition = SPORT_LABEL[finalSport] || "";
+      }
+
+
       // Auto-bump: opt-in. Só avança a data se o usuário ligou explicitamente
       // o toggle "Madrugada conta para o dia anterior" no admin.
       let gameDate = currentDate;
