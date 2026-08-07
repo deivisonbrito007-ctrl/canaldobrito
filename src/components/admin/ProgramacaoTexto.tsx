@@ -501,7 +501,8 @@ export function preprocessInlineFormatC(text: string): string {
     }
 
     // Plain subsection competition (no separator, no time, no " x ")
-    if (!EM_DASH_TEST_RE.test(line) && !/\sx\s/i.test(line) && !TIME_ANYWHERE_RE.test(line)) {
+    // Skipped when the next line is metadata — then this line is the event title.
+    if (!EM_DASH_TEST_RE.test(line) && !/\sx\s/i.test(line) && !TIME_ANYWHERE_RE.test(line) && !isMetadataLine(nextNonEmpty)) {
       // Known competition or short-ish title-case label
       const isKnown = KNOWN_SUBSECTIONS_RE.test(line);
       const looksLikeLabel = line.length <= 40 && /^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .'+\-/]*$/.test(line);
