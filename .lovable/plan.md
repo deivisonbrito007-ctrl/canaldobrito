@@ -1,35 +1,45 @@
-# Corrigir horário 00:00 e "Sem competição" ao gerar texto do banner
+# Corrigir parser: eventos de Atletismo/Ginástica saindo com 00:00 e "Sem competição"
 
-## O que está acontecendo (verificado no código)
+## Causa raiz (confirmada com o seu texto)
 
-Nos cards da imagem ("Atletismo / 13h00", "Ginástica Artística / 14h30") o horário aparece como 00:00 e sai o aviso "Sem competição". Causa confirmada em `src/components/admin/ProgramacaoTexto.tsx`:
+O texto que você colou está **no formato correto** (3 linhas por evento). O problema é no parser (`src/components/admin/ProgramacaoTexto.tsx`):
 
-- A linha 1 do evento veio no formato compacto `Nome / 13h00` (nome + horário juntos). O parser trata a linha 1 apenas como nome do evento/times — ele só extrai horário das linhas de metadados (`⏰` / `🏆 Comp / ⏰ HHhMM`).
-- Como o evento só tinha `📺 SporTV 3` depois, não houve linha de competição nem de horário: `game_time` fica no default `"00:00"` e `competition` fica vazio, disparando os dois avisos em `getGameWarnings` (linhas 718-722).
-- "Ginástica Artística" foi classificada como Futebol porque `detectSportType` não conhece ginástica e cai no fallback `football`.
+1. **Emojis faltando na lista de metadados.** `isMetadataLine` (linha 180) e `COMP_LINE_RE` (linha 43) reconhecem 🏆 ⚽ 🏀 🏐 🎾 🏎️ 🥊 ⚾ 🏉 🏒 🏄 🚴 ⛳ 🏊 — mas **não** reconhecem 🏃 (atletismo), 🤸 (ginástica), 🤾 (handebol), 🎮 (eSports), 🥅.
+   Consequência para `🏃 Atletismo / ⏰ 13h00`: a linha não é vista como linha de competição, então:
+   - a linha de título real (`Camp. Mundial Sub-20 — Dia 4`) é descartada, porque a linha seguinte não conta como metadado;
+   - a própria linha `🏃 Atletismo / ⏰ 13h00` passa a ser tratada como **título** do evento (seguida de `📺 SporTV 3`), sem nenhuma linha de horário depois → `game_time` cai no default `00:00` e `competition` fica vazio.
+   Resultado: exatamente os cards "Atletismo / 13h00" e "Ginástica Artística / 14h30" com os avisos da sua imagem.
 
-Ou seja: o texto gerado pela IA não seguiu o formato de 3 linhas, e o parser não tem tolerância para esse formato compacto.
+2. **🤸 não existe em nenhuma lista de esporte**, então "Ginástica Artística" é classificada como **Futebol** (fallback de `detectSportType`).
+
+3. **Risco adicional (mesma família de bug):** em `preprocessInlineFormatC`, a linha com travessão e sem horário (`MotoGP — GP da Grã-Bretanha (Classificação)`) é consumida como *cabeçalho de competição* e descartada, sem olhar a linha seguinte. Hoje isso não aparece porque o preprocess devolve o texto original quando não gera nenhum jogo, mas depois da correção nº 1 esse caminho pode ser ativado e apagar títulos de eventos únicos (F1, MotoGP, Stock Car, Surf, Ciclismo).
 
 ## Correções
 
-### 1. Parser tolerante ao formato compacto (principal)
-Em `ProgramacaoTexto.tsx`:
-- Ao montar um evento, se nenhum horário foi encontrado nos metadados, procurar `HHhMM` / `HH:MM` no final da linha 1 (`Atletismo / 13h00`, `Atletismo - 13h00`, `Atletismo 13h00`), usar como `game_time` e removê-lo do nome do evento.
-- Se `competition` ficar vazia, herdar o rótulo do esporte da seção atual (ex.: seção 🏃 ATLETISMO → competição "Atletismo") em vez de deixar vazio.
-- Manter o aviso "Horário 00:00" apenas quando realmente não houver horário em nenhum lugar.
+### 1. Registrar todos os emojis de esporte nas listas do parser
+Em `ProgramacaoTexto.tsx`, incluir 🏃 🤸 🤾 🎮 🥅 (e manter os existentes) em:
+- `COMP_LINE_RE` (linha de competição),
+- `isMetadataLine` (linha 180),
+- `SPORT_EMOJI_LIST` / `SPORT_META_EMOJI_RE` (usado por `explodeSingleLineEvents`),
+- `EMOJI_TO_SPORT` / `detectSportFromEmoji`,
+- `detectSectionHeaderSport` (cabeçalhos 🤸).
+
+Isso corrige de uma vez atletismo, ginástica, handebol, eSports e futsal com 🥅: título correto, horário correto, competição preenchida.
 
 ### 2. Novo esporte: ginástica
-Em `src/lib/gameUtils.ts`: adicionar `gymnastics` (emoji 🤸, rótulo "Ginástica", duração ~180 min, evento único) e detecção por "ginástica", "artística", "rítmica", "FIG". No parser, reconhecer cabeçalho 🤸.
+Em `src/lib/gameUtils.ts`: tipo `gymnastics` (emoji 🤸, rótulo "Ginástica", duração ~180 min, evento único sem "VS") e detecção por "ginástica", "artística", "rítmica", "trampolim", "FIG". Card e filtros de esporte passam a mostrar Ginástica em vez de Futebol.
 
-### 3. Endurecer o prompt-modelo
-Em `BANNER_PROMPT_MODEL` (`src/pages/admin/AdminBanners.tsx`) e `docs/prompts/banner-from-image.md`:
-- Regra explícita: o horário **nunca** vai na linha 1; a linha 1 é só o nome do evento/confronto.
-- Regra explícita: a linha 2 (`<emoji> Competição / ⏰ HHhMM`) é obrigatória em todo evento, mesmo em evento único — se não houver competição nomeada, repetir o nome do esporte (ex.: `🏃 Atletismo / ⏰ 13h00`).
-- Acrescentar exemplo de evento único correto/incorreto (o caso "Atletismo / 13h00" como ❌).
-- Incluir 🏃 Atletismo, 🤸 Ginástica, 🤾 Handebol, 🎮 eSports na tabela de emojis.
+### 3. Não engolir o título de eventos únicos com travessão
+No `preprocessInlineFormatC`, o ramo "em-dash sem horário → cabeçalho" passa a olhar a linha seguinte: se a próxima linha é uma linha de competição/horário (`<emoji> ... / ⏰ HHhMM`), a linha com travessão é **título do evento** e é mantida; só vira cabeçalho quando a linha seguinte não é metadado. Isso protege MotoGP, Stock Car, Nascar, Turismo Nacional, World Surf League, Tour de France e Bagger World Cup do seu texto.
 
-### 4. Testes
-Casos novos em `src/components/admin/__tests__/sports_parser.test.ts`: linha compacta `Atletismo / 13h00` + `📺 SporTV 3` deve gerar horário 13:00, competição "Atletismo" e esporte atletismo; `Ginástica Artística / 14h30` deve virar ginástica.
+### 4. Rede de segurança no horário
+Se, mesmo assim, um evento terminar sem horário, extrair `HHhMM`/`HH:MM` do fim da linha de título (`Atletismo / 13h00`) e removê-lo do nome, em vez de gravar `00:00`. Quando a competição ficar vazia, herdar o rótulo do esporte da seção/emoji.
+
+### 5. Prompt-modelo (ajuste pequeno)
+Em `BANNER_PROMPT_MODEL` (`src/pages/admin/AdminBanners.tsx`) e `docs/prompts/banner-from-image.md`: acrescentar 🏃 Atletismo, 🤸 Ginástica, 🤾 Handebol, 🎮 eSports, 🥅 Futsal na tabela de emojis e reforçar que o horário nunca vai na linha 1.
+
+### 6. Testes
+Em `src/components/admin/__tests__/sports_parser.test.ts`: usar o seu texto de 08/08 como caso real e verificar que (a) `Camp. Mundial Sub-20 — Dia 4` vira um evento de atletismo às 13:00 com competição "Atletismo" e canal SporTV 3; (b) `Camp. Brasileiro — Finais` vira ginástica às 14:30; (c) `MotoGP — GP da Grã-Bretanha (Classificação)` mantém título e horário 07:50; (d) nenhum evento do texto sai com `00:00`.
 
 ## Detalhes técnicos
-Arquivos: `src/components/admin/ProgramacaoTexto.tsx` (extração de horário na linha de título, herança de competição, cabeçalho 🤸), `src/lib/gameUtils.ts` (tipo `gymnastics` + detecção), `src/pages/admin/AdminBanners.tsx` (prompt-modelo), `docs/prompts/banner-from-image.md`, testes do parser. Sem migração de banco.
+Arquivos: `src/components/admin/ProgramacaoTexto.tsx` (regexes de emoji, `isMetadataLine`, `preprocessInlineFormatC` com lookahead, fallback de horário/competição), `src/lib/gameUtils.ts` (`gymnastics` em `SportType`, emoji, rótulo, duração, evento único, detecção), `src/pages/admin/AdminBanners.tsx` + `docs/prompts/banner-from-image.md` (prompt), testes do parser e de `gameUtils`. Sem migração de banco — `banner_category` já tem `athletics` e `other_sports` cobre ginástica.
