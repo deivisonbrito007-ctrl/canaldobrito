@@ -86,6 +86,7 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(rugby|sevens|svns|world rugby|super rugby)\b/i.test(c)) return 'rugby';
   if (/\b(futsal|lnf|cbfs|liga nacional de futsal)\b/i.test(c)) return 'futsal';
   if (/\b(handebol|handball|ehf|balonmano)\b/i.test(c)) return 'handball';
+  if (/\b(gin[aá]stica|gymnastics|art[ií]stica|r[ií]tmica|trampolim|fig)\b/i.test(c)) return 'gymnastics';
   if (/\b(atletismo|athletics|diamond league|world athletics|maratona|meia.maratona|marathon|revezamento|heptatlo|decatlo|arremesso de peso|salto (?:em )?(?:dist[aâ]ncia|triplo|com vara|em altura))\b/i.test(c) || /\b\d{2,4}\s?m\s?(?:rasos|com barreiras|livres)\b/i.test(c)) return 'athletics';
   if (/\b(e[- ]?sports|esports|cblol|lol|league of legends|cs2|cs:?go|counter[- ]strike|valorant|dota\s?2?|free fire|rainbow six|r6|rocket league|fifa\s?e?sports|overwatch)\b/i.test(c)) return 'esports';
 
