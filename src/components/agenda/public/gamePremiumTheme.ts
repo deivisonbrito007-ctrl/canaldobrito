@@ -25,6 +25,7 @@ export const SPORT_THEME: Record<SportType, SportTheme> = {
   futsal:     { accent: "#22d3ee", glow: "34,211,238" },
   handball:   { accent: "#f472b6", glow: "244,114,182" },
   athletics:  { accent: "#fb923c", glow: "251,146,60" },
+  gymnastics: { accent: "#f472b6", glow: "244,114,182" },
   esports:    { accent: "#8b5cf6", glow: "139,92,246" },
 
 };
