@@ -230,6 +230,13 @@ const AdminBanners = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<BannerCategory>("cover");
   const { data: banners, isLoading } = useAllBanners(selectedCategory);
+  const { data: allBanners } = useAllBanners();
+  const countsByCategory = React.useMemo(() => {
+    const out: Partial<Record<BannerCategory, number>> = {};
+    for (const b of allBanners ?? []) out[b.category] = (out[b.category] ?? 0) + 1;
+    return out;
+  }, [allBanners]);
+
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
   const deleteBanner = useDeleteBanner();
