@@ -19,6 +19,7 @@ export const SPORT_DURATION: Record<SportType, number> = {
   swimming: 180,
   golf: 300,
   athletics: 180,
+  gymnastics: 180,
   esports: 180,
 };
 
