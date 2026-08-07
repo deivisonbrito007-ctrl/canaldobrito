@@ -86,9 +86,10 @@ export const useActiveBanners = () =>
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      const grouped: Record<BannerCategory, Banner[]> = {
-        cover: [], football: [], basketball: [], ufc: [], other_sports: [], football_guide: [],
-      };
+      const grouped = Object.fromEntries(
+        CATEGORY_LIST.map((c) => [c, [] as Banner[]]),
+      ) as Record<BannerCategory, Banner[]>;
+
       for (const b of (data as Banner[])) {
         // Defense-in-depth: hide rows whose publish_at is still in the future
         if (b.publish_at && new Date(b.publish_at).getTime() > Date.now()) continue;
