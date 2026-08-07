@@ -714,14 +714,18 @@ export function parseScheduleText(
       let away_team = "";
       let is_womens = false;
 
-      if (/\sx\s/i.test(line)) {
-        const teamParts = line.split(/\sx\s/i).map((t) => t.trim());
+      // Tag `#esporte` pode vir no título também — captura e remove.
+      const titleTag = parseSportTag(line);
+      const titleLine = titleTag ? stripSportTags(line) : line;
+
+      if (/\sx\s/i.test(titleLine)) {
+        const teamParts = titleLine.split(/\sx\s/i).map((t) => t.trim());
         home_team = teamParts[0] || "";
         away_team = teamParts[1] || "";
-        is_womens = /\(F\)/i.test(line);
+        is_womens = /\(F\)/i.test(titleLine);
       } else {
-        home_team = line;
-        is_womens = /\(F\)/i.test(line);
+        home_team = titleLine;
+        is_womens = /\(F\)/i.test(titleLine);
       }
 
       // Collect metadata from following lines
@@ -729,11 +733,14 @@ export function parseScheduleText(
 
       // For old format compatibility: if no metadata lines consumed but nextLine is comp line
       if (meta.linesConsumed === 0 && isCompetitionLine(nextLine)) {
-        const parsed = parseCompAndTime(nextLine);
+        const nextTag = parseSportTag(nextLine);
+        const nextClean = nextTag ? stripSportTags(nextLine) : nextLine;
+        if (nextTag) meta.tag_sport = nextTag;
+        const parsed = parseCompAndTime(nextClean);
         meta.competition = parsed.competition;
         meta.competition_detail = parsed.competition_detail;
         meta.game_time = parsed.game_time;
-        meta.sport_type = detectSportFromEmoji(nextLine);
+        meta.sport_type = detectSportFromEmoji(nextClean);
         meta.linesConsumed = 1;
         // Check channel line
         const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
@@ -760,13 +767,27 @@ export function parseScheduleText(
         meta.competition || "",
         `${home_team} ${away_team}`
       );
-      // Priority: emoji do jogo (não-genérico) > section header explícito > regex auto > football.
-      // A seção vence o regex para que falsos-positivos (ex.: time com nome ambíguo)
-      // não troquem o esporte declarado pelo admin no cabeçalho.
-      const finalSport: SportType = (meta.sport_type && meta.sport_type !== 'football')
-        ? meta.sport_type
-        : currentSectionSport
-          ?? (autoSport !== 'football' ? autoSport : 'football');
+      // Prioridade: tag explícita #esporte > emoji do jogo (não-genérico) >
+      // section header explícito > regex auto > football.
+      const tagSport = titleTag ?? meta.tag_sport;
+      let sportSource: ParsedGame["sportSource"] = "padrão";
+      let finalSport: SportType;
+      if (tagSport) {
+        finalSport = tagSport;
+        sportSource = "tag";
+      } else if (meta.sport_type && meta.sport_type !== 'football') {
+        finalSport = meta.sport_type;
+        sportSource = "emoji";
+      } else if (currentSectionSport) {
+        finalSport = currentSectionSport;
+        sportSource = "seção";
+      } else if (autoSport !== 'football') {
+        finalSport = autoSport;
+        sportSource = "texto";
+      } else {
+        finalSport = 'football';
+        sportSource = meta.sport_type === 'football' ? "emoji" : "padrão";
+      }
 
       // Sem competição declarada → herda o rótulo do esporte (ex.: "Atletismo")
       if (!meta.competition.trim()) {
@@ -791,8 +812,10 @@ export function parseScheduleText(
         channels: meta.channels,
         is_womens, date: gameDate, selected: true,
         sport_type: finalSport,
+        sportSource,
         dateBumped,
       }));
+
       i += 1 + meta.linesConsumed;
       continue;
     }
