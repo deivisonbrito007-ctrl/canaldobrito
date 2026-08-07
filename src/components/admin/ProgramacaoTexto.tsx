@@ -28,6 +28,8 @@ export interface ParsedGame {
   date: string;
   selected: boolean;
   sport_type?: SportType;
+  /** Como o esporte foi classificado: tag explícita, emoji, cabeçalho de seção, texto ou padrão */
+  sportSource?: "tag" | "emoji" | "seção" | "texto" | "padrão";
   dateBumped?: boolean;
 }
 
