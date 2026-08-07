@@ -66,6 +66,65 @@ function detectSportFromEmoji(compLine: string): SportType | null {
   return null;
 }
 
+/** Canonical `#esporte` tags → SportType. Motorsport categories collapse into `f1`
+ *  (the category name stays in the competition text). */
+const SPORT_TAG_MAP: Record<string, SportType> = {
+  futebol: 'football', football: 'football', futebolfeminino: 'football',
+  futsal: 'futsal',
+  basquete: 'basketball', basketball: 'basketball', nba: 'basketball', wnba: 'basketball', nbb: 'basketball',
+  volei: 'volleyball', volleyball: 'volleyball', voleidepraia: 'volleyball',
+  handebol: 'handball', handball: 'handball',
+  tenis: 'tennis', tennis: 'tennis',
+  f1: 'f1', formula1: 'f1', motogp: 'f1', moto2: 'f1', moto3: 'f1',
+  stockcar: 'f1', formulae: 'f1', indycar: 'f1', nascar: 'f1',
+  automobilismo: 'f1', motovelocidade: 'f1', motocross: 'f1', turismo: 'f1', rally: 'f1',
+  mma: 'mma', ufc: 'mma', bellator: 'mma', pfl: 'mma',
+  boxe: 'boxing', boxing: 'boxing',
+  baseball: 'baseball', beisebol: 'baseball', mlb: 'baseball',
+  rugby: 'rugby', rugbi: 'rugby',
+  hoquei: 'hockey', hockey: 'hockey', nhl: 'hockey',
+  surfe: 'surf', surf: 'surf',
+  ciclismo: 'cycling', cycling: 'cycling',
+  golfe: 'golf', golf: 'golf',
+  natacao: 'swimming', swimming: 'swimming',
+  atletismo: 'athletics', athletics: 'athletics',
+  ginastica: 'gymnastics', gymnastics: 'gymnastics',
+  esports: 'esports', esport: 'esports', egames: 'esports',
+};
+
+const SPORT_TAG_RE = /(?:^|[\s\/|,;·—–-])#([\p{L}0-9]+)/gu;
+
+/** Normalize a tag slug: lowercase, strip accents/spaces. */
+function normalizeTagSlug(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/** Extract the first recognized `#esporte` tag from a line. */
+export function parseSportTag(line: string): SportType | null {
+  SPORT_TAG_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SPORT_TAG_RE.exec(line))) {
+    const mapped = SPORT_TAG_MAP[normalizeTagSlug(m[1])];
+    if (mapped) return mapped;
+  }
+  return null;
+}
+
+/** Remove every `#tag` (and the separator that precedes it) from a line. */
+export function stripSportTags(line: string): string {
+  return line
+    .replace(/\s*[\/|]\s*#[\p{L}0-9]+/gu, "")
+    .replace(/\s*#[\p{L}0-9]+/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s\/|,;]+$/, "")
+    .trim();
+}
+
+
 
 /** Recognize a section header line like "🏀 BASQUETE", "🎾 TÊNIS", "🏐 VÔLEI DE PRAIA",
  *  "🏎️ AUTOMOBILISMO", "⚾ BASEBALL", "⚽ FUTEBOL". Returns the SportType implied by the
