@@ -485,7 +485,14 @@ export function preprocessInlineFormatC(text: string): string {
 
       // Em-dash line with no time → competition / event header with detail
       // e.g. "PGA Tour — Terceira Rodada"
+      // BUT: when the next line is a metadata line (🏎️ MotoGP / ⏰ 07h50),
+      // this em-dash line is the EVENT TITLE — keep it, don't swallow it.
       if (!TIME_ANYWHERE_RE.test(line)) {
+        if (isMetadataLine(nextNonEmpty)) {
+          out.push(line);
+          currentEvent = parts[0];
+          continue;
+        }
         currentCompetition = parts[0];
         currentEvent = parts[0];
         currentDetail = parts.slice(1).join(" — ");
