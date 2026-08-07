@@ -374,7 +374,7 @@ function collectMetadata(lines: string[], startIdx: number): {
     j++;
   }
 
-  return { competition, competition_detail, game_time, channels, sport_type, linesConsumed: consumed };
+  return { competition, competition_detail, game_time, channels, sport_type, tag_sport, linesConsumed: consumed };
 }
 
 /** Advance a YYYY-MM-DD date by 1 day */
