@@ -1,16 +1,18 @@
-import { useActiveBanners, type BannerCategory } from "@/hooks/useBanners";
+import { useActiveBanners, CATEGORY_LABELS, CATEGORY_LIST, type BannerCategory } from "@/hooks/useBanners";
 import { Skeleton } from "@/components/ui/skeleton";
 import React, { useState, forwardRef } from "react";
 import { motion } from "framer-motion";
 import { ImageOff } from "lucide-react";
 
-const SPORTS_CATEGORIES: { key: BannerCategory; emoji: string; label: string }[] = [
-  { key: "football", emoji: "⚽", label: "Futebol" },
-  { key: "basketball", emoji: "🏀", label: "Basquete" },
-  { key: "ufc", emoji: "🥊", label: "UFC/MMA" },
-  { key: "other_sports", emoji: "🏆", label: "Outros Esportes" },
-  { key: "football_guide", emoji: "📋", label: "Guia do Futebol" },
-];
+/** All categories except the cover row, rendered in CATEGORY_LIST order */
+const SPORTS_CATEGORIES: { key: BannerCategory; emoji: string; label: string }[] = CATEGORY_LIST
+  .filter((k) => k !== "cover")
+  .map((key) => {
+    const raw = CATEGORY_LABELS[key];
+    const [emoji, ...rest] = raw.split(" ");
+    return { key, emoji, label: rest.join(" ") };
+  });
+
 
 const BannerCard = ({ banner, index }: { banner: { id: string; image_url: string; title: string | null }; index: number }) => {
   const [imgErr, setImgErr] = useState(false);
