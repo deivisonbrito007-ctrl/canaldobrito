@@ -45,6 +45,7 @@ export const SPORT_THEME: Record<SportType, SportTheme> = {
   futsal: make("--sport-futsal", "Futsal"),
   handball: make("--sport-handball", "Handebol"),
   athletics: make("--sport-athletics", "Atletismo"),
+  gymnastics: make("--sport-gymnastics", "Ginástica"),
   esports: make("--sport-esports", "eSports"),
 
 };
