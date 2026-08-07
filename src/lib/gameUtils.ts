@@ -68,6 +68,7 @@ export const SPORT_LABEL: Record<SportType, string> = {
   swimming: 'Natação',
   golf: 'Golf',
   athletics: 'Atletismo',
+  gymnastics: 'Ginástica',
   esports: 'eSports',
 };
 
