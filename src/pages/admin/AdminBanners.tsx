@@ -30,6 +30,42 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
+/** Keyword hints (file name) → banner category */
+const CATEGORY_HINTS: [RegExp, BannerCategory][] = [
+  [/futsal|lnf|cbfs/i, "futsal"],
+  [/futebol|brasileirao|brasileirão|libertadores|champions|premier|laliga|serie[-_ ]?a/i, "football"],
+  [/basquete|basket|nba|nbb/i, "basketball"],
+  [/volei|vôlei|volley|superliga/i, "volleyball"],
+  [/handebol|handball/i, "handball"],
+  [/tenis|tênis|atp|wta|wimbledon|roland/i, "tennis"],
+  [/f1|formula|fórmula|motogp|stockcar|stock[-_ ]?car|nascar|automobilismo|indy/i, "motorsport"],
+  [/ufc|mma/i, "ufc"],
+  [/boxe|boxing/i, "boxing"],
+  [/atletismo|athletics|maratona|diamond/i, "athletics"],
+  [/natacao|natação|swimming/i, "swimming"],
+  [/ciclismo|cycling|tour/i, "cycling"],
+  [/surf|wsl/i, "surf"],
+  [/golf/i, "golf"],
+  [/hoquei|hóquei|hockey|nhl/i, "hockey"],
+  [/baseball|beisebol|mlb/i, "baseball"],
+  [/rugby/i, "rugby"],
+  [/esport|cblol|valorant|cs2|csgo|lol/i, "esports"],
+  [/guia/i, "football_guide"],
+  [/capa|cover|destaque/i, "cover"],
+];
+
+/** Returns a category when every hinted file name agrees, otherwise null */
+function suggestCategoryFromNames(names: string[]): BannerCategory | null {
+  const hits = new Set<BannerCategory>();
+  for (const n of names) {
+    for (const [re, cat] of CATEGORY_HINTS) {
+      if (re.test(n)) { hits.add(cat); break; }
+    }
+  }
+  return hits.size === 1 ? [...hits][0] : null;
+}
+
+
 const BANNER_PROMPT_MODEL = `Você é um EXTRATOR de programação esportiva. A partir da IMAGEM enviada, identifique TODOS os eventos visíveis (jogos, treinos, classificações, sprints, corridas, lutas, rodadas) e devolva SOMENTE o texto formatado abaixo — sem explicações, sem markdown, sem aspas.
 
 ═══════════════════════════════════════════
