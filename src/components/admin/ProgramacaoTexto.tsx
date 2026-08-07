@@ -374,8 +374,15 @@ export function preprocessInlineFormatC(text: string): string {
     }
   };
 
-  for (const raw of rawLines) {
+  for (let li = 0; li < rawLines.length; li++) {
+    const raw = rawLines[li];
     const line = raw.trim();
+    // Next non-empty line (lookahead), used to tell an event title from a section header
+    let nextNonEmpty = "";
+    for (let k = li + 1; k < rawLines.length; k++) {
+      const cand = rawLines[k].trim();
+      if (cand) { nextNonEmpty = cand; break; }
+    }
     if (!line) {
       out.push("");
       continue;
