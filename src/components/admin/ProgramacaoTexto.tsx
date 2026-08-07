@@ -300,6 +300,7 @@ function collectMetadata(lines: string[], startIdx: number): {
   game_time: string;
   channels: string[];
   sport_type: SportType | null;
+  tag_sport: SportType | null;
   linesConsumed: number;
 } {
   let competition = "";
@@ -307,6 +308,7 @@ function collectMetadata(lines: string[], startIdx: number): {
   let game_time = "00:00";
   let channels: string[] = [];
   let sport_type: SportType | null = null;
+  let tag_sport: SportType | null = null;
   let consumed = 0;
 
   let j = startIdx;
@@ -314,11 +316,15 @@ function collectMetadata(lines: string[], startIdx: number): {
     // Stop if this line is actually a section header (e.g. "🏀 BASQUETE"),
     // not a metadata line for the current game.
     if (detectSectionHeaderSport(lines[j])) break;
-    const ml = lines[j];
+    // Tag explícita `#esporte` tem prioridade máxima e é removida do texto.
+    const tagged = parseSportTag(lines[j]);
+    if (tagged) tag_sport = tagged;
+    const ml = tagged ? stripSportTags(lines[j]) : lines[j];
 
     // 🏆 or sport emoji → competition line
     if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)/.test(ml)) {
       sport_type = detectSportFromEmoji(ml);
+
       const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)\s*/, "").trim();
       // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
       if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
