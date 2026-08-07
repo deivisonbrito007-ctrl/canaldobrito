@@ -45,6 +45,7 @@ export const SPORT_EMOJI: Record<SportType, string> = {
   swimming: '🏊',
   golf: '⛳',
   athletics: '🏃',
+  gymnastics: '🤸',
   esports: '🎮',
 };
 
