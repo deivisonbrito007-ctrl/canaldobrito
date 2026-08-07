@@ -77,7 +77,7 @@ TÍTULO: <até 60 caracteres, com emoji do esporte principal no início>
 📅 Dia DD/MM
 
 <linha 1 do evento>
-<emoji do esporte> <Competição (Sessão/Fase)> / ⏰ HHhMM
+<emoji do esporte> <Competição (Sessão/Fase)> / ⏰ HHhMM / #esporte
 📺 <Canal1, Canal2>
 
 <linha em branco>
@@ -85,6 +85,27 @@ TÍTULO: <até 60 caracteres, com emoji do esporte principal no início>
 <próximo evento...>
 
 ⚠️ CADA EVENTO OCUPA EXATAMENTE 3 LINHAS + 1 LINHA EM BRANCO. NUNCA junte tudo numa única linha. Quebre as linhas de verdade (Enter), mesmo que a imagem da programação esteja em formato compacto.
+
+═══════════════════════════════════════════
+TAG DE ESPORTE (#esporte) — OBRIGATÓRIA
+═══════════════════════════════════════════
+
+A linha 2 SEMPRE termina com " / #esporte". A tag é o que define o esporte no sistema — o emoji é só decoração. Use EXATAMENTE uma destas:
+
+#futebol #futsal #basquete #volei #handebol #tenis
+#f1 #motogp #stockcar #formulae #indycar #nascar #motocross
+#mma #boxe #baseball #rugby #hoquei
+#surfe #ciclismo #golfe #natacao #atletismo #ginastica #esports
+
+Como escolher a tag:
+• Olhe o ÍCONE/COR da coluna de competição da tabela, NÃO o nome da competição.
+• Bola de vôlei em "Copa Sul-Americ. Masc" → #volei (NÃO #futebol).
+• "Nascar O'Reilly", "Stock Car", "Turismo Nacional", "Bagger World Cup", "MotoGP" → automobilismo (#nascar, #stockcar, #turismo→#stockcar, #motogp).
+• Luva 🥊: use #mma só em UFC/Bellator/PFL/ONE; qualquer outro card de luta → #boxe.
+• "LNF", "CBFS", "Brasileiro de Futsal" → #futsal (nunca #futebol).
+• Se ficar em dúvida entre dois esportes, use o ícone da tabela como desempate final.
+• PROIBIDO usar 🏆 como emoji de esporte — use sempre o emoji específico.
+
 
 ═══════════════════════════════════════════
 TIPOS DE LINHA 1 (escolha UM por evento)
