@@ -462,7 +462,7 @@ Cracker Barrel 400
       { home: "Japão", sport: "football" },
       { home: "Figueirense", sport: "football" },
       { home: "SESI Franca", sport: "basketball" },
-      { home: "São Lourenço", sport: "football" }, // futsal → football (no dedicated type)
+      { home: "São Lourenço", sport: "futsal" }, // dedicated futsal type
       { home: "St. Louis Cardinals", sport: "baseball" },
       { home: "Roland Garros", sport: "tennis" },
       { home: "Elite16 Ostrava", sport: "volleyball" },
