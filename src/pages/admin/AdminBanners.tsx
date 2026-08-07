@@ -293,6 +293,16 @@ const AdminBanners = () => {
     if (errors.length) toast.error(`${errors.length} arquivo(s) ignorado(s)`, { description: errors.slice(0, 3).join("; ") });
     if (!valid.length) return;
 
+    // Suggest a better category based on the file names
+    const suggested = suggestCategoryFromNames(valid.map((f) => f.name || ""));
+    if (suggested && suggested !== selectedCategory) {
+      toast.info(`Estes arquivos parecem ser de ${CATEGORY_LABELS[suggested]}`, {
+        description: `Enviando para ${CATEGORY_LABELS[selectedCategory]}. Toque para mudar de categoria antes do próximo envio.`,
+        action: { label: "Mudar", onClick: () => setSelectedCategory(suggested) },
+      });
+    }
+
+
     setUploading(true);
     setProgress({ current: 0, total: valid.length });
 
