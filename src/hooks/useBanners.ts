@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type BannerCategory = "cover" | "football" | "basketball" | "ufc" | "other_sports" | "football_guide";
+export type BannerCategory =
+  | "cover" | "football" | "basketball" | "ufc" | "other_sports" | "football_guide"
+  | "athletics" | "motorsport" | "tennis" | "volleyball" | "futsal" | "boxing"
+  | "mma" | "hockey" | "baseball" | "rugby" | "surf" | "cycling" | "swimming"
+  | "golf" | "handball" | "esports";
 
 export interface Banner {
   id: string;
@@ -18,13 +22,56 @@ export interface Banner {
 export const CATEGORY_LABELS: Record<BannerCategory, string> = {
   cover: "📺 Capa",
   football: "⚽ Futebol",
+  futsal: "🥅 Futsal",
   basketball: "🏀 Basquete",
+  volleyball: "🏐 Vôlei",
+  handball: "🤾 Handebol",
+  tennis: "🎾 Tênis",
+  motorsport: "🏎️ Automobilismo",
   ufc: "🥊 UFC/MMA",
+  mma: "🥋 MMA",
+  boxing: "🥊 Boxe",
+  athletics: "🏃 Atletismo",
+  swimming: "🏊 Natação",
+  cycling: "🚴 Ciclismo",
+  surf: "🏄 Surf",
+  golf: "⛳ Golfe",
+  hockey: "🏒 Hóquei",
+  baseball: "⚾ Baseball",
+  rugby: "🏉 Rugby",
+  esports: "🎮 eSports",
   other_sports: "🏆 Demais Esportes",
   football_guide: "📋 Guia do Futebol",
 };
 
-export const CATEGORY_LIST: BannerCategory[] = ["cover", "football", "basketball", "ufc", "other_sports", "football_guide"];
+export const CATEGORY_LIST: BannerCategory[] = [
+  "cover", "football", "futsal", "basketball", "volleyball", "handball", "tennis",
+  "motorsport", "ufc", "mma", "boxing", "athletics", "swimming", "cycling", "surf",
+  "golf", "hockey", "baseball", "rugby", "esports", "other_sports", "football_guide",
+];
+
+/** Maps a detected sport_type to the matching banner category */
+export const SPORT_TO_CATEGORY: Record<string, BannerCategory> = {
+  football: "football",
+  futsal: "futsal",
+  basketball: "basketball",
+  volleyball: "volleyball",
+  handball: "handball",
+  tennis: "tennis",
+  f1: "motorsport",
+  mma: "ufc",
+  boxing: "boxing",
+  athletics: "athletics",
+  swimming: "swimming",
+  cycling: "cycling",
+  surf: "surf",
+  golf: "golf",
+  hockey: "hockey",
+  baseball: "baseball",
+  rugby: "rugby",
+  esports: "esports",
+};
+
 
 /** Single query fetching all active banners, grouped client-side */
 export const useActiveBanners = () =>
