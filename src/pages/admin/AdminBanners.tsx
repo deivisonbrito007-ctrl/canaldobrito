@@ -30,6 +30,42 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
+/** Keyword hints (file name) → banner category */
+const CATEGORY_HINTS: [RegExp, BannerCategory][] = [
+  [/futsal|lnf|cbfs/i, "futsal"],
+  [/futebol|brasileirao|brasileirão|libertadores|champions|premier|laliga|serie[-_ ]?a/i, "football"],
+  [/basquete|basket|nba|nbb/i, "basketball"],
+  [/volei|vôlei|volley|superliga/i, "volleyball"],
+  [/handebol|handball/i, "handball"],
+  [/tenis|tênis|atp|wta|wimbledon|roland/i, "tennis"],
+  [/f1|formula|fórmula|motogp|stockcar|stock[-_ ]?car|nascar|automobilismo|indy/i, "motorsport"],
+  [/ufc|mma/i, "ufc"],
+  [/boxe|boxing/i, "boxing"],
+  [/atletismo|athletics|maratona|diamond/i, "athletics"],
+  [/natacao|natação|swimming/i, "swimming"],
+  [/ciclismo|cycling|tour/i, "cycling"],
+  [/surf|wsl/i, "surf"],
+  [/golf/i, "golf"],
+  [/hoquei|hóquei|hockey|nhl/i, "hockey"],
+  [/baseball|beisebol|mlb/i, "baseball"],
+  [/rugby/i, "rugby"],
+  [/esport|cblol|valorant|cs2|csgo|lol/i, "esports"],
+  [/guia/i, "football_guide"],
+  [/capa|cover|destaque/i, "cover"],
+];
+
+/** Returns a category when every hinted file name agrees, otherwise null */
+function suggestCategoryFromNames(names: string[]): BannerCategory | null {
+  const hits = new Set<BannerCategory>();
+  for (const n of names) {
+    for (const [re, cat] of CATEGORY_HINTS) {
+      if (re.test(n)) { hits.add(cat); break; }
+    }
+  }
+  return hits.size === 1 ? [...hits][0] : null;
+}
+
+
 const BANNER_PROMPT_MODEL = `Você é um EXTRATOR de programação esportiva. A partir da IMAGEM enviada, identifique TODOS os eventos visíveis (jogos, treinos, classificações, sprints, corridas, lutas, rodadas) e devolva SOMENTE o texto formatado abaixo — sem explicações, sem markdown, sem aspas.
 
 ═══════════════════════════════════════════
@@ -111,11 +147,12 @@ REGRA DO TÍTULO (1ª linha)
 ═══════════════════════════════════════════
 EMOJIS POR ESPORTE (use no 🏆 da linha 2)
 ═══════════════════════════════════════════
-⚽ Futebol/Futsal   🏀 Basquete   🏐 Vôlei
-🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar
+⚽ Futebol   🥅 Futsal   🏀 Basquete   🏐 Vôlei
+🤾 Handebol   🎾 Tênis   🏎️ F1/MotoGP/Stock/F-E/IndyCar/NASCAR
 🥊 MMA/Boxe   ⚾ Baseball   🏉 Rugby
 🏒 Hóquei   🏄 Surfe   🚴 Ciclismo
-⛳ Golfe   🏊 Natação
+⛳ Golfe   🏊 Natação   🏃 Atletismo   🎮 eSports
+
 
 ═══════════════════════════════════════════
 EXEMPLO DE SAÍDA VÁLIDA (dia multi-esporte)
@@ -230,6 +267,13 @@ const AdminBanners = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<BannerCategory>("cover");
   const { data: banners, isLoading } = useAllBanners(selectedCategory);
+  const { data: allBanners } = useAllBanners();
+  const countsByCategory = useMemo(() => {
+    const out: Partial<Record<BannerCategory, number>> = {};
+    for (const b of allBanners ?? []) out[b.category] = (out[b.category] ?? 0) + 1;
+    return out;
+  }, [allBanners]);
+
   const createBanner = useCreateBanner();
   const updateBanner = useUpdateBanner();
   const deleteBanner = useDeleteBanner();
@@ -285,6 +329,16 @@ const AdminBanners = () => {
     }
     if (errors.length) toast.error(`${errors.length} arquivo(s) ignorado(s)`, { description: errors.slice(0, 3).join("; ") });
     if (!valid.length) return;
+
+    // Suggest a better category based on the file names
+    const suggested = suggestCategoryFromNames(valid.map((f) => f.name || ""));
+    if (suggested && suggested !== selectedCategory) {
+      toast.info(`Estes arquivos parecem ser de ${CATEGORY_LABELS[suggested]}`, {
+        description: `Enviando para ${CATEGORY_LABELS[selectedCategory]}. Toque para mudar de categoria antes do próximo envio.`,
+        action: { label: "Mudar", onClick: () => setSelectedCategory(suggested) },
+      });
+    }
+
 
     setUploading(true);
     setProgress({ current: 0, total: valid.length });
@@ -586,21 +640,31 @@ const AdminBanners = () => {
 
           <div role="tablist" aria-label="Categoria de banner"
             className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]">
-            {CATEGORY_LIST.map((cat) => (
-              <button
-                key={cat}
-                role="tab"
-                aria-selected={selectedCategory === cat}
-                onClick={() => { setSelectedCategory(cat); clearSelection(); }}
-                className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[44px] ${
-                  selectedCategory === cat
-                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                    : "glass-panel text-muted-foreground/70 hover:text-foreground"
-                }`}
-              >
-                {CATEGORY_LABELS[cat]}
-              </button>
-            ))}
+            {CATEGORY_LIST.map((cat) => {
+              const count = countsByCategory[cat] ?? 0;
+              return (
+                <button
+                  key={cat}
+                  role="tab"
+                  aria-selected={selectedCategory === cat}
+                  aria-label={`${CATEGORY_LABELS[cat]} — ${count} banner(s)`}
+                  onClick={() => { setSelectedCategory(cat); clearSelection(); }}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[44px] ${
+                    selectedCategory === cat
+                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                      : count === 0
+                        ? "glass-panel text-muted-foreground/40 hover:text-foreground"
+                        : "glass-panel text-muted-foreground/70 hover:text-foreground"
+                  }`}
+                >
+                  <span className="whitespace-nowrap">{CATEGORY_LABELS[cat]}</span>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[9px] tabular-nums ${count === 0 ? "bg-white/[0.04] text-muted-foreground/40" : "bg-white/[0.08] text-foreground/70"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
           </div>
 
           <div className="glass-panel rounded-xl overflow-hidden">

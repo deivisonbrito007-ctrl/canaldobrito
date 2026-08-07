@@ -1,0 +1,16 @@
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'athletics';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'motorsport';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'tennis';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'volleyball';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'futsal';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'boxing';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'mma';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'hockey';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'baseball';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'rugby';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'surf';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'cycling';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'swimming';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'golf';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'handball';
+ALTER TYPE public.banner_category ADD VALUE IF NOT EXISTS 'esports';

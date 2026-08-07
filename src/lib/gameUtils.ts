@@ -1,13 +1,15 @@
-export type SportType = 'football' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf';
+export type SportType = 'football' | 'futsal' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'handball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf' | 'athletics' | 'esports';
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
   football: 105,
+  futsal: 90,
   basketball: 150,
   tennis: 210,
   f1: 130,
   mma: 180,
   volleyball: 120,
+  handball: 100,
   hockey: 150,
   baseball: 210,
   rugby: 100,
@@ -16,6 +18,8 @@ export const SPORT_DURATION: Record<SportType, number> = {
   boxing: 90,
   swimming: 180,
   golf: 300,
+  athletics: 180,
+  esports: 180,
 };
 
 /** Extra buffer after duration ends to cover delays/overtime */
@@ -24,11 +28,13 @@ export const LIVE_BUFFER_MINUTES = 15;
 /** Sport emoji map */
 export const SPORT_EMOJI: Record<SportType, string> = {
   football: '⚽',
+  futsal: '🥅',
   basketball: '🏀',
   tennis: '🎾',
   f1: '🏎️',
   mma: '🥊',
   volleyball: '🏐',
+  handball: '🤾',
   hockey: '🏒',
   baseball: '⚾',
   rugby: '🏉',
@@ -37,16 +43,20 @@ export const SPORT_EMOJI: Record<SportType, string> = {
   boxing: '🥊',
   swimming: '🏊',
   golf: '⛳',
+  athletics: '🏃',
+  esports: '🎮',
 };
 
 /** Sport label map */
 export const SPORT_LABEL: Record<SportType, string> = {
   football: 'Futebol',
+  futsal: 'Futsal',
   basketball: 'Basquete',
   tennis: 'Tênis',
-  f1: 'F1',
+  f1: 'Automobilismo',
   mma: 'MMA',
   volleyball: 'Vôlei',
+  handball: 'Handebol',
   hockey: 'Hóquei',
   baseball: 'Baseball',
   rugby: 'Rugby',
@@ -55,11 +65,14 @@ export const SPORT_LABEL: Record<SportType, string> = {
   boxing: 'Boxe',
   swimming: 'Natação',
   golf: 'Golf',
+  athletics: 'Atletismo',
+  esports: 'eSports',
 };
 
 /** Sports that don't have two adversarial teams (e.g. motorsport) */
-const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf'];
+const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf', 'athletics'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
+
 
 /** Detect sport type from competition name and optional team names */
 export function detectSportType(competition: string, teamNames?: string): SportType {
@@ -68,6 +81,11 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|canucks|senators|islanders|hurricanes|predators|blue jackets|sharks|ducks|coyotes|kraken|devils|sabres)\b/i.test(c)) return 'hockey';
   if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|cubs|mets|astros|braves|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|royals|tigers|white sox|marlins)\b/i.test(c)) return 'baseball';
   if (/\b(rugby|sevens|svns|world rugby|super rugby)\b/i.test(c)) return 'rugby';
+  if (/\b(futsal|lnf|cbfs|liga nacional de futsal)\b/i.test(c)) return 'futsal';
+  if (/\b(handebol|handball|ehf|balonmano)\b/i.test(c)) return 'handball';
+  if (/\b(atletismo|athletics|diamond league|world athletics|maratona|meia.maratona|marathon|revezamento|heptatlo|decatlo|arremesso de peso|salto (?:em )?(?:dist[aâ]ncia|triplo|com vara|em altura))\b/i.test(c) || /\b\d{2,4}\s?m\s?(?:rasos|com barreiras|livres)\b/i.test(c)) return 'athletics';
+  if (/\b(e[- ]?sports|esports|cblol|lol|league of legends|cs2|cs:?go|counter[- ]strike|valorant|dota\s?2?|free fire|rainbow six|r6|rocket league|fifa\s?e?sports|overwatch)\b/i.test(c)) return 'esports';
+
   if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
   if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|indy nxt|stock car|e-prix|superbike|porsche|carrera cup|nascar|copa truck|truck series|motocross|mxgp)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';

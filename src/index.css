@@ -68,6 +68,11 @@
     --sport-boxing: 0 73% 45%;
     --sport-swimming: 174 80% 45%;
     --sport-golf: 84 70% 45%;
+    --sport-futsal: 187 90% 50%;
+    --sport-handball: 330 81% 60%;
+    --sport-athletics: 27 96% 61%;
+    --sport-esports: 258 90% 66%;
+
 
     --sidebar-background: 210 22% 3%;
     --sidebar-foreground: 0 0% 95%;
