@@ -1,4 +1,4 @@
-export type SportType = 'football' | 'futsal' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'handball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf' | 'athletics' | 'esports';
+export type SportType = 'football' | 'futsal' | 'basketball' | 'tennis' | 'f1' | 'mma' | 'volleyball' | 'handball' | 'hockey' | 'baseball' | 'rugby' | 'surf' | 'cycling' | 'boxing' | 'swimming' | 'golf' | 'athletics' | 'gymnastics' | 'esports';
 
 /** Realistic duration in minutes per sport (includes halftime, timeouts, stoppages) */
 export const SPORT_DURATION: Record<SportType, number> = {
