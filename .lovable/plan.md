@@ -1,42 +1,36 @@
-## Diagnóstico (verificado no banco e no código)
+## Diagnóstico (verificado no código e no schema)
 
-Consultei os canais realmente usados em `daily_games` (últimos 60 dias) e comparei com o mapa embutido (`ChannelBadge.tsx`) e com a tabela de mapeamentos (que hoje tem **apenas 6 linhas**: espn, Globo, Max, premiere, Record, sportv — sendo que "Max" está com `logo_key: none`, ou seja, sem logo mesmo tendo asset disponível).
+**1. Banners cobrem só 6 categorias**
+O tipo `banner_category` no banco tem apenas: `cover`, `football`, `basketball`, `ufc`, `other_sports`, `football_guide`. Ou seja: Atletismo, Automobilismo, Tênis, Vôlei, Futsal, Boxe, Hóquei, Baseball, Rugby, Surf, Ciclismo, Natação, Golfe, Handebol e eSports não têm categoria própria — tudo cai em "Demais Esportes". A página pública (`BannerSections.tsx`) e o admin (`AdminBanners.tsx`) montam as fileiras a partir dessa mesma lista, então o que falta no banco falta nas duas telas.
 
-Três problemas distintos:
-
-**1. Nomes quebrados pelo parser entram como canal**
-Existem "canais" gravados como `MG)`, `MA)`, `PR`, `Globo (SP`, `Globo (RS`, `SporTV-PFC`, `SporTV-Premiere 6`. São quebras de split por vírgula/hífen dentro de parênteses. Além de poluir a aba Canais e Logos, `PR` casa por substring com **Premiere** (a busca por substring aceita 2 letras), mostrando a logo errada.
-
-**2. Matching por substring gera logo errada e é imprevisível**
-`matchChannel` percorre o mapa e aceita qualquer `key.includes(k) || k.includes(key)`, sem ordenar por tamanho e sem mínimo de caracteres. Consequências: `PR` → Premiere; `GE` → GE TV (por sorte); a primeira chave da iteração ganha, então o resultado depende da ordem de declaração do objeto. Também a normalização não remove `(`, `)`, `.`, `/`, `,`, então `Globo (PE)` e `RedeTV!` variantes não casam de forma consistente.
-
-**3. Canais reais sem logo nenhuma (só emoji 📺)**
-Com contagem de uso nos últimos 60 dias: `SportyNet` (46) e `SportyNet+` — casam com `snet`, mas a arte usada é a antiga; `YouTube Metrópoles` (25), `LNF TV` / `YouTube LNF TV` (40), `YouTube UOL Esporte` / `UOL Play` (19), `GPTV` (9), `PhizTV` (9), `TV Brasil` (10), `GE` / `GETV` variantes, `CBFS TV` (5), `Record News`, `TV ALERJ`, `YouTube Stock Car`, `YouTube Vôlei Brasil`, `YouTube NBA Brasil`, `YouTube LiveBasketBR`, `YouTube Lance!`, `YouTube Flamengo TV`, `YouTube Botafogo TV`, `YouTube Massa Bruta`, `YouTube Paulistão`, `YouTube STU Channel`, `YouTube Canal Gol BR`, `YouTube Ulisses TV`.
-Para todos os `YouTube <algo>` o correto é cair na logo do YouTube quando não houver arte própria — hoje isso é acidental.
+**2. A classificação de esportes não conhece Atletismo, Futsal, Handebol nem eSports**
+`SportType` em `gameUtils.ts` tem 14 tipos e `detectSportType` termina com `return 'football'`. Consequência real: uma prova de atletismo, um jogo de futsal (LNF) ou de handebol entram como **Futebol** — inclusive com duração de 105 min, o que faz o "ao vivo" acabar na hora errada. O parser de seções (`ProgramacaoTexto.tsx`) também não reconhece cabeçalhos com 🏃 (atletismo), 🤾 (handebol) ou 🎮 (eSports), então esses blocos perdem o esporte da seção.
 
 ## O que vou fazer
 
-### Etapa 1 — Matching confiável (frontend)
-- `normalizeChannelName`: remover também `( ) . , / & '` e sufixos numéricos de canal (`SporTV 2`, `ESPN4`, `Premiere 6`) passam a resolver para a marca base de forma explícita, não por acidente.
-- Reescrever `matchChannel`: 1) match exato normalizado → 2) alias do banco → 3) regra de prefixo `youtube*` → 4) match por substring **apenas com chave de 4+ caracteres e ordenado do mais longo para o mais curto**. Isso elimina `PR` → Premiere e torna o resultado determinístico.
-- Regras derivadas: `SporTV N`, `ESPN N`, `Premiere N`, `Combate N`, `SportyNet+` herdam a marca e ganham o número como sufixo no rótulo (`SporTV 2` continua escrito por extenso, só a logo é herdada).
+### Etapa 1 — Novos tipos de esporte (base de tudo)
+Adicionar em `gameUtils.ts`: `athletics`, `futsal`, `handball`, `esports`, e separar `motorsport` do rótulo genérico "F1" (mantendo `f1` como valor para não quebrar dados existentes, só ajustando o rótulo para "Automobilismo").
+- Emoji, rótulo e duração realista para cada um (atletismo 180 min, futsal 90, handebol 100, eSports 180).
+- `detectSportType`: reconhecer atletismo (Diamond League, World Athletics, maratona, meia maratona, salto, revezamento, 100m/200m/etc.), futsal (LNF, CBFS, futsal), handebol (handebol, EHF), eSports (CS2, Valorant, LoL, CBLOL, Dota, Free Fire, Rainbow Six).
+- Marcar atletismo e eSports corretamente quanto a "evento único" (sem confronto).
 
-### Etapa 2 — Cobertura de logos
-- Cadastrar mapeamentos + aliases para todos os canais reais listados acima, apontando para logos existentes quando houver marca-mãe (YouTube, GE/Globo, Record News → Record, TV Brasil, SportyNet → SNet, Combate 2 → Combate, Premiere 2-6 → Premiere, HBO Max → Max).
-- Corrigir o mapeamento "Max" que está com `logo_key: none` para usar o asset `max.png`.
-- Para os canais sem nenhuma arte disponível (PhizTV, GPTV, CBFS TV, LNF TV, TV ALERJ, Metrópoles, UOL), aplicar um **chip de iniciais** consistente (ex.: "LNF", "PHZ") em vez do emoji 📺 genérico — legível e sem parecer erro.
+### Etapa 2 — Parser da programação
+- `SECTION_HEADER_SPORT_RE` e `detectSectionHeaderSport` ganham 🏃 (atletismo), 🤾 (handebol), 🎮 (eSports) e ⚽ FUTSAL passa a virar `futsal` quando o cabeçalho diz FUTSAL (hoje virava futebol).
+- `KNOWN_SUBSECTIONS_RE` ganha as competições novas (Diamond League, LNF, EHF, CBLOL etc.) para não serem lidas como nome de time.
+- Atualizar o prompt-modelo de banner (`AdminBanners.tsx` / `docs/prompts/banner-from-image.md`) com os emojis e sessões desses esportes, para a extração já sair no formato certo.
 
-### Etapa 3 — Limpeza dos nomes quebrados
-- Normalizar na leitura: canais que são só UF/fragmento (`PR`, `MG)`, `MA)`, `SP`) ou `Globo (XX` são reconhectados ao canal anterior/base e não aparecem mais como badge separado.
-- Corrigir o split de canais no parser (`ProgramacaoTexto.tsx` / `gameUtils.ts`) para não quebrar dentro de parênteses, evitando novos casos.
-- Migração de limpeza dos registros já gravados nesses formatos.
+### Etapa 3 — Categorias de banner por esporte
+- Migração ampliando o enum `banner_category` com: `athletics`, `motorsport`, `tennis`, `volleyball`, `futsal`, `boxing`, `mma`, `hockey`, `baseball`, `rugby`, `surf`, `cycling`, `swimming`, `golf`, `handball`, `esports`. `ufc` é mantido (dados existentes) e passa a ser rotulado "UFC/MMA"; `other_sports` continua como catch-all.
+- `useBanners.ts`: `CATEGORY_LABELS`/`CATEGORY_LIST` com emoji + nome de todas, na ordem de relevância.
+- `BannerSections.tsx`: gerar as fileiras a partir da lista central (não mais um array fixo de 5), continuando a esconder categorias vazias.
+- `AdminBanners.tsx`: as pílulas de categoria já mapeiam `CATEGORY_LIST`; garantir scroll horizontal com muitas pílulas, contador de banners por categoria na pílula e busca por categoria.
 
-### Etapa 4 — Melhorias na aba Canais e Logos
-- Aba **Órfãos** passa a mostrar por que está órfão (sem mapeamento / mapeamento com `logo_key: none` / arte quebrada) — hoje "Max" não aparece como problema mesmo estando sem logo.
-- Janela de descoberta de 30 → 90 dias, com seletor, para não esconder canais de campeonatos sazonais.
-- Botão **"Auditar logos"**: testa o carregamento de cada `custom_logo_url`/asset e marca as que retornam 404 ou imagem vazia.
-- Contadores de cobertura no topo: `X% dos canais em uso têm logo` + lista dos 5 órfãos mais frequentes.
-- Melhorar o auto-vínculo para sugerir também as regras de marca-mãe (YouTube/Premiere/ESPN numerados), não só similaridade de texto.
+### Etapa 4 — Auditoria da aba Banner (correções e melhorias)
+- **Sugestão de categoria pelo arquivo**: ao subir uma imagem cujo nome contenha "atletismo", "f1", "ufc" etc., sugerir a categoria (com confirmação).
+- **Cobertura por categoria**: painel no topo mostrando quantas categorias estão sem nenhum banner ativo — evita a fileira sumir da home sem ninguém perceber.
+- **Aviso de categoria vazia com programação**: se houver jogos daquele esporte na programação de hoje/amanhã e a categoria não tiver banner ativo, mostrar alerta com atalho para subir.
+- **Mover banner de categoria**: ação no card para trocar a categoria sem apagar e reenviar.
+- Revisar overflow em 320-430px com as novas pílulas e manter alvos de toque de 44px.
 
 ## Detalhes técnicos
-Arquivos afetados: `src/components/public/channelLogos.ts` (normalização e regras), `src/components/public/ChannelBadge.tsx` (matching + chip de iniciais), `src/hooks/useDiscoveredChannels.ts` (janela e classificação de órfão), `src/pages/admin/AdminCanaisLogos.tsx` (auditoria, cobertura, auto-vínculo), `src/lib/gameUtils.ts` e `src/components/admin/ProgramacaoTexto.tsx` (split de canais). Duas migrações: seed/correção de `channel_logo_mappings` + `channel_aliases`, e limpeza dos canais quebrados em `daily_games`. Testes novos em `ChannelBadge.test.tsx` cobrindo `PR`, `SporTV 2`, `YouTube <algo>` e `Globo (PE)`.
+Arquivos: `src/lib/gameUtils.ts` (tipos, emoji, rótulo, duração, detecção), `src/components/admin/ProgramacaoTexto.tsx` (cabeçalhos de seção e subseções), `src/hooks/useBanners.ts` (labels/lista central), `src/components/public/BannerSections.tsx` (fileiras dinâmicas), `src/pages/admin/AdminBanners.tsx` + `src/components/admin/BannerCard.tsx` (pílulas, contadores, mover categoria, sugestão), `docs/prompts/banner-from-image.md`. Uma migração: `ALTER TYPE banner_category ADD VALUE` para cada nova categoria (sem remover valores existentes). Testes: novos casos em `gameUtils.test.ts` (atletismo/futsal/handebol/eSports), `sports_parser.test.ts` (cabeçalhos 🏃/🤾/🎮 e ⚽ FUTSAL) e `BannerSections.test.tsx` / `AdminBanners.test.tsx` para a lista ampliada.
