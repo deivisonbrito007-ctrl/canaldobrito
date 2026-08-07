@@ -28,6 +28,8 @@ export interface ParsedGame {
   date: string;
   selected: boolean;
   sport_type?: SportType;
+  /** Como o esporte foi classificado: tag explícita, emoji, cabeçalho de seção, texto ou padrão */
+  sportSource?: "tag" | "emoji" | "seção" | "texto" | "padrão";
   dateBumped?: boolean;
 }
 
@@ -65,6 +67,65 @@ function detectSportFromEmoji(compLine: string): SportType | null {
   if (/^🏆/.test(compLine)) return null; // generic trophy — skip
   return null;
 }
+
+/** Canonical `#esporte` tags → SportType. Motorsport categories collapse into `f1`
+ *  (the category name stays in the competition text). */
+const SPORT_TAG_MAP: Record<string, SportType> = {
+  futebol: 'football', football: 'football', futebolfeminino: 'football',
+  futsal: 'futsal',
+  basquete: 'basketball', basketball: 'basketball', nba: 'basketball', wnba: 'basketball', nbb: 'basketball',
+  volei: 'volleyball', volleyball: 'volleyball', voleidepraia: 'volleyball',
+  handebol: 'handball', handball: 'handball',
+  tenis: 'tennis', tennis: 'tennis',
+  f1: 'f1', formula1: 'f1', motogp: 'f1', moto2: 'f1', moto3: 'f1',
+  stockcar: 'f1', formulae: 'f1', indycar: 'f1', nascar: 'f1',
+  automobilismo: 'f1', motovelocidade: 'f1', motocross: 'f1', turismo: 'f1', rally: 'f1',
+  mma: 'mma', ufc: 'mma', bellator: 'mma', pfl: 'mma',
+  boxe: 'boxing', boxing: 'boxing',
+  baseball: 'baseball', beisebol: 'baseball', mlb: 'baseball',
+  rugby: 'rugby', rugbi: 'rugby',
+  hoquei: 'hockey', hockey: 'hockey', nhl: 'hockey',
+  surfe: 'surf', surf: 'surf',
+  ciclismo: 'cycling', cycling: 'cycling',
+  golfe: 'golf', golf: 'golf',
+  natacao: 'swimming', swimming: 'swimming',
+  atletismo: 'athletics', athletics: 'athletics',
+  ginastica: 'gymnastics', gymnastics: 'gymnastics',
+  esports: 'esports', esport: 'esports', egames: 'esports',
+};
+
+const SPORT_TAG_RE = /(?:^|[\s\/|,;·—–-])#([\p{L}0-9]+)/gu;
+
+/** Normalize a tag slug: lowercase, strip accents/spaces. */
+function normalizeTagSlug(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/** Extract the first recognized `#esporte` tag from a line. */
+export function parseSportTag(line: string): SportType | null {
+  SPORT_TAG_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SPORT_TAG_RE.exec(line))) {
+    const mapped = SPORT_TAG_MAP[normalizeTagSlug(m[1])];
+    if (mapped) return mapped;
+  }
+  return null;
+}
+
+/** Remove every `#tag` (and the separator that precedes it) from a line. */
+export function stripSportTags(line: string): string {
+  return line
+    .replace(/\s*[\/|]\s*#[\p{L}0-9]+/gu, "")
+    .replace(/\s*#[\p{L}0-9]+/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s\/|,;]+$/, "")
+    .trim();
+}
+
 
 
 /** Recognize a section header line like "🏀 BASQUETE", "🎾 TÊNIS", "🏐 VÔLEI DE PRAIA",
@@ -241,6 +302,7 @@ function collectMetadata(lines: string[], startIdx: number): {
   game_time: string;
   channels: string[];
   sport_type: SportType | null;
+  tag_sport: SportType | null;
   linesConsumed: number;
 } {
   let competition = "";
@@ -248,6 +310,7 @@ function collectMetadata(lines: string[], startIdx: number): {
   let game_time = "00:00";
   let channels: string[] = [];
   let sport_type: SportType | null = null;
+  let tag_sport: SportType | null = null;
   let consumed = 0;
 
   let j = startIdx;
@@ -255,11 +318,15 @@ function collectMetadata(lines: string[], startIdx: number): {
     // Stop if this line is actually a section header (e.g. "🏀 BASQUETE"),
     // not a metadata line for the current game.
     if (detectSectionHeaderSport(lines[j])) break;
-    const ml = lines[j];
+    // Tag explícita `#esporte` tem prioridade máxima e é removida do texto.
+    const tagged = parseSportTag(lines[j]);
+    if (tagged) tag_sport = tagged;
+    const ml = tagged ? stripSportTags(lines[j]) : lines[j];
 
     // 🏆 or sport emoji → competition line
     if (/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)/.test(ml)) {
       sport_type = detectSportFromEmoji(ml);
+
       const cleaned = ml.replace(/^(?:🏆|🎾|🏎️|🏎|🥊|🏀|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)\s*/, "").trim();
       // Check if this line also has time (old format: 🏆 Comp / ⏰ 19h00)
       if (/(?:⏰|🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛)/.test(ml)) {
@@ -309,7 +376,7 @@ function collectMetadata(lines: string[], startIdx: number): {
     j++;
   }
 
-  return { competition, competition_detail, game_time, channels, sport_type, linesConsumed: consumed };
+  return { competition, competition_detail, game_time, channels, sport_type, tag_sport, linesConsumed: consumed };
 }
 
 /** Advance a YYYY-MM-DD date by 1 day */
@@ -649,14 +716,18 @@ export function parseScheduleText(
       let away_team = "";
       let is_womens = false;
 
-      if (/\sx\s/i.test(line)) {
-        const teamParts = line.split(/\sx\s/i).map((t) => t.trim());
+      // Tag `#esporte` pode vir no título também — captura e remove.
+      const titleTag = parseSportTag(line);
+      const titleLine = titleTag ? stripSportTags(line) : line;
+
+      if (/\sx\s/i.test(titleLine)) {
+        const teamParts = titleLine.split(/\sx\s/i).map((t) => t.trim());
         home_team = teamParts[0] || "";
         away_team = teamParts[1] || "";
-        is_womens = /\(F\)/i.test(line);
+        is_womens = /\(F\)/i.test(titleLine);
       } else {
-        home_team = line;
-        is_womens = /\(F\)/i.test(line);
+        home_team = titleLine;
+        is_womens = /\(F\)/i.test(titleLine);
       }
 
       // Collect metadata from following lines
@@ -664,11 +735,14 @@ export function parseScheduleText(
 
       // For old format compatibility: if no metadata lines consumed but nextLine is comp line
       if (meta.linesConsumed === 0 && isCompetitionLine(nextLine)) {
-        const parsed = parseCompAndTime(nextLine);
+        const nextTag = parseSportTag(nextLine);
+        const nextClean = nextTag ? stripSportTags(nextLine) : nextLine;
+        if (nextTag) meta.tag_sport = nextTag;
+        const parsed = parseCompAndTime(nextClean);
         meta.competition = parsed.competition;
         meta.competition_detail = parsed.competition_detail;
         meta.game_time = parsed.game_time;
-        meta.sport_type = detectSportFromEmoji(nextLine);
+        meta.sport_type = detectSportFromEmoji(nextClean);
         meta.linesConsumed = 1;
         // Check channel line
         const channelLine = i + 2 < lines.length ? lines[i + 2] : "";
@@ -695,13 +769,27 @@ export function parseScheduleText(
         meta.competition || "",
         `${home_team} ${away_team}`
       );
-      // Priority: emoji do jogo (não-genérico) > section header explícito > regex auto > football.
-      // A seção vence o regex para que falsos-positivos (ex.: time com nome ambíguo)
-      // não troquem o esporte declarado pelo admin no cabeçalho.
-      const finalSport: SportType = (meta.sport_type && meta.sport_type !== 'football')
-        ? meta.sport_type
-        : currentSectionSport
-          ?? (autoSport !== 'football' ? autoSport : 'football');
+      // Prioridade: tag explícita #esporte > emoji do jogo (não-genérico) >
+      // section header explícito > regex auto > football.
+      const tagSport = titleTag ?? meta.tag_sport;
+      let sportSource: ParsedGame["sportSource"] = "padrão";
+      let finalSport: SportType;
+      if (tagSport) {
+        finalSport = tagSport;
+        sportSource = "tag";
+      } else if (meta.sport_type && meta.sport_type !== 'football') {
+        finalSport = meta.sport_type;
+        sportSource = "emoji";
+      } else if (currentSectionSport) {
+        finalSport = currentSectionSport;
+        sportSource = "seção";
+      } else if (autoSport !== 'football') {
+        finalSport = autoSport;
+        sportSource = "texto";
+      } else {
+        finalSport = 'football';
+        sportSource = meta.sport_type === 'football' ? "emoji" : "padrão";
+      }
 
       // Sem competição declarada → herda o rótulo do esporte (ex.: "Atletismo")
       if (!meta.competition.trim()) {
@@ -726,8 +814,10 @@ export function parseScheduleText(
         channels: meta.channels,
         is_womens, date: gameDate, selected: true,
         sport_type: finalSport,
+        sportSource,
         dateBumped,
       }));
+
       i += 1 + meta.linesConsumed;
       continue;
     }
@@ -1550,7 +1640,32 @@ export const ProgramacaoTexto = () => {
                                       </option>
                                     ))}
                                   </select>
+                                  {game.sportSource && (
+                                    <span
+                                      title={
+                                        game.sportSource === "tag"
+                                          ? "Esporte definido pela tag #esporte"
+                                          : game.sportSource === "emoji"
+                                            ? "Esporte deduzido do emoji"
+                                            : game.sportSource === "seção"
+                                              ? "Esporte herdado do cabeçalho da seção"
+                                              : game.sportSource === "texto"
+                                                ? "Esporte adivinhado pelo texto — confira"
+                                                : "Padrão (futebol) — confira"
+                                      }
+                                      className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
+                                        game.sportSource === "tag"
+                                          ? "bg-emerald-500/15 text-emerald-400"
+                                          : game.sportSource === "emoji"
+                                            ? "bg-sky-500/15 text-sky-400"
+                                            : "bg-amber-500/10 text-amber-400"
+                                      }`}
+                                    >
+                                      {game.sportSource}
+                                    </span>
+                                  )}
                                   {game.is_womens && (
+
                                     <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
                                       Feminino
                                     </span>
