@@ -71,7 +71,7 @@ function detectSportFromEmoji(compLine: string): SportType | null {
  *  "🏎️ AUTOMOBILISMO", "⚾ BASEBALL", "⚽ FUTEBOL". Returns the SportType implied by the
  *  emoji, or null if the line doesn't match the pattern. */
 const SECTION_HEADER_SPORT_RE =
-  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤾|🎮|🥅)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
+  /^(⚽|🏀|🎾|🏎️|🏎|🥊|🏐|🏒|⚾|🏉|🏄|🚴|⛳|🏊|🏃|🤸|🤾|🎮|🥅)\s+([A-ZÀ-ÝÇÃÕÉÊÁÍÚÓÔÂ ]{3,30})$/;
 
 function detectSectionHeaderSport(line: string): SportType | null {
   const m = line.match(SECTION_HEADER_SPORT_RE);
