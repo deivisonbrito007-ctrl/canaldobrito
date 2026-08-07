@@ -81,6 +81,11 @@ export function detectSportType(competition: string, teamNames?: string): SportT
   if (/\b(nhl|h[oó]quei|hockey)\b/i.test(c) || /\b(maple leafs|bruins|penguins|canadiens|blackhawks|red wings|flyers|capitals|lightning|avalanche|oilers|canucks|senators|islanders|hurricanes|predators|blue jackets|sharks|ducks|coyotes|kraken|devils|sabres)\b/i.test(c)) return 'hockey';
   if (/\b(mlb|baseball|beisebol)\b/i.test(c) || /\b(yankees|red sox|dodgers|cubs|mets|astros|braves|phillies|padres|brewers|guardians|orioles|twins|rays|mariners|diamondbacks|rockies|pirates|royals|tigers|white sox|marlins)\b/i.test(c)) return 'baseball';
   if (/\b(rugby|sevens|svns|world rugby|super rugby)\b/i.test(c)) return 'rugby';
+  if (/\b(futsal|lnf|cbfs|liga nacional de futsal)\b/i.test(c)) return 'futsal';
+  if (/\b(handebol|handball|ehf|balonmano)\b/i.test(c)) return 'handball';
+  if (/\b(atletismo|athletics|diamond league|world athletics|maratona|meia.maratona|marathon|revezamento|heptatlo|decatlo|arremesso de peso|salto (?:em )?(?:dist[aâ]ncia|triplo|com vara|em altura))\b/i.test(c) || /\b\d{2,4}\s?m\s?(?:rasos|com barreiras|livres)\b/i.test(c)) return 'athletics';
+  if (/\b(e[- ]?sports|esports|cblol|lol|league of legends|cs2|cs:?go|counter[- ]strike|valorant|dota\s?2?|free fire|rainbow six|r6|rocket league|fifa\s?e?sports|overwatch)\b/i.test(c)) return 'esports';
+
   if (/\b(atp|wta|roland garros|wimbledon|us open|australian open)\b/i.test(c) || /t[eê]nis/i.test(c)) return 'tennis';
   if (/\b(f[oó]rmula[ -]?[1e]|f1|grande pr[eê]mio|automobilismo|motogp|moto2|moto3|indycar|indy nxt|stock car|e-prix|superbike|porsche|carrera cup|nascar|copa truck|truck series|motocross|mxgp)\b/i.test(c) || /\bgp\b/i.test(c)) return 'f1';
   if (/\b(ufc|bellator|pfl|mma)\b/i.test(c)) return 'mma';
