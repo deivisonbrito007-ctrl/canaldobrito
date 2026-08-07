@@ -628,6 +628,22 @@ export type Database = {
         | "ufc"
         | "other_sports"
         | "football_guide"
+        | "athletics"
+        | "motorsport"
+        | "tennis"
+        | "volleyball"
+        | "futsal"
+        | "boxing"
+        | "mma"
+        | "hockey"
+        | "baseball"
+        | "rugby"
+        | "surf"
+        | "cycling"
+        | "swimming"
+        | "golf"
+        | "handball"
+        | "esports"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -763,6 +779,22 @@ export const Constants = {
         "ufc",
         "other_sports",
         "football_guide",
+        "athletics",
+        "motorsport",
+        "tennis",
+        "volleyball",
+        "futsal",
+        "boxing",
+        "mma",
+        "hockey",
+        "baseball",
+        "rugby",
+        "surf",
+        "cycling",
+        "swimming",
+        "golf",
+        "handball",
+        "esports",
       ],
     },
   },
