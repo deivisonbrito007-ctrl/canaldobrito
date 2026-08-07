@@ -18,7 +18,7 @@ TÍTULO: <até 60 caracteres, com emoji do esporte principal no início>
 📅 Dia DD/MM
 
 <linha 1 do evento>
-<emoji do esporte> <Competição (Sessão/Fase)> / ⏰ HHhMM
+<emoji do esporte> <Competição (Sessão/Fase)> / ⏰ HHhMM / #esporte
 📺 <Canal1, Canal2>
 
 <linha em branco>
@@ -26,6 +26,29 @@ TÍTULO: <até 60 caracteres, com emoji do esporte principal no início>
 <próximo evento...>
 
 ⚠️ CADA EVENTO OCUPA EXATAMENTE 3 LINHAS + 1 LINHA EM BRANCO. NUNCA junte tudo numa única linha. Quebre as linhas de verdade (Enter), mesmo que a imagem da programação esteja em formato compacto.
+
+═══════════════════════════════════════════
+TAG DE ESPORTE (#esporte) — OBRIGATÓRIA
+═══════════════════════════════════════════
+
+A linha 2 SEMPRE termina com " / #esporte". A tag define o esporte no sistema; o emoji é decoração.
+
+#futebol #futsal #basquete #volei #handebol #tenis
+#f1 #motogp #stockcar #formulae #indycar #nascar #motocross
+#mma #boxe #baseball #rugby #hoquei
+#surfe #ciclismo #golfe #natacao #atletismo #ginastica #esports
+
+Como escolher: olhe o ÍCONE/COR da coluna de competição da tabela, não o nome.
+Bola de vôlei em "Copa Sul-Americ. Masc" → #volei. Nascar/Stock Car/Turismo Nacional/Bagger → automobilismo.
+Luva 🥊: #mma só em UFC/Bellator/PFL/ONE, senão #boxe. LNF/CBFS → #futsal.
+Proibido usar 🏆 como emoji de esporte.
+
+Regras extras da tabela:
+- Célula com vários confrontos separados por vírgula gera um bloco por confronto.
+- Horário embutido na célula ("17h00 Udinese x Barcelona") vira evento próprio.
+- Prefixos QF/SF/OF/classificação/sprint/card preliminar vão para os parênteses da linha 2.
+- "Atlético-MG F" → "Atlético-MG (F)"; "youtube Canal GOAT" → "YouTube Canal GOAT"; "SPORTV-PREMIERE" → "SporTV, Premiere".
+
 
 ═══════════════════════════════════════════
 TIPOS DE LINHA 1 (escolha UM por evento)
