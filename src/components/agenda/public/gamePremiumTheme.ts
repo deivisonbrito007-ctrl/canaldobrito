@@ -22,6 +22,11 @@ export const SPORT_THEME: Record<SportType, SportTheme> = {
   cycling:    { accent: "#facc15", glow: "250,204,21" },
   swimming:   { accent: "#38bdf8", glow: "56,189,248" },
   golf:       { accent: "#84cc16", glow: "132,204,22" },
+  futsal:     { accent: "#22d3ee", glow: "34,211,238" },
+  handball:   { accent: "#f472b6", glow: "244,114,182" },
+  athletics:  { accent: "#fb923c", glow: "251,146,60" },
+  esports:    { accent: "#8b5cf6", glow: "139,92,246" },
+
 };
 
 export function themeFor(sport: SportType): SportTheme {

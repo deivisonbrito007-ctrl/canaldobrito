@@ -42,6 +42,11 @@ export const SPORT_THEME: Record<SportType, SportTheme> = {
   boxing: make("--sport-boxing", "Boxe"),
   swimming: make("--sport-swimming", "Natação"),
   golf: make("--sport-golf", "Golfe"),
+  futsal: make("--sport-futsal", "Futsal"),
+  handball: make("--sport-handball", "Handebol"),
+  athletics: make("--sport-athletics", "Atletismo"),
+  esports: make("--sport-esports", "eSports"),
+
 };
 
 export const getSportTheme = (sport: SportType): SportTheme =>
