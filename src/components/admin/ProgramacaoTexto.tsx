@@ -1640,7 +1640,32 @@ export const ProgramacaoTexto = () => {
                                       </option>
                                     ))}
                                   </select>
+                                  {game.sportSource && (
+                                    <span
+                                      title={
+                                        game.sportSource === "tag"
+                                          ? "Esporte definido pela tag #esporte"
+                                          : game.sportSource === "emoji"
+                                            ? "Esporte deduzido do emoji"
+                                            : game.sportSource === "seção"
+                                              ? "Esporte herdado do cabeçalho da seção"
+                                              : game.sportSource === "texto"
+                                                ? "Esporte adivinhado pelo texto — confira"
+                                                : "Padrão (futebol) — confira"
+                                      }
+                                      className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
+                                        game.sportSource === "tag"
+                                          ? "bg-emerald-500/15 text-emerald-400"
+                                          : game.sportSource === "emoji"
+                                            ? "bg-sky-500/15 text-sky-400"
+                                            : "bg-amber-500/10 text-amber-400"
+                                      }`}
+                                    >
+                                      {game.sportSource}
+                                    </span>
+                                  )}
                                   {game.is_womens && (
+
                                     <span className="text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-semibold">
                                       Feminino
                                     </span>
