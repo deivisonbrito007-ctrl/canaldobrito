@@ -179,7 +179,7 @@ const ProgramacaoTab = () => {
       }
       return true;
     });
-  }, [games, search, status, channel, statusById]);
+  }, [games, search, status, channel, statusById, channelKeysById]);
 
   const grouped = useMemo(() => groupBySport(filtered), [filtered]);
 
