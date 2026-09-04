@@ -15,7 +15,8 @@ import {
 import { gameKey } from "@/lib/dedup";
 import { offsetDateStr } from "@/lib/whatsappText";
 import { isValidDateParam } from "@/lib/agendaRedirect";
-import { normalizeChannelName } from "@/components/public/channelLogos";
+import { useChannelMappings } from "@/hooks/useChannelMappings";
+import { resolveChannels } from "@/lib/channelResolver";
 
 import { LiveHeroCard } from "@/components/agenda/public/LiveHeroCard";
 import { SportFilterBar, type FilterValue } from "@/components/agenda/public/SportFilterBar";
@@ -136,25 +137,28 @@ const ProgramacaoTab = () => {
     return c;
   }, [games, statusById]);
 
-  // Canais: agrupa por chave normalizada, exibe o primeiro nome visto
+  // Canais: agrupa pelo nome oficial (regra central), para ESPN2/ESPN 2 virarem um chip só
+  const { data: channelMappings } = useChannelMappings();
+  const channelKeysById = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const g of games) m.set(g.id, new Set(resolveChannels(g.channels, channelMappings).map((r) => r.key)));
+    return m;
+  }, [games, channelMappings]);
   const channelOptions = useMemo(() => {
     const counts = new Map<string, { name: string; count: number }>();
     for (const g of games) {
-      const seen = new Set<string>();
-      for (const ch of g.channels ?? []) {
-        const key = normalizeChannelName(ch);
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        const cur = counts.get(key);
+      for (const r of resolveChannels(g.channels, channelMappings)) {
+        if (!r.key) continue;
+        const cur = counts.get(r.key);
         if (cur) cur.count++;
-        else counts.set(key, { name: ch.replace(/\s+/g, " ").trim(), count: 1 });
+        else counts.set(r.key, { name: r.name, count: 1 });
       }
     }
     return [...counts.entries()]
       .map(([key, v]) => ({ key, ...v }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .slice(0, 12);
-  }, [games]);
+  }, [games, channelMappings]);
 
   // Pipeline de filtros: busca → status → canal → esporte
   const filtered = useMemo(() => {
@@ -162,7 +166,7 @@ const ProgramacaoTab = () => {
     return games.filter((g) => {
       if (status !== "all" && statusById.get(g.id) !== status) return false;
       if (channel) {
-        const has = (g.channels ?? []).some((ch) => normalizeChannelName(ch) === channel);
+        const has = channelKeysById.get(g.id)?.has(channel) ?? false;
         if (!has) return false;
       }
       if (q) {
