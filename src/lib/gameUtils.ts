@@ -76,6 +76,34 @@ export const SPORT_LABEL: Record<SportType, string> = {
 const NON_ADVERSARIAL: SportType[] = ['f1', 'tennis', 'mma', 'surf', 'cycling', 'swimming', 'golf', 'athletics', 'gymnastics'];
 export const isNonAdversarial = (st: SportType): boolean => NON_ADVERSARIAL.includes(st);
 
+/** Textual hints that an entry is a single event (no "x" between two sides). */
+const SINGLE_EVENT_RE = /\b(etapa|todas as quadras|gp\b|grande pr[eê]mio|round\s*\d|rodada|corrida|treino|classifica[cç][aã]o|sprint|final(?:\s+\w+)?$|maratona|prova|sess[aã]o|card\b|ufc\s*\d|dia\s*\d|torneio|open\b)/i;
+
+/**
+ * Decide whether a game should be rendered as a single event (title only)
+ * instead of a "home x away" confrontation.
+ */
+export function isSingleEvent(g: { home_team: string; away_team?: string | null; sport_type?: string | null }): boolean {
+  if (!g.away_team || !g.away_team.trim()) return true;
+  if (g.away_team.trim().toLowerCase() === g.home_team.trim().toLowerCase()) return true;
+  if (isNonAdversarial((g.sport_type || 'football') as SportType)) return true;
+  return SINGLE_EVENT_RE.test(g.home_team) && !/\bx\b|\bvs\b/i.test(g.home_team);
+}
+
+export type GameStatus = 'live' | 'soon' | 'upcoming' | 'ended';
+
+/** Computes the current status of a game (soon = starts within `soonMinutes`). */
+export function getGameStatus(
+  g: { game_time: string; date: string; sport_type?: string | null },
+  soonMinutes = 60,
+): GameStatus {
+  const st = (g.sport_type || 'football') as SportType;
+  if (isGameCurrentlyLive(g.game_time, g.date, st)) return 'live';
+  const mins = getMinutesUntilStart(g.game_time, g.date);
+  if (mins === null) return 'ended';
+  return mins <= soonMinutes ? 'soon' : 'upcoming';
+}
+
 
 /** Detect sport type from competition name and optional team names */
 export function detectSportType(competition: string, teamNames?: string): SportType {
