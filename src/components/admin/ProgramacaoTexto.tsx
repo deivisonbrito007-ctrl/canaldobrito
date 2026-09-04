@@ -1398,21 +1398,48 @@ export const ProgramacaoTexto = () => {
   }, [parsed, channelMappings, existingKeys]);
 
   const warningsByIdx = useMemo(() => parsed.map((g) => getGameWarnings(g, warningCtx)), [parsed, warningCtx]);
+  // Só alertas reais (warn/error) dos jogos selecionados travam a publicação; "info" é apenas informativo.
   const selectedWarnings = useMemo(
-    () => warningsByIdx.flatMap((ws, i) => (parsed[i]?.selected ? ws : [])),
+    () => warningsByIdx.flatMap((ws, i) => (parsed[i]?.selected ? ws.filter((w) => w.level !== "info") : [])),
     [warningsByIdx, parsed],
   );
   const totalWarnings = selectedWarnings.length;
   const warningSummary = useMemo(() => {
-    const m = new Map<string, { label: string; count: number }>();
+    const m = new Map<string, { code: string; label: string; count: number; level: GameWarning["level"] }>();
     for (const w of selectedWarnings) {
-      const short = w.label.split(":")[0].split(" — ")[0];
+      const short = w.label.split(":")[0].split(" — ")[0].replace(/^⏰ /, "");
       const cur = m.get(w.code);
       if (cur) cur.count++;
-      else m.set(w.code, { label: short, count: 1 });
+      else m.set(w.code, { code: w.code, label: short, count: 1, level: w.level });
     }
-    return [...m.values()];
+    return [...m.values()].sort((a, b) => (a.level === "error" ? -1 : b.level === "error" ? 1 : b.count - a.count));
   }, [selectedWarnings]);
+  const hasDupWarnings = warningSummary.some((w) => w.code.startsWith("dup"));
+  const gameMatchesFilter = (idx: number) => {
+    if (!warningFilter) return true;
+    const ws = warningsByIdx[idx] ?? [];
+    return warningFilter === "any" ? ws.some((w) => w.level !== "info") : ws.some((w) => w.code === warningFilter);
+  };
+  /** Converte um jogo processado no formato usado pelos cards públicos. */
+  const toDailyGame = (g: ParsedGame, idx: number): DailyGame => ({
+    id: `preview-${idx}`,
+    date: g.date,
+    home_team: g.home_team,
+    away_team: g.away_team,
+    competition: g.competition,
+    competition_detail: g.competition_detail || null,
+    game_time: g.game_time || "00:00",
+    channels: normalizeChannelList(g.channels, channelMappings),
+    is_live: false,
+    is_womens: g.is_womens,
+    active: true,
+    archived: false,
+    status_short: "NS",
+    elapsed_minutes: null,
+    publish_at: null,
+    sport_type: g.sport_type || detectSportType(g.competition, `${g.home_team} ${g.away_team}`),
+    created_at: new Date().toISOString(),
+  });
   const [reviewed, setReviewed] = useState(false);
   useEffect(() => setReviewed(false), [parsed]);
 
