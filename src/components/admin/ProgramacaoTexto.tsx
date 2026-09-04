@@ -17,8 +17,9 @@ import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useInsertDailyGames, useDeleteDailyGamesByDate, fetchExistingGameKeys } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy, Wand2 } from "lucide-react";
+import { useInsertDailyGames, useDeleteDailyGamesByDate, fetchExistingGameKeys, type DailyGame } from "@/hooks/useDailyGames";
+import { GamePremiumCard } from "@/components/agenda/public/GamePremiumCard";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy, Wand2, Eye, ListChecks, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -1341,6 +1342,32 @@ export const ProgramacaoTexto = () => {
     setParsed((prev) => prev.map((g, i) => (i === idx ? { ...g, ...updates } : g)));
   };
 
+  const removeGame = (idx: number) => {
+    setParsed((prev) => prev.filter((_, i) => i !== idx));
+    setEditingIdx(null);
+  };
+
+  /** Remove da lista as repetições internas do texto (mantém a 1ª) e os jogos já publicados. */
+  const removeDuplicates = () => {
+    const seen = new Set<string>();
+    let removed = 0;
+    setParsed((prev) =>
+      prev.filter((g) => {
+        const k = gameKey(g);
+        if (existingKeys.has(k) || seen.has(k)) { removed++; return false; }
+        seen.add(k);
+        return true;
+      }),
+    );
+    setTimeout(() => toast.success(removed > 0 ? `${removed} duplicado(s) removido(s) da lista` : "Nenhum duplicado para remover"), 0);
+  };
+
+  // Modo de visualização da prévia: revisão (editável) ou como aparece no site
+  const [previewMode, setPreviewMode] = useState<"revisao" | "publico">("revisao");
+  // Filtro do checklist: mostrar só jogos com determinado alerta (ou qualquer alerta)
+  const [warningFilter, setWarningFilter] = useState<string | null>(null);
+  useEffect(() => { setWarningFilter(null); }, [parsed.length]);
+
   const selectedCount = parsed.filter((g) => g.selected).length;
 
   // Group games by date for preview
@@ -1371,21 +1398,48 @@ export const ProgramacaoTexto = () => {
   }, [parsed, channelMappings, existingKeys]);
 
   const warningsByIdx = useMemo(() => parsed.map((g) => getGameWarnings(g, warningCtx)), [parsed, warningCtx]);
+  // Só alertas reais (warn/error) dos jogos selecionados travam a publicação; "info" é apenas informativo.
   const selectedWarnings = useMemo(
-    () => warningsByIdx.flatMap((ws, i) => (parsed[i]?.selected ? ws : [])),
+    () => warningsByIdx.flatMap((ws, i) => (parsed[i]?.selected ? ws.filter((w) => w.level !== "info") : [])),
     [warningsByIdx, parsed],
   );
   const totalWarnings = selectedWarnings.length;
   const warningSummary = useMemo(() => {
-    const m = new Map<string, { label: string; count: number }>();
+    const m = new Map<string, { code: string; label: string; count: number; level: GameWarning["level"] }>();
     for (const w of selectedWarnings) {
-      const short = w.label.split(":")[0].split(" — ")[0];
+      const short = w.label.split(":")[0].split(" — ")[0].replace(/^⏰ /, "");
       const cur = m.get(w.code);
       if (cur) cur.count++;
-      else m.set(w.code, { label: short, count: 1 });
+      else m.set(w.code, { code: w.code, label: short, count: 1, level: w.level });
     }
-    return [...m.values()];
+    return [...m.values()].sort((a, b) => (a.level === "error" ? -1 : b.level === "error" ? 1 : b.count - a.count));
   }, [selectedWarnings]);
+  const hasDupWarnings = warningSummary.some((w) => w.code.startsWith("dup"));
+  const gameMatchesFilter = (idx: number) => {
+    if (!warningFilter) return true;
+    const ws = warningsByIdx[idx] ?? [];
+    return warningFilter === "any" ? ws.some((w) => w.level !== "info") : ws.some((w) => w.code === warningFilter);
+  };
+  /** Converte um jogo processado no formato usado pelos cards públicos. */
+  const toDailyGame = (g: ParsedGame, idx: number): DailyGame => ({
+    id: `preview-${idx}`,
+    date: g.date,
+    home_team: g.home_team,
+    away_team: g.away_team,
+    competition: g.competition,
+    competition_detail: g.competition_detail || null,
+    game_time: g.game_time || "00:00",
+    channels: normalizeChannelList(g.channels, channelMappings),
+    is_live: false,
+    is_womens: g.is_womens,
+    active: true,
+    archived: false,
+    status_short: "NS",
+    elapsed_minutes: null,
+    publish_at: null,
+    sport_type: g.sport_type || detectSportType(g.competition, `${g.home_team} ${g.away_team}`),
+    created_at: new Date().toISOString(),
+  });
   const [reviewed, setReviewed] = useState(false);
   useEffect(() => setReviewed(false), [parsed]);
 
@@ -1685,8 +1739,111 @@ export const ProgramacaoTexto = () => {
             </div>
           </div>
 
+          {/* Checklist de revisão */}
+          <div className="px-4 sm:px-5 pt-4 space-y-3">
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3" aria-label="Checklist de revisão">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <ListChecks className="h-4 w-4 text-primary" aria-hidden />
+                <p className="text-xs font-bold text-foreground">Checklist de revisão</p>
+                {totalWarnings === 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Sem pendências — pode publicar direto
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-amber-400 font-semibold">
+                    {totalWarnings} alerta{totalWarnings !== 1 ? "s" : ""} em jogos selecionados — revise antes de publicar
+                  </span>
+                )}
+                <div className="ml-auto inline-flex rounded-lg border border-white/[0.1] overflow-hidden" role="tablist" aria-label="Modo da prévia">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={previewMode === "revisao"}
+                    onClick={() => setPreviewMode("revisao")}
+                    className={`px-2.5 h-8 text-[11px] font-semibold inline-flex items-center gap-1 ${previewMode === "revisao" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-white/[0.04]"}`}
+                  >
+                    <Pencil className="h-3 w-3" /> Revisar
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={previewMode === "publico"}
+                    onClick={() => setPreviewMode("publico")}
+                    className={`px-2.5 h-8 text-[11px] font-semibold inline-flex items-center gap-1 ${previewMode === "publico" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-white/[0.04]"}`}
+                  >
+                    <Eye className="h-3 w-3" /> Como no site
+                  </button>
+                </div>
+              </div>
+              {totalWarnings > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setWarningFilter(warningFilter === "any" ? null : "any")}
+                    aria-pressed={warningFilter === "any"}
+                    className={`text-[11px] px-2 h-7 rounded-md border font-semibold ${warningFilter === "any" ? "border-amber-400/60 bg-amber-500/15 text-amber-300" : "border-white/[0.1] text-foreground hover:bg-white/[0.04]"}`}
+                  >
+                    Só com alertas
+                  </button>
+                  {warningSummary.map((w) => (
+                    <button
+                      key={w.code}
+                      type="button"
+                      onClick={() => setWarningFilter(warningFilter === w.code ? null : w.code)}
+                      aria-pressed={warningFilter === w.code}
+                      className={`text-[11px] px-2 h-7 rounded-md border inline-flex items-center gap-1 ${
+                        warningFilter === w.code
+                          ? "border-amber-400/60 bg-amber-500/15 text-amber-300"
+                          : w.level === "error" ? "border-red-500/30 text-red-300 hover:bg-red-500/10" : "border-white/[0.1] text-foreground hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      {w.code.startsWith("dup") ? <Copy className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                      {w.label} <span className="text-muted-foreground">×{w.count}</span>
+                    </button>
+                  ))}
+                  {hasDupWarnings && (
+                    <Button size="sm" variant="outline" onClick={removeDuplicates} className="h-7 text-[11px] border-amber-500/30 text-amber-300 hover:bg-amber-500/10 ml-auto">
+                      <Trash2 className="h-3 w-3 mr-1" /> Remover duplicados
+                    </Button>
+                  )}
+                  {warningFilter && (
+                    <button type="button" onClick={() => setWarningFilter(null)} className="text-[11px] text-muted-foreground underline underline-offset-2 h-7 px-1">
+                      Limpar filtro
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Prévia pública: como os cards aparecem no site */}
+          {previewMode === "publico" && (
+            <div className="p-4 sm:p-5 space-y-5">
+              <p className="text-[11px] text-muted-foreground">Prévia dos jogos selecionados, com canais já normalizados, na mesma aparência da aba Programação do site.</p>
+              {sortedDates.map((date) => {
+                const group = gamesByDate[date];
+                const rows = group.games
+                  .map((g, li) => ({ g, idx: group.indices[li] }))
+                  .filter(({ g, idx }) => g.selected && gameMatchesFilter(idx))
+                  .sort((a, b) => (a.g.game_time || "").localeCompare(b.g.game_time || ""));
+                if (rows.length === 0) return null;
+                return (
+                  <div key={date}>
+                    <p className="text-xs font-bold text-foreground mb-3">📅 {formatDatePt(date)} — {rows.length} jogo{rows.length !== 1 ? "s" : ""}</p>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {rows.map(({ g, idx }, i) => (
+                        <GamePremiumCard key={idx} game={toDailyGame(g, idx)} index={i} showSport />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {selectedCount === 0 && <p className="text-xs text-muted-foreground">Nenhum jogo selecionado para pré-visualizar.</p>}
+            </div>
+          )}
+
           {/* Games grouped by date */}
-          <div className="p-4 sm:p-5 space-y-5">
+          <div className={`p-4 sm:p-5 space-y-5 ${previewMode === "publico" ? "hidden" : ""}`}>
             {sortedDates.map((date) => {
               const group = gamesByDate[date];
               const dateSelectedCount = group.games.filter((g) => g.selected).length;
@@ -1706,15 +1863,18 @@ export const ProgramacaoTexto = () => {
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {group.games.map((game, localIdx) => {
                       const globalIdx = group.indices[localIdx];
+                      if (!gameMatchesFilter(globalIdx)) return null;
                       const warnings = warningsByIdx[globalIdx] ?? [];
+                      const hasBlocking = warnings.some((w) => w.level !== "info");
                       const resolvedSport = game.sport_type || detectSportType(game.competition, `${game.home_team} ${game.away_team}`);
                       const sportEmoji = SPORT_EMOJI[resolvedSport] || '⚽';
+                      const hasVsWarning = warnings.some((w) => w.code === "vs");
                       return (
                         <div
                           key={globalIdx}
                           className={`rounded-xl glass-panel p-3 space-y-2 transition-all duration-200 ${
                             !game.selected ? "opacity-40" : ""
-                          } ${warnings.length > 0 ? "ring-1 ring-amber-500/30" : ""}`}
+                          } ${hasBlocking ? "ring-1 ring-amber-500/30" : ""}`}
                         >
                           {editingIdx === globalIdx ? (
                             <EditGameForm
@@ -1730,10 +1890,38 @@ export const ProgramacaoTexto = () => {
                                     ? `${game.home_team} x ${game.away_team}`
                                     : game.home_team}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  ⏰ {game.game_time} • {game.competition}
-                                  {game.competition_detail ? ` · ${game.competition_detail}` : ""}
-                                </p>
+                                {/* Correções rápidas: horário e competição direto no card */}
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <label className="sr-only" htmlFor={`qt-${globalIdx}`}>Horário</label>
+                                  <input
+                                    id={`qt-${globalIdx}`}
+                                    type="time"
+                                    value={game.game_time}
+                                    onChange={(e) => updateGame(globalIdx, { game_time: e.target.value })}
+                                    className={`h-7 w-[84px] text-[11px] font-semibold tabular-nums rounded-md border bg-secondary/50 px-1.5 text-foreground ${!game.game_time ? "border-red-500/50" : "border-white/[0.1]"}`}
+                                  />
+                                  <label className="sr-only" htmlFor={`qc-${globalIdx}`}>Competição</label>
+                                  <input
+                                    id={`qc-${globalIdx}`}
+                                    type="text"
+                                    value={game.competition}
+                                    placeholder="Competição"
+                                    onChange={(e) => updateGame(globalIdx, { competition: e.target.value })}
+                                    className={`h-7 flex-1 min-w-0 text-[11px] rounded-md border bg-secondary/50 px-1.5 text-foreground placeholder:text-muted-foreground/60 ${!game.competition ? "border-amber-500/50" : "border-white/[0.1]"}`}
+                                  />
+                                </div>
+                                {game.competition_detail && (
+                                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">· {game.competition_detail}</p>
+                                )}
+                                {hasVsWarning && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateGame(globalIdx, { home_team: `${game.home_team} — ${game.away_team}`, away_team: "" })}
+                                    className="mt-1 text-[10px] font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200"
+                                  >
+                                    Juntar como evento único (sem "x")
+                                  </button>
+                                )}
                                 <p className="text-[11px] text-muted-foreground/60">
                                   📺 {game.channels.join(", ") || "—"}
                                 </p>
@@ -1804,16 +1992,29 @@ export const ProgramacaoTexto = () => {
                                     ))}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0">
                                 <button
+                                  type="button"
                                   onClick={() => setEditingIdx(globalIdx)}
-                                  className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground"
+                                  aria-label="Editar jogo"
+                                  title="Editar jogo"
+                                  className="p-1.5 rounded hover:bg-white/[0.06] text-muted-foreground"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeGame(globalIdx)}
+                                  aria-label="Remover da lista"
+                                  title="Remover da lista"
+                                  className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                                 <Switch
                                   checked={game.selected}
                                   onCheckedChange={() => toggleGame(globalIdx)}
+                                  aria-label="Incluir na publicação"
                                 />
                               </div>
                             </div>
