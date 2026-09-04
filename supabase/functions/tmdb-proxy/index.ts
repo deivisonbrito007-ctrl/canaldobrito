@@ -75,9 +75,22 @@ Deno.serve(async (req) => {
     }
 
     const response = await fetch(url);
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      // TMDB "resource not found" (status_code 34) for a specific id is not a
+      // server failure — the stored tmdb_id is simply stale/invalid. Return an
+      // empty payload with 200 so clients treat it as "no data" instead of an error.
+      const isLookupById = /_videos|_details/.test(action);
+      if (response.status === 404 && isLookupById) {
+        const empty = action.includes("_videos")
+          ? { id: Number(query) || null, results: [], not_found: true }
+          : { not_found: true };
+        return new Response(JSON.stringify(empty), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       return new Response(
         JSON.stringify({ error: `TMDB API error [${response.status}]: ${JSON.stringify(data)}` }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
