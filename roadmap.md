@@ -7,5 +7,5 @@
 - [x] Fase 5 — WhatsApp: bugs, rótulos, botões, histórico
 - [x] Fase 6 — Dashboard: gráfico único, checklist saúde, ações rápidas
 - [x] Fase 7 — Analytics: CTR, funil
-- [ ] Fase 8 — Auditoria triggers + filtros, Segurança last scan
+- [x] Fase 8 — Auditoria triggers + filtros, Segurança last scan
 - [ ] Fase 9 — Acessibilidade/responsividade + testes
