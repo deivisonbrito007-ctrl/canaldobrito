@@ -61,19 +61,19 @@ const useCountUp = (target: number, duration = 800) => {
 };
 
 const statCards = [
-  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", barColor: "bg-emerald-500", route: "/admin/banners" },
+  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", barColor: "bg-emerald-500", route: "/admin/programacao?tab=categories" },
   { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", barColor: "bg-blue-500", route: "/admin/filmes" },
   { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", barColor: "bg-purple-500", route: "/admin/series" },
   { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", barColor: "bg-amber-500", route: "/admin/novidades" },
-  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", barColor: "bg-red-500", route: "/admin/banners?tab=programacao" },
+  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", barColor: "bg-red-500", route: "/admin/programacao" },
 ];
 
 const quickActions = [
-  { label: "Banner", path: "/admin/banners", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20", icon: Image },
+  { label: "Banner", path: "/admin/programacao?tab=categories", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20", icon: Image },
   { label: "Filme", path: "/admin/filmes", color: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20", icon: Film },
   { label: "Série", path: "/admin/series", color: "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20", icon: Clapperboard },
   { label: "Novidade", path: "/admin/novidades", color: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20", icon: Sparkles },
-  { label: "Programação", path: "/admin/banners?tab=programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
+  { label: "Programação", path: "/admin/programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
   { label: "WhatsApp", path: "/admin/whatsapp", color: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20", icon: MessageCircle },
   { label: "Configurações", path: "/admin/configuracoes", color: "bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20", icon: Settings },
 ];

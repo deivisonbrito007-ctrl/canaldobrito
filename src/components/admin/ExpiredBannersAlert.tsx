@@ -27,7 +27,7 @@ export const ExpiredBannersAlert = ({ banners, isLoading }: ExpiredBannersAlertP
         <span className="font-semibold">{expiredCount} banner{expiredCount !== 1 ? "s" : ""} expirado{expiredCount !== 1 ? "s" : ""}</span>
         {` ainda ativo${expiredCount !== 1 ? "s" : ""}.`}
         <button
-          onClick={() => navigate("/admin/banners")}
+          onClick={() => navigate("/admin/programacao?tab=categories")}
           className="ml-1.5 underline underline-offset-2 hover:text-red-200"
         >
           Revisar →

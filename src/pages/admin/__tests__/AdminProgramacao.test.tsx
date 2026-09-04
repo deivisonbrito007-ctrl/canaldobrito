@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
-import AdminBanners from "../AdminBanners";
+import AdminProgramacao from "../AdminProgramacao";
 
 const mocks = vi.hoisted(() => ({
   createMutateAsync: vi.fn(),
@@ -77,21 +77,21 @@ beforeEach(() => {
 
 const switchToCategories = () => fireEvent.click(screen.getByText("📁 Categorias"));
 
-describe("AdminBanners — sections & categories", () => {
+describe("AdminProgramacao — sections & categories", () => {
   it("renders section tabs with role tablist", () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     const tabs = screen.getAllByRole("tab");
     expect(tabs.length).toBeGreaterThanOrEqual(2);
   });
 
   it("switches to programacao tab", () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     fireEvent.click(screen.getByText("📋 Programação"));
     expect(screen.getByText("ProgramacaoTexto")).toBeInTheDocument();
   });
 
   it("renders all category pills", () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     expect(screen.getAllByText("📺 Capa").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("⚽ Futebol")).toBeInTheDocument();
@@ -100,23 +100,23 @@ describe("AdminBanners — sections & categories", () => {
   });
 
   it("shows empty state with helper text", () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     expect(screen.getByText("Nenhum banner nesta categoria")).toBeInTheDocument();
     expect(screen.getByText(/Cole, arraste ou clique/i)).toBeInTheDocument();
   });
 });
 
-describe("AdminBanners — multi-upload", () => {
+describe("AdminProgramacao — multi-upload", () => {
   it("input file accepts multiple", () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     const input = screen.getByLabelText("Selecionar imagens para upload") as HTMLInputElement;
     expect(input.multiple).toBe(true);
   });
 
   it("uploads multiple files sequentially and increments sort_order", async () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     const input = screen.getByLabelText("Selecionar imagens para upload") as HTMLInputElement;
     const files = [
@@ -134,7 +134,7 @@ describe("AdminBanners — multi-upload", () => {
   });
 
   it("rejects file larger than 5MB and reports it", async () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     const input = screen.getByLabelText("Selecionar imagens para upload") as HTMLInputElement;
     const big = new File([new Uint8Array(6 * 1024 * 1024)], "big.png", { type: "image/png" });
@@ -146,7 +146,7 @@ describe("AdminBanners — multi-upload", () => {
   });
 
   it("ignores non-image files silently in selection", async () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     const input = screen.getByLabelText("Selecionar imagens para upload") as HTMLInputElement;
     const files = [
@@ -160,9 +160,9 @@ describe("AdminBanners — multi-upload", () => {
   });
 });
 
-describe("AdminBanners — schedule validation", () => {
+describe("AdminProgramacao — schedule validation", () => {
   it("shows alert and blocks upload when custom schedule is in the past", async () => {
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     fireEvent.click(screen.getByText("Personalizado"));
     const dt = screen.getByDisplayValue(/^\d{4}-\d{2}-\d{2}T/i) as HTMLInputElement;
@@ -178,13 +178,13 @@ describe("AdminBanners — schedule validation", () => {
   });
 });
 
-describe("AdminBanners — delete confirmation", () => {
+describe("AdminProgramacao — delete confirmation", () => {
   it("opens AlertDialog and cancels without deleting", async () => {
     mocks.banners = [{
       id: "b1", image_url: "u", title: null, category: "cover", active: true,
       sort_order: 1, expires_at: null, publish_at: null, created_at: new Date().toISOString(),
     }];
-    render(<AdminBanners />, { wrapper });
+    render(<AdminProgramacao />, { wrapper });
     switchToCategories();
     fireEvent.click(screen.getByLabelText("Excluir banner"));
     const dialog = await screen.findByRole("alertdialog");

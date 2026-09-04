@@ -124,7 +124,7 @@ describe("AdminDashboard", () => {
     wrap(<AdminDashboard />);
     const card = screen.getByLabelText(/^Banners: \d+ total/);
     fireEvent.click(card);
-    expect(navigateMock).toHaveBeenCalledWith("/admin/banners");
+    expect(navigateMock).toHaveBeenCalledWith("/admin/programacao?tab=categories");
   });
 
   it("triggers all refetch when refresh button is clicked", () => {
