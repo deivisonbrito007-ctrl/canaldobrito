@@ -31,7 +31,7 @@ import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, 
 import { toast } from "sonner";
 import { LOGO_OPTIONS, LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "@/components/public/channelLogos";
 import { ChannelBadge, BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
-import { CHANNEL_MAPPINGS_QK, CHANNEL_ALIASES_QK, type ChannelMapping } from "@/hooks/useChannelMappings";
+import { CHANNEL_MAPPINGS_QK, CHANNEL_ALIASES_QK, type ChannelMapping, type ChannelAlias } from "@/hooks/useChannelMappings";
 import { useDiscoveredChannels, type DiscoveredChannel } from "@/hooks/useDiscoveredChannels";
 import { useChannelMatchSuggestions, type ChannelMatchSuggestion } from "@/hooks/useChannelMatchSuggestion";
 import { ChannelLogoUpload } from "@/components/admin/ChannelLogoUpload";
