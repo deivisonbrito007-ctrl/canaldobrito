@@ -1,16 +1,27 @@
 import { motion } from "framer-motion";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import { isGameCurrentlyLive, type SportType, getMinutesUntilStart, formatCountdown, getElapsedMinutes, SPORT_EMOJI } from "@/lib/gameUtils";
+import {
+  isGameCurrentlyLive,
+  type SportType,
+  getMinutesUntilStart,
+  formatCountdown,
+  getElapsedMinutes,
+  isSingleEvent,
+  SPORT_EMOJI,
+  SPORT_LABEL,
+} from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
 
 interface Props {
   game: DailyGame;
   index: number;
+  /** Mostra o esporte no card (usado na ordenação por horário). */
+  showSport?: boolean;
 }
 
-export const GamePremiumCard = ({ game, index }: Props) => {
+export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const time = game.game_time.slice(0, 5);
@@ -19,19 +30,32 @@ export const GamePremiumCard = ({ game, index }: Props) => {
   const minutesUntil = !live ? getMinutesUntilStart(game.game_time, game.date) : null;
   const soon = minutesUntil !== null && minutesUntil <= 60;
   const ended = !live && minutesUntil === null;
-  const isVs = !!game.away_team;
+  const single = isSingleEvent({ ...game, sport_type: sport });
+  const channels = game.channels ?? [];
+
+  const statusLabel = live
+    ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
+    : soon ? `EM ${formatCountdown(minutesUntil!).toUpperCase()}` : ended ? "ENCERRADO" : "EM BREVE";
+  const statusColor = live ? "#ff3b3b" : soon ? "#fbbf24" : ended ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.5)";
+
+  const aria = `${SPORT_LABEL[sport] ?? sport}: ${single ? game.home_team : `${game.home_team} contra ${game.away_team}`}${
+    game.competition ? `, ${game.competition}` : ""
+  }, às ${time}${live ? ", ao vivo" : soon ? ", começa em breve" : ended ? ", encerrado" : ""}`;
 
   return (
-    <motion.div
+    <motion.article
       id={`game-${game.id}`}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: Math.min(index, 8) * 0.03 }}
-      className="relative rounded-xl overflow-hidden border bg-white/[0.03] hover:bg-white/[0.06] transition-colors"
+      className={`relative rounded-xl overflow-hidden border bg-white/[0.03] hover:bg-white/[0.06] transition-colors h-full ${
+        ended ? "opacity-70" : ""
+      }`}
       style={{
-        borderColor: live ? "rgba(255,59,59,0.32)" : "rgba(255,255,255,0.08)",
+        borderColor: live ? "rgba(255,59,59,0.35)" : soon ? "rgba(251,191,36,0.25)" : "rgba(255,255,255,0.08)",
         boxShadow: live ? "0 0 20px rgba(255,59,59,0.12)" : undefined,
       }}
+      aria-label={aria}
     >
       {/* Accent bar lateral */}
       <div
@@ -47,69 +71,74 @@ export const GamePremiumCard = ({ game, index }: Props) => {
       <span
         aria-hidden
         className="absolute -right-3 -bottom-4 text-[88px] leading-none select-none pointer-events-none motion-reduce:opacity-[0.04]"
-        style={{
-          opacity: 0.07,
-          filter: `drop-shadow(0 0 12px rgba(${theme.glow},0.35))`,
-          transform: "rotate(-12deg)",
-        }}
+        style={{ opacity: 0.06, transform: "rotate(-12deg)" }}
       >
         {SPORT_EMOJI[sport] ?? "🏆"}
       </span>
 
-
-      <div className="pl-3.5 pr-3 py-3 flex items-start gap-3.5">
-        {/* Horário */}
-        <div className="shrink-0 w-[64px] text-center pr-1 border-r border-white/5">
-          <p
-            className="text-[24px] leading-none tabular-nums"
-            style={{
-              fontFamily: "Bebas Neue, sans-serif",
-              color: live ? "#ff3b3b" : theme.accent,
-            }}
+      <div className="pl-3.5 pr-3 py-3 flex items-start gap-3">
+        {/* Horário + status */}
+        <div className="shrink-0 w-[68px] text-center pr-2 border-r border-white/[0.06]">
+          <time
+            dateTime={`${game.date}T${game.game_time}`}
+            className="block text-[26px] leading-none tabular-nums"
+            style={{ fontFamily: "Bebas Neue, sans-serif", color: live ? "#ff3b3b" : theme.accent }}
           >
             {time}
-          </p>
-          <p className="text-[9px] uppercase tracking-wider mt-1 font-bold tabular-nums whitespace-nowrap"
-             style={{ color: live ? "#ff3b3b" : soon ? "#fbbf24" : ended ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.45)" }}>
-            {live
-              ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
-              : soon ? formatCountdown(minutesUntil!) : ended ? "Encerrado" : "Em breve"}
+          </time>
+          <p
+            className="text-[9.5px] uppercase tracking-wider mt-1 font-bold tabular-nums whitespace-nowrap flex items-center justify-center gap-1"
+            style={{ color: statusColor }}
+          >
+            {live && <span className="w-1.5 h-1.5 rounded-full bg-[#ff3b3b] motion-safe:animate-pulse" aria-hidden />}
+            {statusLabel}
           </p>
         </div>
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-[14.5px] leading-snug text-white truncate">
-            {isVs ? (
-              <>
-                {game.home_team} <span className="text-white/40 mx-1">×</span> {game.away_team}
-              </>
-            ) : (
-              game.home_team
-            )}
-          </p>
-          {game.competition && (
-            <p className="text-[11px] text-white/55 mt-0.5 truncate">
-              🏆 {game.competition}
-              {game.competition_detail ? ` · ${game.competition_detail}` : ""}
+          {showSport && (
+            <p className="text-[10px] uppercase tracking-wider font-bold mb-0.5" style={{ color: theme.accent }}>
+              {SPORT_EMOJI[sport]} {SPORT_LABEL[sport] ?? sport}
             </p>
           )}
-          {game.channels && game.channels.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {game.channels.slice(0, 3).map((ch, i) => (
-                <ChannelBadge key={`${game.id}-ch-${i}`} name={ch} size="sm" />
-              ))}
-            </div>
+          {single ? (
+            <p className="font-semibold text-[15px] leading-snug text-white line-clamp-2">{game.home_team}</p>
+          ) : (
+            <p className="font-semibold text-[15px] leading-snug text-white">
+              <span className="block truncate">{game.home_team}</span>
+              <span className="block truncate">
+                <span className="text-white/40 text-[12px] mr-1.5">x</span>
+                {game.away_team}
+              </span>
+            </p>
           )}
+          {game.competition && (
+            <p className="text-[11.5px] text-white/55 mt-1 truncate">
+              {game.competition}
+              {game.competition_detail ? <span className="text-white/40"> · {game.competition_detail}</span> : null}
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+            {channels.length > 0 ? (
+              <>
+                {channels.slice(0, 3).map((ch, i) => (
+                  <ChannelBadge key={`${game.id}-ch-${i}`} name={ch} size="sm" />
+                ))}
+                {channels.length > 3 && (
+                  <span className="text-[10px] font-bold text-white/55 bg-white/[0.06] border border-white/10 rounded-md px-1.5 py-1">
+                    +{channels.length - 3}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wide text-white/45 px-2 py-1 rounded border border-white/10">
+                Canal a confirmar
+              </span>
+            )}
+          </div>
         </div>
-
-        {live && (
-          <span
-            aria-label="ao vivo"
-            className="shrink-0 w-2 h-2 rounded-full bg-[#ff3b3b] motion-safe:animate-pulse"
-          />
-        )}
       </div>
-    </motion.div>
+    </motion.article>
   );
 };
