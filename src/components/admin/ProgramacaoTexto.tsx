@@ -1342,6 +1342,32 @@ export const ProgramacaoTexto = () => {
     setParsed((prev) => prev.map((g, i) => (i === idx ? { ...g, ...updates } : g)));
   };
 
+  const removeGame = (idx: number) => {
+    setParsed((prev) => prev.filter((_, i) => i !== idx));
+    setEditingIdx(null);
+  };
+
+  /** Remove da lista as repetições internas do texto (mantém a 1ª) e os jogos já publicados. */
+  const removeDuplicates = () => {
+    const seen = new Set<string>();
+    let removed = 0;
+    setParsed((prev) =>
+      prev.filter((g) => {
+        const k = gameKey(g);
+        if (existingKeys.has(k) || seen.has(k)) { removed++; return false; }
+        seen.add(k);
+        return true;
+      }),
+    );
+    setTimeout(() => toast.success(removed > 0 ? `${removed} duplicado(s) removido(s) da lista` : "Nenhum duplicado para remover"), 0);
+  };
+
+  // Modo de visualização da prévia: revisão (editável) ou como aparece no site
+  const [previewMode, setPreviewMode] = useState<"revisao" | "publico">("revisao");
+  // Filtro do checklist: mostrar só jogos com determinado alerta (ou qualquer alerta)
+  const [warningFilter, setWarningFilter] = useState<string | null>(null);
+  useEffect(() => { setWarningFilter(null); }, [parsed.length]);
+
   const selectedCount = parsed.filter((g) => g.selected).length;
 
   // Group games by date for preview
