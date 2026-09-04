@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -9,16 +9,20 @@ import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   type SportType,
   getLocalDateString,
-  isGameCurrentlyLive,
+  getGameStatus,
   midnightInSaoPaulo,
 } from "@/lib/gameUtils";
+import { gameKey } from "@/lib/dedup";
 import { offsetDateStr } from "@/lib/whatsappText";
 import { isValidDateParam } from "@/lib/agendaRedirect";
+import { normalizeChannelName } from "@/components/public/channelLogos";
 
 import { LiveHeroCard } from "@/components/agenda/public/LiveHeroCard";
 import { SportFilterBar, type FilterValue } from "@/components/agenda/public/SportFilterBar";
+import { ScheduleToolbar, type StatusFilter, type SortMode } from "@/components/agenda/public/ScheduleToolbar";
 import { HighlightsCarousel } from "@/components/agenda/public/HighlightsCarousel";
 import { SportSection } from "@/components/agenda/public/SportSection";
+import { TimeSection } from "@/components/agenda/public/TimeSection";
 import { EmptyDayState } from "@/components/agenda/public/EmptyDayState";
 import { AgendaSkeleton } from "@/components/agenda/public/AgendaSkeleton";
 import { curateHighlights, detectedSport } from "@/components/agenda/public/highlightsCuration";
@@ -42,6 +46,22 @@ function groupBySport(games: DailyGame[]): Record<string, DailyGame[]> {
   return out;
 }
 
+/** Remove visual duplicates (same teams + time + sport). */
+function dedupGames(games: DailyGame[]): DailyGame[] {
+  const seen = new Set<string>();
+  const out: DailyGame[] = [];
+  for (const g of games) {
+    const k = `${g.date}|${gameKey(g)}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(g);
+  }
+  return out;
+}
+
+const norm = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 const ProgramacaoTab = () => {
   const [params, setParams] = useSearchParams();
   const today = getLocalDateString();
@@ -49,7 +69,18 @@ const ProgramacaoTab = () => {
   const rawDate = params.get("date");
   const dateIsAllowed = rawDate ? rawDate === today || rawDate === tomorrow : true;
   const date = rawDate && dateIsAllowed ? rawDate : today;
+
   const [filter, setFilter] = useState<FilterValue>("all");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<SortMode>(() =>
+    (typeof sessionStorage !== "undefined" && (sessionStorage.getItem("agenda:sort") as SortMode)) || "sport",
+  );
+  const [channel, setChannel] = useState<string | null>(null);
+
+  useEffect(() => {
+    try { sessionStorage.setItem("agenda:sort", sort); } catch { /* noop */ }
+  }, [sort]);
 
   // Defensive cleanup: drop ?date if it's not today/tomorrow (or is malformed).
   useEffect(() => {
@@ -61,7 +92,6 @@ const ProgramacaoTab = () => {
   }, [rawDate, dateIsAllowed, params, setParams]);
 
   const { data: rawGames, isLoading } = useAllDailyGames(date);
-  // Pre-fetch tomorrow's count when on today, so we can hide/show the toggle.
   const { data: tomorrowGamesRaw } = useAllDailyGames(date === today ? tomorrow : today);
   const tomorrowCount = useMemo(
     () => (date === today ? (tomorrowGamesRaw ?? []).filter((g) => !g.archived && g.active).length : 0),
@@ -69,26 +99,85 @@ const ProgramacaoTab = () => {
   );
 
   const games = useMemo(
-    () => (rawGames ?? []).filter((g) => !g.archived && g.active),
+    () => dedupGames((rawGames ?? []).filter((g) => !g.archived && g.active)),
     [rawGames]
   );
 
-  const grouped = useMemo(() => groupBySport(games), [games]);
-
   // Tick a cada 20s para manter status ao vivo / minuto fresco
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 20000);
     return () => clearInterval(id);
   }, []);
 
   const isToday = date === today;
-  const liveGames = useMemo(() => {
-    if (!isToday) return [];
-    return games.filter((g) =>
-      isGameCurrentlyLive(g.game_time, g.date, (g.sport_type || "football") as SportType)
-    );
-  }, [games, isToday]);
+
+  // Status por jogo (recalculado a cada tick)
+  const statusById = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof getGameStatus>>();
+    for (const g of games) m.set(g.id, isToday ? getGameStatus(g) : "upcoming");
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [games, isToday, tick]);
+
+  const liveGames = useMemo(
+    () => games.filter((g) => statusById.get(g.id) === "live"),
+    [games, statusById],
+  );
+
+  const statusCounts = useMemo(() => {
+    const c: Record<StatusFilter, number> = { all: games.length, live: 0, soon: 0, ended: 0 };
+    for (const g of games) {
+      const s = statusById.get(g.id);
+      if (s === "live") c.live++;
+      else if (s === "soon") c.soon++;
+      else if (s === "ended") c.ended++;
+    }
+    return c;
+  }, [games, statusById]);
+
+  // Canais: agrupa por chave normalizada, exibe o primeiro nome visto
+  const channelOptions = useMemo(() => {
+    const counts = new Map<string, { name: string; count: number }>();
+    for (const g of games) {
+      const seen = new Set<string>();
+      for (const ch of g.channels ?? []) {
+        const key = normalizeChannelName(ch);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        const cur = counts.get(key);
+        if (cur) cur.count++;
+        else counts.set(key, { name: ch.replace(/\s+/g, " ").trim(), count: 1 });
+      }
+    }
+    return [...counts.entries()]
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .slice(0, 12);
+  }, [games]);
+
+  // Pipeline de filtros: busca → status → canal → esporte
+  const filtered = useMemo(() => {
+    const q = norm(search.trim());
+    return games.filter((g) => {
+      if (status !== "all" && statusById.get(g.id) !== status) return false;
+      if (channel) {
+        const has = (g.channels ?? []).some((ch) => normalizeChannelName(ch) === channel);
+        if (!has) return false;
+      }
+      if (q) {
+        const hay = norm(
+          [g.home_team, g.away_team, g.competition, g.competition_detail, ...(g.channels ?? [])]
+            .filter(Boolean)
+            .join(" "),
+        );
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [games, search, status, channel, statusById]);
+
+  const grouped = useMemo(() => groupBySport(filtered), [filtered]);
 
   const allHighlights = useMemo(() => curateHighlights(games, 8), [games]);
   const highlights = useMemo(() => {
@@ -112,27 +201,28 @@ const ProgramacaoTab = () => {
 
   const total = games.length;
   const dateObj = midnightInSaoPaulo(date);
-  const titleLabel =
-    date === today
-      ? "AGENDA DE HOJE"
-      : date === offsetDateStr(today, 1)
-        ? "AGENDA DE AMANHÃ"
-        : "AGENDA";
+  const titleLabel = date === today ? "AGENDA DE HOJE" : date === tomorrow ? "AGENDA DE AMANHÃ" : "AGENDA";
   const subtitle = (() => {
     const d = format(dateObj, "EEEE, dd 'de' MMMM", { locale: ptBR });
     return d.charAt(0).toUpperCase() + d.slice(1);
   })();
+
+  const resetFilters = useCallback(() => {
+    setFilter("all");
+    setSearch("");
+    setStatus("all");
+    setChannel(null);
+  }, []);
 
   const goToDate = (newDate: string) => {
     if (newDate !== today && newDate !== tomorrow) return;
     const next = new URLSearchParams(params);
     if (newDate === today) next.delete("date");
     else next.set("date", newDate);
-    setFilter("all");
+    resetFilters();
     setParams(next, { replace: true });
   };
 
-  // If we somehow ended up on tomorrow with zero games, fall back to today.
   useEffect(() => {
     if (date === tomorrow && !isLoading && total === 0) {
       goToDate(today);
@@ -140,37 +230,47 @@ const ProgramacaoTab = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, tomorrow, today, isLoading, total]);
 
-  // Aplica filtro
+  // Sport chip "live" é redundante com status; mapeia para o status.
+  const handleSportFilter = (v: FilterValue) => {
+    if (v === "live") {
+      setStatus("live");
+      setFilter("all");
+    } else {
+      setFilter(v);
+    }
+  };
+
   const visibleSports: SportType[] =
     filter === "all" || filter === "live" ? sportsSorted : [filter];
 
-  const filteredGroup = (sport: SportType): DailyGame[] => {
-    const list = grouped[sport] ?? [];
-    if (filter === "live") {
-      return list.filter((g) =>
-        isGameCurrentlyLive(g.game_time, g.date, sport)
-      );
-    }
-    return list;
-  };
+  const visibleGames = useMemo(
+    () =>
+      visibleSports
+        .flatMap((s) => grouped[s] ?? [])
+        .sort((a, b) => a.game_time.localeCompare(b.game_time)),
+    [visibleSports, grouped],
+  );
+
+  const hasActiveFilters = !!search || status !== "all" || !!channel || filter !== "all";
+  const nothingMatches = !isLoading && total > 0 && visibleGames.length === 0;
 
   return (
-    <div className="mx-auto w-full max-w-[460px] px-4 pt-4 pb-6 text-white">
+    <div className="mx-auto w-full max-w-[460px] md:max-w-[1100px] px-4 md:px-6 pt-4 pb-6 text-white">
       {/* Título + navegação de dias */}
       <div className="mb-4">
         <div className="flex items-end justify-between gap-2">
           <h1
-            className="text-[40px] leading-[0.9] tracking-tight"
+            className="text-[40px] md:text-[52px] leading-[0.9] tracking-tight"
             style={{ fontFamily: "Bebas Neue, sans-serif", color: "#00ff87" }}
           >
             {titleLabel}
           </h1>
           {(isToday ? tomorrowCount > 0 : true) && (
-            <nav className="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
+            <nav className="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0" aria-label="Trocar dia">
               {isToday ? (
                 <button
                   onClick={() => goToDate(tomorrow)}
-                  className="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                  className="inline-flex items-center gap-1.5 h-9 pl-3 pr-2 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/60"
                   aria-label={`Ver programação de amanhã (${tomorrowCount} ${tomorrowCount === 1 ? "jogo" : "jogos"})`}
                 >
                   Amanhã
@@ -182,7 +282,7 @@ const ProgramacaoTab = () => {
               ) : (
                 <button
                   onClick={() => goToDate(today)}
-                  className="inline-flex items-center gap-1 h-8 pl-2 pr-3 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider"
+                  className="inline-flex items-center gap-1 h-9 pl-2 pr-3 rounded-full hover:bg-white/10 active:scale-95 transition text-[11px] font-bold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/60"
                   aria-label="Voltar para hoje"
                 >
                   <ChevronLeft className="w-3.5 h-3.5 opacity-70" />
@@ -200,115 +300,134 @@ const ProgramacaoTab = () => {
           {liveGames.length > 0 && (
             <>
               {" · "}
-              <span className="text-[#ff3b3b] font-bold">
-                {liveGames.length} ao vivo
-              </span>
+              <span className="text-[#ff3b3b] font-bold">{liveGames.length} ao vivo</span>
             </>
           )}
+          {" · "}
+          <span className="text-white/45">Horário de Brasília</span>
         </p>
       </div>
 
-      {/* Loading */}
       {isLoading && <AgendaSkeleton />}
 
-      {/* Empty */}
       {!isLoading && total === 0 && (
         <EmptyDayState
-          onSeeTomorrow={
-            isToday && tomorrowCount > 0 ? () => goToDate(tomorrow) : undefined
-          }
+          onSeeTomorrow={isToday && tomorrowCount > 0 ? () => goToDate(tomorrow) : undefined}
         />
       )}
 
       {!isLoading && total > 0 && (
         <>
-          {/* AO VIVO HERO */}
-          {isToday && liveGames.length > 0 && <LiveHeroCard games={liveGames} />}
+          <div className="md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-6 md:items-start">
+            <div className="min-w-0">
+              {isToday && liveGames.length > 0 && <LiveHeroCard games={liveGames} />}
 
-          {/* Placeholder: hoje, sem jogos ao vivo */}
-          {isToday && liveGames.length === 0 && (
-            <section
-              className="mb-5 rounded-2xl border px-4 py-3.5 flex items-center gap-3"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(13,13,13,0.6) 100%)",
-                borderColor: "rgba(255,255,255,0.08)",
-              }}
-              aria-label="Sem jogos ao vivo agora"
-            >
-              <div
-                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <Radio className="w-4 h-4 text-white/55" strokeWidth={2.2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p
-                  className="text-[15px] uppercase tracking-wide leading-none text-white/85"
-                  style={{ fontFamily: "Bebas Neue, sans-serif" }}
+              {isToday && liveGames.length === 0 && (
+                <section
+                  className="mb-5 rounded-2xl border px-4 py-3.5 flex items-center gap-3"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(13,13,13,0.6) 100%)",
+                    borderColor: "rgba(255,255,255,0.08)",
+                  }}
+                  aria-label="Sem jogos ao vivo agora"
                 >
-                  Sem jogos ao vivo agora
-                </p>
-                {allHighlights.length > 0 ? (
-                  <p className="text-[11.5px] text-white/55 mt-1.5 flex items-center gap-1 truncate">
-                    <Clock className="w-3 h-3 shrink-0" />
-                    Próximo: <span className="text-white/85 font-semibold tabular-nums">{allHighlights[0].game.game_time.slice(0, 5)}</span>
-                    <span className="truncate">
-                      · {allHighlights[0].game.away_team
-                        ? `${allHighlights[0].game.home_team} × ${allHighlights[0].game.away_team}`
-                        : allHighlights[0].game.home_team}
-                    </span>
-                  </p>
-                ) : (
-                  <p className="text-[11.5px] text-white/50 mt-1.5">
-                    Confira a programação completa abaixo.
-                  </p>
-                )}
-              </div>
-            </section>
-          )}
+                  <div
+                    className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  >
+                    <Radio className="w-4 h-4 text-white/55" strokeWidth={2.2} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-[15px] uppercase tracking-wide leading-none text-white/85"
+                      style={{ fontFamily: "Bebas Neue, sans-serif" }}
+                    >
+                      Sem jogos ao vivo agora
+                    </p>
+                    {allHighlights.length > 0 ? (
+                      <p className="text-[12px] text-white/55 mt-1.5 flex items-center gap-1 truncate">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        Próximo:{" "}
+                        <span className="text-white/85 font-semibold tabular-nums">
+                          {allHighlights[0].game.game_time.slice(0, 5)}
+                        </span>
+                        <span className="truncate">
+                          · {allHighlights[0].game.away_team
+                            ? `${allHighlights[0].game.home_team} × ${allHighlights[0].game.away_team}`
+                            : allHighlights[0].game.home_team}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-[12px] text-white/50 mt-1.5">Confira a programação completa abaixo.</p>
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
+            <div className="min-w-0">
+              {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
+            </div>
+          </div>
 
-          {/* Em Breve — fixo, sempre visível independente do filtro */}
-          {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
+          <ScheduleToolbar
+            search={search}
+            onSearch={setSearch}
+            status={status}
+            onStatus={setStatus}
+            statusCounts={statusCounts}
+            sort={sort}
+            onSort={setSort}
+            channels={channelOptions.map((c) => ({ name: c.name, count: c.count, key: c.key }))}
+            channel={channel}
+            onChannel={setChannel}
+          />
 
-          {/* Filtros */}
-          {sportsSorted.length > 0 && (
+          {sportsSorted.length > 0 && sort === "sport" && (
             <SportFilterBar
               active={filter}
-              onChange={setFilter}
-              totalCount={total}
-              liveCount={liveGames.length}
+              onChange={handleSportFilter}
+              totalCount={filtered.length}
+              liveCount={0}
               countsBySport={countsBySport}
               sportOrder={sportsSorted}
             />
           )}
 
-          {/* Agrupamentos */}
-          {visibleSports.map((sport) => (
-            <SportSection
-              key={sport}
-              sport={sport}
-              games={filteredGroup(sport)}
-            />
-          ))}
+          {sort === "sport"
+            ? visibleSports.map((sport) => (
+                <SportSection key={sport} sport={sport} games={grouped[sport] ?? []} />
+              ))
+            : <TimeSection games={visibleGames} />}
 
-          {filter === "live" &&
-            visibleSports.every((s) => filteredGroup(s).length === 0) && (
-              <div className="text-center py-12 text-white/55 text-sm">
-                Nenhum jogo ao vivo no momento.
-              </div>
-            )}
+          {nothingMatches && (
+            <div className="text-center py-12">
+              <p className="text-white/70 text-sm font-medium">
+                {status === "live"
+                  ? "Nenhum jogo ao vivo no momento."
+                  : status === "soon"
+                    ? "Nenhum jogo começando na próxima hora."
+                    : "Nenhum jogo encontrado com esses filtros."}
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="mt-3 min-h-11 px-4 rounded-full text-[#00ff87] text-sm font-semibold border border-[#00ff87]/30 hover:bg-[#00ff87]/10"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+          )}
 
-          {/* Continue Watching — only shows for authenticated users with progress */}
+          <p className="text-center text-[11px] text-white/35 mt-2 mb-4">
+            Todos os horários no Horário de Brasília (GMT-3)
+          </p>
+
           <div className="mt-4">
             <ContinueWatchingSection />
           </div>
 
-          {/* CTA Assine premium — ao final da página */}
-          <div className="mt-4 mb-2">
+          <div className="mt-4 mb-2 md:max-w-[560px] md:mx-auto">
             <PremiumCTA from="programacao-bottom" />
           </div>
         </>

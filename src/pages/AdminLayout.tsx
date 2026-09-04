@@ -21,7 +21,7 @@ import {
 import {
   LogOut,
   LayoutDashboard,
-  Image,
+  CalendarDays,
   Film,
   Clapperboard,
   Settings,
@@ -55,17 +55,17 @@ type AdminTab = {
 
 const adminTabs: AdminTab[] = [
   { value: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard", color: "text-foreground", activeBg: "bg-white/[0.08]", activeBorder: "border-b-white", group: "content" },
-  { value: "banners", label: "Banners", icon: Image, path: "/admin/banners", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400", group: "content" },
+  { value: "programacao", label: "Programação", icon: CalendarDays, path: "/admin/programacao", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400", group: "content" },
+  { value: "canais-logos", label: "Canais/Logos", icon: Tv, path: "/admin/canais-logos", color: "text-pink-400", activeBg: "bg-pink-500/[0.08]", activeBorder: "border-b-pink-400", group: "content" },
   { value: "filmes", label: "Filmes", icon: Film, path: "/admin/filmes", color: "text-blue-400", activeBg: "bg-blue-500/[0.08]", activeBorder: "border-b-blue-400", group: "content" },
   { value: "series", label: "Séries", icon: Clapperboard, path: "/admin/series", color: "text-purple-400", activeBg: "bg-purple-500/[0.08]", activeBorder: "border-b-purple-400", group: "content" },
   { value: "novidades", label: "Novidades", icon: Sparkles, path: "/admin/novidades", color: "text-amber-400", activeBg: "bg-amber-500/[0.08]", activeBorder: "border-b-amber-400", group: "content" },
   { value: "whatsapp", label: "WhatsApp", icon: MessageCircle, path: "/admin/whatsapp", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400", group: "ops" },
-  { value: "canais-logos", label: "Canais", icon: Tv, path: "/admin/canais-logos", color: "text-pink-400", activeBg: "bg-pink-500/[0.08]", activeBorder: "border-b-pink-400", group: "ops" },
   { value: "analytics", label: "Analytics", icon: BarChart3, path: "/admin/analytics", color: "text-cyan-400", activeBg: "bg-cyan-500/[0.08]", activeBorder: "border-b-cyan-400", group: "system" },
   { value: "auditoria", label: "Auditoria", icon: ScrollText, path: "/admin/auditoria", color: "text-orange-400", activeBg: "bg-orange-500/[0.08]", activeBorder: "border-b-orange-400", group: "system" },
   { value: "seguranca", label: "Segurança", icon: Shield, path: "/admin/seguranca", color: "text-red-400", activeBg: "bg-red-500/[0.08]", activeBorder: "border-b-red-400", group: "system" },
+  { value: "configuracoes", label: "Configurações", icon: Settings, path: "/admin/configuracoes", color: "text-muted-foreground", activeBg: "bg-white/[0.06]", activeBorder: "border-b-muted-foreground", group: "system" },
   { value: "diagnostico-github", label: "GitHub", icon: Github, path: "/admin/diagnostico-github", color: "text-sky-400", activeBg: "bg-sky-500/[0.08]", activeBorder: "border-b-sky-400", group: "system" },
-  { value: "configuracoes", label: "Config", icon: Settings, path: "/admin/configuracoes", color: "text-muted-foreground", activeBg: "bg-white/[0.06]", activeBorder: "border-b-muted-foreground", group: "system" },
 ];
 
 const groupLabels: Record<AdminTab["group"], string> = {
@@ -77,12 +77,12 @@ const groupLabels: Record<AdminTab["group"], string> = {
 // Primary tabs visible on desktop nav (rest goes into a "Mais" menu)
 const PRIMARY_DESKTOP: string[] = [
   "dashboard",
-  "banners",
+  "programacao",
+  "canais-logos",
   "filmes",
   "series",
   "novidades",
   "whatsapp",
-  "analytics",
 ];
 
 const AdminLayout = () => {

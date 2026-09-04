@@ -227,6 +227,7 @@ export const NovidadesPage = () => {
           trailerAvailable={trailerMap}
           onPlayTrailer={playTrailer}
           onOpenDetails={openDetailsFromCinema}
+          pausedExternally={!!selected || !!trailerItem}
         />
       )}
 

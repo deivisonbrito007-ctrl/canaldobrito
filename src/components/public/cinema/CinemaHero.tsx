@@ -10,6 +10,8 @@ interface CinemaHeroProps {
   trailerAvailable: Map<number, boolean>;
   onPlayTrailer: (item: CinemaItem) => void;
   onOpenDetails: (item: CinemaItem) => void;
+  /** Pausa a rotação automática (ex.: detalhe ou trailer aberto). */
+  pausedExternally?: boolean;
 }
 
 const AUTO_ROTATE_MS = 7000;
@@ -30,10 +32,11 @@ const getTypeLabel = (t?: string) => {
 };
 
 export const CinemaHero = forwardRef<HTMLElement, CinemaHeroProps>(
-  ({ items, trailerAvailable, onPlayTrailer, onOpenDetails }, ref) => {
+  ({ items, trailerAvailable, onPlayTrailer, onOpenDetails, pausedExternally = false }, ref) => {
     const reduce = useReducedMotion();
     const [index, setIndex] = useState(0);
-    const [paused, setPaused] = useState(false);
+    const [hoverPaused, setPaused] = useState(false);
+    const paused = hoverPaused || pausedExternally;
     const total = items.length;
 
     useEffect(() => { setIndex(0); }, [total]);

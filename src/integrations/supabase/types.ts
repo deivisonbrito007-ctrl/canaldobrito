@@ -160,6 +160,7 @@ export type Database = {
       channel_logo_mappings: {
         Row: {
           active: boolean
+          channel_type: string
           created_at: string
           custom_logo_url: string | null
           id: string
@@ -167,12 +168,14 @@ export type Database = {
           logo_key: string
           name: string
           name_normalized: string
+          primary_color: string | null
           short: string | null
           sort_order: number
           updated_at: string
         }
         Insert: {
           active?: boolean
+          channel_type?: string
           created_at?: string
           custom_logo_url?: string | null
           id?: string
@@ -180,12 +183,14 @@ export type Database = {
           logo_key?: string
           name: string
           name_normalized: string
+          primary_color?: string | null
           short?: string | null
           sort_order?: number
           updated_at?: string
         }
         Update: {
           active?: boolean
+          channel_type?: string
           created_at?: string
           custom_logo_url?: string | null
           id?: string
@@ -193,6 +198,7 @@ export type Database = {
           logo_key?: string
           name?: string
           name_normalized?: string
+          primary_color?: string | null
           short?: string | null
           sort_order?: number
           updated_at?: string
@@ -604,6 +610,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      merge_channel_mappings: {
+        Args: { _source_id: string; _target_id: string }
+        Returns: number
       }
       remove_multiple_game_ids: {
         Args: { _endpoint: string; _ids: string[] }

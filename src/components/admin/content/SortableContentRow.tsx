@@ -3,7 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { GripVertical, ImageOff, RefreshCw, Star, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, ImageOff, RefreshCw, Star, Trash2 } from "lucide-react";
 
 const ratingColor = (r: number) => (r >= 7 ? "text-emerald-400" : r >= 5 ? "text-amber-400" : "text-red-400");
 
@@ -15,7 +15,20 @@ export interface ContentRowItem {
   rating: number | null;
   genre: string | null;
   active: boolean;
+  overview?: string | null;
+  backdrop_url?: string | null;
 }
+
+/** Lista o que falta para o item ficar "completo" na vitrine pública. */
+export const getMissingFields = (item: ContentRowItem): string[] => {
+  const missing: string[] = [];
+  if (!item.poster_url) missing.push("pôster");
+  if (!item.backdrop_url) missing.push("fundo");
+  if (!item.genre) missing.push("gênero");
+  if (!item.overview) missing.push("sinopse");
+  if (!item.year) missing.push("ano");
+  return missing;
+};
 
 interface SortableContentRowProps {
   item: ContentRowItem;
@@ -96,7 +109,14 @@ export const SortableContentRow = ({
       )}
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold truncate">{item.title}</p>
+        <p className="text-xs font-semibold truncate flex items-center gap-1.5">
+          <span className="truncate">{item.title}</span>
+          {!item.active && (
+            <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/60 border border-white/10 rounded px-1 shrink-0">
+              oculto
+            </span>
+          )}
+        </p>
         <p className="text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1 flex-wrap">
           {item.year && <span>{item.year}</span>}
           {item.rating != null && (
@@ -105,12 +125,17 @@ export const SortableContentRow = ({
               <span className={ratingColor(item.rating)}>{item.rating}</span>
             </>
           )}
-          {item.genre ? (
-            <span className={`${genreClass} truncate`}>• {item.genre}</span>
-          ) : (
-            <span className="text-amber-400/70 italic">• sem gênero</span>
-          )}
+          {item.genre && <span className={`${genreClass} truncate`}>• {item.genre}</span>}
         </p>
+        {(() => {
+          const missing = getMissingFields(item);
+          return missing.length > 0 ? (
+            <p className="text-[10px] text-amber-400/80 mt-0.5 truncate" title={`Faltando: ${missing.join(", ")}`}>
+              <AlertTriangle className="inline h-2.5 w-2.5 mr-1 -mt-px" aria-hidden />
+              Falta {missing.join(", ")}
+            </p>
+          ) : null;
+        })()}
       </div>
 
       <div className="flex items-center gap-0.5 shrink-0">

@@ -54,6 +54,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+export const CHANNEL_TYPES = [
+  { value: "tv_aberta", label: "TV aberta" },
+  { value: "tv_fechada", label: "TV fechada" },
+  { value: "streaming", label: "Streaming" },
+  { value: "youtube", label: "YouTube" },
+  { value: "ppv", label: "Pay-per-view" },
+  { value: "outro", label: "Outro" },
+] as const;
+export type ChannelType = (typeof CHANNEL_TYPES)[number]["value"];
+
 type FormState = {
   id?: string;
   name: string;
@@ -62,6 +72,8 @@ type FormState = {
   active: boolean;
   custom_logo_url: string | null;
   light_chip: boolean;
+  channel_type: ChannelType;
+  primary_color: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -71,13 +83,27 @@ const EMPTY_FORM: FormState = {
   active: true,
   custom_logo_url: null,
   light_chip: false,
+  channel_type: "outro",
+  primary_color: "",
 };
+
+/** Sugere o tipo do canal a partir do nome. */
+function guessChannelType(name: string): ChannelType {
+  const n = name.toLowerCase();
+  if (/youtube|cazé|caze|goat|canal do|desimpedidos/.test(n)) return "youtube";
+  if (/globo$|band$|record|sbt|redetv|tv brasil|cultura/.test(n)) return "tv_aberta";
+  if (/sportv|espn|premiere|combate|tnt|band ?sports|fox|space|ge tv/.test(n)) return "tv_fechada";
+  if (/disney|max|prime|paramount|globoplay|dazn|apple|netflix|nsports|xsports|league pass|onefootball|star\+/.test(n)) return "streaming";
+  if (/pay|ppv|combate play|ufc fight pass/.test(n)) return "ppv";
+  return "outro";
+}
 
 type AutoLinkPair = { orphan: DiscoveredChannel; suggestion: ChannelMatchSuggestion };
 type ConfirmState =
   | { kind: "delete-mapping"; id: string; name: string }
   | { kind: "bulk-silence"; count: number }
   | { kind: "bulk-autolink"; pairs: AutoLinkPair[] }
+  | { kind: "merge"; sourceId: string; sourceName: string; targetId: string; targetName: string }
   | {
       kind: "undo-autolink";
       aliasIds: string[];
@@ -96,6 +122,7 @@ const AdminCanaisLogos = () => {
   const [tab, setTab] = useState<"orphans" | "all" | "custom" | "builtin">("orphans");
   const [previewChannel, setPreviewChannel] = useState("");
   const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [mergeTarget, setMergeTarget] = useState<string>("");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -145,6 +172,8 @@ const AdminCanaisLogos = () => {
         active: f.active,
         custom_logo_url: f.custom_logo_url,
         light_chip: f.light_chip,
+        channel_type: f.channel_type,
+        primary_color: /^#[0-9a-fA-F]{6}$/.test(f.primary_color.trim()) ? f.primary_color.trim().toLowerCase() : null,
       };
       if (f.id) {
         const { error } = await supabase.from("channel_logo_mappings").update(payload).eq("id", f.id);
@@ -182,6 +211,25 @@ const AdminCanaisLogos = () => {
       qc.invalidateQueries({ queryKey: ["discovered-channels"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao remover"),
+  });
+
+  const mergeInto = useMutation({
+    mutationFn: async ({ sourceId, targetId }: { sourceId: string; targetId: string }) => {
+      const { data, error } = await supabase.rpc("merge_channel_mappings", { _source_id: sourceId, _target_id: targetId });
+      if (error) throw error;
+      return (data as number) ?? 0;
+    },
+    onSuccess: (updated) => {
+      toast.success(`Canais mesclados${updated ? ` · ${updated} jogo(s) atualizado(s)` : ""}`);
+      qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK });
+      qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+      qc.invalidateQueries({ queryKey: ["daily_games"] });
+      setMergeTarget("");
+      setOpen(false);
+      setForm(EMPTY_FORM);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao mesclar"),
   });
 
   const reorder = useMutation({
@@ -414,13 +462,15 @@ const AdminCanaisLogos = () => {
       active: r.active,
       custom_logo_url: r.custom_logo_url ?? null,
       light_chip: !!r.light_chip,
+      channel_type: (r.channel_type as ChannelType) ?? "outro",
+      primary_color: r.primary_color ?? "",
     });
     setLogoTab(r.custom_logo_url ? "upload" : "registry");
     setOpen(true);
   };
 
   const openNew = (prefillName?: string) => {
-    setForm({ ...EMPTY_FORM, name: prefillName ?? "" });
+    setForm({ ...EMPTY_FORM, name: prefillName ?? "", channel_type: prefillName ? guessChannelType(prefillName) : "outro" });
     setLogoTab(prefillName ? "upload" : "registry");
     setOpen(true);
   };
@@ -852,6 +902,47 @@ const AdminCanaisLogos = () => {
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="ch-type">Tipo</Label>
+                <select
+                  id="ch-type"
+                  value={form.channel_type}
+                  onChange={(e) => setForm((f) => ({ ...f, channel_type: e.target.value as ChannelType }))}
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {CHANNEL_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ch-color">Cor principal (opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Escolher cor principal"
+                    value={/^#[0-9a-fA-F]{6}$/.test(form.primary_color) ? form.primary_color : "#00ff87"}
+                    onChange={(e) => setForm((f) => ({ ...f, primary_color: e.target.value }))}
+                    className="h-11 w-12 rounded-md border border-input bg-background p-1 cursor-pointer"
+                  />
+                  <Input
+                    id="ch-color"
+                    value={form.primary_color}
+                    onChange={(e) => setForm((f) => ({ ...f, primary_color: e.target.value }))}
+                    placeholder="#00ff87"
+                    maxLength={7}
+                    className="h-11 font-mono"
+                  />
+                  {form.primary_color && (
+                    <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => setForm((f) => ({ ...f, primary_color: "" }))}>
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="ch-light">Fundo claro</Label>
@@ -878,6 +969,45 @@ const AdminCanaisLogos = () => {
             {form.id && (
               <div className="rounded-md border border-border/40 bg-card/40 p-3">
                 <ChannelAliasesEditor mappingId={form.id} />
+              </div>
+            )}
+
+            {form.id && (rows?.length ?? 0) > 1 && (
+              <div className="rounded-md border border-amber-500/20 bg-amber-500/[0.04] p-3 space-y-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">Mesclar duplicado</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Move os apelidos deste canal para o canal escolhido, corrige os jogos publicados e remove este cadastro.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    aria-label="Canal de destino da mesclagem"
+                    value={mergeTarget}
+                    onChange={(e) => setMergeTarget(e.target.value)}
+                    className="flex-1 h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Escolher canal de destino…</option>
+                    {(rows ?? [])
+                      .filter((r) => r.id !== form.id)
+                      .map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!mergeTarget || mergeInto.isPending}
+                    className="min-h-11 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                    onClick={() => {
+                      const target = (rows ?? []).find((r) => r.id === mergeTarget);
+                      if (!target) return;
+                      setConfirm({ kind: "merge", sourceId: form.id!, sourceName: form.name, targetId: target.id, targetName: target.name });
+                    }}
+                  >
+                    Mesclar em…
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -923,6 +1053,7 @@ const AdminCanaisLogos = () => {
             <AlertDialogTitle>
               {confirm?.kind === "delete-mapping" && `Remover "${confirm.name}"?`}
               {confirm?.kind === "bulk-silence" && `Silenciar ${confirm.count} canais?`}
+              {confirm?.kind === "merge" && `Mesclar "${confirm.sourceName}" em "${confirm.targetName}"?`}
               {confirm?.kind === "bulk-autolink" &&
                 `Vincular ${confirm.pairs.length} canal${confirm.pairs.length > 1 ? "is" : ""} como alias?`}
               {confirm?.kind === "undo-autolink" &&
@@ -935,6 +1066,12 @@ const AdminCanaisLogos = () => {
                 )}
                 {confirm?.kind === "bulk-silence" && (
                   <p>Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois.</p>
+                )}
+                {confirm?.kind === "merge" && (
+                  <p>
+                    Os apelidos de <b>{confirm.sourceName}</b> passam para <b>{confirm.targetName}</b>, os jogos publicados
+                    com o nome antigo são corrigidos e o cadastro duplicado é removido. Esta ação não pode ser desfeita.
+                  </p>
                 )}
                 {confirm?.kind === "bulk-autolink" && (
                   <>
@@ -1004,6 +1141,8 @@ const AdminCanaisLogos = () => {
                   if (open) setOpen(false);
                 } else if (confirm?.kind === "bulk-silence") {
                   bulkSilence.mutate(discovered.orphans);
+                } else if (confirm?.kind === "merge") {
+                  mergeInto.mutate({ sourceId: confirm.sourceId, targetId: confirm.targetId });
                 } else if (confirm?.kind === "bulk-autolink") {
                   linkAsAlias.mutate(confirm.pairs);
                 } else if (confirm?.kind === "undo-autolink") {

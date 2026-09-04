@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { detectSportType, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { detectSportType, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
+import { isKnownChannel } from "@/components/public/ChannelBadge";
+import { useChannelMappings } from "@/hooks/useChannelMappings";
+import { Checkbox } from "@/components/ui/checkbox";
 import { gameKey } from "@/lib/dedup";
 import { isChannelFragment } from "@/components/public/channelLogos";
 import { getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
@@ -833,17 +836,51 @@ function formatDatePt(dateStr: string): string {
   return `${d}/${m}/${y}`;
 }
 
+export type WarningCtx = {
+  knownChannel?: (name: string) => boolean;
+  existingKeys?: Set<string>;
+  textDupKeys?: Set<string>;
+};
+
+export type GameWarning = { code: string; label: string; level: "warn" | "error" };
+
 /** Get validation warnings for a parsed game */
-function getGameWarnings(game: ParsedGame): string[] {
-  const warnings: string[] = [];
-  if (game.dateBumped) {
+function getGameWarnings(game: ParsedGame, ctx: WarningCtx = {}): GameWarning[] {
+  const warnings: GameWarning[] = [];
+  const sport = game.sport_type || detectSportType(game.competition, `${game.home_team} ${game.away_team}`);
+
+  if (!game.game_time) {
+    warnings.push({ code: "no-time", label: "Sem horário", level: "error" });
+  } else if (game.dateBumped) {
     const [, m, d] = game.date.split("-");
-    warnings.push(`⏰ Horário ${game.game_time} (madrugada) — data avançada para ${d}/${m}`);
+    warnings.push({ code: "bumped", label: `⏰ ${game.game_time} (madrugada) — data avançada para ${d}/${m}`, level: "warn" });
   } else if (game.game_time === "00:00") {
-    warnings.push("⏰ Horário 00:00 — verifique se a data está correta");
+    warnings.push({ code: "midnight", label: "⏰ Horário 00:00 — confira a data", level: "warn" });
   }
-  if (!game.channels.length) warnings.push("Sem canal");
-  if (!game.competition) warnings.push("Sem competição");
+
+  if (!game.channels.length) {
+    warnings.push({ code: "no-channel", label: "Sem canal", level: "warn" });
+  } else if (ctx.knownChannel) {
+    const unknown = game.channels.filter((c) => !ctx.knownChannel!(c));
+    if (unknown.length) {
+      warnings.push({ code: "unknown-channel", label: `Canal desconhecido: ${unknown.join(", ")}`, level: "warn" });
+    }
+  }
+
+  if (!game.competition) warnings.push({ code: "no-comp", label: "Sem competição", level: "warn" });
+
+  if (game.sportSource === "texto" || game.sportSource === "padrão") {
+    warnings.push({ code: "sport", label: `Esporte suspeito (${SPORT_LABEL[sport] ?? sport})`, level: "warn" });
+  }
+
+  if (game.away_team && isNonAdversarial(sport)) {
+    warnings.push({ code: "vs", label: `"x" indevido em evento único`, level: "warn" });
+  }
+
+  const key = gameKey(game);
+  if (ctx.textDupKeys?.has(key)) warnings.push({ code: "dup-text", label: "Duplicado no texto", level: "warn" });
+  if (ctx.existingKeys?.has(key)) warnings.push({ code: "dup-db", label: "Já publicado", level: "warn" });
+
   return warnings;
 }
 
@@ -1295,8 +1332,60 @@ export const ProgramacaoTexto = () => {
 
   const sortedDates = Object.keys(gamesByDate).sort();
 
-  // Count total warnings
-  const totalWarnings = parsed.reduce((acc, g) => acc + getGameWarnings(g).length, 0);
+  // Contexto de validação (canais conhecidos, duplicados)
+  const { data: channelMappings } = useChannelMappings();
+  const warningCtx = useMemo<WarningCtx>(() => {
+    const counts = new Map<string, number>();
+    for (const g of parsed) {
+      const k = gameKey(g);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const textDupKeys = new Set([...counts.entries()].filter(([, n]) => n > 1).map(([k]) => k));
+    return {
+      knownChannel: (name: string) => isKnownChannel(name, channelMappings),
+      existingKeys,
+      textDupKeys,
+    };
+  }, [parsed, channelMappings, existingKeys]);
+
+  const warningsByIdx = useMemo(() => parsed.map((g) => getGameWarnings(g, warningCtx)), [parsed, warningCtx]);
+  const selectedWarnings = useMemo(
+    () => warningsByIdx.flatMap((ws, i) => (parsed[i]?.selected ? ws : [])),
+    [warningsByIdx, parsed],
+  );
+  const totalWarnings = selectedWarnings.length;
+  const warningSummary = useMemo(() => {
+    const m = new Map<string, { label: string; count: number }>();
+    for (const w of selectedWarnings) {
+      const short = w.label.split(":")[0].split(" — ")[0];
+      const cur = m.get(w.code);
+      if (cur) cur.count++;
+      else m.set(w.code, { label: short, count: 1 });
+    }
+    return [...m.values()];
+  }, [selectedWarnings]);
+  const [reviewed, setReviewed] = useState(false);
+  useEffect(() => setReviewed(false), [parsed]);
+
+  const reviewSummary = useMemo(() => {
+    const sel = parsed.filter((g) => g.selected);
+    const sports = new Map<string, number>();
+    const channels = new Map<string, number>();
+    const dates = new Set<string>();
+    for (const g of sel) {
+      const sp = g.sport_type || detectSportType(g.competition, `${g.home_team} ${g.away_team}`);
+      sports.set(sp, (sports.get(sp) ?? 0) + 1);
+      for (const c of g.channels) channels.set(c, (channels.get(c) ?? 0) + 1);
+      dates.add(g.date);
+    }
+    return {
+      count: sel.length,
+      sports: [...sports.entries()].sort((a, b) => b[1] - a[1]),
+      channels: [...channels.entries()].sort((a, b) => b[1] - a[1]),
+      dates: [...dates].sort(),
+      dateMismatch: [...dates].some((d) => d !== selectedDate),
+    };
+  }, [parsed, selectedDate]);
 
   return (
     <div className="space-y-5">
@@ -1595,7 +1684,7 @@ export const ProgramacaoTexto = () => {
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {group.games.map((game, localIdx) => {
                       const globalIdx = group.indices[localIdx];
-                      const warnings = getGameWarnings(game);
+                      const warnings = warningsByIdx[globalIdx] ?? [];
                       const resolvedSport = game.sport_type || detectSportType(game.competition, `${game.home_team} ${game.away_team}`);
                       const sportEmoji = SPORT_EMOJI[resolvedSport] || '⚽';
                       return (
@@ -1670,16 +1759,15 @@ export const ProgramacaoTexto = () => {
                                       Feminino
                                     </span>
                                   )}
-                                  {existingKeys.has(gameKey(game)) && (
-                                    <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-semibold">
-                                      <Copy className="h-2.5 w-2.5" />
-                                      Duplicado
-                                    </span>
-                                  )}
-                                  {warnings.map((w, wi) => (
-                                    <span key={wi} className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                                      <AlertTriangle className="h-2.5 w-2.5" />
-                                      {w}
+                                  {warnings.map((w) => (
+                                    <span
+                                      key={w.code}
+                                      className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded ${
+                                        w.level === "error" ? "text-red-400 bg-red-500/10" : "text-amber-400 bg-amber-500/10"
+                                      }`}
+                                    >
+                                      {w.code.startsWith("dup") ? <Copy className="h-2.5 w-2.5" /> : <AlertTriangle className="h-2.5 w-2.5" />}
+                                      {w.label}
                                     </span>
                                   ))}
                                 </div>
@@ -1726,21 +1814,69 @@ export const ProgramacaoTexto = () => {
                       : `Publicar ${selectedCount}`}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="glass-panel border-white/[0.08]">
+                <AlertDialogContent className="glass-panel border-white/[0.08] max-h-[85vh] overflow-y-auto sm:max-w-lg">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      {scheduleMidnight && !getScheduleLabel().isPast ? "Confirmar agendamento" : "Confirmar publicação"}
+                      {scheduleMidnight && !getScheduleLabel().isPast ? "Revisar e agendar" : "Revisar e publicar"}
                     </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {scheduleMidnight && !getScheduleLabel().isPast
-                        ? `Agendar ${selectedCount} jogo(s) para meia-noite? Eles ficarão visíveis automaticamente.`
-                        : `Publicar ${selectedCount} jogo(s) imediatamente? Eles ficarão visíveis agora.`}
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-3 text-left">
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="rounded-lg bg-white/[0.04] p-2">
+                            <p className="text-lg font-bold text-foreground tabular-nums">{reviewSummary.count}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">jogos</p>
+                          </div>
+                          <div className="rounded-lg bg-white/[0.04] p-2">
+                            <p className="text-lg font-bold text-foreground tabular-nums">{reviewSummary.sports.length}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">esportes</p>
+                          </div>
+                          <div className="rounded-lg bg-white/[0.04] p-2">
+                            <p className="text-lg font-bold text-foreground tabular-nums">{reviewSummary.channels.length}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">canais</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {reviewSummary.sports.map(([sp, n]) => (
+                            <span key={sp} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-foreground">
+                              {SPORT_EMOJI[sp as SportType]} {SPORT_LABEL[sp as SportType] ?? sp} · {n}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          📅 {reviewSummary.dates.map(formatDatePt).join(", ")}
+                          {reviewSummary.dateMismatch && (
+                            <span className="text-amber-400 font-semibold"> · diferente da data selecionada ({formatDatePt(selectedDate)})</span>
+                          )}
+                        </p>
+                        {totalWarnings > 0 ? (
+                          <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-3 space-y-2">
+                            <p className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                              <AlertTriangle className="h-3.5 w-3.5" /> {totalWarnings} alerta{totalWarnings !== 1 ? "s" : ""} nos jogos selecionados
+                            </p>
+                            <ul className="text-[11px] text-foreground/85 space-y-0.5">
+                              {warningSummary.map((w) => (
+                                <li key={w.label}>• {w.label} <span className="text-muted-foreground">×{w.count}</span></li>
+                              ))}
+                            </ul>
+                            <label className="flex items-start gap-2 text-[11px] text-foreground cursor-pointer min-h-11">
+                              <Checkbox checked={reviewed} onCheckedChange={(v) => setReviewed(v === true)} className="mt-0.5" />
+                              <span>Revisei os alertas e quero {scheduleMidnight && !getScheduleLabel().isPast ? "agendar" : "publicar"} mesmo assim. Você pode fechar e editar os jogos antes.</span>
+                            </label>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-emerald-400 font-semibold">✓ Nenhum alerta. Pronto para {scheduleMidnight && !getScheduleLabel().isPast ? "agendar" : "publicar"}.</p>
+                        )}
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handlePublish} className="bg-emerald-600 hover:bg-emerald-700">
-                      {scheduleMidnight && !getScheduleLabel().isPast ? "Agendar" : "Publicar"}
+                    <AlertDialogCancel className="min-h-11">Voltar e editar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handlePublish}
+                      disabled={totalWarnings > 0 && !reviewed}
+                      className="bg-emerald-600 hover:bg-emerald-700 min-h-11"
+                    >
+                      {scheduleMidnight && !getScheduleLabel().isPast ? "Agendar" : "Publicar"} {selectedCount}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

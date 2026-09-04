@@ -319,7 +319,7 @@ const PasteZone = ({
   );
 };
 
-const AdminBanners = () => {
+const AdminProgramacao = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "categories" ? "categories" : "programacao";
   const [activeSection, setActiveSection] = useState<"categories" | "programacao">(initialTab);
@@ -628,7 +628,7 @@ const AdminBanners = () => {
         className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
           { key: "programacao" as const, label: "📋 Programação" },
-          { key: "categories" as const, label: "📁 Categorias" },
+          { key: "categories" as const, label: "🖼️ Banners de imagem" },
         ].map((s) => (
           <button
             key={s.key}
@@ -1091,4 +1091,4 @@ const AdminBanners = () => {
   );
 };
 
-export default AdminBanners;
+export default AdminProgramacao;

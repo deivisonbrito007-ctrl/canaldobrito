@@ -209,10 +209,11 @@ export async function safeCopy(text: string): Promise<boolean> {
 
 /** Get a date offset by N days from a reference date (YYYY-MM-DD, local). */
 export function offsetDateStr(refStr: string, days: number): string {
-  const d = midnightInSaoPaulo(refStr);
-  d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  // Aritmética de calendário pura (UTC) — independe do fuso do navegador.
+  const [y0, m0, d0] = refStr.split("-").map(Number);
+  const d = new Date(Date.UTC(y0, (m0 || 1) - 1, (d0 || 1) + days));
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }

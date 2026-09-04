@@ -13,6 +13,8 @@ export type ChannelMapping = {
   light_chip?: boolean;
   sort_order?: number;
   updated_at?: string | null;
+  channel_type?: string | null;
+  primary_color?: string | null;
 };
 
 export type ChannelAlias = {

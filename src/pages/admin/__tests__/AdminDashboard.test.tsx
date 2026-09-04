@@ -106,13 +106,15 @@ describe("AdminDashboard", () => {
 
   it("renders quick actions including WhatsApp and Configurações", () => {
     wrap(<AdminDashboard />);
-    expect(screen.getByText("+ WhatsApp")).toBeInTheDocument();
+    expect(screen.getByText("Enviar no WhatsApp")).toBeInTheDocument();
+    expect(screen.getByText("Publicar programação")).toBeInTheDocument();
     expect(screen.getByText("+ Configurações")).toBeInTheDocument();
   });
 
-  it("shows content health alert when items missing genre", () => {
+  it("shows content health checklist when items are incomplete", () => {
     wrap(<AdminDashboard />);
-    expect(screen.getByText(/1 item sem gênero/)).toBeInTheDocument();
+    expect(screen.getByText("Saúde do conteúdo")).toBeInTheDocument();
+    expect(screen.getByText(/conteúdos? incompletos?/)).toBeInTheDocument();
   });
 
   it("renders UpcomingActivations", () => {
@@ -124,7 +126,7 @@ describe("AdminDashboard", () => {
     wrap(<AdminDashboard />);
     const card = screen.getByLabelText(/^Banners: \d+ total/);
     fireEvent.click(card);
-    expect(navigateMock).toHaveBeenCalledWith("/admin/banners");
+    expect(navigateMock).toHaveBeenCalledWith("/admin/programacao?tab=categories");
   });
 
   it("triggers all refetch when refresh button is clicked", () => {

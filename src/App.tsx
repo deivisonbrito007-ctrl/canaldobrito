@@ -14,7 +14,8 @@ const Assinar = lazy(() => import("./pages/Assinar"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminLayout = lazy(() => import("./pages/AdminLayout"));
 import RequireAdmin from "./components/admin/RequireAdmin";
-const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
+const AdminProgramacao = lazy(() => import("./pages/admin/AdminProgramacao"));
+const AdminNotFound = lazy(() => import("./pages/admin/AdminNotFound"));
 const AdminFilmes = lazy(() => import("./pages/admin/AdminFilmes"));
 const AdminSeries = lazy(() => import("./pages/admin/AdminSeries"));
 const AdminConfiguracoes = lazy(() => import("./pages/admin/AdminConfiguracoes"));
@@ -72,7 +73,7 @@ const App = () => (
               <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="banners" element={<AdminBanners />} />
+                <Route path="programacao" element={<AdminProgramacao />} />
                 <Route path="filmes" element={<AdminFilmes />} />
                 <Route path="series" element={<AdminSeries />} />
                 <Route path="novidades" element={<AdminNovidades />} />
@@ -83,12 +84,20 @@ const App = () => (
                 <Route path="configuracoes" element={<AdminConfiguracoes />} />
                 <Route path="canais-logos" element={<AdminCanaisLogos />} />
                 <Route path="seguranca" element={<AdminSecurity />} />
-                {/* Redirects de rotas antigas removidas */}
+                {/* Redirects amigáveis de rotas antigas / apelidos */}
+                <Route path="banners" element={<Navigate to="/admin/programacao?tab=categories" replace />} />
+                <Route path="categorias" element={<Navigate to="/admin/programacao?tab=categories" replace />} />
+                <Route path="jogos" element={<Navigate to="/admin/programacao" replace />} />
+                <Route path="config" element={<Navigate to="/admin/configuracoes" replace />} />
+                <Route path="settings" element={<Navigate to="/admin/configuracoes" replace />} />
+                <Route path="github" element={<Navigate to="/admin/diagnostico-github" replace />} />
+                <Route path="canais" element={<Navigate to="/admin/canais-logos" replace />} />
+                <Route path="logos" element={<Navigate to="/admin/canais-logos" replace />} />
                 <Route path="api-sync" element={<Navigate to="/admin/whatsapp" replace />} />
                 <Route path="sync-stats" element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="canais" element={<Navigate to="/admin/whatsapp" replace />} />
-                <Route path="canais-whitelist" element={<Navigate to="/admin/whatsapp" replace />} />
-                <Route path="ligas" element={<Navigate to="/admin/whatsapp" replace />} />
+                <Route path="canais-whitelist" element={<Navigate to="/admin/canais-logos" replace />} />
+                <Route path="ligas" element={<Navigate to="/admin/programacao" replace />} />
+                <Route path="*" element={<AdminNotFound />} />
               </Route>
               <Route path="*" element={<SlugFallback />} />
             </Routes>

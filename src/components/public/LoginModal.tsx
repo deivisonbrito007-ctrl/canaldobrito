@@ -1,3 +1,4 @@
+import { friendlyAuthError } from "@/lib/authErrors";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -46,8 +47,8 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       toast.success("Login realizado com sucesso!");
       onClose();
       navigate("/admin");
-    } catch (err: any) {
-      setError(err.message || "Erro ao fazer login");
+    } catch (err: unknown) {
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -106,26 +107,32 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 )}
               </div>
 
+              <label htmlFor="login-modal-email" className="sr-only">E-mail</label>
               <input
+                id="login-modal-email"
                 type="email"
-                placeholder="admin@britosolutions.tv"
+                placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 inputMode="email"
                 maxLength={255}
+                aria-invalid={!!error}
                 className="w-full bg-input border border-border rounded-lg px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground font-body focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                 required
               />
 
               <div className="relative">
+                <label htmlFor="login-modal-password" className="sr-only">Senha</label>
                 <input
+                  id="login-modal-password"
                   type={showPw ? "text" : "password"}
                   placeholder="Senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   maxLength={128}
+                  aria-invalid={!!error}
                   className="w-full bg-input border border-border rounded-lg px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground font-body pr-10 focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                   required
                 />
@@ -162,6 +169,14 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
               <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">acesso restrito</span>
               <div className="flex-1 h-px bg-border" />
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full min-h-[44px] text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Voltar para a agenda
+            </button>
 
             <p className="text-center text-[10px] text-muted-foreground font-body">
               Problemas?{" "}

@@ -26,20 +26,21 @@ const prefersReducedMotion = () =>
   typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { getLocalDateString } from "@/lib/gameUtils";
+import { offsetDateStr } from "@/lib/whatsappText";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Calendar, Image, Film, Clapperboard, Sparkles, Trophy,
-  FileText, AlertCircle, RefreshCw, MessageCircle, Settings, AlertTriangle,
+  FileText, AlertCircle, RefreshCw, MessageCircle, Settings,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
 import { ContentHealthBar } from "@/components/admin/ContentHealthBar";
-import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { ContentCharts } from "@/components/admin/ContentCharts";
+import { ContentHealthChecklist } from "@/components/admin/ContentHealthChecklist";
 import { SportStatsFilter } from "@/components/admin/SportStatsFilter";
 
 const useCountUp = (target: number, duration = 800) => {
@@ -61,20 +62,20 @@ const useCountUp = (target: number, duration = 800) => {
 };
 
 const statCards = [
-  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", barColor: "bg-emerald-500", route: "/admin/banners" },
+  { key: "banners", icon: Image, label: "Banners", color: "text-emerald-400", bg: "from-emerald-500/[0.08] to-emerald-500/[0.02]", border: "border-emerald-500/[0.15]", barColor: "bg-emerald-500", route: "/admin/programacao?tab=categories" },
   { key: "filmes", icon: Film, label: "Filmes", color: "text-blue-400", bg: "from-blue-500/[0.08] to-blue-500/[0.02]", border: "border-blue-500/[0.15]", barColor: "bg-blue-500", route: "/admin/filmes" },
   { key: "series", icon: Clapperboard, label: "Séries", color: "text-purple-400", bg: "from-purple-500/[0.08] to-purple-500/[0.02]", border: "border-purple-500/[0.15]", barColor: "bg-purple-500", route: "/admin/series" },
   { key: "novidades", icon: Sparkles, label: "Novidades", color: "text-amber-400", bg: "from-amber-500/[0.08] to-amber-500/[0.02]", border: "border-amber-500/[0.15]", barColor: "bg-amber-500", route: "/admin/novidades" },
-  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", barColor: "bg-red-500", route: "/admin/banners?tab=programacao" },
+  { key: "jogos", icon: Trophy, label: "Jogos Hoje", color: "text-red-400", bg: "from-red-500/[0.08] to-red-500/[0.02]", border: "border-red-500/[0.15]", barColor: "bg-red-500", route: "/admin/programacao" },
 ];
 
 const quickActions = [
-  { label: "Banner", path: "/admin/banners", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20", icon: Image },
+  { label: "Publicar programação", path: "/admin/programacao", color: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 col-span-2", icon: FileText },
+  { label: "Enviar no WhatsApp", path: "/admin/whatsapp", color: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20 col-span-2", icon: MessageCircle },
+  { label: "Banner", path: "/admin/programacao?tab=categories", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20", icon: Image },
   { label: "Filme", path: "/admin/filmes", color: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20", icon: Film },
   { label: "Série", path: "/admin/series", color: "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20", icon: Clapperboard },
   { label: "Novidade", path: "/admin/novidades", color: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20", icon: Sparkles },
-  { label: "Programação", path: "/admin/banners?tab=programacao", color: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20", icon: FileText },
-  { label: "WhatsApp", path: "/admin/whatsapp", color: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20", icon: MessageCircle },
   { label: "Configurações", path: "/admin/configuracoes", color: "bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20", icon: Settings },
 ];
 
@@ -91,7 +92,9 @@ const AdminDashboard = () => {
   const { data: movies, isLoading: loadingMovies, isFetching: fetchingMovies, isError: errorMovies, refetch: refetchMovies, dataUpdatedAt: updatedMovies } = useAllMovies();
   const { data: series, isLoading: loadingSeries, isFetching: fetchingSeries, isError: errorSeries, refetch: refetchSeries, dataUpdatedAt: updatedSeries } = useAllSeries();
   const { data: news, isLoading: loadingNews, isFetching: fetchingNews, isError: errorNews, refetch: refetchNews, dataUpdatedAt: updatedNews } = useAllNewsReleases();
-  const { data: todayGames, isLoading: loadingGames, isFetching: fetchingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(getLocalDateString());
+  const todayStr = getLocalDateString();
+  const { data: todayGames, isLoading: loadingGames, isFetching: fetchingGames, isError: errorGames, refetch: refetchGames, dataUpdatedAt: updatedGames } = useAllDailyGames(todayStr);
+  const { data: tomorrowGames } = useAllDailyGames(offsetDateStr(todayStr, 1));
 
   const isLoading = loadingBanners || loadingMovies || loadingSeries || loadingNews || loadingGames;
   const isFetching = fetchingBanners || fetchingMovies || fetchingSeries || fetchingNews || fetchingGames;
@@ -141,13 +144,6 @@ const AdminDashboard = () => {
     return Math.max(...timestamps);
   }, [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames]);
 
-  const missingGenre = useMemo(() => {
-    const moviesMissing = movies?.filter((m) => !m.genre || m.genre.trim() === "").length || 0;
-    const seriesMissing = series?.filter((s) => !s.genre || s.genre.trim() === "").length || 0;
-    const newsMissing = news?.filter((n) => !n.genres || n.genres.trim() === "").length || 0;
-    return { movies: moviesMissing, series: seriesMissing, news: newsMissing, total: moviesMissing + seriesMissing + newsMissing };
-  }, [movies, series, news]);
-
   return (
     <div className="space-y-6">
       {/* Date card + last updated */}
@@ -196,33 +192,16 @@ const AdminDashboard = () => {
         </Alert>
       )}
 
-      {/* Expired banners alert */}
-      <ExpiredBannersAlert banners={banners} isLoading={isLoading} />
-
-      {/* Content health alert */}
-      {!isLoading && missingGenre.total > 0 && (
-        <Alert className="border-amber-500/30 bg-amber-500/10">
-          <AlertTriangle className="h-4 w-4 text-amber-400" />
-          <AlertDescription className="text-xs text-amber-300/90">
-            <span className="font-semibold">{missingGenre.total} ite{missingGenre.total === 1 ? "m" : "ns"} sem gênero:</span>
-            {missingGenre.movies > 0 && (
-              <button onClick={() => navigate("/admin/filmes")} className="ml-1.5 underline underline-offset-2 hover:text-amber-200">
-                {missingGenre.movies} filme{missingGenre.movies !== 1 ? "s" : ""}
-              </button>
-            )}
-            {missingGenre.series > 0 && (
-              <button onClick={() => navigate("/admin/series")} className="ml-1.5 underline underline-offset-2 hover:text-amber-200">
-                {missingGenre.series} série{missingGenre.series !== 1 ? "s" : ""}
-              </button>
-            )}
-            {missingGenre.news > 0 && (
-              <button onClick={() => navigate("/admin/novidades")} className="ml-1.5 underline underline-offset-2 hover:text-amber-200">
-                {missingGenre.news} novidade{missingGenre.news !== 1 ? "s" : ""}
-              </button>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Checklist de saúde (substitui alertas soltos) */}
+      <ContentHealthChecklist
+        todayGames={todayGames}
+        tomorrowGames={tomorrowGames}
+        banners={banners}
+        movies={movies}
+        series={series}
+        news={news}
+        isLoading={isLoading}
+      />
 
       {/* Stats grid with micro progress bars */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -293,7 +272,7 @@ const AdminDashboard = () => {
               className={`flex items-center justify-center gap-1.5 p-3 rounded-xl border font-semibold text-[11px] sm:text-xs transition-all min-h-[48px] cursor-pointer ${action.color}`}
             >
               <action.icon className="h-4 w-4" />
-              + {action.label}
+              {action.label.startsWith("Publicar") || action.label.startsWith("Enviar") ? action.label : `+ ${action.label}`}
             </button>
           ))}
         </div>
