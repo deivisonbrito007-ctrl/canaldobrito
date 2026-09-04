@@ -18,6 +18,7 @@ import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 import { trackShare, type ShareProps } from "@/lib/analytics";
 import { buildDayText, validateDay, safeCopy, offsetDateStr } from "@/lib/whatsappText";
 import { ABTemplateLab } from "@/components/admin/whatsapp/ABTemplateLab";
+import { ShareHistory } from "@/components/admin/whatsapp/ShareHistory";
 import { useShareLandingCounts } from "@/hooks/useShareLandingCounts";
 
 type DeepTab = PublicTab;
@@ -488,8 +489,9 @@ const AdminWhatsApp = () => {
                     ? "bg-primary/20 border-primary/40 text-primary"
                     : "border-white/[0.08] text-muted-foreground hover:text-foreground"
                 }`}
+                aria-pressed={linkTab === t}
               >
-                {t}
+                {t === "schedule" ? "Link: Programação" : "Link: Novidades"}
               </button>
             ))}
           </div>
@@ -551,6 +553,9 @@ const AdminWhatsApp = () => {
 
       {/* A/B Template Lab */}
       <ABTemplateLab />
+
+      {/* Histórico de envios */}
+      <ShareHistory />
     </div>
     </div>
   );
