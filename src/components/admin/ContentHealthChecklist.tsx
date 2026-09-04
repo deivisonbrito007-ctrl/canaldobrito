@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle2, AlertTriangle, XCircle, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DailyGame } from "@/hooks/useDailyGames";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useChannelMappings } from "@/hooks/useChannelMappings";
+import { resolveChannels, mappingHasLogo } from "@/lib/channelResolver";
+import { builtinLogoKey } from "@/components/public/ChannelBadge";
+import { isChannelFragment } from "@/components/public/channelLogos";
 
 type Level = "ok" | "warn" | "error";
 
@@ -34,6 +40,16 @@ const TONE: Record<Level, string> = {
 /** Checklist de saúde do conteúdo: o que falta para o site estar "redondo" hoje. */
 export const ContentHealthChecklist = ({ todayGames, tomorrowGames, banners, movies, series, news, isLoading }: Props) => {
   const navigate = useNavigate();
+  const { data: mappings } = useChannelMappings();
+  const { data: aliasRows } = useQuery({
+    queryKey: ["channel_aliases", "all-health"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("channel_aliases").select("mapping_id, alias, alias_normalized");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const items = useMemo<CheckItem[]>(() => {
     const now = Date.now();
@@ -53,6 +69,65 @@ export const ContentHealthChecklist = ({ todayGames, tomorrowGames, banners, mov
     if (noChannel.length > 0) {
       list.push({ id: "nochannel", level: "warn", label: `${noChannel.length} jogo${noChannel.length === 1 ? "" : "s"} de hoje sem canal`, route: "/admin/programacao" });
     }
+    // ---- Canais ----
+    const todayChannels = todayActive.flatMap((g) => (g.channels ?? []).filter((c) => c && !isChannelFragment(c)));
+    const resolvedToday = resolveChannels(todayChannels, mappings);
+    const unknownToday = resolvedToday.filter((r) => r.status === "unknown" && !builtinLogoKey(r.name));
+    const unregisteredToday = resolvedToday.filter((r) => r.status === "canonical" || (r.status === "unknown" && !!builtinLogoKey(r.name)));
+    if (unknownToday.length > 0) {
+      list.push({
+        id: "unknown-channels",
+        level: "warn",
+        label: `${unknownToday.length} canal${unknownToday.length === 1 ? "" : "is"} desconhecido${unknownToday.length === 1 ? "" : "s"} na programação de hoje`,
+        detail: unknownToday.map((r) => r.input).slice(0, 4).join(", "),
+        route: "/admin/canais-logos",
+      });
+    }
+    if (unregisteredToday.length > 0) {
+      list.push({
+        id: "unregistered-channels",
+        level: "warn",
+        label: `${unregisteredToday.length} cana${unregisteredToday.length === 1 ? "l" : "is"} de hoje sem cadastro (usando regra automática)`,
+        detail: unregisteredToday.map((r) => r.name).slice(0, 4).join(", "),
+        route: "/admin/canais-logos",
+      });
+    }
+    const noLogoToday = resolvedToday.filter((r) => r.mapping && !mappingHasLogo(r.mapping) && !builtinLogoKey(r.name));
+    if (noLogoToday.length > 0) {
+      list.push({
+        id: "nologo-channels",
+        level: "warn",
+        label: `${noLogoToday.length} cana${noLogoToday.length === 1 ? "l" : "is"} de hoje sem logo`,
+        detail: noLogoToday.map((r) => r.name).slice(0, 4).join(", "),
+        route: "/admin/canais-logos?filtro=sem-logo",
+      });
+    }
+    if (aliasRows && mappings) {
+      const byMappingName = new Map<string, string>();
+      for (const m of mappings.values()) byMappingName.set(m.name_normalized, m.id);
+      const seen = new Map<string, string>();
+      const dupes = new Set<string>();
+      for (const a of aliasRows) {
+        const ownerOfName = byMappingName.get(a.alias_normalized);
+        if (ownerOfName && ownerOfName !== a.mapping_id) dupes.add(a.alias);
+        const prev = seen.get(a.alias_normalized);
+        if (prev && prev !== a.mapping_id) dupes.add(a.alias);
+        seen.set(a.alias_normalized, a.mapping_id);
+      }
+      if (dupes.size > 0) {
+        list.push({
+          id: "alias-dupes",
+          level: "warn",
+          label: `${dupes.size} apelido${dupes.size === 1 ? "" : "s"} de canal em conflito`,
+          detail: [...dupes].slice(0, 4).join(", "),
+          route: "/admin/canais-logos?filtro=conflitos",
+        });
+      }
+    }
+    if (unknownToday.length === 0 && unregisteredToday.length === 0 && noLogoToday.length === 0 && todayChannels.length > 0) {
+      list.push({ id: "channels-ok", level: "ok", label: "Canais de hoje todos cadastrados e com logo" });
+    }
+
     const zeroTime = todayActive.filter((g) => !g.game_time || g.game_time.startsWith("00:00"));
     if (zeroTime.length > 0) {
       list.push({ id: "zerotime", level: "warn", label: `${zeroTime.length} jogo${zeroTime.length === 1 ? "" : "s"} com horário 00:00`, route: "/admin/programacao" });
@@ -97,7 +172,7 @@ export const ContentHealthChecklist = ({ todayGames, tomorrowGames, banners, mov
     }
 
     return list;
-  }, [todayGames, tomorrowGames, banners, movies, series, news]);
+  }, [todayGames, tomorrowGames, banners, movies, series, news, mappings, aliasRows]);
 
   const errors = items.filter((i) => i.level === "error").length;
   const warns = items.filter((i) => i.level === "warn").length;
