@@ -18,3 +18,5 @@
 - [x] Checklist do dashboard: canais desconhecidos, sem cadastro, sem logo, apelidos em conflito
 - [x] Seed de 23 canais + apelidos
 - [ ] Logo quebrada (URL externa) — só detectável no navegador; badge cai para iniciais automaticamente
+
+- [x] Programação pública: busca (time/competição/esporte/canal/alias), status "Em breve" = tudo por começar, ordem padrão por horário (Agora/Próximos/Mais tarde/Encerrados), chips de canal com logo, +N expansível nos cards, estados vazios e analytics de filtros.
