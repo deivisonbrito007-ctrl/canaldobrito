@@ -1739,8 +1739,111 @@ export const ProgramacaoTexto = () => {
             </div>
           </div>
 
+          {/* Checklist de revisão */}
+          <div className="px-4 sm:px-5 pt-4 space-y-3">
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3" aria-label="Checklist de revisão">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <ListChecks className="h-4 w-4 text-primary" aria-hidden />
+                <p className="text-xs font-bold text-foreground">Checklist de revisão</p>
+                {totalWarnings === 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Sem pendências — pode publicar direto
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-amber-400 font-semibold">
+                    {totalWarnings} alerta{totalWarnings !== 1 ? "s" : ""} em jogos selecionados — revise antes de publicar
+                  </span>
+                )}
+                <div className="ml-auto inline-flex rounded-lg border border-white/[0.1] overflow-hidden" role="tablist" aria-label="Modo da prévia">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={previewMode === "revisao"}
+                    onClick={() => setPreviewMode("revisao")}
+                    className={`px-2.5 h-8 text-[11px] font-semibold inline-flex items-center gap-1 ${previewMode === "revisao" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-white/[0.04]"}`}
+                  >
+                    <Pencil className="h-3 w-3" /> Revisar
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={previewMode === "publico"}
+                    onClick={() => setPreviewMode("publico")}
+                    className={`px-2.5 h-8 text-[11px] font-semibold inline-flex items-center gap-1 ${previewMode === "publico" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-white/[0.04]"}`}
+                  >
+                    <Eye className="h-3 w-3" /> Como no site
+                  </button>
+                </div>
+              </div>
+              {totalWarnings > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setWarningFilter(warningFilter === "any" ? null : "any")}
+                    aria-pressed={warningFilter === "any"}
+                    className={`text-[11px] px-2 h-7 rounded-md border font-semibold ${warningFilter === "any" ? "border-amber-400/60 bg-amber-500/15 text-amber-300" : "border-white/[0.1] text-foreground hover:bg-white/[0.04]"}`}
+                  >
+                    Só com alertas
+                  </button>
+                  {warningSummary.map((w) => (
+                    <button
+                      key={w.code}
+                      type="button"
+                      onClick={() => setWarningFilter(warningFilter === w.code ? null : w.code)}
+                      aria-pressed={warningFilter === w.code}
+                      className={`text-[11px] px-2 h-7 rounded-md border inline-flex items-center gap-1 ${
+                        warningFilter === w.code
+                          ? "border-amber-400/60 bg-amber-500/15 text-amber-300"
+                          : w.level === "error" ? "border-red-500/30 text-red-300 hover:bg-red-500/10" : "border-white/[0.1] text-foreground hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      {w.code.startsWith("dup") ? <Copy className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                      {w.label} <span className="text-muted-foreground">×{w.count}</span>
+                    </button>
+                  ))}
+                  {hasDupWarnings && (
+                    <Button size="sm" variant="outline" onClick={removeDuplicates} className="h-7 text-[11px] border-amber-500/30 text-amber-300 hover:bg-amber-500/10 ml-auto">
+                      <Trash2 className="h-3 w-3 mr-1" /> Remover duplicados
+                    </Button>
+                  )}
+                  {warningFilter && (
+                    <button type="button" onClick={() => setWarningFilter(null)} className="text-[11px] text-muted-foreground underline underline-offset-2 h-7 px-1">
+                      Limpar filtro
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Prévia pública: como os cards aparecem no site */}
+          {previewMode === "publico" && (
+            <div className="p-4 sm:p-5 space-y-5">
+              <p className="text-[11px] text-muted-foreground">Prévia dos jogos selecionados, com canais já normalizados, na mesma aparência da aba Programação do site.</p>
+              {sortedDates.map((date) => {
+                const group = gamesByDate[date];
+                const rows = group.games
+                  .map((g, li) => ({ g, idx: group.indices[li] }))
+                  .filter(({ g, idx }) => g.selected && gameMatchesFilter(idx))
+                  .sort((a, b) => (a.g.game_time || "").localeCompare(b.g.game_time || ""));
+                if (rows.length === 0) return null;
+                return (
+                  <div key={date}>
+                    <p className="text-xs font-bold text-foreground mb-3">📅 {formatDatePt(date)} — {rows.length} jogo{rows.length !== 1 ? "s" : ""}</p>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {rows.map(({ g, idx }, i) => (
+                        <GamePremiumCard key={idx} game={toDailyGame(g, idx)} index={i} showSport />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {selectedCount === 0 && <p className="text-xs text-muted-foreground">Nenhum jogo selecionado para pré-visualizar.</p>}
+            </div>
+          )}
+
           {/* Games grouped by date */}
-          <div className="p-4 sm:p-5 space-y-5">
+          <div className={`p-4 sm:p-5 space-y-5 ${previewMode === "publico" ? "hidden" : ""}`}>
             {sortedDates.map((date) => {
               const group = gamesByDate[date];
               const dateSelectedCount = group.games.filter((g) => g.selected).length;
