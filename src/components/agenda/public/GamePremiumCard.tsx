@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { DailyGame } from "@/hooks/useDailyGames";
-import { ChannelBadge } from "@/components/public/ChannelBadge";
+import { ChannelBadgeList } from "@/components/public/ChannelBadge";
 import {
   isGameCurrentlyLive,
   type SportType,
@@ -35,8 +35,10 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
 
   const statusLabel = live
     ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
-    : soon ? `EM ${formatCountdown(minutesUntil!).toUpperCase()}` : ended ? "ENCERRADO" : "EM BREVE";
-  const statusColor = live ? "#ff3b3b" : soon ? "#fbbf24" : ended ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.5)";
+    : soon
+      ? minutesUntil! < 1 ? "COMEÇANDO" : `COMEÇA EM ${formatCountdown(minutesUntil!).toUpperCase()}`
+      : ended ? "ENCERRADO" : "EM BREVE";
+  const statusColor = live ? "#ff3b3b" : soon ? "#fbbf24" : ended ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.6)";
 
   const aria = `${SPORT_LABEL[sport] ?? sport}: ${single ? game.home_team : `${game.home_team} contra ${game.away_team}`}${
     game.competition ? `, ${game.competition}` : ""
@@ -87,10 +89,10 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
             {time}
           </time>
           <p
-            className="text-[9.5px] uppercase tracking-wider mt-1 font-bold tabular-nums whitespace-nowrap flex items-center justify-center gap-1"
+            className="text-[9.5px] uppercase tracking-wider mt-1 font-bold tabular-nums leading-tight flex items-center justify-center gap-1 flex-wrap"
             style={{ color: statusColor }}
           >
-            {live && <span className="w-1.5 h-1.5 rounded-full bg-[#ff3b3b] motion-safe:animate-pulse" aria-hidden />}
+            {live && <span className="w-1.5 h-1.5 rounded-full bg-[#ff3b3b] motion-safe:animate-pulse shrink-0" aria-hidden />}
             {statusLabel}
           </p>
         </div>
@@ -119,20 +121,11 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
               {game.competition_detail ? <span className="text-white/40"> · {game.competition_detail}</span> : null}
             </p>
           )}
-          <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+          <div className="mt-2">
             {channels.length > 0 ? (
-              <>
-                {channels.slice(0, 3).map((ch, i) => (
-                  <ChannelBadge key={`${game.id}-ch-${i}`} name={ch} size="sm" />
-                ))}
-                {channels.length > 3 && (
-                  <span className="text-[10px] font-bold text-white/55 bg-white/[0.06] border border-white/10 rounded-md px-1.5 py-1">
-                    +{channels.length - 3}
-                  </span>
-                )}
-              </>
+              <ChannelBadgeList channels={channels} max={2} size="sm" />
             ) : (
-              <span className="text-[10px] uppercase tracking-wide text-white/45 px-2 py-1 rounded border border-white/10">
+              <span className="inline-block text-[10px] uppercase tracking-wide text-white/50 px-2 py-1 rounded border border-dashed border-white/15">
                 Canal a confirmar
               </span>
             )}

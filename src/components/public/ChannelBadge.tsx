@@ -4,6 +4,7 @@ import { withCacheBust } from "@/lib/cacheBust";
 import { LOGO_REGISTRY, normalizeChannelName, channelInitials, type LogoKey } from "./channelLogos";
 import { useChannelMappings, type ChannelMapping } from "@/hooks/useChannelMappings";
 import { resolveChannel, resolveChannels, mappingHasLogo } from "@/lib/channelResolver";
+import { track } from "@/lib/analytics";
 
 declare const __APP_VERSION__: string;
 
@@ -348,6 +349,26 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
 
 ChannelBadge.displayName = "ChannelBadge";
 
+/** Só a logo (ou iniciais) de um canal — para chips de filtro compactos. */
+export const ChannelMiniLogo = ({ name, size = "sm" }: { name: string; size?: BadgeSize }) => {
+  const { data: overrides } = useChannelMappings();
+  const resolved = resolveChannel(name, overrides);
+  const override = resolved.mapping;
+  const config = matchChannel(resolved.name, override?.logo_key, override?.short);
+  return (
+    <ChannelIcon
+      logoKey={config.logoKey}
+      emoji={config.emoji}
+      size={size}
+      alt=""
+      channelName={resolved.name}
+      customUrl={override?.custom_logo_url}
+      forceLightChip={override?.light_chip}
+      version={override?.updated_at}
+    />
+  );
+};
+
 interface ChannelBadgeListProps {
   channels: readonly string[] | null | undefined;
   /** Quantos mostrar antes do "+N" (padrão 2). */
@@ -392,6 +413,7 @@ export const ChannelBadgeList = React.forwardRef<HTMLDivElement, ChannelBadgeLis
             onClick={(e) => {
               e.stopPropagation();
               setExpanded(true);
+              track("agenda_channels_expand", { hidden, total: resolved.length });
             }}
             aria-label={`Mostrar mais ${hidden} canais: ${hiddenNames}`}
             aria-expanded={false}

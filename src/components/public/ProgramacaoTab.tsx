@@ -2,12 +2,13 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Radio, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Radio, Clock, SearchX } from "lucide-react";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { ContinueWatchingSection } from "@/components/public/ContinueWatchingSection";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import {
   type SportType,
+  SPORT_LABEL,
   getLocalDateString,
   getGameStatus,
   midnightInSaoPaulo,
@@ -16,7 +17,8 @@ import { gameKey } from "@/lib/dedup";
 import { offsetDateStr } from "@/lib/whatsappText";
 import { isValidDateParam } from "@/lib/agendaRedirect";
 import { useChannelMappings } from "@/hooks/useChannelMappings";
-import { resolveChannels } from "@/lib/channelResolver";
+import { resolveChannel, resolveChannels } from "@/lib/channelResolver";
+import { track } from "@/lib/analytics";
 
 import { LiveHeroCard } from "@/components/agenda/public/LiveHeroCard";
 import { SportFilterBar, type FilterValue } from "@/components/agenda/public/SportFilterBar";
@@ -61,7 +63,9 @@ function dedupGames(games: DailyGame[]): DailyGame[] {
 }
 
 const norm = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+const STATUS_RANK: Record<string, number> = { live: 0, soon: 1, upcoming: 2, ended: 3 };
 
 const ProgramacaoTab = () => {
   const [params, setParams] = useSearchParams();
@@ -71,13 +75,42 @@ const ProgramacaoTab = () => {
   const dateIsAllowed = rawDate ? rawDate === today || rawDate === tomorrow : true;
   const date = rawDate && dateIsAllowed ? rawDate : today;
 
-  const [filter, setFilter] = useState<FilterValue>("all");
+  const [filter, setFilterState] = useState<FilterValue>("all");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [sort, setSort] = useState<SortMode>(() =>
-    (typeof sessionStorage !== "undefined" && (sessionStorage.getItem("agenda:sort") as SortMode)) || "sport",
-  );
-  const [channel, setChannel] = useState<string | null>(null);
+  const [status, setStatusState] = useState<StatusFilter>("all");
+  const [sort, setSortState] = useState<SortMode>(() => {
+    try {
+      const saved = sessionStorage.getItem("agenda:sort");
+      return saved === "sport" || saved === "time" ? saved : "time";
+    } catch {
+      return "time";
+    }
+  });
+  const [channel, setChannelState] = useState<string | null>(null);
+
+  // Analytics simples (sem ranking público)
+  const setStatus = useCallback((v: StatusFilter) => {
+    setStatusState(v);
+    track("agenda_filter_status", { status: v });
+  }, []);
+  const setSort = useCallback((v: SortMode) => {
+    setSortState(v);
+    track("agenda_sort_change", { sort: v });
+  }, []);
+  const setChannel = useCallback((v: string | null) => {
+    setChannelState(v);
+    track("agenda_filter_channel", { channel: v ?? "all" });
+  }, []);
+  const setFilter = useCallback((v: FilterValue) => {
+    setFilterState(v);
+    track("agenda_filter_sport", { sport: v });
+  }, []);
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) return;
+    const id = setTimeout(() => track("agenda_search", { query_length: q.length }), 800);
+    return () => clearTimeout(id);
+  }, [search]);
 
   useEffect(() => {
     try { sessionStorage.setItem("agenda:sort", sort); } catch { /* noop */ }
@@ -126,24 +159,59 @@ const ProgramacaoTab = () => {
     [games, statusById],
   );
 
+  // "Em breve" = tudo que ainda vai começar (próximos primeiro)
+  const matchesStatus = useCallback(
+    (g: DailyGame, wanted: StatusFilter) => {
+      if (wanted === "all") return true;
+      const s = statusById.get(g.id);
+      if (wanted === "soon") return s === "soon" || s === "upcoming";
+      return s === wanted;
+    },
+    [statusById],
+  );
+
   const statusCounts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: games.length, live: 0, soon: 0, ended: 0 };
     for (const g of games) {
-      const s = statusById.get(g.id);
-      if (s === "live") c.live++;
-      else if (s === "soon") c.soon++;
-      else if (s === "ended") c.ended++;
+      if (matchesStatus(g, "live")) c.live++;
+      else if (matchesStatus(g, "soon")) c.soon++;
+      else if (matchesStatus(g, "ended")) c.ended++;
     }
     return c;
-  }, [games, statusById]);
+  }, [games, matchesStatus]);
 
   // Canais: agrupa pelo nome oficial (regra central), para ESPN2/ESPN 2 virarem um chip só
   const { data: channelMappings } = useChannelMappings();
-  const channelKeysById = useMemo(() => {
-    const m = new Map<string, Set<string>>();
-    for (const g of games) m.set(g.id, new Set(resolveChannels(g.channels, channelMappings).map((r) => r.key)));
+  // Aliases cadastrados por canal (para a busca achar "PFC" → Premiere)
+  const aliasKeysByMappingId = useMemo(() => {
+    const m = new Map<string, string[]>();
+    channelMappings?.forEach((mapping, key) => {
+      const arr = m.get(mapping.id) ?? [];
+      arr.push(key);
+      m.set(mapping.id, arr);
+    });
     return m;
-  }, [games, channelMappings]);
+  }, [channelMappings]);
+  const channelInfoById = useMemo(() => {
+    const m = new Map<string, { keys: Set<string>; text: string }>();
+    for (const g of games) {
+      const resolved = resolveChannels(g.channels, channelMappings);
+      const keys = new Set<string>();
+      const parts: string[] = [];
+      for (const r of resolved) {
+        if (r.key) keys.add(r.key);
+        parts.push(r.name, r.input, r.key);
+        if (r.mapping) {
+          for (const k of aliasKeysByMappingId.get(r.mapping.id) ?? []) {
+            keys.add(k);
+            parts.push(k);
+          }
+        }
+      }
+      m.set(g.id, { keys, text: norm(parts.filter(Boolean).join(" ")) });
+    }
+    return m;
+  }, [games, channelMappings, aliasKeysByMappingId]);
   const channelOptions = useMemo(() => {
     const counts = new Map<string, { name: string; count: number }>();
     for (const g of games) {
@@ -157,33 +225,52 @@ const ProgramacaoTab = () => {
     return [...counts.entries()]
       .map(([key, v]) => ({ key, ...v }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-      .slice(0, 12);
+      .slice(0, 14);
   }, [games, channelMappings]);
 
   // Pipeline de filtros: busca → status → canal → esporte
   const filtered = useMemo(() => {
-    const q = norm(search.trim());
+    const q = norm(search);
+    // Chave do canal buscado ("ESPN2" → espn2, "Sportv" → sportv, alias "PFC" → premiere)
+    const qChannelKey = q ? resolveChannel(search, channelMappings).key : "";
+    const qCompact = q.replace(/[^a-z0-9+]/g, "");
     return games.filter((g) => {
-      if (status !== "all" && statusById.get(g.id) !== status) return false;
-      if (channel) {
-        const has = channelKeysById.get(g.id)?.has(channel) ?? false;
-        if (!has) return false;
-      }
+      if (!matchesStatus(g, status)) return false;
+      const info = channelInfoById.get(g.id);
+      if (channel && !(info?.keys.has(channel) ?? false)) return false;
       if (q) {
+        const sport = detectedSport(g);
         const hay = norm(
-          [g.home_team, g.away_team, g.competition, g.competition_detail, ...(g.channels ?? [])]
+          [g.home_team, g.away_team, g.competition, g.competition_detail, SPORT_LABEL[sport], sport]
             .filter(Boolean)
             .join(" "),
         );
-        if (!hay.includes(q)) return false;
+        if (hay.includes(q)) return true;
+        if (!info) return false;
+        if (qChannelKey && info.keys.has(qChannelKey)) return true;
+        if (info.text.includes(q)) return true;
+        if (qCompact.length >= 2 && [...info.keys].some((k) => k.includes(qCompact))) return true;
+        return false;
       }
       return true;
     });
-  }, [games, search, status, channel, statusById, channelKeysById]);
+  }, [games, search, status, channel, matchesStatus, channelInfoById, channelMappings]);
 
-  const grouped = useMemo(() => groupBySport(filtered), [filtered]);
+  const grouped = useMemo(() => {
+    const out = groupBySport(filtered);
+    // Ao vivo primeiro; depois cronológico (encerrados por último)
+    for (const arr of Object.values(out)) {
+      arr.sort((a, b) => {
+        const ra = STATUS_RANK[statusById.get(a.id) ?? "upcoming"];
+        const rb = STATUS_RANK[statusById.get(b.id) ?? "upcoming"];
+        if (ra !== rb) return ra - rb;
+        return a.game_time.localeCompare(b.game_time);
+      });
+    }
+    return out;
+  }, [filtered, statusById]);
 
-  const allHighlights = useMemo(() => curateHighlights(games, 8), [games]);
+  const allHighlights = useMemo(() => curateHighlights(games, 6), [games]);
   const highlights = useMemo(() => {
     if (filter === "all" || filter === "live") return allHighlights;
     return allHighlights.filter((h) => detectedSport(h.game) === filter);
@@ -212,10 +299,10 @@ const ProgramacaoTab = () => {
   })();
 
   const resetFilters = useCallback(() => {
-    setFilter("all");
+    setFilterState("all");
     setSearch("");
-    setStatus("all");
-    setChannel(null);
+    setStatusState("all");
+    setChannelState(null);
   }, []);
 
   const goToDate = (newDate: string) => {
@@ -257,6 +344,8 @@ const ProgramacaoTab = () => {
 
   const hasActiveFilters = !!search || status !== "all" || !!channel || filter !== "all";
   const nothingMatches = !isLoading && total > 0 && visibleGames.length === 0;
+  // Com filtros ativos, o carrossel sai do caminho para a lista aparecer logo
+  const showHighlights = !hasActiveFilters && highlights.length > 0;
 
   return (
     <div className="mx-auto w-full max-w-[460px] md:max-w-[1100px] px-4 md:px-6 pt-4 pb-6 text-white">
@@ -316,6 +405,8 @@ const ProgramacaoTab = () => {
 
       {!isLoading && total === 0 && (
         <EmptyDayState
+          isToday={isToday}
+          tomorrowCount={tomorrowCount}
           onSeeTomorrow={isToday && tomorrowCount > 0 ? () => goToDate(tomorrow) : undefined}
         />
       )}
@@ -369,7 +460,7 @@ const ProgramacaoTab = () => {
               )}
             </div>
             <div className="min-w-0">
-              {highlights.length > 0 && <HighlightsCarousel highlights={highlights} />}
+              {showHighlights && <HighlightsCarousel highlights={highlights} />}
             </div>
           </div>
 
@@ -386,7 +477,7 @@ const ProgramacaoTab = () => {
             onChannel={setChannel}
           />
 
-          {sportsSorted.length > 0 && sort === "sport" && (
+          {(sportsSorted.length > 1 || filter !== "all") && (
             <SportFilterBar
               active={filter}
               onChange={handleSportFilter}
@@ -401,21 +492,28 @@ const ProgramacaoTab = () => {
             ? visibleSports.map((sport) => (
                 <SportSection key={sport} sport={sport} games={grouped[sport] ?? []} />
               ))
-            : <TimeSection games={visibleGames} />}
+            : <TimeSection games={visibleGames} statusById={isToday ? statusById : undefined} />}
 
           {nothingMatches && (
-            <div className="text-center py-12">
-              <p className="text-white/70 text-sm font-medium">
+            <div
+              className="text-center py-12 px-4 rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.02] md:max-w-[560px] md:mx-auto"
+              role="status"
+            >
+              <SearchX className="w-8 h-8 mx-auto mb-3 text-white/45" aria-hidden />
+              <p className="text-white/85 text-[15px] font-semibold">Nenhum jogo encontrado para esse filtro.</p>
+              <p className="text-white/55 text-[12.5px] mt-1">
                 {status === "live"
-                  ? "Nenhum jogo ao vivo no momento."
+                  ? "Nenhum jogo ao vivo neste momento."
                   : status === "soon"
-                    ? "Nenhum jogo começando na próxima hora."
-                    : "Nenhum jogo encontrado com esses filtros."}
+                    ? "Nenhum jogo ainda por começar hoje."
+                    : status === "ended"
+                      ? "Nenhum jogo encerrado até agora."
+                      : "Tente outro termo, canal ou esporte."}
               </p>
               {hasActiveFilters && (
                 <button
                   onClick={resetFilters}
-                  className="mt-3 min-h-11 px-4 rounded-full text-[#00ff87] text-sm font-semibold border border-[#00ff87]/30 hover:bg-[#00ff87]/10"
+                  className="mt-4 min-h-11 px-5 rounded-full bg-[#00ff87] text-[#07080a] text-sm font-bold active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                 >
                   Limpar filtros
                 </button>
@@ -423,7 +521,7 @@ const ProgramacaoTab = () => {
             </div>
           )}
 
-          <p className="text-center text-[11px] text-white/35 mt-2 mb-4">
+          <p className="text-center text-[11px] text-white/45 mt-4 mb-4">
             Todos os horários no Horário de Brasília (GMT-3)
           </p>
 

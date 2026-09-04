@@ -46,7 +46,7 @@ export const SportFilterBar = ({
     <div
       className="-mx-4 px-4 mb-5 overflow-x-auto scrollbar-none"
       style={{ scrollbarWidth: "none" }}
-      role="tablist"
+      role="toolbar"
       aria-label="Filtrar por esporte"
     >
       <div className="flex gap-2 min-w-min">
@@ -55,10 +55,11 @@ export const SportFilterBar = ({
           return (
             <button
               key={c.value}
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => onChange(c.value)}
-              className="relative shrink-0 h-10 px-3.5 inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold transition active:scale-95"
+              type="button"
+              aria-pressed={isActive}
+              aria-label={`${c.label}, ${c.count} ${c.count === 1 ? "jogo" : "jogos"}`}
+              onClick={() => onChange(isActive && c.value !== "all" ? "all" : c.value)}
+              className="relative shrink-0 h-11 px-3.5 inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/60"
               style={{
                 color: isActive ? "#07080a" : "#fff",
                 background: isActive ? "transparent" : "rgba(255,255,255,0.05)",
