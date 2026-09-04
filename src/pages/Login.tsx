@@ -1,3 +1,4 @@
+import { friendlyAuthError } from "@/lib/authErrors";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Navigate, Link, useLocation } from "react-router-dom";
@@ -27,8 +28,8 @@ const Login = () => {
     try {
       await signIn(email.trim(), password);
       navigate(redirectTo, { replace: true });
-    } catch (err: any) {
-      setError(err?.message || "Erro ao fazer login");
+    } catch (err: unknown) {
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }

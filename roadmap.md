@@ -1,6 +1,6 @@
 # Roadmap — Refino geral Canal do Brito
 
-- [ ] Fase 1 — Menu/rotas: Banners→Programação, redirects, 404 admin, login modal
+- [x] Fase 1 — Menu/rotas: Banners→Programação, redirects, 404 admin, login modal
 - [ ] Fase 2 — Programação pública: busca, chips status/esporte/canal, ordenação, desktop grid, Horário de Brasília
 - [ ] Fase 3 — Canais/Logos: type + primary_color, mesclar, canal desconhecido no import
 - [ ] Fase 4 — Revisão antes de publicar, arquivados paginados, Filmes/Séries público + admin, Novidades agenda
