@@ -75,7 +75,7 @@ beforeEach(() => {
   mocks.storageUpload.mockResolvedValue({ error: null });
 });
 
-const switchToCategories = () => fireEvent.click(screen.getByText("📁 Categorias"));
+const switchToCategories = () => fireEvent.click(screen.getByText("🖼️ Banners de imagem"));
 
 describe("AdminProgramacao — sections & categories", () => {
   it("renders section tabs with role tablist", () => {

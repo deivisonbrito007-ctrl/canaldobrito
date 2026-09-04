@@ -54,7 +54,7 @@ describe("AdminWhatsApp", () => {
     act(() => { vi.advanceTimersByTime(100); });
     expect(screen.getByText("Mensagem Personalizada")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Digite sua mensagem/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "schedule" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Link: Programação" })).toBeInTheDocument();
   });
 
   it("renders day chips: Hoje, Amanhã, +2 dias", () => {
