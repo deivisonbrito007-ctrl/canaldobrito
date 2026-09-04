@@ -1053,6 +1053,7 @@ const AdminCanaisLogos = () => {
             <AlertDialogTitle>
               {confirm?.kind === "delete-mapping" && `Remover "${confirm.name}"?`}
               {confirm?.kind === "bulk-silence" && `Silenciar ${confirm.count} canais?`}
+              {confirm?.kind === "merge" && `Mesclar "${confirm.sourceName}" em "${confirm.targetName}"?`}
               {confirm?.kind === "bulk-autolink" &&
                 `Vincular ${confirm.pairs.length} canal${confirm.pairs.length > 1 ? "is" : ""} como alias?`}
               {confirm?.kind === "undo-autolink" &&
@@ -1065,6 +1066,12 @@ const AdminCanaisLogos = () => {
                 )}
                 {confirm?.kind === "bulk-silence" && (
                   <p>Cria um mapeamento sem logo para cada canal detectado, removendo o alerta amarelo. Você pode editar depois.</p>
+                )}
+                {confirm?.kind === "merge" && (
+                  <p>
+                    Os apelidos de <b>{confirm.sourceName}</b> passam para <b>{confirm.targetName}</b>, os jogos publicados
+                    com o nome antigo são corrigidos e o cadastro duplicado é removido. Esta ação não pode ser desfeita.
+                  </p>
                 )}
                 {confirm?.kind === "bulk-autolink" && (
                   <>
@@ -1134,6 +1141,8 @@ const AdminCanaisLogos = () => {
                   if (open) setOpen(false);
                 } else if (confirm?.kind === "bulk-silence") {
                   bulkSilence.mutate(discovered.orphans);
+                } else if (confirm?.kind === "merge") {
+                  mergeInto.mutate({ sourceId: confirm.sourceId, targetId: confirm.targetId });
                 } else if (confirm?.kind === "bulk-autolink") {
                   linkAsAlias.mutate(confirm.pairs);
                 } else if (confirm?.kind === "undo-autolink") {
