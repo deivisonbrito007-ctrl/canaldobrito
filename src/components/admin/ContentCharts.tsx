@@ -3,7 +3,7 @@ import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const COLORS = {
+const _COLORS = {
   banners: "#34d399",
   filmes: "#60a5fa",
   series: "#a78bfa",
