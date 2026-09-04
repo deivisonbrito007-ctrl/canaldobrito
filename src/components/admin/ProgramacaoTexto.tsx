@@ -1961,16 +1961,29 @@ export const ProgramacaoTexto = () => {
                                     ))}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0">
                                 <button
+                                  type="button"
                                   onClick={() => setEditingIdx(globalIdx)}
-                                  className="p-1 rounded hover:bg-white/[0.06] text-muted-foreground"
+                                  aria-label="Editar jogo"
+                                  title="Editar jogo"
+                                  className="p-1.5 rounded hover:bg-white/[0.06] text-muted-foreground"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeGame(globalIdx)}
+                                  aria-label="Remover da lista"
+                                  title="Remover da lista"
+                                  className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                                 <Switch
                                   checked={game.selected}
                                   onCheckedChange={() => toggleGame(globalIdx)}
+                                  aria-label="Incluir na publicação"
                                 />
                               </div>
                             </div>
