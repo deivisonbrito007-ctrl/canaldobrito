@@ -957,6 +957,7 @@ function generateWhatsAppSummary(games: ParsedGame[]): string {
 }
 
 export const ProgramacaoTexto = () => {
+  const { data: channelMappings } = useChannelMappings();
   const today = getLocalDateString();
   const [text, setText] = useState("");
   const [selectedDate, setSelectedDate] = useState(today);
@@ -1353,7 +1354,6 @@ export const ProgramacaoTexto = () => {
   const sortedDates = Object.keys(gamesByDate).sort();
 
   // Contexto de validação (canais conhecidos, duplicados)
-  const { data: channelMappings } = useChannelMappings();
   const warningCtx = useMemo<WarningCtx>(() => {
     const counts = new Map<string, number>();
     for (const g of parsed) {
