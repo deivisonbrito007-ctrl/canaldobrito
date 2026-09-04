@@ -1863,15 +1863,18 @@ export const ProgramacaoTexto = () => {
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {group.games.map((game, localIdx) => {
                       const globalIdx = group.indices[localIdx];
+                      if (!gameMatchesFilter(globalIdx)) return null;
                       const warnings = warningsByIdx[globalIdx] ?? [];
+                      const hasBlocking = warnings.some((w) => w.level !== "info");
                       const resolvedSport = game.sport_type || detectSportType(game.competition, `${game.home_team} ${game.away_team}`);
                       const sportEmoji = SPORT_EMOJI[resolvedSport] || '⚽';
+                      const hasVsWarning = warnings.some((w) => w.code === "vs");
                       return (
                         <div
                           key={globalIdx}
                           className={`rounded-xl glass-panel p-3 space-y-2 transition-all duration-200 ${
                             !game.selected ? "opacity-40" : ""
-                          } ${warnings.length > 0 ? "ring-1 ring-amber-500/30" : ""}`}
+                          } ${hasBlocking ? "ring-1 ring-amber-500/30" : ""}`}
                         >
                           {editingIdx === globalIdx ? (
                             <EditGameForm
@@ -1887,10 +1890,38 @@ export const ProgramacaoTexto = () => {
                                     ? `${game.home_team} x ${game.away_team}`
                                     : game.home_team}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  ⏰ {game.game_time} • {game.competition}
-                                  {game.competition_detail ? ` · ${game.competition_detail}` : ""}
-                                </p>
+                                {/* Correções rápidas: horário e competição direto no card */}
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <label className="sr-only" htmlFor={`qt-${globalIdx}`}>Horário</label>
+                                  <input
+                                    id={`qt-${globalIdx}`}
+                                    type="time"
+                                    value={game.game_time}
+                                    onChange={(e) => updateGame(globalIdx, { game_time: e.target.value })}
+                                    className={`h-7 w-[84px] text-[11px] font-semibold tabular-nums rounded-md border bg-secondary/50 px-1.5 text-foreground ${!game.game_time ? "border-red-500/50" : "border-white/[0.1]"}`}
+                                  />
+                                  <label className="sr-only" htmlFor={`qc-${globalIdx}`}>Competição</label>
+                                  <input
+                                    id={`qc-${globalIdx}`}
+                                    type="text"
+                                    value={game.competition}
+                                    placeholder="Competição"
+                                    onChange={(e) => updateGame(globalIdx, { competition: e.target.value })}
+                                    className={`h-7 flex-1 min-w-0 text-[11px] rounded-md border bg-secondary/50 px-1.5 text-foreground placeholder:text-muted-foreground/60 ${!game.competition ? "border-amber-500/50" : "border-white/[0.1]"}`}
+                                  />
+                                </div>
+                                {game.competition_detail && (
+                                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">· {game.competition_detail}</p>
+                                )}
+                                {hasVsWarning && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateGame(globalIdx, { home_team: `${game.home_team} — ${game.away_team}`, away_team: "" })}
+                                    className="mt-1 text-[10px] font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200"
+                                  >
+                                    Juntar como evento único (sem "x")
+                                  </button>
+                                )}
                                 <p className="text-[11px] text-muted-foreground/60">
                                   📺 {game.channels.join(", ") || "—"}
                                 </p>
