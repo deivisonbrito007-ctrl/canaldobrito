@@ -136,19 +136,22 @@ const ProgramacaoTab = () => {
     return c;
   }, [games, statusById]);
 
+  // Canais: agrupa por chave normalizada, exibe o primeiro nome visto
   const channelOptions = useMemo(() => {
-    const counts = new Map<string, number>();
+    const counts = new Map<string, { name: string; count: number }>();
     for (const g of games) {
       const seen = new Set<string>();
       for (const ch of g.channels ?? []) {
-        const label = normalizeChannelName(ch) || ch.trim();
-        if (!label || seen.has(label)) continue;
-        seen.add(label);
-        counts.set(label, (counts.get(label) ?? 0) + 1);
+        const key = normalizeChannelName(ch);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        const cur = counts.get(key);
+        if (cur) cur.count++;
+        else counts.set(key, { name: ch.replace(/\s+/g, " ").trim(), count: 1 });
       }
     }
     return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
+      .map(([key, v]) => ({ key, ...v }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .slice(0, 12);
   }, [games]);
@@ -159,7 +162,7 @@ const ProgramacaoTab = () => {
     return games.filter((g) => {
       if (status !== "all" && statusById.get(g.id) !== status) return false;
       if (channel) {
-        const has = (g.channels ?? []).some((ch) => (normalizeChannelName(ch) || ch.trim()) === channel);
+        const has = (g.channels ?? []).some((ch) => normalizeChannelName(ch) === channel);
         if (!has) return false;
       }
       if (q) {
@@ -374,7 +377,7 @@ const ProgramacaoTab = () => {
             statusCounts={statusCounts}
             sort={sort}
             onSort={setSort}
-            channels={channelOptions}
+            channels={channelOptions.map((c) => ({ name: c.name, count: c.count, key: c.key }))}
             channel={channel}
             onChannel={setChannel}
           />

@@ -11,7 +11,7 @@ interface Props {
   statusCounts: Record<StatusFilter, number>;
   sort: SortMode;
   onSort: (v: SortMode) => void;
-  channels: { name: string; count: number }[];
+  channels: { key: string; name: string; count: number }[];
   channel: string | null;
   onChannel: (v: string | null) => void;
 }
@@ -157,12 +157,12 @@ export const ScheduleToolbar = ({
             Todos
           </button>
           {channels.map((ch) => {
-            const active = channel === ch.name;
+            const active = channel === ch.key;
             return (
               <button
-                key={ch.name}
+                key={ch.key}
                 type="button"
-                onClick={() => onChannel(active ? null : ch.name)}
+                onClick={() => onChannel(active ? null : ch.key)}
                 aria-pressed={active}
                 className={`${chipBase} h-9 text-[12px]`}
                 style={{
