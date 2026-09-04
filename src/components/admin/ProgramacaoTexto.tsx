@@ -17,8 +17,9 @@ import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useInsertDailyGames, useDeleteDailyGamesByDate, fetchExistingGameKeys } from "@/hooks/useDailyGames";
-import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy, Wand2 } from "lucide-react";
+import { useInsertDailyGames, useDeleteDailyGamesByDate, fetchExistingGameKeys, type DailyGame } from "@/hooks/useDailyGames";
+import { GamePremiumCard } from "@/components/agenda/public/GamePremiumCard";
+import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy, Wand2, Eye, ListChecks, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
