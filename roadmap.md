@@ -8,4 +8,4 @@
 - [x] Fase 6 — Dashboard: gráfico único, checklist saúde, ações rápidas
 - [x] Fase 7 — Analytics: CTR, funil
 - [x] Fase 8 — Auditoria triggers + filtros, Segurança last scan
-- [ ] Fase 9 — Acessibilidade/responsividade + testes
+- [x] Fase 9 — Acessibilidade/responsividade + testes (suite verde; checagem visual mobile/desktop)
