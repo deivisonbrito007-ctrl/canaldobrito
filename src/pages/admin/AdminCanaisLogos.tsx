@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { mappingHasLogo } from "@/lib/channelResolver";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -74,7 +76,18 @@ type FormState = {
   light_chip: boolean;
   channel_type: ChannelType;
   primary_color: string;
+  /** Apelidos iniciais (só no cadastro novo), separados por vírgula. */
+  initial_aliases: string;
 };
+
+export type ChannelStatusFilter = "todos" | "sem-logo" | "com-logo" | "conflitos" | "inativos";
+const STATUS_FILTERS: Array<{ value: ChannelStatusFilter; label: string }> = [
+  { value: "todos", label: "Todos" },
+  { value: "sem-logo", label: "Sem logo" },
+  { value: "com-logo", label: "Com logo" },
+  { value: "conflitos", label: "Conflitos" },
+  { value: "inativos", label: "Inativos" },
+];
 
 const EMPTY_FORM: FormState = {
   name: "",
@@ -85,6 +98,7 @@ const EMPTY_FORM: FormState = {
   light_chip: false,
   channel_type: "outro",
   primary_color: "",
+  initial_aliases: "",
 };
 
 /** Sugere o tipo do canal a partir do nome. */
@@ -123,6 +137,8 @@ const AdminCanaisLogos = () => {
   const [previewChannel, setPreviewChannel] = useState("");
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [mergeTarget, setMergeTarget] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<ChannelStatusFilter>("todos");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -143,6 +159,56 @@ const AdminCanaisLogos = () => {
   });
 
   const discovered = useDiscoveredChannels();
+
+  const { data: allAliases } = useQuery({
+    queryKey: [...CHANNEL_ALIASES_QK, "all-admin"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("channel_aliases")
+        .select("id, mapping_id, alias, alias_normalized");
+      if (error) throw error;
+      return (data ?? []) as ChannelAlias[];
+    },
+  });
+
+  /** Apelidos por canal + conjunto de canais com alias em conflito. */
+  const aliasInfo = useMemo(() => {
+    const byMapping = new Map<string, string[]>();
+    const conflicts = new Set<string>();
+    const nameOwner = new Map<string, string>();
+    for (const r of rows ?? []) nameOwner.set(r.name_normalized, r.id);
+    const seen = new Map<string, string>();
+    for (const a of allAliases ?? []) {
+      const list = byMapping.get(a.mapping_id) ?? [];
+      list.push(a.alias);
+      byMapping.set(a.mapping_id, list);
+      const owner = nameOwner.get(a.alias_normalized);
+      if (owner && owner !== a.mapping_id) { conflicts.add(owner); conflicts.add(a.mapping_id); }
+      const prev = seen.get(a.alias_normalized);
+      if (prev && prev !== a.mapping_id) { conflicts.add(prev); conflicts.add(a.mapping_id); }
+      seen.set(a.alias_normalized, a.mapping_id);
+    }
+    return { byMapping, conflicts };
+  }, [allAliases, rows]);
+
+  // Deep-links: ?novo=Nome abre o cadastro; ?filtro=sem-logo|conflitos|... aplica filtro.
+  useEffect(() => {
+    const novo = searchParams.get("novo");
+    const filtro = searchParams.get("filtro") as ChannelStatusFilter | null;
+    if (filtro && STATUS_FILTERS.some((f) => f.value === filtro)) {
+      setStatusFilter(filtro);
+      setTab("custom");
+    }
+    if (novo) {
+      setForm({ ...EMPTY_FORM, name: novo, channel_type: guessChannelType(novo) });
+      setLogoTab("upload");
+      setOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("novo");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const upsert = useMutation({
     mutationFn: async (f: FormState) => {
@@ -179,10 +245,32 @@ const AdminCanaisLogos = () => {
         const { error } = await supabase.from("channel_logo_mappings").update(payload).eq("id", f.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data: created, error } = await supabase
           .from("channel_logo_mappings")
-          .upsert(payload, { onConflict: "name_normalized" });
+          .upsert(payload, { onConflict: "name_normalized" })
+          .select("id")
+          .single();
         if (error) throw error;
+        const aliases = f.initial_aliases
+          .split(",")
+          .map((a) => a.trim())
+          .filter((a) => a && normalizeChannelName(a) && normalizeChannelName(a) !== nameNorm);
+        if (created?.id && aliases.length) {
+          const uniq = new Map<string, string>();
+          for (const a of aliases) uniq.set(normalizeChannelName(a), a);
+          const skipped: string[] = [];
+          const toInsert: Array<{ mapping_id: string; alias: string; alias_normalized: string }> = [];
+          for (const [norm, alias] of uniq) {
+            const { data: coll } = await supabase.rpc("check_alias_collision", { _alias: alias, _exclude_mapping_id: created.id });
+            if ((coll ?? []).length) skipped.push(alias);
+            else toInsert.push({ mapping_id: created.id, alias, alias_normalized: norm });
+          }
+          if (toInsert.length) {
+            const { error: aErr } = await supabase.from("channel_aliases").insert(toInsert);
+            if (aErr) throw aErr;
+          }
+          if (skipped.length) toast.warning(`Apelidos ignorados por conflito: ${skipped.join(", ")}`);
+        }
       }
     },
     onSuccess: () => {
@@ -190,6 +278,7 @@ const AdminCanaisLogos = () => {
       qc.invalidateQueries({ queryKey: ["channel_logo_mappings_admin"] });
       qc.invalidateQueries({ queryKey: CHANNEL_MAPPINGS_QK, refetchType: "active" });
       qc.invalidateQueries({ queryKey: ["discovered-channels"] });
+      qc.invalidateQueries({ queryKey: CHANNEL_ALIASES_QK });
       setForm(EMPTY_FORM);
     },
     onError: (e: any) => {
@@ -464,6 +553,7 @@ const AdminCanaisLogos = () => {
       light_chip: !!r.light_chip,
       channel_type: (r.channel_type as ChannelType) ?? "outro",
       primary_color: r.primary_color ?? "",
+      initial_aliases: "",
     });
     setLogoTab(r.custom_logo_url ? "upload" : "registry");
     setOpen(true);
@@ -491,15 +581,25 @@ const AdminCanaisLogos = () => {
     if (tab === "orphans") return filterByQuery(discovered.orphans);
     if (tab === "all") return filterByQuery(discovered.all.filter((i) => !i.isOrphan));
     if (tab === "custom") {
-      const list: DiscoveredChannel[] = (rows ?? []).map((r) => ({
-        name: r.name,
-        normalized: r.name_normalized,
-        count: discovered.all.find((d) => d.normalized === r.name_normalized)?.count ?? 0,
-        mapping: r,
-        isBuiltin: false,
-        isOrphan: false,
-      }));
-      return filterByQuery(list);
+      const list: DiscoveredChannel[] = (rows ?? [])
+        .filter((r) => {
+          if (statusFilter === "sem-logo") return !mappingHasLogo(r);
+          if (statusFilter === "com-logo") return mappingHasLogo(r);
+          if (statusFilter === "conflitos") return aliasInfo.conflicts.has(r.id);
+          if (statusFilter === "inativos") return !r.active;
+          return true;
+        })
+        .map((r) => ({
+          name: r.name,
+          normalized: r.name_normalized,
+          count: discovered.all.find((d) => d.normalized === r.name_normalized)?.count ?? 0,
+          mapping: r,
+          isBuiltin: false,
+          isOrphan: false,
+        }));
+      if (!q) return list;
+      // Busca por nome OU apelido
+      return list.filter((i) => matches(i.name) || (aliasInfo.byMapping.get(i.mapping!.id) ?? []).some(matches));
     }
     return filterByQuery(
       builtinList.map<DiscoveredChannel>((b) => ({
@@ -510,7 +610,7 @@ const AdminCanaisLogos = () => {
         isOrphan: false,
       }))
     );
-  }, [tab, search, discovered, rows, builtinList]);
+  }, [tab, search, discovered, rows, builtinList, statusFilter, aliasInfo]);
 
   const coverage = discovered.coverage ?? 100;
   const topOrphans = discovered.topOrphans ?? [];
@@ -665,7 +765,14 @@ const AdminCanaisLogos = () => {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="all">Com logo</TabsTrigger>
-                <TabsTrigger value="custom">Personalizados</TabsTrigger>
+                <TabsTrigger value="custom" className="gap-2">
+                  Cadastrados
+                  {aliasInfo.conflicts.size > 0 && (
+                    <span className="rounded-full bg-rose-500/30 text-rose-200 text-[10px] font-bold px-1.5" title="Canais com apelido em conflito">
+                      {aliasInfo.conflicts.size}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="builtin">Built-in</TabsTrigger>
               </TabsList>
             </div>
@@ -674,11 +781,41 @@ const AdminCanaisLogos = () => {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar canal…"
+                placeholder={tab === "custom" ? "Buscar por nome ou apelido…" : "Buscar canal…"}
                 className="pl-9 h-10"
                 aria-label="Buscar canal"
               />
             </div>
+            {tab === "custom" && (
+              <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5" role="radiogroup" aria-label="Filtrar canais cadastrados">
+                {STATUS_FILTERS.map((f) => {
+                  const active = statusFilter === f.value;
+                  const count =
+                    f.value === "todos" ? rows?.length ?? 0 :
+                    f.value === "sem-logo" ? (rows ?? []).filter((r) => !mappingHasLogo(r)).length :
+                    f.value === "com-logo" ? (rows ?? []).filter((r) => mappingHasLogo(r)).length :
+                    f.value === "conflitos" ? aliasInfo.conflicts.size :
+                    (rows ?? []).filter((r) => !r.active).length;
+                  return (
+                    <button
+                      key={f.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setStatusFilter(f.value)}
+                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 min-h-9 text-xs font-semibold transition-colors ${
+                        active
+                          ? "border-primary/60 bg-primary/15 text-primary"
+                          : "border-border/50 bg-card/30 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.label}
+                      <span className="text-[10px] opacity-70 tabular-nums">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <TabsContent value={tab} className="mt-4">
@@ -758,6 +895,8 @@ const AdminCanaisLogos = () => {
                           key={c.mapping.id}
                           id={c.mapping.id}
                           channel={c}
+                          aliases={aliasInfo.byMapping.get(c.mapping.id) ?? []}
+                          conflict={aliasInfo.conflicts.has(c.mapping.id)}
                           onEdit={() => openEdit(c.mapping!)}
                           onDelete={() =>
                             setConfirm({
@@ -966,9 +1105,22 @@ const AdminCanaisLogos = () => {
               />
             </div>
 
-            {form.id && (
+            {form.id ? (
               <div className="rounded-md border border-border/40 bg-card/40 p-3">
                 <ChannelAliasesEditor mappingId={form.id} />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="ch-aliases">Apelidos (separados por vírgula)</Label>
+                <Input
+                  id="ch-aliases"
+                  value={form.initial_aliases}
+                  onChange={(e) => setForm((f) => ({ ...f, initial_aliases: e.target.value }))}
+                  placeholder="Ex: ESPN2, Espn 2, ESPN 2 HD"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Qualquer um desses nomes na programação vira o nome oficial acima.
+                </p>
               </div>
             )}
 
@@ -1308,12 +1460,16 @@ const ChannelCard = ({
 const SortableChannelRow = ({
   id,
   channel,
+  aliases = [],
+  conflict = false,
   onEdit,
   onDelete,
   onPreview,
 }: {
   id: string;
   channel: DiscoveredChannel;
+  aliases?: string[];
+  conflict?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onPreview: () => void;
@@ -1342,9 +1498,28 @@ const SortableChannelRow = ({
       </button>
       <ChannelBadge name={channel.name} size="md" />
       <div className="min-w-0 flex-1">
-        <div className="font-semibold text-sm truncate">{channel.name}</div>
-        <div className="text-[10px] text-muted-foreground flex gap-2">
+        <div className="font-semibold text-sm truncate flex items-center gap-1.5">
+          {m?.primary_color && (
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-white/20 shrink-0"
+              style={{ backgroundColor: m.primary_color }}
+              aria-label={`Cor ${m.primary_color}`}
+            />
+          )}
+          <span className="truncate">{channel.name}</span>
+        </div>
+        <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-0.5">
+          {m?.channel_type && (
+            <span>{CHANNEL_TYPES.find((t) => t.value === m.channel_type)?.label ?? m.channel_type}</span>
+          )}
           {channel.count > 0 && <span>{channel.count} jogo{channel.count > 1 ? "s" : ""}</span>}
+          {aliases.length > 0 && (
+            <span className="truncate max-w-[220px]" title={aliases.join(", ")}>
+              {aliases.length} apelido{aliases.length > 1 ? "s" : ""}: {aliases.join(", ")}
+            </span>
+          )}
+          {m && !mappingHasLogo(m) && <span className="text-amber-300">Sem logo</span>}
+          {conflict && <span className="text-rose-300 font-semibold">Apelido em conflito</span>}
           {m && !m.active && <span className="text-amber-300">Inativo</span>}
         </div>
       </div>
