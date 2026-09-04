@@ -32,13 +32,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Calendar, Image, Film, Clapperboard, Sparkles, Trophy,
-  FileText, AlertCircle, RefreshCw, MessageCircle, Settings, AlertTriangle,
+  FileText, AlertCircle, RefreshCw, MessageCircle, Settings,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { UpcomingActivations } from "@/components/admin/UpcomingActivations";
 import { ContentHealthBar } from "@/components/admin/ContentHealthBar";
-import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { ContentCharts } from "@/components/admin/ContentCharts";
 import { ContentHealthChecklist } from "@/components/admin/ContentHealthChecklist";
@@ -144,13 +143,6 @@ const AdminDashboard = () => {
     if (timestamps.length === 0) return null;
     return Math.max(...timestamps);
   }, [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames]);
-
-  const missingGenre = useMemo(() => {
-    const moviesMissing = movies?.filter((m) => !m.genre || m.genre.trim() === "").length || 0;
-    const seriesMissing = series?.filter((s) => !s.genre || s.genre.trim() === "").length || 0;
-    const newsMissing = news?.filter((n) => !n.genres || n.genres.trim() === "").length || 0;
-    return { movies: moviesMissing, series: seriesMissing, news: newsMissing, total: moviesMissing + seriesMissing + newsMissing };
-  }, [movies, series, news]);
 
   return (
     <div className="space-y-6">
