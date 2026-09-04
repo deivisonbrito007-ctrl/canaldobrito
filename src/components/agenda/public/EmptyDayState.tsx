@@ -6,7 +6,7 @@ interface Props {
 
 const goToMovies = () => {
   try {
-    window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: { tab: "novidades" } }));
+    window.dispatchEvent(new CustomEvent("nav-tab-change", { detail: "novidades" }));
   } catch {
     /* noop */
   }
