@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { detectSportType, isNonAdversarial, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
-import { isKnownChannel } from "@/components/public/ChannelBadge";
+import { isKnownChannel, channelHasLogo } from "@/components/public/ChannelBadge";
+import { resolveChannel, normalizeChannelList } from "@/lib/channelResolver";
+import { UnknownChannelActions } from "./UnknownChannelActions";
 import { useChannelMappings } from "@/hooks/useChannelMappings";
 import { Checkbox } from "@/components/ui/checkbox";
 import { gameKey } from "@/lib/dedup";
@@ -838,11 +840,14 @@ function formatDatePt(dateStr: string): string {
 
 export type WarningCtx = {
   knownChannel?: (name: string) => boolean;
+  hasLogo?: (name: string) => boolean;
+  /** Nome oficial resolvido (ou o mesmo texto quando desconhecido). */
+  resolveName?: (name: string) => string;
   existingKeys?: Set<string>;
   textDupKeys?: Set<string>;
 };
 
-export type GameWarning = { code: string; label: string; level: "warn" | "error" };
+export type GameWarning = { code: string; label: string; level: "warn" | "error" | "info"; channels?: string[] };
 
 /** Get validation warnings for a parsed game */
 function getGameWarnings(game: ParsedGame, ctx: WarningCtx = {}): GameWarning[] {
@@ -863,7 +868,22 @@ function getGameWarnings(game: ParsedGame, ctx: WarningCtx = {}): GameWarning[] 
   } else if (ctx.knownChannel) {
     const unknown = game.channels.filter((c) => !ctx.knownChannel!(c));
     if (unknown.length) {
-      warnings.push({ code: "unknown-channel", label: `Canal desconhecido: ${unknown.join(", ")}`, level: "warn" });
+      warnings.push({ code: "unknown-channel", label: `Canal desconhecido: ${unknown.join(", ")}`, level: "warn", channels: unknown });
+    }
+    if (ctx.resolveName) {
+      const renamed = game.channels
+        .filter((c) => !unknown.includes(c))
+        .map((c) => [c, ctx.resolveName!(c)] as const)
+        .filter(([a, b]) => a.trim() !== b);
+      if (renamed.length) {
+        warnings.push({ code: "normalized-channel", label: `Canal normalizado: ${renamed.map(([a, b]) => `${a} → ${b}`).join(", ")}`, level: "info" });
+      }
+    }
+    if (ctx.hasLogo) {
+      const noLogo = game.channels.filter((c) => !unknown.includes(c) && !ctx.hasLogo!(c));
+      if (noLogo.length) {
+        warnings.push({ code: "nologo-channel", label: `Canal sem logo: ${noLogo.map((c) => ctx.resolveName?.(c) ?? c).join(", ")}`, level: "warn" });
+      }
     }
   }
 
@@ -1191,7 +1211,7 @@ export const ProgramacaoTexto = () => {
         away_team: sanitizeStr(g.away_team),
         competition: sanitizeStr(g.competition),
         competition_detail: sanitizeStr(g.competition_detail),
-        channels: g.channels.map(sanitizeStr),
+        channels: normalizeChannelList(g.channels.map(sanitizeStr), channelMappings),
         active,
         archived: false,
         is_live: false,
@@ -1343,6 +1363,8 @@ export const ProgramacaoTexto = () => {
     const textDupKeys = new Set([...counts.entries()].filter(([, n]) => n > 1).map(([k]) => k));
     return {
       knownChannel: (name: string) => isKnownChannel(name, channelMappings),
+      hasLogo: (name: string) => channelHasLogo(name, channelMappings),
+      resolveName: (name: string) => resolveChannel(name, channelMappings).name,
       existingKeys,
       textDupKeys,
     };
@@ -1763,13 +1785,23 @@ export const ProgramacaoTexto = () => {
                                     <span
                                       key={w.code}
                                       className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded ${
-                                        w.level === "error" ? "text-red-400 bg-red-500/10" : "text-amber-400 bg-amber-500/10"
+                                        w.level === "error"
+                                          ? "text-red-400 bg-red-500/10"
+                                          : w.level === "info"
+                                            ? "text-sky-300 bg-sky-500/10"
+                                            : "text-amber-400 bg-amber-500/10"
                                       }`}
                                     >
-                                      {w.code.startsWith("dup") ? <Copy className="h-2.5 w-2.5" /> : <AlertTriangle className="h-2.5 w-2.5" />}
+                                      {w.code.startsWith("dup") ? <Copy className="h-2.5 w-2.5" /> : w.level === "info" ? <Wand2 className="h-2.5 w-2.5" /> : <AlertTriangle className="h-2.5 w-2.5" />}
                                       {w.label}
                                     </span>
                                   ))}
+                                  {warnings
+                                    .filter((w) => w.code === "unknown-channel")
+                                    .flatMap((w) => w.channels ?? [])
+                                    .map((ch) => (
+                                      <UnknownChannelActions key={ch} channelName={ch} />
+                                    ))}
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
