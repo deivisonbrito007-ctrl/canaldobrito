@@ -14,7 +14,7 @@ import {
   isNonAdversarial,
   type SportType,
 } from "@/lib/gameUtils";
-import { ChannelBadge } from "./ChannelBadge";
+import { ChannelBadgeList } from "./ChannelBadge";
 import { getSportTheme, isHighlightCompetition } from "./schedule/GameCardSportTheme";
 import { cn } from "@/lib/utils";
 
@@ -203,16 +203,7 @@ const LiveHeroCard = ({ game }: { game: DailyGame }) => {
 
         {/* channels */}
         {game.channels && game.channels.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {game.channels.slice(0, 3).map((ch, i) => (
-              <ChannelBadge key={i} name={ch} size="sm" />
-            ))}
-            {game.channels.length > 3 && (
-              <span className="inline-flex items-center text-[10px] font-bold text-[hsl(var(--live-text-muted))] px-2 py-1">
-                +{game.channels.length - 3}
-              </span>
-            )}
-          </div>
+          <ChannelBadgeList channels={game.channels} max={3} size="sm" className="justify-center" />
         )}
       </div>
     </motion.article>

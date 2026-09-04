@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import AdminCanaisLogos from "../AdminCanaisLogos";
 
 const mocks = vi.hoisted(() => ({
@@ -35,6 +36,7 @@ vi.mock("@/hooks/useDiscoveredChannels", () => ({
 vi.mock("@/hooks/useChannelMappings", () => ({
   useChannelMappings: () => ({ data: new Map() }),
   CHANNEL_MAPPINGS_QK: ["channel_logo_mappings"] as const,
+  CHANNEL_ALIASES_QK: ["channel_aliases"] as const,
 }));
 
 vi.mock("@/components/admin/ChannelPreviewStage", () => ({
@@ -52,7 +54,9 @@ const renderPage = () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <AdminCanaisLogos />
+      <MemoryRouter>
+        <AdminCanaisLogos />
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };

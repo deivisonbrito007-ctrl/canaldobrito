@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { isGameCurrentlyLive, getLocalDateString, getElapsedMinutes, SPORT_EMOJI, isNonAdversarial, type SportType } from "@/lib/gameUtils";
 import { Radio, Zap, Clock } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
-import { ChannelBadge } from "./ChannelBadge";
+import { ChannelBadgeList } from "./ChannelBadge";
 
 export const LiveNowSection = () => {
   const [today, setToday] = useState(() => getLocalDateString());
@@ -157,16 +157,7 @@ export const LiveNowSection = () => {
                       </span>
                     </div>
                     {game.channels && game.channels.length > 0 ? (
-                      <div className="flex gap-1 flex-wrap justify-end">
-                        {game.channels.slice(0, 3).map((ch) => (
-                          <ChannelBadge key={ch} name={ch} size="sm" />
-                        ))}
-                        {game.channels.length > 3 && (
-                          <span className="text-[9px] text-muted-foreground/60 self-center font-bold">
-                            +{game.channels.length - 3}
-                          </span>
-                        )}
-                      </div>
+                      <ChannelBadgeList channels={game.channels} max={3} size="sm" className="justify-end gap-1" />
                     ) : (
                       <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">Sem transmissão</span>
                     )}

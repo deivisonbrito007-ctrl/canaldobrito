@@ -11,7 +11,7 @@ import {
   SPORT_LABEL,
   type SportType,
 } from "@/lib/gameUtils";
-import { ChannelBadge } from "../ChannelBadge";
+import { ChannelBadgeList } from "../ChannelBadge";
 import { getSportTheme, isHighlightCompetition } from "./GameCardSportTheme";
 
 interface GameCardProps {
@@ -165,16 +165,7 @@ const GameCardImpl = ({ game, index }: GameCardProps) => {
               <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">
                 ▶ Onde assistir
               </span>
-              <div className="flex gap-1.5 flex-wrap">
-                {game.channels.slice(0, 2).map((ch, i) => (
-                  <ChannelBadge key={i} name={ch} />
-                ))}
-                {game.channels.length > 2 && (
-                  <span className="inline-flex items-center text-[10px] font-bold text-muted-foreground/70 bg-card/40 border border-border/30 rounded-md px-2 py-1">
-                    +{game.channels.length - 2}
-                  </span>
-                )}
-              </div>
+              <ChannelBadgeList channels={game.channels} max={2} />
             </div>
           ) : (
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60 px-2 py-0.5 rounded border border-border/40 bg-muted/20 self-start inline-block">

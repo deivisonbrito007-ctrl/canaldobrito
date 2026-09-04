@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { withCacheBust } from "@/lib/cacheBust";
 import { LOGO_REGISTRY, normalizeChannelName, channelInitials, type LogoKey } from "./channelLogos";
-import { useChannelMappings } from "@/hooks/useChannelMappings";
+import { useChannelMappings, type ChannelMapping } from "@/hooks/useChannelMappings";
+import { resolveChannel, resolveChannels, mappingHasLogo } from "@/lib/channelResolver";
 
 declare const __APP_VERSION__: string;
 
@@ -119,14 +120,39 @@ function resolveWithYoutube(key: string): ChannelConfig | undefined {
 }
 
 /**
- * Retorna true se o canal é reconhecido: existe no registro embutido (fuzzy)
- * ou no mapa de mapeamentos/apelidos cadastrados pelo admin.
+ * Retorna true se o canal é reconhecido: cadastrado (nome/alias), regra
+ * canônica central, ou existe no registro embutido (fuzzy).
  */
-export function isKnownChannel(name: string, mappings?: Map<string, unknown> | null): boolean {
+export function isKnownChannel(name: string, mappings?: Map<string, ChannelMapping> | null): boolean {
+  const r = resolveChannel(name, mappings);
+  if (r.status !== "unknown") return true;
   const key = normalizeChannelName(name);
   if (!key) return false;
-  if (mappings?.has(key)) return true;
   return !!resolveWithYoutube(key);
+}
+
+/** Chave da logo embutida para um nome (após resolução), se houver. */
+export function builtinLogoKey(name: string): LogoKey | undefined {
+  const key = normalizeChannelName(name);
+  return key ? resolveWithYoutube(key)?.logoKey : undefined;
+}
+
+/** Retorna true se o canal terá alguma arte (logo cadastrada/upload ou embutida). */
+export function channelHasLogo(name: string, mappings?: Map<string, ChannelMapping> | null): boolean {
+  const r = resolveChannel(name, mappings);
+  if (r.mapping) {
+    if (r.mapping.logo_key === "none" && !r.mapping.custom_logo_url) return false;
+    if (mappingHasLogo(r.mapping)) return true;
+  }
+  return !!builtinLogoKey(r.name);
+}
+
+/** Converte "#rrggbb" em "r, g, b" para uso em rgba(). */
+function hexToRgb(hex: string): string | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
 }
 
 function matchChannel(name: string, overrideLogoKey?: LogoKey, overrideShort?: string | null): ChannelConfig {
@@ -272,36 +298,128 @@ export const ChannelBadge = React.forwardRef<HTMLSpanElement, ChannelBadgeProps>
       );
     }
 
-    const override = overrides?.get(normalizeChannelName(name));
-    const config = matchChannel(name, override?.logo_key, override?.short);
+    const resolved = resolveChannel(name, overrides);
+    const override = resolved.mapping;
+    const displayName = resolved.name;
+    const config = matchChannel(displayName, override?.logo_key, override?.short);
+    const rgb = override?.primary_color ? hexToRgb(override.primary_color) : null;
+    const brandStyle = rgb
+      ? {
+          borderColor: `rgba(${rgb}, 0.55)`,
+          color: override!.primary_color!,
+          backgroundImage: `linear-gradient(90deg, rgba(${rgb}, 0.22), rgba(${rgb}, 0.10))`,
+          boxShadow: `0 0 12px rgba(${rgb}, 0.22)`,
+        }
+      : undefined;
+    const unknown = resolved.status === "unknown" && !config.logoKey;
 
     return (
       <span
         ref={ref}
+        data-channel-status={resolved.status}
+        title={resolved.changed ? `${name} → ${displayName}` : undefined}
         className={cn(
           "inline-flex items-center font-bold shrink-0 border bg-gradient-to-r transition-all duration-200 hover:scale-105 hover:brightness-110 whitespace-nowrap",
           sizeCls,
-          config.gradient,
-          config.text,
-          config.border,
-          config.glow,
+          unknown ? "border-dashed" : null,
+          rgb ? "" : config.gradient,
+          rgb ? "" : config.text,
+          rgb ? "" : config.border,
+          rgb ? "" : config.glow,
           className
         )}
+        style={brandStyle}
       >
         <ChannelIcon
           logoKey={config.logoKey}
           emoji={config.emoji}
           size={size}
-          alt={`${name} logo`}
-          channelName={name}
+          alt={`${displayName} logo`}
+          channelName={displayName}
           customUrl={override?.custom_logo_url}
           forceLightChip={override?.light_chip}
           version={override?.updated_at}
         />
-        {name}
+        {displayName}
       </span>
     );
   }
 );
 
 ChannelBadge.displayName = "ChannelBadge";
+
+interface ChannelBadgeListProps {
+  channels: readonly string[] | null | undefined;
+  /** Quantos mostrar antes do "+N" (padrão 2). */
+  max?: number;
+  size?: BadgeSize;
+  className?: string;
+  badgeClassName?: string;
+  /** Texto de vazio; omita para não renderizar nada quando não há canais. */
+  emptyLabel?: string;
+}
+
+/**
+ * Lista de badges com normalização/deduplicação central e "+N" expansível.
+ * Toque/clique em "+N" revela todos os canais — nada essencial fica escondido.
+ */
+export const ChannelBadgeList = React.forwardRef<HTMLDivElement, ChannelBadgeListProps>(
+  ({ channels, max = 2, size = "md", className, badgeClassName, emptyLabel }, ref) => {
+    const { data: overrides } = useChannelMappings();
+    const [expanded, setExpanded] = useState(false);
+    const resolved = React.useMemo(() => resolveChannels(channels, overrides), [channels, overrides]);
+
+    if (resolved.length === 0) {
+      return emptyLabel ? (
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60 px-2 py-0.5 rounded border border-border/40 bg-muted/20 inline-block">
+          {emptyLabel}
+        </span>
+      ) : null;
+    }
+
+    const visible = expanded ? resolved : resolved.slice(0, max);
+    const hidden = resolved.length - visible.length;
+    const hiddenNames = resolved.slice(max).map((r) => r.name).join(", ");
+
+    return (
+      <div ref={ref} className={cn("flex gap-1.5 flex-wrap items-center", className)}>
+        {visible.map((r) => (
+          <ChannelBadge key={r.key || r.input} name={r.input} size={size} className={badgeClassName} />
+        ))}
+        {hidden > 0 && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(true);
+            }}
+            aria-label={`Mostrar mais ${hidden} canais: ${hiddenNames}`}
+            aria-expanded={false}
+            title={hiddenNames}
+            className={cn(
+              "inline-flex items-center justify-center min-h-[28px] min-w-[36px] text-[10px] font-bold text-muted-foreground/80 bg-card/40 border border-border/40 rounded-md px-2 py-1",
+              "hover:text-foreground hover:border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            )}
+          >
+            +{hidden}
+          </button>
+        )}
+        {expanded && resolved.length > max && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(false);
+            }}
+            aria-label="Mostrar menos canais"
+            className="inline-flex items-center min-h-[28px] text-[10px] font-semibold text-muted-foreground/60 hover:text-foreground px-1.5"
+          >
+            menos
+          </button>
+        )}
+      </div>
+    );
+  }
+);
+
+ChannelBadgeList.displayName = "ChannelBadgeList";
