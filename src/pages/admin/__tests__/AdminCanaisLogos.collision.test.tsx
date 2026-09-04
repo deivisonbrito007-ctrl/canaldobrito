@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import AdminCanaisLogos from "../AdminCanaisLogos";
 
 // Hoisted state shared with the supabase mock
@@ -81,7 +82,9 @@ const renderPage = () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <AdminCanaisLogos />
+      <MemoryRouter>
+        <AdminCanaisLogos />
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };
