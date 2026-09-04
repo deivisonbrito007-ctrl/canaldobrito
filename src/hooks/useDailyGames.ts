@@ -269,6 +269,68 @@ export const useArchivedDailyGames = () =>
     refetchInterval: 60_000,
   });
 
+/** Resumo leve dos arquivados: quantidade por data (só a coluna date). */
+export const useArchivedDatesSummary = () =>
+  useQuery({
+    queryKey: ["daily_games", "archived", "dates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_games")
+        .select("date")
+        .eq("archived", true)
+        .order("date", { ascending: false })
+        .limit(5000);
+      if (error) throw error;
+      const counts = new Map<string, number>();
+      for (const r of data ?? []) counts.set(r.date, (counts.get(r.date) ?? 0) + 1);
+      return [...counts.entries()].map(([date, count]) => ({ date, count }));
+    },
+    staleTime: 60_000,
+  });
+
+export const ARCHIVED_PAGE_SIZE = 30;
+
+/** Página de arquivados com filtro por data e busca (servidor). */
+export const useArchivedDailyGamesPage = (opts: { date: string | null; search: string; page: number }) =>
+  useQuery({
+    queryKey: ["daily_games", "archived", "page", opts.date, opts.search, opts.page],
+    queryFn: async () => {
+      const from = opts.page * ARCHIVED_PAGE_SIZE;
+      let q = supabase
+        .from("daily_games")
+        .select("*", { count: "exact" })
+        .eq("archived", true)
+        .order("date", { ascending: false })
+        .order("game_time", { ascending: true })
+        .range(from, from + ARCHIVED_PAGE_SIZE - 1);
+      if (opts.date) q = q.eq("date", opts.date);
+      const s = opts.search.trim().replace(/[%,()]/g, " ");
+      if (s) q = q.or(`home_team.ilike.%${s}%,away_team.ilike.%${s}%,competition.ilike.%${s}%`);
+      const { data, error, count } = await q;
+      if (error) throw error;
+      return { rows: (data ?? []) as DailyGame[], total: count ?? 0 };
+    },
+    placeholderData: (prev) => prev,
+  });
+
+/** Restaura (desarquiva) todos os jogos de uma data. */
+export const useRestoreArchivedDay = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (date: string) => {
+      const { data, error } = await supabase
+        .from("daily_games")
+        .update({ archived: false, active: true })
+        .eq("archived", true)
+        .eq("date", date)
+        .select("id");
+      if (error) throw error;
+      return data?.length ?? 0;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["daily_games"] }),
+  });
+};
+
 export const useDeleteDailyGamesByDate = () => {
   const qc = useQueryClient();
   return useMutation({
