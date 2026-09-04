@@ -66,6 +66,7 @@ vi.mock("@/hooks/useDiscoveredChannels", () => ({
 vi.mock("@/hooks/useChannelMappings", () => ({
   useChannelMappings: () => ({ data: new Map() }),
   CHANNEL_MAPPINGS_QK: ["channel_logo_mappings"] as const,
+  CHANNEL_ALIASES_QK: ["channel_aliases"] as const,
 }));
 
 vi.mock("@/components/admin/ChannelPreviewStage", () => ({
