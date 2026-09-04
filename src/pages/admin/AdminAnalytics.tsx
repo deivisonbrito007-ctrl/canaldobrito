@@ -181,6 +181,12 @@ function aggregateRemote(events: RemoteEvent[]): Aggregate {
   };
 }
 
+/**
+ * Razão limitada a 100%. Um único "share" pode gerar vários acessos (grupos,
+ * encaminhamentos), então CTR/Conversão acima de 100% confundem mais do que ajudam.
+ */
+const cappedRatio = (num: number, den: number): number => (den > 0 ? Math.min(1, num / den) : 0);
+
 function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
   const map = new Map<string, { shares: number; landings: number; tabViews: number; landers: Set<string> }>();
   const ensure = (c: string) => {
@@ -207,8 +213,8 @@ function computeFunnel(remote: RemoteEvent[]): FunnelRow[] {
     const uniqueLanders = v.landers.size;
     rows.push({
       campaign, shares: v.shares, landings: v.landings, tabViews: v.tabViews, uniqueLanders,
-      ctr: v.shares > 0 ? (uniqueLanders > 0 ? uniqueLanders : v.landings) / v.shares : 0,
-      conversion: v.landings > 0 ? v.tabViews / v.landings : 0,
+      ctr: cappedRatio(uniqueLanders > 0 ? uniqueLanders : v.landings, v.shares),
+      conversion: cappedRatio(v.tabViews, v.landings),
     });
   }
   return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
@@ -260,8 +266,8 @@ function computeDaily(
         day, label: `${d}/${m}`,
         shares: v.shares, landings: v.landings,
         uniqueLanders: v.landers.size, tabViews: v.tabViews,
-        ctr: v.shares > 0 ? ((v.landers.size > 0 ? v.landers.size : v.landings) / v.shares) * 100 : null,
-        conversion: v.landings > 0 ? (v.tabViews / v.landings) * 100 : null,
+        ctr: v.shares > 0 ? cappedRatio(v.landers.size > 0 ? v.landers.size : v.landings, v.shares) * 100 : null,
+        conversion: v.landings > 0 ? cappedRatio(v.tabViews, v.landings) * 100 : null,
       };
     });
 }
@@ -293,8 +299,8 @@ function computeFunnelByTab(remote: RemoteEvent[]): TabFunnelRow[] {
   for (const [tab, v] of map) {
     rows.push({
       tab, shares: v.shares, landings: v.landings, uniqueLanders: v.landers.size, tabViews: v.tabViews,
-      ctr: v.shares > 0 ? ((v.landers.size > 0 ? v.landers.size : v.landings) / v.shares) * 100 : 0,
-      conversion: v.landings > 0 ? (v.tabViews / v.landings) * 100 : 0,
+      ctr: cappedRatio(v.landers.size > 0 ? v.landers.size : v.landings, v.shares) * 100,
+      conversion: cappedRatio(v.tabViews, v.landings) * 100,
     });
   }
   return rows.sort((a, b) => b.shares + b.landings - (a.shares + a.landings));
@@ -642,7 +648,7 @@ export default function AdminAnalytics() {
           {loadingRemote && <span className="text-[10px] text-muted-foreground font-body">carregando…</span>}
         </div>
         <p className="text-[10px] text-muted-foreground font-body">
-          CTR = landings únicos ÷ shares · Conversão = tab_views ÷ landings
+          CTR = pessoas que abriram o link ÷ envios · Conversão = quem navegou nas abas ÷ quem abriu (ambos limitados a 100%)
         </p>
         {funnelA.length === 0 ? (
           <p className="text-xs text-muted-foreground italic font-body">
@@ -753,7 +759,7 @@ export default function AdminAnalytics() {
           </select>
         </div>
         <p className="text-[10px] text-muted-foreground font-body">
-          CTR (landings ÷ shares) e Conversão (tab_views ÷ landings) por dia. Linhas verticais marcam dias em que houve compartilhamento.
+          CTR (aberturas ÷ envios) e Conversão (navegação ÷ aberturas) por dia, limitados a 100%. Linhas verticais marcam dias em que houve compartilhamento.
         </p>
         {dailyChart.every((p) => p.ctrA === null && p.convA === null) ? (
           <p className="text-xs text-muted-foreground italic font-body py-8 text-center">
