@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
 import { useSiteUrl } from "@/hooks/useSiteUrl";
@@ -154,8 +154,12 @@ const DayPreviewCard = ({
   const [expanded, setExpanded] = useState(false);
   useLiveTick(); // re-render to update "atualizado há"
 
-  const ageSec = Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000));
-  const ageLabel = ageSec < 60 ? `${ageSec}s` : `${Math.floor(ageSec / 60)}min`;
+  const ageSec = lastUpdatedAt > 0 ? Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000)) : null;
+  const ageLabel =
+    ageSec === null ? "carregando…" :
+    ageSec < 60 ? `há ${ageSec}s` :
+    ageSec < 3600 ? `há ${Math.floor(ageSec / 60)}min` :
+    `há ${Math.floor(ageSec / 3600)}h`;
 
   return (
     <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3 flex flex-col">
@@ -163,7 +167,7 @@ const DayPreviewCard = ({
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-foreground">{title}</h3>
           <p className="text-[10px] text-muted-foreground">
-            {d}/{m} · {validation.active} jogo(s) · atualizado há {ageLabel}
+            {d}/{m} · {ageSec === null ? "carregando jogos…" : `${validation.active} jogo(s)`} · {ageSec === null ? ageLabel : `atualizado ${ageLabel}`}
           </p>
         </div>
         {validation.active > 0 && (
@@ -261,12 +265,20 @@ const AdminWhatsApp = () => {
   const navigate = useNavigate();
   useLiveTick(); // re-render header date after midnight
 
-  // Recompute today every minute to handle midnight rollover
-  const todayStr = useMemo(() => getLocalDateString(new Date()), []);
+  // Recalculado a cada tick (useLiveTick) para acompanhar a virada da meia-noite em São Paulo.
+  const todayStr = getLocalDateString(new Date());
   const tomorrowStr = useMemo(() => offsetDateStr(todayStr, 1), [todayStr]);
   const dayAfterStr = useMemo(() => offsetDateStr(todayStr, 2), [todayStr]);
 
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  // Se o dia virou enquanto a aba estava aberta e o admin estava em "Hoje", acompanha o novo dia.
+  const prevTodayRef = useRef(todayStr);
+  useEffect(() => {
+    if (prevTodayRef.current !== todayStr) {
+      if (selectedDate === prevTodayRef.current) setSelectedDate(todayStr);
+      prevTodayRef.current = todayStr;
+    }
+  }, [todayStr, selectedDate]);
 
   const dayLabel = useMemo(() => {
     if (selectedDate === todayStr) return "Hoje";
