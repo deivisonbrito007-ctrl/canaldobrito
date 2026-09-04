@@ -118,6 +118,17 @@ function resolveWithYoutube(key: string): ChannelConfig | undefined {
   return resolveBase(key);
 }
 
+/**
+ * Retorna true se o canal é reconhecido: existe no registro embutido (fuzzy)
+ * ou no mapa de mapeamentos/apelidos cadastrados pelo admin.
+ */
+export function isKnownChannel(name: string, mappings?: Map<string, unknown> | null): boolean {
+  const key = normalizeChannelName(name);
+  if (!key) return false;
+  if (mappings?.has(key)) return true;
+  return !!resolveWithYoutube(key);
+}
+
 function matchChannel(name: string, overrideLogoKey?: LogoKey, overrideShort?: string | null): ChannelConfig {
   const key = normalizeChannelName(name);
   const base: ChannelConfig = resolveWithYoutube(key) ?? FALLBACK;
