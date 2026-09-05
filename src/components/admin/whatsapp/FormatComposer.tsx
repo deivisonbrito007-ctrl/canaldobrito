@@ -143,7 +143,7 @@ export const FormatComposer = ({ games, gamesLoading, dateStr, todayStr, siteUrl
   const [, m, d] = dateStr.split("-");
 
   return (
-    <section className="glass-panel rounded-xl p-3 sm:p-4 space-y-3 min-w-0" aria-labelledby="wpp-format-title">
+    <section id="wpp-composer" className="glass-panel rounded-xl p-3 sm:p-4 space-y-3 min-w-0 scroll-mt-24" aria-labelledby="wpp-format-title">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 id="wpp-format-title" className="text-sm font-bold text-foreground">Mensagem pronta</h3>
         <span className="text-[10px] text-muted-foreground">
