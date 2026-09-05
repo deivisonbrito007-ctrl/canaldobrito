@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
 import {
@@ -132,7 +132,8 @@ async function fetchAllGames(sport: string, params: Record<string, string>, max:
 // Helpers de banco
 // ---------------------------------------------------------------------------
 
-type Admin = ReturnType<typeof createClient>;
+// deno-lint-ignore no-explicit-any
+type Admin = SupabaseClient<any, any, any>;
 
 async function loadSettings(db: Admin) {
   const { data } = await db.from("settings").select("key,value").like("key", "sportsapi_%");
@@ -697,7 +698,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const db = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // deno-lint-ignore no-explicit-any
+  const db: Admin = createClient<any, any, any>(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   let body: unknown;
   try {
