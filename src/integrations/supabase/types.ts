@@ -693,10 +693,12 @@ export type Database = {
           error_message: string | null
           id: string
           kind: string
+          requests_used: number
           sports: string[]
           status: string
           total_duplicates: number
           total_found: number
+          total_ignored_foreign: number
           total_ignored_no_transmission: number
           total_ready: number
           total_review: number
@@ -710,10 +712,12 @@ export type Database = {
           error_message?: string | null
           id?: string
           kind?: string
+          requests_used?: number
           sports?: string[]
           status?: string
           total_duplicates?: number
           total_found?: number
+          total_ignored_foreign?: number
           total_ignored_no_transmission?: number
           total_ready?: number
           total_review?: number
@@ -727,10 +731,12 @@ export type Database = {
           error_message?: string | null
           id?: string
           kind?: string
+          requests_used?: number
           sports?: string[]
           status?: string
           total_duplicates?: number
           total_found?: number
+          total_ignored_foreign?: number
           total_ignored_no_transmission?: number
           total_ready?: number
           total_review?: number
