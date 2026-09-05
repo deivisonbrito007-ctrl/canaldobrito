@@ -473,7 +473,14 @@ async function doSports(db: Admin) {
       if (c.at && Date.now() - c.at < 24 * 3600_000 && Array.isArray(c.sports)) return { sports: c.sports, cached: true };
     } catch { /* ignore */ }
   }
-  const r = await apiGet<{ sports?: unknown[]; data?: unknown[] }>("/sports", {});
+  let r: { sports?: unknown[]; data?: unknown[] };
+  try {
+    r = await apiGet<{ sports?: unknown[]; data?: unknown[] }>("/sports", {});
+  } catch (e) {
+    // Lista de esportes é só apoio: em indisponibilidade temporária devolve vazio e a tela usa a lista padrão.
+    if (e instanceof ApiError && (e.status === 503 || e.status === 429 || e.status === 504)) return { sports: [], cached: false, unavailable: true };
+    throw e;
+  }
   const raw = Array.isArray(r?.sports) ? r.sports : Array.isArray(r?.data) ? r.data : Array.isArray(r) ? (r as unknown[]) : [];
   const sports = raw
     .map((x) => (typeof x === "string" ? { id: x, name: x } : { id: String((x as { id?: string; slug?: string; key?: string }).id ?? (x as { slug?: string }).slug ?? (x as { key?: string }).key ?? ""), name: String((x as { name?: string }).name ?? (x as { id?: string }).id ?? "") }))
