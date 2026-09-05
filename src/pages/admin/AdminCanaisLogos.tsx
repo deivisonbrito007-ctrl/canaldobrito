@@ -893,7 +893,7 @@ const AdminCanaisLogos = () => {
                     <Plus className="h-3.5 w-3.5" /> Cadastrar canal
                   </Button>
                 ) : tab !== "orphans" ? (
-                  <Button size="sm" variant="outline" onClick={() => { setSearch(""); setFilter("all"); }} className="min-h-11">
+                  <Button size="sm" variant="outline" onClick={() => { setSearch(""); setStatusFilter("todos"); }} className="min-h-11">
                     Limpar filtros
                   </Button>
                 ) : null}

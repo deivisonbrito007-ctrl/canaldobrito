@@ -260,7 +260,9 @@ const AdminSeries = () => {
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <Input
-                  placeholder="Nome da série..."
+                  id="tmdb-search-input"
+                aria-label="Buscar série no TMDB"
+                placeholder="Nome da série..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}

@@ -441,6 +441,8 @@ const AdminNovidades = () => {
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Input
+                id="tmdb-search-input"
+                aria-label="Buscar título no TMDB"
                 placeholder={searchType === "movie" ? "Nome do filme..." : "Nome da série..."}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
