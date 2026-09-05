@@ -88,7 +88,7 @@ describe("sportsApiCore · classificação", () => {
     const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "ESPN (Usa)" }] }))!;
     const c = classifyMatch(n, registry, [], opts);
     expect(c.normalized_channels).toEqual([]);
-    expect(c.status).toBe("ignorado_sem_transmissao");
+    expect(c.status).toBe("ignorado_canal_estrangeiro");
   });
 
   it("apelido cadastrado (PFC) resolve para nome oficial", () => {
@@ -106,7 +106,7 @@ describe("sportsApiCore · classificação", () => {
 
   it("canal desconhecido com país estrangeiro → ignorado", () => {
     const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "beIN Sports", country: "FR" }] }))!;
-    expect(classifyMatch(n, registry, [], opts).status).toBe("ignorado_sem_transmissao");
+    expect(classifyMatch(n, registry, [], opts).status).toBe("ignorado_canal_estrangeiro");
   });
 
   it("canal desconhecido com país BR → revisar mantendo o nome", () => {
