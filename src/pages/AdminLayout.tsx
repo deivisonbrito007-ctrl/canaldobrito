@@ -51,12 +51,14 @@ type AdminTab = {
   activeBg: string;
   activeBorder: string;
   group: "content" | "ops" | "system";
+  /** Oculto dos menus (continua acessível pela rota) */
+  hidden?: boolean;
 };
 
 const adminTabs: AdminTab[] = [
   { value: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard", color: "text-foreground", activeBg: "bg-white/[0.08]", activeBorder: "border-b-white", group: "content" },
   { value: "programacao", label: "Programação", icon: CalendarDays, path: "/admin/programacao", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400", group: "content" },
-  { value: "canais-logos", label: "Canais/Logos", icon: Tv, path: "/admin/canais-logos", color: "text-pink-400", activeBg: "bg-pink-500/[0.08]", activeBorder: "border-b-pink-400", group: "content" },
+  { value: "canais-logos", label: "Canais", icon: Tv, path: "/admin/canais-logos", color: "text-pink-400", activeBg: "bg-pink-500/[0.08]", activeBorder: "border-b-pink-400", group: "content" },
   { value: "filmes", label: "Filmes", icon: Film, path: "/admin/filmes", color: "text-blue-400", activeBg: "bg-blue-500/[0.08]", activeBorder: "border-b-blue-400", group: "content" },
   { value: "series", label: "Séries", icon: Clapperboard, path: "/admin/series", color: "text-purple-400", activeBg: "bg-purple-500/[0.08]", activeBorder: "border-b-purple-400", group: "content" },
   { value: "novidades", label: "Novidades", icon: Sparkles, path: "/admin/novidades", color: "text-amber-400", activeBg: "bg-amber-500/[0.08]", activeBorder: "border-b-amber-400", group: "content" },
@@ -65,7 +67,8 @@ const adminTabs: AdminTab[] = [
   { value: "auditoria", label: "Auditoria", icon: ScrollText, path: "/admin/auditoria", color: "text-orange-400", activeBg: "bg-orange-500/[0.08]", activeBorder: "border-b-orange-400", group: "system" },
   { value: "seguranca", label: "Segurança", icon: Shield, path: "/admin/seguranca", color: "text-red-400", activeBg: "bg-red-500/[0.08]", activeBorder: "border-b-red-400", group: "system" },
   { value: "configuracoes", label: "Configurações", icon: Settings, path: "/admin/configuracoes", color: "text-muted-foreground", activeBg: "bg-white/[0.06]", activeBorder: "border-b-muted-foreground", group: "system" },
-  { value: "diagnostico-github", label: "GitHub", icon: Github, path: "/admin/diagnostico-github", color: "text-sky-400", activeBg: "bg-sky-500/[0.08]", activeBorder: "border-b-sky-400", group: "system" },
+  // Ferramenta técnica: acessível via Configurações → Ferramentas (não aparece no menu principal)
+  { value: "diagnostico-github", label: "Diagnóstico GitHub", icon: Github, path: "/admin/diagnostico-github", color: "text-sky-400", activeBg: "bg-sky-500/[0.08]", activeBorder: "border-b-sky-400", group: "system", hidden: true },
 ];
 
 const groupLabels: Record<AdminTab["group"], string> = {
@@ -106,8 +109,8 @@ const AdminLayout = () => {
   }
   if (!isAdmin) return <Navigate to="/login" replace />;
 
-  const primaryTabs = adminTabs.filter((t) => PRIMARY_DESKTOP.includes(t.value));
-  const overflowTabs = adminTabs.filter((t) => !PRIMARY_DESKTOP.includes(t.value));
+  const primaryTabs = adminTabs.filter((t) => PRIMARY_DESKTOP.includes(t.value) && !t.hidden);
+  const overflowTabs = adminTabs.filter((t) => !PRIMARY_DESKTOP.includes(t.value) && !t.hidden);
   const overflowActive = overflowTabs.some((t) => t.value === currentValue);
 
   const goTo = (path: string) => {
@@ -169,7 +172,7 @@ const AdminLayout = () => {
                       </p>
                       <div className="flex flex-col gap-0.5">
                         {adminTabs
-                          .filter((t) => t.group === group)
+                          .filter((t) => t.group === group && !t.hidden)
                           .map((tab) => {
                             const isActive = currentValue === tab.value;
                             return (

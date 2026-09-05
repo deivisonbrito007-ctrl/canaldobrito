@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, Loader2, Phone, Key, Info, Globe, Copy, Check, Tv, RotateCcw } from "lucide-react";
+import { Save, Loader2, Phone, Key, Info, Globe, Copy, Check, Tv, RotateCcw, Wrench, Github } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_TV_CHANNELS_JSON = JSON.stringify(
@@ -186,9 +187,9 @@ const AdminConfiguracoes = () => {
             size="sm"
             onClick={() => setTvChannelsJson(DEFAULT_TV_CHANNELS_JSON)}
             className="h-9 px-2 text-[11px] min-h-9"
-            title="Restaurar padrão"
+            aria-label="Restaurar padrão da lista de canais"
           >
-            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Padrão
+            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Restaurar padrão
           </Button>
         </div>
         <div className="p-4 space-y-2">
@@ -203,6 +204,25 @@ const AdminConfiguracoes = () => {
           <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
             Cada canal: <code className="text-primary/80">{`{ name, domain, localLogo }`}</code>. O <code>localLogo</code> aceita caminhos de <code>/channels/*.svg</code>; se ausente, o ícone é buscado pelo <code>domain</code>.
           </p>
+        </div>
+      </div>
+
+      {/* Ferramentas técnicas */}
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/[0.06]">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-sky-400" />
+            Ferramentas técnicas
+          </h3>
+        </div>
+        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">Diagnóstico GitHub</p>
+            <p className="text-[11px] text-muted-foreground/70">Verifica a conexão do repositório e a publicação do app. Uso ocasional.</p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="min-h-11 gap-1.5 border-white/[0.1]">
+            <Link to="/admin/diagnostico-github"><Github className="h-4 w-4" /> Ver detalhes</Link>
+          </Button>
         </div>
       </div>
 
