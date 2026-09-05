@@ -204,14 +204,22 @@ export function toSaoPauloDateTime(startTime: number | string | undefined): { da
 // Normalização da partida
 // ---------------------------------------------------------------------------
 
+/** A API costuma embutir o país no nome: "Premiere (Bra)", "ESPN (Usa)". */
+const NAME_COUNTRY_SUFFIX = /\s*\(([A-Za-z]{2,3})\)\s*$/;
+export function splitNetworkName(name: string, country?: string | null): { name: string; country: string | null } {
+  const m = name.match(NAME_COUNTRY_SUFFIX);
+  if (!m) return { name: name.trim(), country: country ?? null };
+  return { name: name.replace(NAME_COUNTRY_SUFFIX, "").trim(), country: country ?? m[1].toLowerCase() };
+}
+
 export function normalizeTvNetworks(raw: SportsApiMatch["tvNetworks"]): SportsApiTvNetwork[] {
   if (!Array.isArray(raw)) return [];
   const out: SportsApiTvNetwork[] = [];
   for (const n of raw) {
     if (typeof n === "string") {
-      if (n.trim()) out.push({ name: n.trim(), country: null });
+      if (n.trim()) out.push({ ...splitNetworkName(n), logo: null });
     } else if (n && typeof n === "object" && typeof n.name === "string" && n.name.trim()) {
-      out.push({ name: n.name.trim(), country: n.country ?? null, logo: n.logo ?? null });
+      out.push({ ...splitNetworkName(n.name, n.country), logo: n.logo ?? null });
     }
   }
   return out;

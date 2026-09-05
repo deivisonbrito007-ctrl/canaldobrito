@@ -76,6 +76,21 @@ describe("sportsApiCore · classificação", () => {
     expect(c.warnings.map((w) => w.code)).toContain("pais_nao_informado");
   });
 
+  it("país embutido no nome: 'Premiere (Bra)' → BR e nome limpo", () => {
+    const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "Premiere (Bra)" }] }))!;
+    expect(n.tv_networks[0]).toMatchObject({ name: "Premiere", country: "bra" });
+    const c = classifyMatch(n, registry, [], opts);
+    expect(c.status).toBe("pronto_para_importar");
+    expect(c.warnings.map((w) => w.code)).not.toContain("pais_nao_informado");
+  });
+
+  it("'ESPN (Usa)' não vale como transmissão no Brasil", () => {
+    const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "ESPN (Usa)" }] }))!;
+    const c = classifyMatch(n, registry, [], opts);
+    expect(c.normalized_channels).toEqual([]);
+    expect(c.status).toBe("ignorado_sem_transmissao");
+  });
+
   it("apelido cadastrado (PFC) resolve para nome oficial", () => {
     const n = normalizeSportsApiGame(match({ tvNetworks: ["PFC"] }))!;
     expect(classifyMatch(n, registry, [], opts).normalized_channels).toEqual(["Premiere"]);
