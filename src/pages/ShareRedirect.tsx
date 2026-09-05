@@ -19,8 +19,12 @@ export default function ShareRedirect() {
 
   const target = useMemo(() => {
     const tab = SLUG_TO_TAB[slug.toLowerCase()];
-    return tab ? `/${TAB_SLUGS[tab]}` : "/";
-  }, [slug]);
+    if (!tab) return "/";
+    // Preserva ?date=YYYY-MM-DD para o link abrir no dia certo (não em "Hoje").
+    const date = params.get("date");
+    const qs = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `?date=${date}` : "";
+    return `/${TAB_SLUGS[tab]}${qs}`;
+  }, [slug, params]);
 
   useEffect(() => {
     const tab = SLUG_TO_TAB[slug.toLowerCase()];
