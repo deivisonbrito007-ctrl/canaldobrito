@@ -130,11 +130,12 @@ export const SportsApiPanel = () => {
             className="min-h-11 gap-1.5"
             disabled={!enabled || fetchM.isPending}
             onClick={() =>
-              run(fetchM.mutateAsync({ date }), (r) =>
-                r.totals.found === 0
+              run(fetchM.mutateAsync({ date }), (r) => {
+                if (r.errors.length) toast.warning(`Parcial: ${r.errors.join(" · ")}`);
+                return r.totals.found === 0
                   ? "Nenhum jogo com transmissão encontrado pela SportsAPI para esta data."
-                  : `${r.totals.found} encontrados · ${r.totals.ready} prontos · ${r.totals.review} para revisar${r.errors.length ? ` · ${r.errors.length} esporte(s) indisponível(is)` : ""}`,
-              )
+                  : `${r.totals.found} encontrados · ${r.totals.ready} prontos · ${r.totals.review} para revisar`;
+              })
             }
           >
             {fetchM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
