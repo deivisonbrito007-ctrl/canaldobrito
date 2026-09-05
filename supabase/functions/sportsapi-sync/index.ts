@@ -295,7 +295,7 @@ async function doLive(db: Admin, actor: string | null, fromCron: boolean) {
     if (last && Date.now() - new Date(last.created_at as string).getTime() < minMs) return { updated: 0, skipped: true, reason: "intervalo" };
   }
 
-  const nowSp = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+  const nowSp = toSaoPauloDateTime(Date.now())?.date ?? new Date().toISOString().slice(0, 10);
   const { data: imported } = await db
     .from("daily_games")
     .select("id,external_id,external_sport,game_time,api_status")
@@ -496,7 +496,11 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const isServiceCall = !!token && token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const isCron = input.action === "live" && input.cron === true && (isServiceCall || req.headers.get("x-cron-secret") === Deno.env.get("SUPABASE_ANON_KEY"));
+  const cronSecret = Deno.env.get("SPORTSAPI_CRON_SECRET");
+  const cronHeader = req.headers.get("x-cron-secret");
+  const isCron =
+    input.action === "live" && input.cron === true &&
+    (isServiceCall || (!!cronSecret && cronSecret.length >= 32 && cronHeader === cronSecret));
 
   if (!isCron) {
     if (!token) return json({ error: "Faça login para usar a SportsAPI." }, 401);
