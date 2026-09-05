@@ -55,7 +55,7 @@ type AdminTab = {
   hidden?: boolean;
 };
 
-const adminTabs: AdminTab[] = [
+export const adminTabs: AdminTab[] = [
   { value: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard", color: "text-foreground", activeBg: "bg-white/[0.08]", activeBorder: "border-b-white", group: "content" },
   { value: "programacao", label: "Programação", icon: CalendarDays, path: "/admin/programacao", color: "text-emerald-400", activeBg: "bg-emerald-500/[0.08]", activeBorder: "border-b-emerald-400", group: "content" },
   { value: "canais-logos", label: "Canais", icon: Tv, path: "/admin/canais-logos", color: "text-pink-400", activeBg: "bg-pink-500/[0.08]", activeBorder: "border-b-pink-400", group: "content" },
