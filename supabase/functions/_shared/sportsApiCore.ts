@@ -267,18 +267,25 @@ export function filterBrazilBroadcasts(
   networks: SportsApiTvNetwork[],
   registry: ChannelRegistry,
   opts: ClassifyOptions,
-): { accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null }>; unknown: SportsApiTvNetwork[] } {
+): {
+  accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null }>;
+  unknown: SportsApiTvNetwork[];
+  foreign: SportsApiTvNetwork[];
+} {
   const accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null }> = [];
   const unknown: SportsApiTvNetwork[] = [];
+  const foreign: SportsApiTvNetwork[] = [];
   for (const n of networks) {
     const entry = resolveNetwork(n.name, registry);
     const br = isBrazilCountry(n.country);
     if (br) accepted.push({ network: n, entry });
     else if (!n.country && opts.acceptKnownChannel && entry) accepted.push({ network: n, entry });
     else if (!opts.brazilOnly && entry) accepted.push({ network: n, entry });
+    // País explícito e não-Brasil: transmissão irrelevante para o app (não vira alerta).
+    else if (n.country) foreign.push(n);
     else unknown.push(n);
   }
-  return { accepted, unknown };
+  return { accepted, unknown, foreign };
 }
 
 // ---------------------------------------------------------------------------
@@ -341,7 +348,20 @@ export function classifyMatch(
     };
   }
 
-  const { accepted, unknown } = filterBrazilBroadcasts(n.tv_networks, registry, opts);
+  const { accepted, unknown, foreign } = filterBrazilBroadcasts(n.tv_networks, registry, opts);
+
+  if (accepted.length === 0 && unknown.length === 0) {
+    return {
+      status: "ignorado_sem_transmissao",
+      warnings: [{
+        code: "sem_transmissao",
+        message: `Só transmissão fora do Brasil (${foreign.map((f) => `${f.name} · ${f.country}`).join(", ")}).`,
+      }],
+      normalized_channels: [],
+      broadcast_country: null,
+      matched_game_id: null,
+    };
+  }
   const channels: string[] = [];
   const seen = new Set<string>();
   for (const { network, entry } of accepted) {
