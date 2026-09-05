@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
+import { formatLiveClock, formatScore } from "@/lib/sportsApi";
 import { SPORT_EMOJI, SPORT_LABEL, type SportType, getElapsedMinutes } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
@@ -63,7 +64,9 @@ export const LiveHeroCard = ({ games }: Props) => {
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const isVs = !!game.away_team;
-  const elapsed = getElapsedMinutes(game.game_time, game.date, sport);
+  const clock = formatLiveClock(game);
+  const elapsed = clock ? null : getElapsedMinutes(game.game_time, game.date, sport);
+  const score = formatScore(game);
 
   const goPrev = () => {
     setIndex((v) => (v - 1 + total) % total);
@@ -141,9 +144,11 @@ export const LiveHeroCard = ({ games }: Props) => {
                   transition={{ duration: 1.2, repeat: Infinity }}
                 />
                 AO VIVO
-                {elapsed !== null && (
+                {clock ? (
+                  <span className="ml-0.5 tabular-nums normal-case tracking-normal">· {clock}</span>
+                ) : elapsed !== null ? (
                   <span className="ml-0.5 tabular-nums">· {elapsed}'</span>
-                )}
+                ) : null}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-white/60 font-medium flex items-center gap-1">
@@ -171,7 +176,13 @@ export const LiveHeroCard = ({ games }: Props) => {
               {isVs ? (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[26px] sm:text-[30px] leading-[0.95] flex-1 truncate">{game.home_team}</p>
-                  <span className="text-[20px] text-white/40 px-2">×</span>
+                  {score ? (
+                    <span className="text-[26px] sm:text-[30px] px-2 tabular-nums shrink-0" style={{ color: "#00ff87" }} aria-label={`Placar ${score}`}>
+                      {score}
+                    </span>
+                  ) : (
+                    <span className="text-[20px] text-white/40 px-2">×</span>
+                  )}
                   <p className="text-[26px] sm:text-[30px] leading-[0.95] flex-1 truncate text-right">{game.away_team}</p>
                 </div>
               ) : (
