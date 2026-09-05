@@ -56,15 +56,37 @@ export interface SportsApiSyncRun {
   total_review: number;
   total_duplicates: number;
   total_updated: number;
+  total_ignored_foreign?: number;
+  requests_used?: number;
   status: string;
   error_message: string | null;
   created_at: string;
 }
 
+export interface SportsApiStatus {
+  enabled: boolean;
+  mode: string;
+  hasKey: boolean;
+  quota: { day: number; month: number; dailyBudget: number; monthlyLimit: number; nearBudget: boolean };
+  lastFetch: SportsApiRunBrief | null;
+  lastAuto: SportsApiRunBrief | null;
+  lastLive: SportsApiRunBrief | null;
+  lastPartial: SportsApiRunBrief | null;
+  schedule: {
+    autoFetch: boolean; autoFetchIntervalMin: number; nextAuto: string | null;
+    live: boolean; liveIntervalLiveSec: number; liveIntervalIdleMin: number;
+    nightPause: boolean; pausedNow: boolean;
+  };
+}
+export interface SportsApiRunBrief { created_at: string; kind?: string; status?: string; error_message?: string | null; total_found?: number; total_updated?: number }
+
 export type SportsApiAction =
   | { action: "sports" }
   | { action: "fetch"; date: string; sports?: string[] }
   | { action: "live" }
+  | { action: "auto-fetch" }
+  | { action: "status" }
+  | { action: "test" }
   | { action: "import"; ids: string[]; active?: boolean }
   | { action: "ignore"; ids: string[] }
   | { action: "update-existing"; id: string };
@@ -78,6 +100,7 @@ export const WARNING_LABEL: Record<SuggestionWarning["code"], string> = {
   competicao_divergente: "Competição divergente",
   esporte_divergente: "Esporte divergente",
   sem_transmissao: "Sem transmissão",
+  canal_estrangeiro: "Canal estrangeiro",
   status_conflitante: "Status conflitante",
   dados_incompletos: "Dados incompletos",
 };
