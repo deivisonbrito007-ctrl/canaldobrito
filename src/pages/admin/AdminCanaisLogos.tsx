@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Pencil, Trash2, Plus, Search, AlertTriangle, RefreshCcw, CheckCircle2, Sparkles, GripVertical, Eye, BellOff, Link2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { useSportsApiChannelUsage } from "@/hooks/useSportsApi";
 import { LOGO_OPTIONS, LOGO_REGISTRY, normalizeChannelName, type LogoKey } from "@/components/public/channelLogos";
 import { ChannelBadge, BUILTIN_CHANNEL_MAP } from "@/components/public/ChannelBadge";
 import { CHANNEL_MAPPINGS_QK, CHANNEL_ALIASES_QK, type ChannelMapping, type ChannelAlias } from "@/hooks/useChannelMappings";
@@ -1488,6 +1489,8 @@ const SortableChannelRow = ({
   onPreview: () => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { data: apiUsage } = useSportsApiChannelUsage();
+  const apiUse = apiUsage?.get(normalizeChannelName(channel.name));
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -1529,6 +1532,11 @@ const SortableChannelRow = ({
           {aliases.length > 0 && (
             <span className="truncate max-w-[220px]" title={aliases.join(", ")}>
               {aliases.length} apelido{aliases.length > 1 ? "s" : ""}: {aliases.join(", ")}
+            </span>
+          )}
+          {apiUse && (
+            <span className="text-emerald-300" title={`Último uso: ${apiUse.lastDate}`}>
+              📡 SportsAPI · {apiUse.count} jogo{apiUse.count > 1 ? "s" : ""} · último {apiUse.lastDate.slice(8, 10)}/{apiUse.lastDate.slice(5, 7)}
             </span>
           )}
           {m && !mappingHasLogo(m) && <span className="text-amber-300">Sem logo</span>}

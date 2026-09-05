@@ -353,7 +353,7 @@ const ProgramacaoTab = () => {
       <div className="mb-4">
         <div className="flex items-end justify-between gap-2">
           <h1
-            className="text-[40px] md:text-[52px] leading-[0.9] tracking-tight"
+            className="text-[34px] md:text-[48px] leading-[0.9] tracking-tight"
             style={{ fontFamily: "Bebas Neue, sans-serif", color: "#00ff87" }}
           >
             {titleLabel}

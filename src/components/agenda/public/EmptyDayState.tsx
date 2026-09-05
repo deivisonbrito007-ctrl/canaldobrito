@@ -28,10 +28,10 @@ export const EmptyDayState = ({ onSeeTomorrow, tomorrowCount = 0, isToday = true
       <CalendarX2 className="w-6 h-6 text-[#00ff87]" aria-hidden />
     </div>
     <p className="text-white font-semibold text-[16px]">
-      {isToday ? "Nenhuma programação cadastrada para hoje." : "Nenhuma programação cadastrada para este dia."}
+      {isToday ? "Nenhuma programação com transmissão confirmada para hoje." : "Nenhuma programação com transmissão confirmada para este dia."}
     </p>
     <p className="text-white/60 text-[13px] mt-1.5 max-w-[320px] mx-auto">
-      A agenda é atualizada diariamente. Enquanto isso, aproveite os filmes e séries.
+      Só mostramos jogos com canal confirmado. A agenda é atualizada diariamente — enquanto isso, aproveite os filmes e séries.
     </p>
     <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
       {onSeeTomorrow && (

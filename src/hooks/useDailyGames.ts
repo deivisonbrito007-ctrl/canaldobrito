@@ -26,13 +26,33 @@ export interface DailyGame {
   away_score?: number | null;
   live_status?: string | null;
   live_updated_at?: string | null;
+  source?: string | null;
+  external_source?: string | null;
+  external_sport?: string | null;
+  api_status?: string | null;
+  live_clock?: string | null;
+  period?: string | null;
+  broadcast_country?: string | null;
+  last_api_sync_at?: string | null;
 }
 
-// Sistema 100% manual: somente jogos inseridos via WhatsApp parser são exibidos.
+/** Fontes exibidas no app: manual (parser/WhatsApp) e importadas da SportsAPI após revisão. */
+export const VISIBLE_SOURCES = ["manual", "sportsapi"] as const;
+
+/**
+ * Jogos vindos da API só aparecem se tiverem canal válido.
+ * Jogos manuais mantêm o comportamento atual ("Canal a confirmar").
+ */
+export function hasValidBroadcast(g: Pick<DailyGame, "source" | "channels">): boolean {
+  if (g.source !== "sportsapi") return true;
+  return Array.isArray(g.channels) && g.channels.some((c) => typeof c === "string" && c.trim().length > 0);
+}
+
+// Fontes: parser manual (WhatsApp/GPT) + importações revisadas da SportsAPI.
 
 export const useDailyGames = (date: string) => {
   return useQuery({
-    queryKey: ["daily_games", date, "manual"],
+    queryKey: ["daily_games", date, "public"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_games")
@@ -40,10 +60,10 @@ export const useDailyGames = (date: string) => {
         .eq("date", date)
         .eq("active", true)
         .eq("archived", false)
-        .eq("source", "manual")
+        .in("source", [...VISIBLE_SOURCES])
         .order("game_time", { ascending: true });
       if (error) throw error;
-      return data as DailyGame[];
+      return (data as DailyGame[]).filter(hasValidBroadcast);
     },
     staleTime: 60_000,
     refetchInterval: 60_000,
@@ -52,18 +72,18 @@ export const useDailyGames = (date: string) => {
 
 export const useAllDailyGames = (date: string) => {
   return useQuery({
-    queryKey: ["daily_games", "all", date, "manual"],
+    queryKey: ["daily_games", "all", date, "public"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_games")
         .select("*")
         .eq("date", date)
-        .eq("source", "manual")
+        .in("source", [...VISIBLE_SOURCES])
         .order("game_time", { ascending: true });
       if (error) throw error;
 
       // Auto-cleanup: detect and remove duplicates, keeping oldest
-      const rows = data as DailyGame[];
+      const rows = (data as DailyGame[]).filter(hasValidBroadcast);
       const seen = new Map<string, DailyGame>();
       const dupeIds: string[] = [];
 

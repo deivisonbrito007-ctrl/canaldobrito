@@ -241,9 +241,12 @@ export type Database = {
       daily_games: {
         Row: {
           active: boolean
+          api_payload_summary: Json | null
+          api_status: string | null
           archived: boolean
           away_score: number | null
           away_team: string
+          broadcast_country: string | null
           channels: string[] | null
           competition: string
           competition_detail: string | null
@@ -251,14 +254,19 @@ export type Database = {
           date: string
           elapsed_minutes: number | null
           external_id: string | null
+          external_source: string | null
+          external_sport: string | null
           game_time: string
           home_score: number | null
           home_team: string
           id: string
           is_live: boolean
           is_womens: boolean
+          last_api_sync_at: string | null
+          live_clock: string | null
           live_status: string | null
           live_updated_at: string | null
+          period: string | null
           publish_at: string | null
           source: string
           sport_type: string
@@ -266,9 +274,12 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          api_payload_summary?: Json | null
+          api_status?: string | null
           archived?: boolean
           away_score?: number | null
           away_team: string
+          broadcast_country?: string | null
           channels?: string[] | null
           competition?: string
           competition_detail?: string | null
@@ -276,14 +287,19 @@ export type Database = {
           date?: string
           elapsed_minutes?: number | null
           external_id?: string | null
+          external_source?: string | null
+          external_sport?: string | null
           game_time: string
           home_score?: number | null
           home_team: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          last_api_sync_at?: string | null
+          live_clock?: string | null
           live_status?: string | null
           live_updated_at?: string | null
+          period?: string | null
           publish_at?: string | null
           source?: string
           sport_type?: string
@@ -291,9 +307,12 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          api_payload_summary?: Json | null
+          api_status?: string | null
           archived?: boolean
           away_score?: number | null
           away_team?: string
+          broadcast_country?: string | null
           channels?: string[] | null
           competition?: string
           competition_detail?: string | null
@@ -301,14 +320,19 @@ export type Database = {
           date?: string
           elapsed_minutes?: number | null
           external_id?: string | null
+          external_source?: string | null
+          external_sport?: string | null
           game_time?: string
           home_score?: number | null
           home_team?: string
           id?: string
           is_live?: boolean
           is_womens?: boolean
+          last_api_sync_at?: string | null
+          live_clock?: string | null
           live_status?: string | null
           live_updated_at?: string | null
+          period?: string | null
           publish_at?: string | null
           source?: string
           sport_type?: string
@@ -565,6 +589,153 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      sportsapi_suggestions: {
+        Row: {
+          api_status: string | null
+          away_score: number | null
+          away_team: string
+          broadcast_country: string | null
+          competition: string
+          competition_country: string | null
+          created_at: string
+          date: string
+          external_id: string
+          game_time: string
+          home_score: number | null
+          home_team: string
+          id: string
+          imported_game_id: string | null
+          live_clock: string | null
+          matched_game_id: string | null
+          normalized_channels: string[]
+          payload: Json
+          period: string | null
+          review_status: string
+          sport: string
+          sport_type: string
+          start_time: string
+          status: string
+          title: string | null
+          tv_networks: Json
+          updated_at: string
+          warnings: Json
+        }
+        Insert: {
+          api_status?: string | null
+          away_score?: number | null
+          away_team?: string
+          broadcast_country?: string | null
+          competition?: string
+          competition_country?: string | null
+          created_at?: string
+          date: string
+          external_id: string
+          game_time: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          imported_game_id?: string | null
+          live_clock?: string | null
+          matched_game_id?: string | null
+          normalized_channels?: string[]
+          payload?: Json
+          period?: string | null
+          review_status?: string
+          sport: string
+          sport_type?: string
+          start_time: string
+          status?: string
+          title?: string | null
+          tv_networks?: Json
+          updated_at?: string
+          warnings?: Json
+        }
+        Update: {
+          api_status?: string | null
+          away_score?: number | null
+          away_team?: string
+          broadcast_country?: string | null
+          competition?: string
+          competition_country?: string | null
+          created_at?: string
+          date?: string
+          external_id?: string
+          game_time?: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          imported_game_id?: string | null
+          live_clock?: string | null
+          matched_game_id?: string | null
+          normalized_channels?: string[]
+          payload?: Json
+          period?: string | null
+          review_status?: string
+          sport?: string
+          sport_type?: string
+          start_time?: string
+          status?: string
+          title?: string | null
+          tv_networks?: Json
+          updated_at?: string
+          warnings?: Json
+        }
+        Relationships: []
+      }
+      sportsapi_sync_runs: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          date: string
+          error_message: string | null
+          id: string
+          kind: string
+          sports: string[]
+          status: string
+          total_duplicates: number
+          total_found: number
+          total_ignored_no_transmission: number
+          total_ready: number
+          total_review: number
+          total_updated: number
+          total_with_transmission: number
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          date: string
+          error_message?: string | null
+          id?: string
+          kind?: string
+          sports?: string[]
+          status?: string
+          total_duplicates?: number
+          total_found?: number
+          total_ignored_no_transmission?: number
+          total_ready?: number
+          total_review?: number
+          total_updated?: number
+          total_with_transmission?: number
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          date?: string
+          error_message?: string | null
+          id?: string
+          kind?: string
+          sports?: string[]
+          status?: string
+          total_duplicates?: number
+          total_found?: number
+          total_ignored_no_transmission?: number
+          total_ready?: number
+          total_review?: number
+          total_updated?: number
+          total_with_transmission?: number
         }
         Relationships: []
       }
