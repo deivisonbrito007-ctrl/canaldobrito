@@ -35,6 +35,7 @@ export type SuggestionStatus =
   | "pronto_para_importar"
   | "revisar"
   | "ignorado_sem_transmissao"
+  | "ignorado_canal_estrangeiro"
   | "duplicado"
   | "conflito"
   | "erro";
@@ -51,6 +52,7 @@ export type SuggestionWarning = {
     | "competicao_divergente"
     | "esporte_divergente"
     | "sem_transmissao"
+    | "canal_estrangeiro"
     | "status_conflitante"
     | "dados_incompletos";
   message: string;
@@ -102,6 +104,14 @@ export type ExistingGame = {
 export type ClassifyOptions = {
   brazilOnly: boolean;
   acceptKnownChannel: boolean;
+  /** Descarta em silêncio redes com país/nome estrangeiro (padrão true). */
+  ignoreForeign?: boolean;
+};
+
+export type BroadcastDecision = {
+  accept: boolean;
+  reason: "pais_brasil" | "canal_cadastrado" | "pais_estrangeiro" | "nome_estrangeiro" | "canal_desconhecido" | "fora_do_brasil_aceito";
+  entry: ChannelRegistryEntry | null;
 };
 
 export type Classification = {
