@@ -62,17 +62,26 @@ async function apiGet<T>(path: string, params: Record<string, string | number>):
   if (windowCount >= MAX_PER_MIN) throw new ApiError(429, "Limite interno de requisições por minuto atingido. Tente em instantes.");
   windowCount++;
 
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 15_000);
-  let res: Response;
-  try {
-    res = await fetch(url, { headers: { "X-API-Key": key, Accept: "application/json" }, signal: ctrl.signal });
-  } catch (e) {
-    throw new ApiError(504, "SportsAPI não respondeu a tempo.", String(e));
-  } finally {
-    clearTimeout(t);
+  let res!: Response;
+  let text = "";
+  // 503 DATA_REFRESHING é transitório (coletor da API atualizando cache): tenta de novo com espera curta.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15_000);
+    try {
+      res = await fetch(url, { headers: { "X-API-Key": key, Accept: "application/json" }, signal: ctrl.signal });
+    } catch (e) {
+      throw new ApiError(504, "SportsAPI não respondeu a tempo.", String(e));
+    } finally {
+      clearTimeout(t);
+    }
+    text = await res.text();
+    if (res.status !== 503 || attempt === 2) break;
+    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
   }
-  const text = await res.text();
+  if (res.status === 503) {
+    throw new ApiError(503, "SportsAPI está atualizando os dados agora. Tente de novo em 1–2 minutos.", text);
+  }
   if (res.status === 401 || res.status === 403) throw new ApiError(401, "Chave da SportsAPI inválida ou sem permissão.", text);
   if (res.status === 429) throw new ApiError(429, "Cota da SportsAPI esgotada (429). Aguarde antes de buscar de novo.", text);
   if (res.status === 404) throw new ApiError(404, "Esporte ou recurso não disponível na SportsAPI.", text);
@@ -187,6 +196,10 @@ async function doFetch(db: Admin, actor: string | null, date: string, sportsOver
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         errors.push(`${sport}: não disponível`);
+        continue;
+      }
+      if (e instanceof ApiError && (e.status === 503 || e.status === 429)) {
+        errors.push(`${sport}: ${e.status === 503 ? "API atualizando dados, tente de novo em instantes" : "cota da API atingida"}`);
         continue;
       }
       throw e;
@@ -319,7 +332,7 @@ async function doLive(db: Admin, actor: string | null, fromCron: boolean) {
       const today = await fetchAllGames(sport, { date: nowSp, status: "finished" }, 100).catch(() => []);
       matches = [...matches, ...today];
     } catch (e) {
-      if (e instanceof ApiError && (e.status === 404 || e.status === 429)) continue;
+      if (e instanceof ApiError && (e.status === 404 || e.status === 429 || e.status === 503)) continue;
       throw e;
     }
     for (const m of matches) {
