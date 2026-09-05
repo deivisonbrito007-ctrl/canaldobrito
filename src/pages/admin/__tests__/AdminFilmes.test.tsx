@@ -65,7 +65,7 @@ describe("AdminFilmes", () => {
   it("renderiza header e estado vazio", () => {
     wrap(<AdminFilmes />);
     expect(screen.getByText("Buscar Filmes")).toBeInTheDocument();
-    expect(screen.getByText("Nenhum filme adicionado")).toBeInTheDocument();
+    expect(screen.getByText("Nenhum filme adicionado.")).toBeInTheDocument();
   });
 
   it("dispara busca TMDB ao clicar no botão de busca", () => {

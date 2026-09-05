@@ -85,7 +85,7 @@ describe("AdminCanaisLogos", () => {
   it("shows orphan empty-state when there are no orphans", async () => {
     renderPage();
     await waitFor(() =>
-      expect(screen.getByText(/Todos os canais detectados têm logo/i)).toBeInTheDocument()
+      expect(screen.getByText(/Todos os canais detectados já têm logo/i)).toBeInTheDocument()
     );
   });
 
