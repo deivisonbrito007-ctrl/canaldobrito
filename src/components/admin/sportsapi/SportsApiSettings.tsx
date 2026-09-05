@@ -9,7 +9,7 @@ import { useSettings, useUpdateSetting } from "@/hooks/useSettings";
 import { useSportsApiSports } from "@/hooks/useSportsApi";
 
 /** Esportes recomendados por padrão (ids na SportsAPI). */
-export const DEFAULT_SPORTS = ["football", "tennis", "basketball", "mma", "volleyball", "futsal", "nfl", "mlb", "f1", "motogp", "cycling", "surf", "golf"];
+export const DEFAULT_SPORTS = ["football", "basketball", "tennis", "mma", "volleyball", "futsal", "american-football", "baseball", "motorsport", "cycling", "golf"];
 
 const FALLBACK_SPORTS = [
   ["football", "Futebol"], ["basketball", "Basquete / NBA"], ["tennis", "Tênis"], ["mma", "UFC / MMA"],
