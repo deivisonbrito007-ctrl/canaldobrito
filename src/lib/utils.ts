@@ -70,7 +70,7 @@ export function buildDeepLink(base: string, tab?: PublicTab, opts: DeepLinkOptio
     if (opts.content) {
       const tabPrefix = `${slug}-`;
       const c = slugifyUtm(opts.content);
-      const tagged = c.startsWith(tabPrefix) || /^(ab|tpl|quick|custom)-/.test(c)
+      const tagged = c.startsWith(tabPrefix) || /^(ab|tpl|quick|custom|whatsapp)-/.test(c)
         ? c : `${tabPrefix}${c}`;
       return `${path}?c=${tagged}`;
     }

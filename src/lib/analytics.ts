@@ -239,7 +239,7 @@ export function trackContentClick(props: ContentClickProps): void {
 
 export interface ShareProps {
   /** Where in the admin the share happened. */
-  surface: "admin-whatsapp-quick" | "admin-whatsapp-day" | "admin-whatsapp-template" | "admin-whatsapp-custom" | "admin-whatsapp-ab";
+  surface: "admin-whatsapp-quick" | "admin-whatsapp-day" | "admin-whatsapp-template" | "admin-whatsapp-custom" | "admin-whatsapp-ab" | "admin-whatsapp-format";
   /** Tab targeted by the shared link, if any. */
   tab?: PublicTab | null;
   /** utm_campaign that was embedded in the shared link, if any. */
@@ -248,6 +248,16 @@ export interface ShareProps {
   utm_content?: string | null;
   /** "copy" (clipboard) or "open" (wa.me opened). */
   action: "copy" | "open";
+  /** Message format id (completa, curta, ao-vivo, proximos, filmes-series). */
+  format?: string | null;
+  /** Schedule date the message refers to (YYYY-MM-DD). */
+  date?: string | null;
+  /** Number of games/titles included in the message. */
+  game_count?: number | null;
+  /** Message text (truncated) so the admin can copy/resend from history. Never contains phone numbers. */
+  message?: string | null;
+  /** true when the admin edited the default text before sharing. */
+  edited?: boolean | null;
 }
 
 /**

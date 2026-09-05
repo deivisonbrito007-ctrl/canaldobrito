@@ -20,3 +20,8 @@
 - [ ] Logo quebrada (URL externa) — só detectável no navegador; badge cai para iniciais automaticamente
 
 - [x] Programação pública: busca (time/competição/esporte/canal/alias), status "Em breve" = tudo por começar, ordem padrão por horário (Agora/Próximos/Mais tarde/Encerrados), chips de canal com logo, +N expansível nos cards, estados vazios e analytics de filtros.
+
+## Etapa WhatsApp (set/2026)
+- [x] Formatos: Completa, Curta, Ao vivo (fallback próximos), Próximos (qtd configurável), Filmes/Séries
+- [x] Prévia estilo WhatsApp, editar, restaurar padrão, link rastreado (whatsapp-*), ?date= preservado no link curto
+- [x] Últimos envios: formato, aba, data, nº de jogos, acessos 7d, ver/copiar/reenviar

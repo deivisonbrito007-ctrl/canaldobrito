@@ -16,9 +16,10 @@ import { toast } from "sonner";
 import { getLocalDateString, midnightInSaoPaulo } from "@/lib/gameUtils";
 import { buildDeepLink, TAB_SLUGS, type PublicTab } from "@/lib/utils";
 import { trackShare, type ShareProps } from "@/lib/analytics";
-import { buildDayText, validateDay, safeCopy, offsetDateStr } from "@/lib/whatsappText";
+import { validateDay, safeCopy, offsetDateStr } from "@/lib/whatsappText";
 import { ABTemplateLab } from "@/components/admin/whatsapp/ABTemplateLab";
 import { ShareHistory } from "@/components/admin/whatsapp/ShareHistory";
+import { FormatComposer, openWhatsApp } from "@/components/admin/whatsapp/FormatComposer";
 import { useShareLandingCounts } from "@/hooks/useShareLandingCounts";
 
 type DeepTab = PublicTab;
@@ -52,22 +53,6 @@ const CopyButton = ({ text, label, onAfterCopy, className }: { text: string; lab
   );
 };
 
-const openWhatsApp = async (text: string, share: ShareProps) => {
-  trackShare(share);
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  const win = window.open(url, "_blank", "noopener,noreferrer");
-  if (win && !win.closed) return;
-  // Popup blocked → copy text to clipboard and offer manual link.
-  const copied = await safeCopy(text);
-  if (copied) {
-    toast.success("Popup bloqueado. Mensagem copiada — cole no WhatsApp.", {
-      action: { label: "Abrir WhatsApp", onClick: () => { window.location.href = url; } },
-      duration: 6000,
-    });
-  } else {
-    toast.error("Popup bloqueado e não foi possível copiar. Permita pop-ups para enviar.");
-  }
-};
 
 const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: string; label: string; text: string; tab?: DeepTab }; siteUrl: string; accessCount?: number }) => {
   const link = buildDeepLink(siteUrl, template.tab, { short: true, content: `tpl-${template.id}` });
@@ -92,8 +77,8 @@ const MessageCard = ({ template, siteUrl, accessCount }: { template: { id: strin
             </span>
           )}
           {template.tab && (
-            <span className="text-[9px] font-mono text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
-              ?tab={template.tab}
+            <span className="text-[9px] text-muted-foreground/70 bg-background/50 rounded px-1.5 py-0.5">
+              Abre: {template.tab === "schedule" ? "Programação" : "Filmes e Séries"}
             </span>
           )}
         </div>
@@ -136,23 +121,20 @@ const ProblemList = ({ items, label, onJump }: { items: DailyGame[]; label: stri
   );
 };
 
-const DayPreviewCard = ({
-  title, dateStr, games, text, validation, onJumpToSchedule, lastUpdatedAt,
+/** Resumo de saúde da programação do dia (sem canal / 00:00 / duplicados). */
+const ValidationStrip = ({
+  title, dateStr, validation, onJumpToSchedule, lastUpdatedAt,
 }: {
   title: string;
   dateStr: string;
-  games: DailyGame[] | undefined;
-  text: string | null;
   validation: ReturnType<typeof validateDay>;
   onJumpToSchedule: () => void;
   lastUpdatedAt: number;
 }) => {
-  void games;
   const [, m, d] = dateStr.split("-");
   const hasIssues = validation.noChannel > 0 || validation.zeroTime > 0 || validation.duplicates > 0;
   const allOk = validation.active > 0 && !hasIssues;
   const [showProblems, setShowProblems] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   useLiveTick(); // re-render to update "atualizado há"
 
   const ageSec = lastUpdatedAt > 0 ? Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000)) : null;
@@ -163,12 +145,12 @@ const DayPreviewCard = ({
     `há ${Math.floor(ageSec / 3600)}h`;
 
   return (
-    <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-3 flex flex-col">
+    <div className="glass-panel rounded-xl p-3 sm:p-4 space-y-2">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-foreground">{title}</h3>
           <p className="text-[10px] text-muted-foreground">
-            {d}/{m} · {ageSec === null ? "carregando jogos…" : `${validation.active} jogo(s)`} · {ageSec === null ? ageLabel : `atualizado ${ageLabel}`}
+            {d}/{m} · {ageSec === null ? "carregando jogos…" : `${validation.active} jogo(s) publicado(s)`} · {ageSec === null ? ageLabel : `atualizado ${ageLabel}`}
           </p>
         </div>
         {validation.active > 0 && (
@@ -177,6 +159,15 @@ const DayPreviewCard = ({
             : <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" aria-label="Verificar avisos" />
         )}
       </div>
+
+      {validation.active === 0 && ageSec !== null && (
+        <p className="text-[11px] text-amber-200 flex items-center gap-1.5">
+          <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> Nenhuma programação publicada nesta data.
+          <button type="button" onClick={onJumpToSchedule} className="text-primary hover:underline inline-flex items-center gap-1 min-h-11">
+            <ExternalLink className="h-3 w-3" /> Abrir Programação
+          </button>
+        </p>
+      )}
 
       {validation.active > 0 && (
         <div className="flex gap-1.5 text-[10px] overflow-x-auto scrollbar-none -mx-1 px-1">
@@ -221,43 +212,6 @@ const DayPreviewCard = ({
           <ProblemList items={validation.problems.duplicates} label="Duplicados" onJump={onJumpToSchedule} />
         </div>
       )}
-
-      {text ? (
-        <pre className={`flex-1 text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed bg-background/50 rounded-lg p-3 overflow-y-auto ${expanded ? "max-h-[70vh]" : "max-h-[280px]"}`}>
-          {text}
-        </pre>
-      ) : (
-        <div className="flex-1 text-xs text-muted-foreground text-center py-8 bg-background/30 rounded-lg">
-          Nenhum jogo agendado para este dia.
-        </div>
-      )}
-
-      {text && (
-        <>
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="text-[10px] text-muted-foreground hover:text-foreground self-start min-h-[28px]"
-          >
-            {expanded ? "Recolher" : "Expandir"}
-          </button>
-          <div className="flex gap-2">
-            <CopyButton
-              text={text}
-              label="Copiar"
-              onAfterCopy={() => trackShare({ surface: "admin-whatsapp-day", tab: "schedule", utm_campaign: "share-programacao", action: "copy" })}
-            />
-            <Button
-              size="sm"
-              onClick={() => openWhatsApp(text, { surface: "admin-whatsapp-day", tab: "schedule", utm_campaign: "share-programacao", action: "open" })}
-              className="flex-1 gap-1.5 text-xs bg-[hsl(142,70%,38%)] hover:bg-[hsl(142,70%,32%)] text-white min-h-[44px]"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Enviar
-            </Button>
-          </div>
-        </>
-      )}
     </div>
   );
 };
@@ -288,7 +242,7 @@ const AdminWhatsApp = () => {
     return format(midnightInSaoPaulo(selectedDate), "EEEE, dd/MM", { locale: ptBR });
   }, [selectedDate, todayStr, tomorrowStr, dayAfterStr]);
 
-  const { data: dayGames, dataUpdatedAt } = useAllDailyGames(selectedDate);
+  const { data: dayGames, dataUpdatedAt, isLoading: gamesLoading } = useAllDailyGames(selectedDate);
   const siteUrl = useSiteUrl();
   const [linkTab, setLinkTab] = useState<DeepTab>("schedule");
   const [customMsg, setCustomMsg] = useState<string>(() => {
@@ -300,7 +254,6 @@ const AdminWhatsApp = () => {
     try { localStorage.setItem(DRAFT_KEY, customMsg); } catch { /* ignore */ }
   }, [customMsg]);
 
-  const dayText = useMemo(() => buildDayText(dayGames ?? [], selectedDate, siteUrl), [dayGames, selectedDate, siteUrl]);
   const dayValidation = useMemo(() => validateDay(dayGames ?? []), [dayGames]);
 
   const customLink = buildDeepLink(siteUrl, linkTab, { short: true, content: `custom-${linkTab}` });
@@ -458,14 +411,19 @@ const AdminWhatsApp = () => {
             />
           </div>
         </div>
-        <DayPreviewCard
+        <ValidationStrip
           title={`${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}`}
           dateStr={selectedDate}
-          games={dayGames}
-          text={dayText}
           validation={dayValidation}
           onJumpToSchedule={() => navigate("/admin/programacao")}
           lastUpdatedAt={dataUpdatedAt}
+        />
+        <FormatComposer
+          games={dayGames}
+          gamesLoading={gamesLoading}
+          dateStr={selectedDate}
+          todayStr={todayStr}
+          siteUrl={siteUrl}
         />
       </div>
 
@@ -491,7 +449,7 @@ const AdminWhatsApp = () => {
                 }`}
                 aria-pressed={linkTab === t}
               >
-                {t === "schedule" ? "Link: Programação" : "Link: Novidades"}
+                {t === "schedule" ? "Link: Programação" : "Link: Filmes e Séries"}
               </button>
             ))}
           </div>
