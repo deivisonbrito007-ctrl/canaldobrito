@@ -10,6 +10,7 @@ import {
   type ExistingGame,
   type SportsApiMatch,
   toSaoPauloDateTime,
+  findExistingGame,
   type ClassifyOptions,
 } from "../_shared/sportsApiCore.ts";
 
@@ -25,6 +26,10 @@ const BodySchema = z.discriminatedUnion("action", [
     sports: z.array(z.string().min(1).max(40)).max(30).optional(),
   }),
   z.object({ action: z.literal("live"), cron: z.boolean().optional() }),
+  z.object({ action: z.literal("cron") }),
+  z.object({ action: z.literal("auto-fetch") }),
+  z.object({ action: z.literal("status") }),
+  z.object({ action: z.literal("test") }),
   z.object({ action: z.literal("import"), ids: z.array(z.string().uuid()).min(1).max(200), active: z.boolean().optional() }),
   z.object({ action: z.literal("ignore"), ids: z.array(z.string().uuid()).min(1).max(200) }),
   z.object({ action: z.literal("update-existing"), id: z.string().uuid() }),
@@ -42,10 +47,17 @@ class ApiError extends Error {
 // ---------------------------------------------------------------------------
 
 const cache = new Map<string, { at: number; data: unknown }>();
-const CACHE_MS = 10 * 60 * 1000;
+/** Cache por tipo de consulta: sugestões 15 min, ao vivo 30 s, esportes 24 h. */
+const cacheTtl = (path: string, params: Record<string, string | number>) => {
+  if (path === "/sports") return 24 * 3600_000;
+  if (params.status === "live") return 30_000;
+  return 15 * 60_000;
+};
 let windowStart = Date.now();
 let windowCount = 0;
 const MAX_PER_MIN = 120;
+/** Requisições reais feitas à API nesta invocação (para cota). */
+let requestsThisRun = 0;
 
 async function apiGet<T>(path: string, params: Record<string, string | number>): Promise<T> {
   const key = Deno.env.get("SPORTSAPI_KEY");
@@ -53,7 +65,7 @@ async function apiGet<T>(path: string, params: Record<string, string | number>):
   const qs = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]));
   const url = `${API_BASE}${path}?${qs}`;
   const hit = cache.get(url);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data as T;
+  if (hit && Date.now() - hit.at < cacheTtl(path, params)) return hit.data as T;
 
   if (Date.now() - windowStart > 60_000) {
     windowStart = Date.now();
@@ -61,6 +73,7 @@ async function apiGet<T>(path: string, params: Record<string, string | number>):
   }
   if (windowCount >= MAX_PER_MIN) throw new ApiError(429, "Limite interno de requisições por minuto atingido. Tente em instantes.");
   windowCount++;
+  requestsThisRun++;
 
   let res!: Response;
   let text = "";
@@ -132,7 +145,15 @@ async function loadSettings(db: Admin) {
     brazilOnly: (s.sportsapi_brazil_only ?? "true") !== "false",
     acceptKnownChannel: (s.sportsapi_accept_known_channel ?? "true") !== "false",
     liveUpdates: (s.sportsapi_live_updates ?? "true") !== "false",
-    liveIntervalMin: Number(s.sportsapi_live_interval_min ?? "3") || 3,
+    /** Intervalo quando NÃO há jogo ao vivo publicado (minutos). */
+    liveIntervalMin: Math.max(1, Number(s.sportsapi_live_interval_min ?? "3") || 3),
+    /** Intervalo quando HÁ jogo ao vivo publicado (segundos; cron roda a cada minuto, então mínimo efetivo 60s). */
+    liveIntervalLiveSec: Math.max(30, Number(s.sportsapi_live_interval_live_sec ?? "60") || 60),
+    autoFetch: (s.sportsapi_auto_fetch ?? "true") !== "false",
+    autoFetchIntervalMin: Math.max(15, Number(s.sportsapi_auto_fetch_interval_min ?? "60") || 60),
+    ignoreForeign: (s.sportsapi_ignore_foreign ?? "true") !== "false",
+    nightPause: (s.sportsapi_night_pause ?? "true") !== "false",
+    dailyBudget: Math.max(500, Number(s.sportsapi_daily_budget ?? "8000") || 8000),
     maxPerSport: Math.max(1, Math.min(200, Number(s.sportsapi_max_per_sport ?? "40") || 40)),
     sportsCache: s.sportsapi_sports_cache ?? "",
   };
@@ -170,6 +191,41 @@ async function audit(db: Admin, action: string, actor: string | null, payload: R
   await db.from("audit_logs").insert({ action, entity: "sportsapi", actor_id: actor, payload });
 }
 
+const spNow = () => {
+  const d = toSaoPauloDateTime(Date.now())!;
+  return { date: d.date, hour: Number(d.time.slice(0, 2)) };
+};
+const addDays = (date: string, n: number) => new Date(Date.parse(date + "T12:00:00Z") + n * 86400_000).toISOString().slice(0, 10);
+
+/** Requisições usadas hoje / no mês (a partir dos registros de execução). */
+async function quotaUsage(db: Admin) {
+  const { date } = spNow();
+  const monthStart = date.slice(0, 7) + "-01";
+  const { data } = await db
+    .from("sportsapi_sync_runs")
+    .select("created_at,requests_used")
+    .gte("created_at", monthStart + "T03:00:00Z");
+  let day = 0, month = 0;
+  const dayStartMs = Date.parse(date + "T03:00:00Z"); // 00:00 em Brasília
+  for (const r of data ?? []) {
+    const n = Number(r.requests_used) || 0;
+    month += n;
+    if (Date.parse(r.created_at as string) >= dayStartMs) day += n;
+  }
+  return { day, month, monthStart };
+}
+
+async function lastRunOf(db: Admin, kinds: string[]) {
+  const { data } = await db
+    .from("sportsapi_sync_runs")
+    .select("created_at,kind,status,error_message,total_found,total_updated")
+    .in("kind", kinds)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
 // ---------------------------------------------------------------------------
 // Ações
 // ---------------------------------------------------------------------------
@@ -178,10 +234,10 @@ async function doFetch(db: Admin, actor: string | null, date: string, sportsOver
   const s = await loadSettings(db);
   if (!s.enabled) throw new ApiError(400, "Integração SportsAPI está desativada nas configurações.");
   const sports = sportsOverride?.length ? sportsOverride : s.sports;
-  const opts: ClassifyOptions = { brazilOnly: s.brazilOnly, acceptKnownChannel: s.acceptKnownChannel };
+  const opts: ClassifyOptions = { brazilOnly: s.brazilOnly, acceptKnownChannel: s.acceptKnownChannel, ignoreForeign: s.ignoreForeign };
   const [registry, existing] = await Promise.all([loadRegistry(db), loadExisting(db, date)]);
 
-  const totals = { found: 0, withTransmission: 0, ignored: 0, ready: 0, review: 0, duplicates: 0 };
+  const totals = { found: 0, withTransmission: 0, ignored: 0, foreign: 0, ready: 0, review: 0, duplicates: 0 };
   const errors: string[] = [];
   const rows: Record<string, unknown>[] = [];
 
@@ -213,8 +269,9 @@ async function doFetch(db: Admin, actor: string | null, date: string, sportsOver
       }
       if (n.date !== date) continue; // fuso: jogo cai em outro dia em Brasília
       const c = classifyMatch(n, registry, existing, opts);
-      if (c.status !== "ignorado_sem_transmissao") totals.withTransmission++;
+      if (c.status !== "ignorado_sem_transmissao" && c.status !== "ignorado_canal_estrangeiro") totals.withTransmission++;
       if (c.status === "ignorado_sem_transmissao") totals.ignored++;
+      else if (c.status === "ignorado_canal_estrangeiro") totals.foreign++;
       else if (c.status === "pronto_para_importar") totals.ready++;
       else if (c.status === "revisar" || c.status === "conflito" || c.status === "erro") totals.review++;
       else if (c.status === "duplicado") totals.duplicates++;
@@ -279,85 +336,164 @@ async function doFetch(db: Admin, actor: string | null, date: string, sportsOver
       total_found: totals.found,
       total_with_transmission: totals.withTransmission,
       total_ignored_no_transmission: totals.ignored,
+      total_ignored_foreign: totals.foreign,
       total_ready: totals.ready,
       total_review: totals.review,
       total_duplicates: totals.duplicates,
       status: errors.length ? "partial" : "ok",
       error_message: errors.join("; ") || null,
       actor_id: actor,
+      requests_used: requestsThisRun,
     })
     .select("id")
     .single();
 
-  await audit(db, "sportsapi_fetch", actor, { date, sports, ...totals, errors });
-  return { run_id: run?.id ?? null, totals, errors, sports };
+  await audit(db, actor ? "sportsapi_fetch" : "sportsapi_fetch_auto", actor, { date, sports, ...totals, errors, requests: requestsThisRun });
+
+  // Modo auto-importar: só "pronto" sem canal desconhecido (avisos leves permitidos).
+  let autoImported = 0;
+  if (s.mode === "auto") {
+    const { data: ready } = await db
+      .from("sportsapi_suggestions")
+      .select("id,warnings")
+      .eq("date", date)
+      .eq("status", "pronto_para_importar")
+      .eq("review_status", "pending");
+    const ids = (ready ?? [])
+      .filter((r) => !(r.warnings as { code: string }[] | null)?.some((w) => !["canal_sem_logo", "pais_nao_informado"].includes(w.code)))
+      .map((r) => r.id as string);
+    if (ids.length) {
+      const r = await doImport(db, actor, ids, true);
+      autoImported = r.results.filter((x) => x.ok).length;
+    }
+  }
+  return { run_id: run?.id ?? null, totals, errors, sports, autoImported };
+}
+
+/** Busca automática (cron): hoje e amanhã, respeitando intervalo, horário e cota. */
+async function doAutoFetch(db: Admin, force = false) {
+  const s = await loadSettings(db);
+  if (!s.enabled || !s.autoFetch || s.mode === "manual") return { skipped: true, reason: "desativado" };
+  const { date, hour } = spNow();
+  if (!force && s.nightPause && (hour < 6 || hour >= 23)) return { skipped: true, reason: "madrugada" };
+  const last = await lastRunOf(db, ["fetch-auto"]);
+  if (!force && last && Date.now() - Date.parse(last.created_at as string) < s.autoFetchIntervalMin * 60_000 - 20_000) {
+    return { skipped: true, reason: "intervalo" };
+  }
+  const q = await quotaUsage(db);
+  if (q.day >= s.dailyBudget) return { skipped: true, reason: "cota_diaria" };
+
+  const out: Record<string, unknown> = {};
+  for (const d of [date, addDays(date, 1)]) {
+    requestsThisRun = 0;
+    try {
+      const r = await doFetch(db, null, d);
+      out[d] = { totals: r.totals, errors: r.errors, autoImported: r.autoImported };
+    } catch (e) {
+      out[d] = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+  // Marca a execução automática (para o intervalo)
+  await db.from("sportsapi_sync_runs").insert({ date, kind: "fetch-auto", sports: s.sports, status: "ok", requests_used: 0 });
+  return { skipped: false, dates: out };
 }
 
 async function doLive(db: Admin, actor: string | null, fromCron: boolean) {
   const s = await loadSettings(db);
-  if (!s.enabled || (fromCron && !s.liveUpdates)) return { updated: 0, skipped: true };
-  if (fromCron) {
-    // Proteção contra disparos repetidos: respeita o intervalo configurado.
-    const { data: last } = await db
-      .from("sportsapi_sync_runs")
-      .select("created_at")
-      .eq("kind", "live-cron")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const minMs = Math.max(2, Number(s.liveIntervalMin) || 3) * 60_000 - 15_000;
-    if (last && Date.now() - new Date(last.created_at as string).getTime() < minMs) return { updated: 0, skipped: true, reason: "intervalo" };
-  }
+  if (!s.enabled || (fromCron && !s.liveUpdates)) return { updated: 0, checked: 0, skipped: true, reason: "desativado" };
+  const { date: nowSp, hour } = spNow();
+  const nowMs = Date.now();
 
-  const nowSp = toSaoPauloDateTime(Date.now())?.date ?? new Date().toISOString().slice(0, 10);
-  const { data: imported } = await db
+  // Jogos publicados hoje (manual ou API) em janela relevante:
+  // começa nos próximos 120 min, está em andamento, ou terminou há < 15 min.
+  const { data: published } = await db
     .from("daily_games")
-    .select("id,external_id,external_sport,game_time,api_status")
+    .select("id,source,external_id,external_sport,sport_type,home_team,away_team,competition,channels,game_time,api_status,live_updated_at,date")
     .eq("date", nowSp)
-    .eq("source", "sportsapi")
     .eq("archived", false)
-    .not("external_id", "is", null);
-  const target = (imported ?? []).filter((g) => g.api_status !== "finished");
+    .eq("active", true)
+    .in("source", ["manual", "sportsapi"]);
+  const startMs = (t: string) => Date.parse(`${nowSp}T${t.slice(0, 8).padEnd(8, ":00".slice(0, 8 - t.slice(0, 8).length))}-03:00`);
+  const target = (published ?? []).filter((g) => {
+    if (!g.channels || (g.channels as string[]).length === 0) return false;
+    const st = startMs(g.game_time as string);
+    if (g.api_status === "finished") {
+      const upd = g.live_updated_at ? Date.parse(g.live_updated_at as string) : 0;
+      return nowMs - upd < 15 * 60_000;
+    }
+    return st - nowMs <= 120 * 60_000 && nowMs - st <= 6 * 3600_000;
+  });
+  const anyLive = target.some((g) => g.api_status === "live");
+
+  if (fromCron) {
+    if (target.length === 0) return { updated: 0, checked: 0, skipped: true, reason: "sem_jogos_na_janela" };
+    if (s.nightPause && hour >= 2 && hour < 6 && !anyLive) return { updated: 0, checked: 0, skipped: true, reason: "madrugada" };
+    const last = await lastRunOf(db, ["live-cron"]);
+    const q = await quotaUsage(db);
+    const nearBudget = q.day >= s.dailyBudget * 0.8;
+    // Intervalo adaptativo: com jogo ao vivo usa segundos; sem, usa minutos. Perto da cota, dobra.
+    let minMs = anyLive ? s.liveIntervalLiveSec * 1000 : s.liveIntervalMin * 60_000;
+    if (nearBudget) minMs *= 2;
+    if (q.day >= s.dailyBudget) return { updated: 0, checked: 0, skipped: true, reason: "cota_diaria" };
+    if (last && nowMs - Date.parse(last.created_at as string) < minMs - 10_000) return { updated: 0, checked: 0, skipped: true, reason: "intervalo" };
+  }
   if (target.length === 0) return { updated: 0, checked: 0 };
 
-  const sports = [...new Set(target.map((g) => (g.external_sport as string) || "football"))];
-  const byExt = new Map(target.map((g) => [String(g.external_id), g]));
+  // Esportes: dos jogos-alvo (mapeando sport_type → id da API) + habilitados.
+  const sportsOfTargets = target.map((g) => (g.external_sport as string) || sportTypeToApi(g.sport_type as string)).filter(Boolean) as string[];
+  const sports = [...new Set(sportsOfTargets)];
+  const byExt = new Map(target.filter((g) => g.external_id).map((g) => [String(g.external_id), g]));
+  const manualTargets = target.filter((g) => !g.external_id) as unknown as ExistingGame[];
   let updated = 0;
   const liveNow: Record<string, unknown>[] = [];
+  const errors: string[] = [];
 
   for (const sport of sports) {
     let matches: SportsApiMatch[] = [];
     try {
       matches = await fetchAllGames(sport, { status: "live" }, 100);
-      const today = await fetchAllGames(sport, { date: nowSp, status: "finished" }, 100).catch(() => []);
-      matches = [...matches, ...today];
+      const today = await fetchAllGames(sport, { date: nowSp }, 200).catch(() => []);
+      const seen = new Set(matches.map((m) => String(m.id)));
+      for (const m of today) if (!seen.has(String(m.id))) matches.push(m);
     } catch (e) {
-      if (e instanceof ApiError && (e.status === 404 || e.status === 429 || e.status === 503)) continue;
+      if (e instanceof ApiError && (e.status === 404 || e.status === 429 || e.status === 503)) {
+        errors.push(`${sport}: ${e.status}`);
+        continue;
+      }
       throw e;
     }
     for (const m of matches) {
-      const g = byExt.get(String(m.id));
-      if (!g) continue;
       const n = normalizeSportsApiGame({ ...m, sport: m.sport ?? sport });
       if (!n) continue;
-      const { error } = await db
-        .from("daily_games")
-        .update({
-          home_score: n.home_score,
-          away_score: n.away_score,
-          live_status: n.api_status,
-          api_status: n.api_status,
-          live_clock: n.live_clock,
-          period: n.period,
-          is_live: n.api_status === "live",
-          status_short: n.api_status === "live" ? "LIVE" : n.api_status === "finished" ? "FT" : "NS",
-          live_updated_at: new Date().toISOString(),
-          last_api_sync_at: new Date().toISOString(),
-        })
-        .eq("id", g.id as string);
+      let g = byExt.get(String(m.id));
+      let linkExternal = false;
+      if (!g && manualTargets.length) {
+        // Jogo publicado manualmente: casa por times + horário (±15 min), sem exigir tvNetworks.
+        const found = findExistingGame(n, manualTargets);
+        if (found) {
+          g = found.game as unknown as typeof g;
+          linkExternal = true;
+        }
+      }
+      if (!g) continue;
+      if (n.api_status === "scheduled" && g.api_status !== "scheduled" && g.api_status) continue;
+      const patch: Record<string, unknown> = {
+        home_score: n.home_score,
+        away_score: n.away_score,
+        live_status: n.api_status,
+        api_status: n.api_status,
+        live_clock: n.live_clock,
+        period: n.period,
+        is_live: n.api_status === "live",
+        status_short: n.api_status === "live" ? "LIVE" : n.api_status === "finished" ? "FT" : "NS",
+        live_updated_at: new Date().toISOString(),
+        last_api_sync_at: new Date().toISOString(),
+      };
+      if (linkExternal) Object.assign(patch, { external_source: "sportsapi", external_id: n.external_id, external_sport: n.sport });
+      const { error } = await db.from("daily_games").update(patch).eq("id", g.id as string);
       if (!error) {
         updated++;
-        liveNow.push({ id: g.id, status: n.api_status, score: `${n.home_score ?? "-"}x${n.away_score ?? "-"}` });
+        liveNow.push({ id: g.id, status: n.api_status, score: `${n.home_score ?? "-"}x${n.away_score ?? "-"}`, linked: linkExternal });
       }
     }
   }
@@ -368,11 +504,72 @@ async function doLive(db: Admin, actor: string | null, fromCron: boolean) {
     sports,
     total_found: target.length,
     total_updated: updated,
-    status: "ok",
+    status: errors.length ? "partial" : "ok",
+    error_message: errors.join("; ") || null,
     actor_id: actor,
+    requests_used: requestsThisRun,
   });
-  if (!fromCron || updated > 0) await audit(db, "sportsapi_live_update", actor, { date: nowSp, checked: target.length, updated, games: liveNow.slice(0, 50) });
-  return { updated, checked: target.length };
+  if (!fromCron || updated > 0 || errors.length) {
+    await audit(db, "sportsapi_live_update", actor, { date: nowSp, checked: target.length, updated, anyLive, errors, requests: requestsThisRun, games: liveNow.slice(0, 50) });
+  }
+  return { updated, checked: target.length, anyLive, errors };
+}
+
+/** sport_type do app → id da SportsAPI (para jogos manuais sem external_sport). */
+function sportTypeToApi(st: string): string | null {
+  const m: Record<string, string> = {
+    football: "football", basketball: "basketball", tennis: "tennis", mma: "mma", boxing: "mma", volleyball: "volleyball",
+    futsal: "futsal", rugby: "american-football", baseball: "baseball", f1: "motorsport", cycling: "cycling", golf: "golf",
+    hockey: "ice-hockey", handball: "handball", esports: "esports",
+  };
+  return m[st] ?? null;
+}
+
+/** Cron único (a cada minuto): decide o que está na hora de rodar. */
+async function doCron(db: Admin) {
+  requestsThisRun = 0;
+  const live = await doLive(db, null, true).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
+  requestsThisRun = 0;
+  const fetch = await doAutoFetch(db).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
+  return { live, fetch };
+}
+
+async function doStatus(db: Admin) {
+  const s = await loadSettings(db);
+  const [q, lastFetch, lastAuto, lastLive, lastErr] = await Promise.all([
+    quotaUsage(db),
+    lastRunOf(db, ["fetch"]),
+    lastRunOf(db, ["fetch-auto"]),
+    lastRunOf(db, ["live-cron", "live"]),
+    db.from("sportsapi_sync_runs").select("created_at,kind,error_message").eq("status", "partial").order("created_at", { ascending: false }).limit(1).maybeSingle().then((r) => r.data),
+  ]);
+  const { hour } = spNow();
+  const nextAuto = !s.autoFetch || s.mode === "manual" ? null
+    : lastAuto ? new Date(Date.parse(lastAuto.created_at as string) + s.autoFetchIntervalMin * 60_000).toISOString() : "em até 1 min";
+  return {
+    enabled: s.enabled,
+    mode: s.mode,
+    quota: { day: q.day, month: q.month, dailyBudget: s.dailyBudget, monthlyLimit: 300_000, nearBudget: q.day >= s.dailyBudget * 0.8 },
+    lastFetch, lastAuto, lastLive, lastPartial: lastErr,
+    schedule: {
+      autoFetch: s.autoFetch && s.mode !== "manual", autoFetchIntervalMin: s.autoFetchIntervalMin, nextAuto,
+      live: s.liveUpdates, liveIntervalLiveSec: s.liveIntervalLiveSec, liveIntervalIdleMin: s.liveIntervalMin,
+      nightPause: s.nightPause, pausedNow: s.nightPause && (hour < 6 || hour >= 23),
+    },
+    hasKey: !!Deno.env.get("SPORTSAPI_KEY"),
+  };
+}
+
+async function doTest() {
+  if (!Deno.env.get("SPORTSAPI_KEY")) return { ok: false, message: "Chave da SportsAPI não configurada no servidor." };
+  const t0 = Date.now();
+  try {
+    cache.delete(`${API_BASE}/sports?`);
+    const r = await apiGet<{ sports?: unknown[] }>("/sports", {});
+    return { ok: true, latencyMs: Date.now() - t0, sports: Array.isArray(r?.sports) ? r.sports.length : null };
+  } catch (e) {
+    return { ok: false, latencyMs: Date.now() - t0, message: e instanceof ApiError ? e.friendly : "Falha na conexão." };
+  }
 }
 
 async function doImport(db: Admin, actor: string | null, ids: string[], active: boolean) {
@@ -384,7 +581,7 @@ async function doImport(db: Admin, actor: string | null, ids: string[], active: 
       results.push({ id: sg.id, ok: false, reason: "já importado" });
       continue;
     }
-    if (sg.status === "duplicado" || sg.status === "ignorado_sem_transmissao" || sg.status === "erro") {
+    if (["duplicado", "ignorado_sem_transmissao", "ignorado_canal_estrangeiro", "erro"].includes(sg.status)) {
       results.push({ id: sg.id, ok: false, reason: `status ${sg.status}` });
       continue;
     }
@@ -508,6 +705,7 @@ Deno.serve(async (req) => {
   } catch {
     return json({ error: "Corpo inválido." }, 400);
   }
+  requestsThisRun = 0;
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) return json({ error: "Parâmetros inválidos.", details: parsed.error.flatten() }, 400);
   const input = parsed.data;
@@ -519,7 +717,7 @@ Deno.serve(async (req) => {
   const isServiceCall = !!token && token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   // Cron interno: segredo gerado no banco (settings.sportsapi_cron_secret, is_secret) — nunca sai do backend.
   let isCron = false;
-  if (input.action === "live" && input.cron === true) {
+  if ((input.action === "live" && input.cron === true) || input.action === "cron") {
     if (isServiceCall) isCron = true;
     else {
       const cronHeader = req.headers.get("x-cron-secret") ?? "";
@@ -549,6 +747,14 @@ Deno.serve(async (req) => {
         return json(await doFetch(db, actor, input.date, input.sports));
       case "live":
         return json(await doLive(db, actor, !!input.cron));
+      case "cron":
+        return json(await doCron(db));
+      case "auto-fetch":
+        return json(await doAutoFetch(db, true));
+      case "status":
+        return json(await doStatus(db));
+      case "test":
+        return json(await doTest());
       case "import":
         return json(await doImport(db, actor, input.ids, input.active ?? true));
       case "ignore":
