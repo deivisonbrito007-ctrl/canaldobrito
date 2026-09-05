@@ -33,3 +33,15 @@
 - Confirmação adicionada para desativação em massa (Filmes/Séries/Novidades).
 - Teste novo: `src/pages/__tests__/adminRoutes.test.ts` garante que todo item do menu tem rota (sem 404) e sem nomes antigos.
 - Type-check, 417 testes e build OK; sem scroll horizontal em 375/1280.
+
+## SportsAPI Pro (concluído)
+- [x] Backend seguro (`sportsapi-sync`) com chave só no servidor, cache 10 min, limite 120 req/min
+- [x] Tabelas de sugestões/execuções + campos de placar/status em daily_games
+- [x] Classificação: só Brasil ou canal reconhecido; país embutido no nome ("(Bra)", "(Usa)") tratado
+- [x] Admin: aba "Sugestões da API" (importar/ignorar/atualizar/associar canal) + Configurações
+- [x] Público: placar e relógio ao vivo discretos; jogos da API sem canal nunca aparecem
+- [x] WhatsApp: placar/relógio em jogos ao vivo/encerrados
+- [x] Canais: indicador de uso pela SportsAPI
+- [x] Atualização ao vivo agendada a cada 3 min (segredo interno; pula se desligada/sem jogos)
+- [x] Auditoria: trigger corrigido (settings sem campo `active`); funções internas com EXECUTE restrito
+- [x] 438 testes passando, build OK, sem scroll horizontal 375/1280
