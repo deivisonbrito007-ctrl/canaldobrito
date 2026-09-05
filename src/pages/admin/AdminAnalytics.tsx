@@ -531,7 +531,7 @@ export default function AdminAnalytics() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Apagar log local de debug?</AlertDialogTitle>
+                <AlertDialogTitle>Limpar registro local de depuração?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Apaga apenas os {localCount} eventos guardados neste navegador (localStorage).
                   O histórico do banco não é afetado.
@@ -539,7 +539,7 @@ export default function AdminAnalytics() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearLocal}>Apagar log local</AlertDialogAction>
+                <AlertDialogAction onClick={handleClearLocal}>Limpar registro</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

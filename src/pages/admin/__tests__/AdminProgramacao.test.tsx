@@ -186,9 +186,9 @@ describe("AdminProgramacao — delete confirmation", () => {
     }];
     render(<AdminProgramacao />, { wrapper });
     switchToCategories();
-    fireEvent.click(screen.getByLabelText("Excluir banner"));
+    fireEvent.click(screen.getByLabelText("Remover banner"));
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText(/Excluir banner\?/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Remover banner\?/i)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByText("Cancelar"));
     expect(mocks.deleteMutateAsync).not.toHaveBeenCalled();
   });
