@@ -317,8 +317,7 @@ const AdminFilmes = () => {
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="glass-panel border-white/[0.1] text-sm h-11 pr-9"
-                  aria-label="Buscar filme por nome"
-                  enterKeyHint="search"
+                                    enterKeyHint="search"
                   inputMode="search"
                 />
                 {query && (
