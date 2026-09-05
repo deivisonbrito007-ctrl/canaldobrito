@@ -1,5 +1,16 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Check, Loader2, RefreshCw, Trash2, X } from "lucide-react";
 
 interface ContentListHeaderProps {
@@ -81,14 +92,30 @@ export const ContentListHeader = ({
               {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
               Ativar
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onBulkActive(false)} disabled={bulkRunning || selectedCount === 0} className="text-[10px] gap-1">
+            <Button size="sm" variant="outline" onClick={() => setConfirmDeactivate(true)} disabled={bulkRunning || selectedCount === 0} className="text-[10px] gap-1">
               {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
               Desativar
             </Button>
             <Button size="sm" variant="destructive" onClick={onBulkDelete} disabled={bulkRunning || selectedCount === 0} className="text-[10px] gap-1">
               <Trash2 className="h-3 w-3" />
-              Excluir
+              Remover
             </Button>
+            <AlertDialog open={confirmDeactivate} onOpenChange={setConfirmDeactivate}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desativar {selectedCount} item(ns)?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Os itens selecionados deixam de aparecer no site público. Você pode reativá-los depois.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => { setConfirmDeactivate(false); onBulkActive(false); }}>
+                    Desativar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button size="sm" variant="ghost" onClick={onExitSelection} disabled={bulkRunning} className="text-[10px]" aria-label="Sair do modo de seleção">
               <X className="h-3 w-3" />
             </Button>
