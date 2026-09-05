@@ -46,10 +46,10 @@
 - [x] Auditoria: trigger corrigido (settings sem campo `active`); funções internas com EXECUTE restrito
 - [x] 438 testes passando, build OK, sem scroll horizontal 375/1280
 
-## SportsAPI revisão (em andamento)
-- [ ] Filtro Brasil: isBrazilBroadcast + canal estrangeiro por nome + status ignorado_canal_estrangeiro
-- [ ] Ao vivo: atualizar jogos manuais correspondentes; live para todos esportes
-- [ ] Automação: cron sugestões (hoje+amanhã, horário comercial) + live adaptativo por config
-- [ ] Cota: contagem dia/mês, painel técnico, testar conexão
-- [ ] Configurações + painel admin (motivos, filtros, resumo)
-- [ ] Testes, build, browser
+## SportsAPI revisão (concluída)
+- [x] Filtro Brasil: isBrazilBroadcast + canal estrangeiro por nome + status ignorado_canal_estrangeiro
+- [x] Ao vivo: atualizar jogos manuais correspondentes; live para todos esportes
+- [x] Automação: cron sugestões (hoje+amanhã, horário comercial) + live adaptativo por config
+- [x] Cota: contagem dia/mês, painel técnico, testar conexão
+- [x] Configurações + painel admin (motivos, filtros, resumo)
+- [x] Testes, build, browser
