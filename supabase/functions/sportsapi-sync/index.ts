@@ -497,11 +497,17 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const isServiceCall = !!token && token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const cronSecret = Deno.env.get("SPORTSAPI_CRON_SECRET");
-  const cronHeader = req.headers.get("x-cron-secret");
-  const isCron =
-    input.action === "live" && input.cron === true &&
-    (isServiceCall || (!!cronSecret && cronSecret.length >= 32 && cronHeader === cronSecret));
+  // Cron interno: segredo gerado no banco (settings.sportsapi_cron_secret, is_secret) — nunca sai do backend.
+  let isCron = false;
+  if (input.action === "live" && input.cron === true) {
+    if (isServiceCall) isCron = true;
+    else {
+      const cronHeader = req.headers.get("x-cron-secret") ?? "";
+      const { data: row } = await db.from("settings").select("value").eq("key", "sportsapi_cron_secret").maybeSingle();
+      const cronSecret = (row?.value as string | undefined) ?? "";
+      isCron = cronSecret.length >= 32 && cronHeader.length === cronSecret.length && cronHeader === cronSecret;
+    }
+  }
 
   if (!isCron) {
     if (!token) return json({ error: "Faça login para usar a SportsAPI." }, 401);
