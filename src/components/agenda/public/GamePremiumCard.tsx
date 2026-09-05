@@ -3,6 +3,7 @@ import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadgeList } from "@/components/public/ChannelBadge";
 import {
   isGameCurrentlyLive,
+  apiGameStatus,
   type SportType,
   getMinutesUntilStart,
   formatCountdown,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
+import { formatLiveClock } from "@/lib/sportsApi";
 
 interface Props {
   game: DailyGame;
@@ -25,16 +27,19 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const time = game.game_time.slice(0, 5);
-  const live = isGameCurrentlyLive(game.game_time, game.date, sport as SportType);
-  const elapsed = live ? getElapsedMinutes(game.game_time, game.date, sport as SportType) : null;
-  const minutesUntil = !live ? getMinutesUntilStart(game.game_time, game.date) : null;
+  const fromApi = apiGameStatus(game);
+  const live = fromApi ? fromApi === "live" : isGameCurrentlyLive(game.game_time, game.date, sport as SportType);
+  const elapsed = live && !fromApi ? getElapsedMinutes(game.game_time, game.date, sport as SportType) : null;
+  const minutesUntil = !live && fromApi !== "ended" ? getMinutesUntilStart(game.game_time, game.date) : null;
   const soon = minutesUntil !== null && minutesUntil <= 60;
   const ended = !live && minutesUntil === null;
   const single = isSingleEvent({ ...game, sport_type: sport });
   const channels = game.channels ?? [];
+  const hasScore = !single && typeof game.home_score === "number" && typeof game.away_score === "number" && (live || ended);
+  const clock = live ? formatLiveClock(game) : null;
 
   const statusLabel = live
-    ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
+    ? clock ? `AO VIVO · ${clock}` : elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
     : soon
       ? minutesUntil! < 1 ? "COMEÇANDO" : `COMEÇA EM ${formatCountdown(minutesUntil!).toUpperCase()}`
       : ended ? "ENCERRADO" : "EM BREVE";
@@ -42,7 +47,9 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
 
   const aria = `${SPORT_LABEL[sport] ?? sport}: ${single ? game.home_team : `${game.home_team} contra ${game.away_team}`}${
     game.competition ? `, ${game.competition}` : ""
-  }, às ${time}${live ? ", ao vivo" : soon ? ", começa em breve" : ended ? ", encerrado" : ""}`;
+  }, às ${time}${live ? ", ao vivo" : soon ? ", começa em breve" : ended ? ", encerrado" : ""}${
+    hasScore ? `, placar ${game.home_score} a ${game.away_score}` : ""
+  }`;
 
   return (
     <motion.article
@@ -108,10 +115,24 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
             <p className="font-semibold text-[15px] leading-snug text-white line-clamp-2">{game.home_team}</p>
           ) : (
             <p className="font-semibold text-[15px] leading-snug text-white">
-              <span className="block truncate">{game.home_team}</span>
-              <span className="block truncate">
-                <span className="text-white/40 text-[12px] mr-1.5">x</span>
-                {game.away_team}
+              <span className="flex items-center gap-2">
+                <span className="truncate flex-1 min-w-0">{game.home_team}</span>
+                {hasScore && (
+                  <span className={`shrink-0 tabular-nums text-[15px] font-bold ${live ? "text-[#00ff87]" : "text-white/70"}`} aria-label={`Placar ${game.home_team} ${game.home_score}`}>
+                    {game.home_score}
+                  </span>
+                )}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="truncate flex-1 min-w-0">
+                  <span className="text-white/40 text-[12px] mr-1.5">x</span>
+                  {game.away_team}
+                </span>
+                {hasScore && (
+                  <span className={`shrink-0 tabular-nums text-[15px] font-bold ${live ? "text-[#00ff87]" : "text-white/70"}`} aria-label={`Placar ${game.away_team} ${game.away_score}`}>
+                    {game.away_score}
+                  </span>
+                )}
               </span>
             </p>
           )}
