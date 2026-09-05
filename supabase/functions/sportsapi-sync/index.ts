@@ -122,6 +122,7 @@ async function loadSettings(db: Admin) {
     brazilOnly: (s.sportsapi_brazil_only ?? "true") !== "false",
     acceptKnownChannel: (s.sportsapi_accept_known_channel ?? "true") !== "false",
     liveUpdates: (s.sportsapi_live_updates ?? "true") !== "false",
+    liveIntervalMin: Number(s.sportsapi_live_interval_min ?? "3") || 3,
     maxPerSport: Math.max(1, Math.min(200, Number(s.sportsapi_max_per_sport ?? "40") || 40)),
     sportsCache: s.sportsapi_sports_cache ?? "",
   };
@@ -281,6 +282,18 @@ async function doFetch(db: Admin, actor: string | null, date: string, sportsOver
 async function doLive(db: Admin, actor: string | null, fromCron: boolean) {
   const s = await loadSettings(db);
   if (!s.enabled || (fromCron && !s.liveUpdates)) return { updated: 0, skipped: true };
+  if (fromCron) {
+    // Proteção contra disparos repetidos: respeita o intervalo configurado.
+    const { data: last } = await db
+      .from("sportsapi_sync_runs")
+      .select("created_at")
+      .eq("kind", "live-cron")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const minMs = Math.max(2, Number(s.liveIntervalMin) || 3) * 60_000 - 15_000;
+    if (last && Date.now() - new Date(last.created_at as string).getTime() < minMs) return { updated: 0, skipped: true, reason: "intervalo" };
+  }
 
   const nowSp = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
   const { data: imported } = await db
