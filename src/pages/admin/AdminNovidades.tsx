@@ -560,7 +560,11 @@ const AdminNovidades = () => {
           ) : all.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <Sparkles className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-              <p className="text-xs text-muted-foreground">Nenhum item adicionado</p>
+              <p className="text-xs text-muted-foreground">Nenhuma novidade adicionada.</p>
+              <p className="text-[10px] text-muted-foreground/50">Busque um filme ou série e adicione como novidade.</p>
+              <Button size="sm" variant="outline" className="min-h-11 text-xs gap-1" onClick={() => document.getElementById("tmdb-search-input")?.focus()}>
+                <Search className="h-3.5 w-3.5" /> Adicionar novidade
+              </Button>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="py-10 text-center space-y-2">

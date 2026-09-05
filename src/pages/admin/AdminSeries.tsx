@@ -365,8 +365,11 @@ const AdminSeries = () => {
           ) : totalCount === 0 ? (
             <div className="py-10 text-center space-y-2">
               <Clapperboard className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-              <p className="text-xs text-muted-foreground">Nenhuma série adicionada</p>
-              <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar séries do TMDB</p>
+              <p className="text-xs text-muted-foreground">Nenhuma série adicionada.</p>
+              <p className="text-[10px] text-muted-foreground/50">Busque um título e adicione ao catálogo.</p>
+              <Button size="sm" variant="outline" className="min-h-11 text-xs gap-1" onClick={() => document.getElementById("tmdb-search-input")?.focus()}>
+                <Search className="h-3.5 w-3.5" /> Buscar série
+              </Button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-10 text-center space-y-2">

@@ -880,10 +880,23 @@ const AdminCanaisLogos = () => {
             ) : tab === "custom" && isLoading ? (
               <div className="text-sm text-muted-foreground">Carregando…</div>
             ) : visibleCards.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-                {tab === "orphans"
-                  ? "🎉 Todos os canais detectados têm logo!"
-                  : "Nenhum canal encontrado."}
+              <div className="rounded-lg border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground space-y-3">
+                <p>
+                  {tab === "orphans"
+                    ? "Todos os canais detectados já têm logo."
+                    : (rows ?? []).length === 0
+                      ? "Nenhum canal cadastrado ainda."
+                      : "Nenhum canal encontrado para essa busca ou filtro."}
+                </p>
+                {(rows ?? []).length === 0 ? (
+                  <Button size="sm" onClick={() => openNew()} className="min-h-11 gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Cadastrar canal
+                  </Button>
+                ) : tab !== "orphans" ? (
+                  <Button size="sm" variant="outline" onClick={() => { setSearch(""); setFilter("all"); }} className="min-h-11">
+                    Limpar filtros
+                  </Button>
+                ) : null}
               </div>
             ) : tab === "custom" ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
