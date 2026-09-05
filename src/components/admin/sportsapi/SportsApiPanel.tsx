@@ -310,7 +310,7 @@ export const SportsApiPanel = () => {
           </button>
           {channelsPresent.map(([c, n]) => (
             <button key={c} onClick={() => setChannelFilter(channelFilter === c ? "all" : c)} aria-pressed={channelFilter === c} className={`shrink-0 min-h-10 pl-1.5 pr-3 rounded-full text-[11px] border inline-flex items-center gap-1.5 whitespace-nowrap ${channelFilter === c ? "bg-primary/15 border-primary/40 text-primary" : "border-white/[0.08] text-muted-foreground"}`}>
-              <ChannelMiniLogo channel={c} /> {c} · {n}
+              <ChannelMiniLogo name={c} /> {c} · {n}
             </button>
           ))}
         </div>
