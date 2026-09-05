@@ -1198,7 +1198,7 @@ const AdminCanaisLogos = () => {
                   setConfirm({ kind: "delete-mapping", id: form.id!, name: form.name })
                 }
               >
-                <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                <Trash2 className="h-4 w-4 mr-1" /> Remover
               </Button>
             )}
             <Button variant="ghost" onClick={() => setOpen(false)} className="min-h-11">
@@ -1430,7 +1430,7 @@ const ChannelCard = ({
               variant="ghost"
               className="h-9 w-9 text-destructive hover:text-destructive"
               onClick={onDelete}
-              aria-label="Excluir"
+              aria-label="Remover canal"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -1548,7 +1548,7 @@ const SortableChannelRow = ({
           variant="ghost"
           className="h-9 w-9 text-destructive hover:text-destructive"
           onClick={onDelete}
-          aria-label="Excluir"
+          aria-label="Remover canal"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

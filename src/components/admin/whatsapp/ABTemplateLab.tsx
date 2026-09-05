@@ -254,7 +254,7 @@ export const ABTemplateLab = () => {
             <div className="min-w-0">
               <div className="text-sm font-bold text-foreground">Laboratório A/B de Textos</div>
               <p className="text-[10px] text-muted-foreground">
-                Edite duas variantes por template. Cada link recebe um <code className="text-[9px]">utm_content</code> distinto e o painel compara cliques.
+                Edite duas variantes por template. Cada link recebe um identificador de conteúdo da campanha distinto e o painel compara os cliques.
               </p>
             </div>
           </div>
@@ -353,7 +353,7 @@ export const ABTemplateLab = () => {
                         <FunnelStat label="Open" value={r?.shares_open ?? 0} />
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        CTR: <span className="text-foreground font-bold">{(ctr * 100).toFixed(1)}%</span>
+                        Taxa de clique (CTR): <span className="text-foreground font-bold">{(ctr * 100).toFixed(1)}%</span>
                       </div>
                     </div>
                   );

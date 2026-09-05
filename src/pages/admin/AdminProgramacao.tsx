@@ -934,7 +934,7 @@ const AdminProgramacao = () => {
                 </Button>
                 <Button size="sm" variant="ghost" className="min-h-11 text-[11px] text-destructive hover:bg-destructive/10"
                   onClick={() => setConfirmBulk("delete")}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                  <Trash2 className="h-3 w-3 mr-1" /> Remover
                 </Button>
               </div>
             )}
@@ -1007,7 +1007,7 @@ const AdminProgramacao = () => {
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir banner?</AlertDialogTitle>
+            <AlertDialogTitle>Remover banner?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação remove permanentemente o banner. Não é possível desfazer.
             </AlertDialogDescription>
@@ -1032,7 +1032,7 @@ const AdminProgramacao = () => {
             <AlertDialogAction
               onClick={() => { if (deleteId) performDelete(deleteId); setDeleteId(null); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
+              Remover
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1061,7 +1061,7 @@ const AdminProgramacao = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmBulk === "delete" && `Excluir ${selectedIds.size} banner(s)?`}
+              {confirmBulk === "delete" && `Remover ${selectedIds.size} banner(s)?`}
               {confirmBulk === "deactivate" && `Desativar ${selectedIds.size} banner(s)?`}
               {confirmBulk === "activate" && `Ativar ${selectedIds.size} banner(s)?`}
             </AlertDialogTitle>

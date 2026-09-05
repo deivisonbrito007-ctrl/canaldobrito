@@ -108,9 +108,18 @@ export const ShareHistory = () => {
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       ) : !data || data.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-4 text-center">
-          Nenhum envio registrado ainda. Use "Enviar" ou "Copiar" acima e o histórico aparece aqui.
-        </p>
+        <div className="py-6 text-center space-y-3">
+          <p className="text-xs text-muted-foreground">Nenhum envio registrado ainda.</p>
+          <p className="text-[10px] text-muted-foreground/60">Use uma mensagem pronta acima — ao copiar ou enviar, o histórico aparece aqui.</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="min-h-11 text-xs"
+            onClick={() => document.getElementById("wpp-composer")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          >
+            Copiar mensagem pronta
+          </Button>
+        </div>
       ) : (
         <ul className="divide-y divide-white/[0.06]">
           {data.map((row) => {

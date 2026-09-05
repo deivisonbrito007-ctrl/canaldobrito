@@ -193,7 +193,7 @@ export const ArchivedGamesManager = () => {
                       <button
                         onClick={() => setPendingDeleteId(game.id)}
                         className="min-h-11 min-w-11 inline-flex items-center justify-center rounded hover:bg-destructive/10 text-destructive"
-                        aria-label="Excluir permanentemente"
+                        aria-label="Remover permanentemente"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -233,7 +233,7 @@ export const ArchivedGamesManager = () => {
       <AlertDialog open={!!pendingDeleteId} onOpenChange={(o) => !o && setPendingDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir jogo permanentemente?</AlertDialogTitle>
+            <AlertDialogTitle>Remover jogo permanentemente?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita. O jogo será removido do banco de dados.
             </AlertDialogDescription>
@@ -241,7 +241,7 @@ export const ArchivedGamesManager = () => {
           <AlertDialogFooter>
             <AlertDialogCancel className="min-h-11">Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90 min-h-11">
-              Excluir
+              Remover
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

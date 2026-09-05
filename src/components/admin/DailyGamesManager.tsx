@@ -358,9 +358,9 @@ export const DailyGamesManager = () => {
     ? pendingConfirm.kind === "archive-day"
       ? `Arquivar ${pendingConfirm.payload.count} jogos?`
       : pendingConfirm.kind === "clear-day"
-        ? `Excluir todos os jogos de ${selectedDate}?`
+        ? `Remover todos os jogos de ${selectedDate}?`
         : pendingConfirm.kind === "delete-game"
-          ? `Excluir "${pendingConfirm.payload.label || "jogo"}"?`
+          ? `Remover "${pendingConfirm.payload.label || "jogo"}"?`
           : `Remover ${pendingConfirm.payload.count} duplicata(s)?`
     : "";
 
@@ -760,7 +760,7 @@ export const DailyGamesManager = () => {
                               </button>
                               <button
                                 onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id, label: gameLabel } })}
-                                aria-label="Excluir jogo"
+                                aria-label="Remover jogo"
                                 className="flex h-11 w-11 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -789,7 +789,7 @@ export const DailyGamesManager = () => {
                                   onClick={() => setPendingConfirm({ kind: "delete-game", payload: { id: game.id, label: gameLabel } })}
                                   className="min-h-11 gap-2 text-xs text-destructive focus:text-destructive"
                                 >
-                                  <Trash2 className="h-4 w-4" /> Excluir jogo
+                                  <Trash2 className="h-4 w-4" /> Remover jogo
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -817,7 +817,7 @@ export const DailyGamesManager = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmAction}
               className={pendingConfirm?.kind === "delete-game" || pendingConfirm?.kind === "clear-day" || pendingConfirm?.kind === "remove-duplicates" ? "bg-destructive hover:bg-destructive/90" : ""}>
-              {pendingConfirm?.kind === "archive-day" ? "Arquivar" : pendingConfirm?.kind === "clear-day" ? "Excluir tudo" : "Confirmar"}
+              {pendingConfirm?.kind === "archive-day" ? "Arquivar" : pendingConfirm?.kind === "clear-day" ? "Remover tudo" : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

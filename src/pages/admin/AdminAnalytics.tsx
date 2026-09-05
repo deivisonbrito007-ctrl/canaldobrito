@@ -631,7 +631,7 @@ export default function AdminAnalytics() {
             )}
             {health.tabViewsNoTab > 0 && (
               <li className="flex items-center justify-between">
-                <span className="text-muted-foreground">tab_view sem tab</span>
+                <span className="text-muted-foreground">Visualizações de aba sem nome da aba</span>
                 <span className="text-warning font-bold tabular-nums">{health.tabViewsNoTab}</span>
               </li>
             )}
@@ -648,11 +648,11 @@ export default function AdminAnalytics() {
           {loadingRemote && <span className="text-[10px] text-muted-foreground font-body">carregando…</span>}
         </div>
         <p className="text-[10px] text-muted-foreground font-body">
-          CTR = pessoas que abriram o link ÷ envios · Conversão = quem navegou nas abas ÷ quem abriu (ambos limitados a 100%)
+          Taxa de clique (CTR) = pessoas que abriram o link ÷ compartilhamentos · Conversão = quem navegou nas abas ÷ quem abriu (ambos limitados a 100%)
         </p>
         {funnelA.length === 0 ? (
           <p className="text-xs text-muted-foreground italic font-body">
-            Sem shares/landings registrados ainda. Compartilhe um link rápido em /admin/whatsapp para começar.
+            Nenhum compartilhamento ou acesso registrado ainda. Envie uma mensagem pronta pela aba WhatsApp para começar.
           </p>
         ) : (
           <>
@@ -684,7 +684,7 @@ export default function AdminAnalytics() {
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">CTR</dt>
+                        <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">Taxa de clique (CTR)</dt>
                         <dd className="text-sm font-bold tabular-nums text-primary">{(r.ctr * 100).toFixed(1)}%</dd>
                       </div>
                       <div>
@@ -710,10 +710,10 @@ export default function AdminAnalytics() {
                   <thead>
                     <tr className="text-left text-muted-foreground border-b border-border">
                       <th className="py-2 pr-3 sticky left-0 bg-card">Campaign</th>
-                      <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
-                      <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
-                      <th className="py-2 px-3 text-right">CTR</th>
-                      <th className="py-2 px-3 text-right">Tab views</th>
+                      <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Compartilhamentos</th>
+                      <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Acessos ao link</th>
+                      <th className="py-2 px-3 text-right" title="Taxa de clique">Taxa de clique (CTR)</th>
+                      <th className="py-2 px-3 text-right">Visualizações de aba</th>
                       <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
                     </tr>
                   </thead>
@@ -759,11 +759,11 @@ export default function AdminAnalytics() {
           </select>
         </div>
         <p className="text-[10px] text-muted-foreground font-body">
-          CTR (aberturas ÷ envios) e Conversão (navegação ÷ aberturas) por dia, limitados a 100%. Linhas verticais marcam dias em que houve compartilhamento.
+          Taxa de clique (aberturas ÷ compartilhamentos) e Conversão (navegação ÷ aberturas) por dia, limitados a 100%. Linhas verticais marcam dias em que houve compartilhamento.
         </p>
         {dailyChart.every((p) => p.ctrA === null && p.convA === null) ? (
           <p className="text-xs text-muted-foreground italic font-body py-8 text-center">
-            Sem dados suficientes na janela. Compartilhe um link e aguarde landings.
+            Sem dados suficientes neste período. Compartilhe um link e aguarde os primeiros acessos.
           </p>
         ) : (
           <div className="h-56 w-full">
@@ -795,9 +795,9 @@ export default function AdminAnalytics() {
                 {shareDays.map((day) => (
                   <ReferenceLine key={day} x={day} stroke="hsl(var(--primary))" strokeDasharray="2 4" strokeOpacity={0.4} />
                 ))}
-                <Line type="monotone" dataKey="ctrA" name="CTR" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} connectNulls isAnimationActive={false} />
+                <Line type="monotone" dataKey="ctrA" name="Taxa de clique" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} connectNulls isAnimationActive={false} />
                 <Line type="monotone" dataKey="convA" name="Conversão" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 2 }} connectNulls isAnimationActive={false} />
-                {compareOn && <Line type="monotone" dataKey="ctrB" name="CTR (B)" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls isAnimationActive={false} />}
+                {compareOn && <Line type="monotone" dataKey="ctrB" name="Taxa de clique (B)" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls isAnimationActive={false} />}
                 {compareOn && <Line type="monotone" dataKey="convB" name="Conversão (B)" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="2 2" dot={false} connectNulls isAnimationActive={false} />}
               </LineChart>
             </ResponsiveContainer>
@@ -814,7 +814,7 @@ export default function AdminAnalytics() {
           {compareOn && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-body">A vs B</span>}
         </div>
         <p className="text-[10px] text-muted-foreground font-body">
-          Qual aba converte melhor após o share. CTR = landings ÷ shares · Conv. = tab_views ÷ landings.
+          Qual aba converte melhor após o compartilhamento. Taxa de clique = acessos ao link ÷ compartilhamentos · Conversão = visualizações de aba ÷ acessos ao link.
         </p>
         {tabFunnelA.length === 0 ? (
           <p className="text-xs text-muted-foreground italic font-body">Sem dados por aba ainda no período.</p>
@@ -824,10 +824,10 @@ export default function AdminAnalytics() {
               <thead>
                 <tr className="text-left text-muted-foreground border-b border-border">
                   <th className="py-2 pr-3 sticky left-0 bg-card">Aba</th>
-                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Shares</th>
-                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Landings</th>
-                  <th className="py-2 px-3 text-right">CTR</th>
-                  <th className="py-2 px-3 text-right">Tab views</th>
+                  <th className="py-2 px-3 text-right"><Send className="inline h-3 w-3" /> Compartilhamentos</th>
+                  <th className="py-2 px-3 text-right"><MousePointer2 className="inline h-3 w-3" /> Acessos ao link</th>
+                  <th className="py-2 px-3 text-right" title="Taxa de clique">Taxa de clique (CTR)</th>
+                  <th className="py-2 px-3 text-right">Visualizações de aba</th>
                   <th className="py-2 pl-3 text-right"><Target className="inline h-3 w-3" /> Conv.</th>
                 </tr>
               </thead>
@@ -918,7 +918,7 @@ export default function AdminAnalytics() {
       {/* Tabs */}
       <Card className="p-4 space-y-3">
         <h2 className="font-display text-xl tracking-wide text-foreground">
-          Por <span className="text-primary">tab_view</span>
+          Por <span className="text-primary">aba visualizada</span>
         </h2>
         {aggA.tabs.length === 0 ? (
           <p className="text-xs text-muted-foreground italic font-body">Sem visualizações de aba ainda.</p>
