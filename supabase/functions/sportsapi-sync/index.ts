@@ -413,7 +413,7 @@ async function doLive(db: Admin, actor: string | null, fromCron: boolean) {
     .eq("archived", false)
     .eq("active", true)
     .in("source", ["manual", "sportsapi"]);
-  const startMs = (t: string) => Date.parse(`${nowSp}T${t.slice(0, 8).padEnd(8, ":00".slice(0, 8 - t.slice(0, 8).length))}-03:00`);
+  const startMs = (t: string) => Date.parse(`${nowSp}T${t.slice(0, 5)}:00-03:00`);
   const target = (published ?? []).filter((g) => {
     if (!g.channels || (g.channels as string[]).length === 0) return false;
     const st = startMs(g.game_time as string);
