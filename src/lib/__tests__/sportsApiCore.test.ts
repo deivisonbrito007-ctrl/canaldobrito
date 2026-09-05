@@ -97,11 +97,16 @@ describe("sportsApiCore · classificação", () => {
   });
 
   it("canal desconhecido sem país → revisar, sem canal válido", () => {
-    const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "beIN Sports", country: "FR" }] }))!;
+    const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "beIN Sports" }] }))!;
     const c = classifyMatch(n, registry, [], opts);
     expect(c.status).toBe("revisar");
     expect(c.normalized_channels).toEqual([]);
     expect(c.warnings.map((w) => w.code)).toContain("canal_desconhecido");
+  });
+
+  it("canal desconhecido com país estrangeiro → ignorado", () => {
+    const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "beIN Sports", country: "FR" }] }))!;
+    expect(classifyMatch(n, registry, [], opts).status).toBe("ignorado_sem_transmissao");
   });
 
   it("canal desconhecido com país BR → revisar mantendo o nome", () => {
@@ -115,8 +120,8 @@ describe("sportsApiCore · classificação", () => {
     const n = normalizeSportsApiGame(match({ tvNetworks: [{ name: "ESPN", country: "BR" }, { name: "Sky Sports", country: "UK" }] }))!;
     const c = classifyMatch(n, registry, [], opts);
     expect(c.normalized_channels).toEqual(["ESPN"]);
-    // canal estrangeiro desconhecido gera alerta e manda para revisão
-    expect(c.status).toBe("revisar");
+    // canal estrangeiro é descartado em silêncio
+    expect(c.status).toBe("pronto_para_importar");
   });
 
   it("dados incompletos → erro", () => {
