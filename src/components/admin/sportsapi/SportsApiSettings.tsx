@@ -11,12 +11,18 @@ import { useSportsApiSports } from "@/hooks/useSportsApi";
 /** Esportes recomendados por padrão (ids na SportsAPI). */
 export const DEFAULT_SPORTS = ["football", "basketball", "tennis", "mma", "volleyball", "futsal", "american-football", "baseball", "motorsport", "cycling", "golf"];
 
-const FALLBACK_SPORTS = [
-  ["football", "Futebol"], ["basketball", "Basquete / NBA"], ["tennis", "Tênis"], ["mma", "UFC / MMA"],
-  ["volleyball", "Vôlei"], ["futsal", "Futsal"], ["nfl", "NFL"], ["mlb", "MLB"], ["f1", "Fórmula 1"],
-  ["motogp", "MotoGP"], ["cycling", "Ciclismo"], ["surf", "Surfe"], ["golf", "Golfe"], ["boxing", "Boxe"],
-  ["handball", "Handebol"], ["hockey", "Hóquei"], ["rugby", "Rugby"], ["esports", "eSports"],
-];
+/** Rótulos em PT-BR para os IDs reais da SportsAPI (a API devolve `name` vazio). */
+const SPORT_LABELS: Record<string, string> = {
+  football: "Futebol", basketball: "Basquete / NBA", tennis: "Tênis", mma: "UFC / MMA",
+  volleyball: "Vôlei", "beach-volley": "Vôlei de praia", futsal: "Futsal", "american-football": "Futebol americano (NFL)",
+  baseball: "Beisebol (MLB)", motorsport: "Automobilismo (F1 / MotoGP)", cycling: "Ciclismo", golf: "Golfe",
+  handball: "Handebol", "ice-hockey": "Hóquei no gelo (NHL)", "field-hockey": "Hóquei na grama", rugby: "Rugby",
+  "rugby-league": "Rugby League", esports: "eSports", cricket: "Críquete", darts: "Dardos", snooker: "Sinuca",
+  "table-tennis": "Tênis de mesa", badminton: "Badminton", padel: "Padel", waterpolo: "Polo aquático",
+  minifootball: "Minifootball", bandy: "Bandy", floorball: "Floorball", "aussie-rules": "Futebol australiano", lacrosse: "Lacrosse",
+};
+const sportLabel = (id: string, name?: string) => name?.trim() || SPORT_LABELS[id] || id;
+const FALLBACK_SPORTS = Object.entries(SPORT_LABELS).slice(0, 18);
 
 type Mode = "manual" | "sugestoes" | "auto";
 
@@ -50,7 +56,7 @@ export const SportsApiSettings = () => {
 
   const availableSports = useMemo(() => {
     const fromApi = sportsQ.data?.sports ?? [];
-    const list: [string, string][] = fromApi.length ? fromApi.map((s) => [s.id, s.name]) : (FALLBACK_SPORTS as [string, string][]);
+    const list: [string, string][] = fromApi.length ? fromApi.map((s) => [s.id, sportLabel(s.id, s.name)]) : (FALLBACK_SPORTS as [string, string][]);
     // Garante que esportes já habilitados apareçam mesmo se a API não listar
     for (const s of sports) if (!list.some(([id]) => id === s)) list.push([s, s]);
     return list;
