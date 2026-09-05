@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, RefreshCw, Radio, Download, EyeOff, Info, AlertTriangle, CheckCircle2, Link2, Settings2 } from "lucide-react";
+import { Loader2, RefreshCw, Radio, Download, EyeOff, Info, AlertTriangle, CheckCircle2, Link2, Settings2, Activity, PlugZap, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { getLocalDateString, SPORT_EMOJI, SPORT_LABEL, type SportType } from "@/lib/gameUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useChannelMappings } from "@/hooks/useChannelMappings";
 import { resolveChannel } from "@/lib/channelResolver";
+import { ChannelMiniLogo } from "@/components/public/ChannelBadge";
 import { ChannelBadgeList } from "@/components/public/ChannelBadge";
 import { UnknownChannelActions } from "@/components/admin/UnknownChannelActions";
 import { AdminEmptyState } from "@/components/admin/AdminStates";
@@ -19,6 +20,9 @@ import {
   useSportsApiRuns,
   useSportsApiSuggestions,
   useSportsApiUpdateExisting,
+  useSportsApiStatus,
+  useSportsApiTest,
+  useSportsApiAutoFetch,
 } from "@/hooks/useSportsApi";
 import {
   SUGGESTION_STATUS_LABEL,
@@ -29,19 +33,25 @@ import {
   type SuggestionStatus,
 } from "@/lib/sportsApi";
 
-type StatusTab = "todos" | "prontos" | "revisar" | "duplicados" | "ignorados";
+type StatusTab = "todos" | "prontos" | "revisar" | "aovivo" | "duplicados" | "sem_transmissao" | "estrangeiro";
 
 const TAB_LABEL: Record<StatusTab, string> = {
-  todos: "Todos",
+  todos: "Relevantes",
   prontos: "Prontos",
   revisar: "Revisar",
+  aovivo: "Ao vivo",
   duplicados: "Duplicados",
-  ignorados: "Ignorados",
+  sem_transmissao: "Sem transmissão",
+  estrangeiro: "Canal estrangeiro",
 };
 
+const isDiscarded = (s: SportsApiSuggestion) => s.status === "ignorado_sem_transmissao" || s.status === "ignorado_canal_estrangeiro";
+
 const matchesTab = (s: SportsApiSuggestion, tab: StatusTab) => {
-  if (tab === "todos") return s.review_status !== "ignored";
-  if (tab === "ignorados") return s.review_status === "ignored" || s.status === "ignorado_sem_transmissao";
+  if (tab === "sem_transmissao") return s.status === "ignorado_sem_transmissao";
+  if (tab === "estrangeiro") return s.status === "ignorado_canal_estrangeiro";
+  if (tab === "aovivo") return s.api_status === "live" && !isDiscarded(s);
+  if (tab === "todos") return s.review_status !== "ignored" && !isDiscarded(s);
   if (s.review_status === "ignored") return false;
   if (tab === "prontos") return s.status === "pronto_para_importar" && s.review_status === "pending";
   if (tab === "revisar") return s.status === "revisar" || s.status === "conflito" || s.status === "erro";
@@ -49,10 +59,34 @@ const matchesTab = (s: SportsApiSuggestion, tab: StatusTab) => {
   return true;
 };
 
+/** Motivo do aceite/descarte, em uma frase. */
+const reasonOf = (s: SportsApiSuggestion): string => {
+  if (s.review_status === "imported") return "Importado para a programação.";
+  if (s.review_status === "ignored") return "Ignorado manualmente pelo admin.";
+  const w = (code: string) => s.warnings.find((x) => x.code === code);
+  switch (s.status) {
+    case "ignorado_sem_transmissao": return "A API não informou nenhum canal de transmissão.";
+    case "ignorado_canal_estrangeiro": return w("canal_estrangeiro")?.message ?? "Só transmissão fora do Brasil.";
+    case "pronto_para_importar":
+      return s.broadcast_country
+        ? `Transmissão para o Brasil (${s.broadcast_country.toUpperCase()}) em canal cadastrado.`
+        : "Canal cadastrado no app (país não informado pela API).";
+    case "revisar":
+      return s.normalized_channels.length === 0
+        ? "Canal não reconhecido no cadastro — associe ou cadastre antes de importar."
+        : "Tem canal aceito, mas também canal desconhecido para conferir.";
+    case "duplicado": return "Já existe na programação com o mesmo confronto e horário.";
+    case "conflito": return "Já existe na programação, mas horário/competição divergem.";
+    case "erro": return w("dados_incompletos")?.message ?? "Dados incompletos vindos da API.";
+  }
+  return "";
+};
+
 const STATUS_STYLE: Record<SuggestionStatus, string> = {
   pronto_para_importar: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   revisar: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   ignorado_sem_transmissao: "bg-white/[0.05] text-white/45 border-white/10",
+  ignorado_canal_estrangeiro: "bg-white/[0.05] text-white/45 border-white/10",
   duplicado: "bg-sky-500/15 text-sky-300 border-sky-500/30",
   conflito: "bg-orange-500/15 text-orange-300 border-orange-500/30",
   erro: "bg-red-500/15 text-red-300 border-red-500/30",
@@ -62,7 +96,9 @@ export const SportsApiPanel = () => {
   const [date, setDate] = useState(getLocalDateString());
   const [tab, setTab] = useState<StatusTab>("todos");
   const [sportFilter, setSportFilter] = useState<string>("all");
+  const [channelFilter, setChannelFilter] = useState<string>("all");
   const [openDetails, setOpenDetails] = useState<string | null>(null);
+  const [showTech, setShowTech] = useState(false);
 
   const { data: settings } = useSettings();
   const enabled = (settings?.sportsapi_enabled ?? "true") !== "false";
@@ -73,15 +109,21 @@ export const SportsApiPanel = () => {
   const importM = useSportsApiImport();
   const ignoreM = useSportsApiIgnore();
   const updateM = useSportsApiUpdateExisting();
+  const statusQ = useSportsApiStatus();
+  const testM = useSportsApiTest();
+  const autoM = useSportsApiAutoFetch();
 
   const summary = useMemo(() => {
-    const s = { total: 0, transmissao: 0, revisar: 0, ignorados: 0, duplicados: 0, importados: 0 };
+    const s = { total: 0, brasil: 0, cadastrado: 0, prontos: 0, revisar: 0, semTransmissao: 0, estrangeiro: 0, duplicados: 0, importados: 0 };
     for (const x of suggestions) {
       s.total++;
-      if (x.status !== "ignorado_sem_transmissao") s.transmissao++;
-      if (x.status === "ignorado_sem_transmissao") s.ignorados++;
+      if (x.status === "ignorado_sem_transmissao") { s.semTransmissao++; continue; }
+      if (x.status === "ignorado_canal_estrangeiro") { s.estrangeiro++; continue; }
+      if (x.broadcast_country) s.brasil++;
+      else if (x.normalized_channels.length) s.cadastrado++;
       if (x.review_status === "imported") s.importados++;
       else if (x.status === "duplicado") s.duplicados++;
+      else if (x.status === "pronto_para_importar" && x.review_status === "pending") s.prontos++;
       else if (["revisar", "conflito", "erro"].includes(x.status)) s.revisar++;
     }
     return s;
@@ -93,9 +135,18 @@ export const SportsApiPanel = () => {
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [suggestions]);
 
+  const channelsPresent = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of suggestions) for (const c of s.normalized_channels) m.set(c, (m.get(c) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+  }, [suggestions]);
+
+  const passesFilters = (s: SportsApiSuggestion) =>
+    (sportFilter === "all" || s.sport_type === sportFilter) && (channelFilter === "all" || s.normalized_channels.includes(channelFilter));
   const visible = useMemo(
-    () => suggestions.filter((s) => matchesTab(s, tab) && (sportFilter === "all" || s.sport_type === sportFilter)),
-    [suggestions, tab, sportFilter],
+    () => suggestions.filter((s) => matchesTab(s, tab) && passesFilters(s)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [suggestions, tab, sportFilter, channelFilter],
   );
   const readyIds = visible.filter((s) => s.status === "pronto_para_importar" && s.review_status === "pending").map((s) => s.id);
 
@@ -108,7 +159,9 @@ export const SportsApiPanel = () => {
     }
   };
 
-  const lastRun = runs.find((r) => r.kind === "fetch" && r.date === date);
+  const lastRun = runs.find((r) => (r.kind === "fetch" || r.kind === "fetch-auto") && r.date === date);
+  const st = statusQ.data;
+  const fmtTs = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
 
   return (
     <div className="space-y-4">
@@ -162,12 +215,15 @@ export const SportsApiPanel = () => {
         )}
 
         {/* Resumo */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5" role="status" aria-live="polite">
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5" role="status" aria-live="polite">
           {[
-            ["Encontrados", summary.total, "text-foreground"],
-            ["Com transmissão", summary.transmissao, "text-emerald-300"],
+            ["Lidos", summary.total, "text-foreground"],
+            ["Transmissão BR", summary.brasil, "text-emerald-300"],
+            ["Canal cadastrado", summary.cadastrado, "text-emerald-200"],
+            ["Prontos", summary.prontos, "text-primary"],
             ["Para revisar", summary.revisar, "text-amber-300"],
-            ["Sem transmissão", summary.ignorados, "text-white/50"],
+            ["Sem transmissão", summary.semTransmissao, "text-white/50"],
+            ["Canal estrangeiro", summary.estrangeiro, "text-white/50"],
             ["Duplicados", summary.duplicados, "text-sky-300"],
             ["Importados", summary.importados, "text-primary"],
           ].map(([label, value, cls]) => (
@@ -179,10 +235,46 @@ export const SportsApiPanel = () => {
         </div>
       </div>
 
+      {/* Painel técnico */}
+      <div className="glass-panel rounded-2xl border border-white/[0.06] p-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => setShowTech((v) => !v)} aria-expanded={showTech} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground min-h-10 px-1">
+            <Activity className="h-3.5 w-3.5 text-emerald-400" /> Automação e cota
+            {st?.quota.nearBudget && <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-500/30">perto do limite</span>}
+            {st?.schedule.pausedNow && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/60 border border-white/10">pausa noturna</span>}
+          </button>
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            {st ? `Hoje ${st.quota.day}/${st.quota.dailyBudget} req · mês ${st.quota.month.toLocaleString("pt-BR")}/${st.quota.monthlyLimit.toLocaleString("pt-BR")}` : statusQ.isError ? "Status indisponível" : "Carregando status…"}
+          </span>
+          <div className="ml-auto flex gap-1.5">
+            <Button size="sm" variant="ghost" className="min-h-10 gap-1 text-[11px]" disabled={testM.isPending}
+              onClick={() => run(testM.mutateAsync(), (r) => (r.ok ? `Conexão OK · ${r.latencyMs} ms · ${r.sports ?? "?"} esportes` : `Falha: ${r.message}`))}>
+              {testM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlugZap className="h-3.5 w-3.5" />} Testar conexão
+            </Button>
+            <Button size="sm" variant="ghost" className="min-h-10 gap-1 text-[11px]" disabled={!enabled || autoM.isPending}
+              onClick={() => run(autoM.mutateAsync(), (r) => (r.skipped ? `Busca automática não rodou (${r.reason}).` : "Busca automática executada para hoje e amanhã."))}>
+              {autoM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock3 className="h-3.5 w-3.5" />} Buscar agora (hoje+amanhã)
+            </Button>
+          </div>
+        </div>
+        {showTech && st && (
+          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-[11px]">
+            <Row k="Última busca manual" v={fmtTs(st.lastFetch?.created_at)} />
+            <Row k="Última busca automática" v={fmtTs(st.lastAuto?.created_at)} />
+            <Row k="Última atualização ao vivo" v={`${fmtTs(st.lastLive?.created_at)}${st.lastLive?.total_updated != null ? ` · ${st.lastLive.total_updated} atualizado(s)` : ""}`} />
+            <Row k="Próxima busca automática" v={!st.schedule.autoFetch ? "desligada" : st.schedule.nextAuto && st.schedule.nextAuto.includes("T") ? fmtTs(st.schedule.nextAuto) : st.schedule.nextAuto ?? "—"} />
+            <Row k="Placar ao vivo" v={st.schedule.live ? `a cada ${st.schedule.liveIntervalLiveSec}s com jogo ao vivo · ${st.schedule.liveIntervalIdleMin} min sem` : "desligado"} />
+            <Row k="Modo" v={st.mode === "auto" ? "Auto-importar" : st.mode === "manual" ? "Manual" : "Sugestões"} />
+            <Row k="Chave no servidor" v={st.hasKey ? "configurada" : "ausente"} />
+            <Row k="Último erro/parcial" v={st.lastPartial ? `${fmtTs(st.lastPartial.created_at)} · ${st.lastPartial.error_message ?? ""}` : "nenhum"} />
+          </dl>
+        )}
+      </div>
+
       {/* Filtros */}
       <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtrar sugestões por status">
         {(Object.keys(TAB_LABEL) as StatusTab[]).map((t) => {
-          const count = suggestions.filter((s) => matchesTab(s, t) && (sportFilter === "all" || s.sport_type === sportFilter)).length;
+          const count = suggestions.filter((s) => matchesTab(s, t) && passesFilters(s)).length;
           return (
             <button
               key={t}
@@ -206,6 +298,19 @@ export const SportsApiPanel = () => {
           {sportsPresent.map(([st, n]) => (
             <button key={st} onClick={() => setSportFilter(sportFilter === st ? "all" : st)} aria-pressed={sportFilter === st} className={`shrink-0 min-h-11 px-3 rounded-full text-[11px] border whitespace-nowrap ${sportFilter === st ? "bg-primary/15 border-primary/40 text-primary" : "border-white/[0.08] text-muted-foreground"}`}>
               {SPORT_EMOJI[st as SportType] ?? "🏆"} {SPORT_LABEL[st as SportType] ?? st} · {n}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {channelsPresent.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1" role="toolbar" aria-label="Filtrar por canal">
+          <button onClick={() => setChannelFilter("all")} aria-pressed={channelFilter === "all"} className={`shrink-0 min-h-10 px-3 rounded-full text-[11px] border ${channelFilter === "all" ? "bg-primary/15 border-primary/40 text-primary" : "border-white/[0.08] text-muted-foreground"}`}>
+            Todos os canais
+          </button>
+          {channelsPresent.map(([c, n]) => (
+            <button key={c} onClick={() => setChannelFilter(channelFilter === c ? "all" : c)} aria-pressed={channelFilter === c} className={`shrink-0 min-h-10 pl-1.5 pr-3 rounded-full text-[11px] border inline-flex items-center gap-1.5 whitespace-nowrap ${channelFilter === c ? "bg-primary/15 border-primary/40 text-primary" : "border-white/[0.08] text-muted-foreground"}`}>
+              <ChannelMiniLogo name={c} /> {c} · {n}
             </button>
           ))}
         </div>
@@ -244,7 +349,7 @@ export const SportsApiPanel = () => {
           description="Use “Buscar jogos com transmissão” para consultar a API. Só entram jogos com canal para o Brasil ou canal reconhecido no cadastro."
         />
       ) : visible.length === 0 ? (
-        <AdminEmptyState title="Nada nesse filtro" description="Troque o status ou o esporte para ver outras sugestões." action={<Button variant="outline" size="sm" onClick={() => { setTab("todos"); setSportFilter("all"); }}>Limpar filtros</Button>} />
+        <AdminEmptyState title="Nada nesse filtro" description="Troque o status, o esporte ou o canal para ver outras sugestões." action={<Button variant="outline" size="sm" onClick={() => { setTab("todos"); setSportFilter("all"); setChannelFilter("all"); }}>Limpar filtros</Button>} />
       ) : (
         <ul className="space-y-2" aria-label="Sugestões da SportsAPI">
           {visible.map((s) => (
@@ -264,6 +369,13 @@ export const SportsApiPanel = () => {
     </div>
   );
 };
+
+const Row = ({ k, v }: { k: string; v: string }) => (
+  <div className="min-w-0">
+    <dt className="text-[9px] uppercase tracking-wide text-muted-foreground/70">{k}</dt>
+    <dd className="text-foreground/90 truncate" title={v}>{v}</dd>
+  </div>
+);
 
 const SuggestionRow = ({
   s, open, onToggleDetails, busy, onImport, onIgnore, onUpdate,
@@ -323,7 +435,11 @@ const SuggestionRow = ({
               API: {s.tv_networks.map((n) => `${n.name}${n.country ? ` (${n.country})` : ""}`).join(", ") || "—"}
             </span>
           </div>
-          {s.warnings.length > 0 && !isIgnored && (
+          <p className="mt-1 text-[10px] text-muted-foreground/80 flex items-start gap-1">
+            <Info className="h-3 w-3 mt-[1px] shrink-0 opacity-60" aria-hidden />
+            <span><span className="font-semibold text-foreground/70">Motivo:</span> {reasonOf(s)}</span>
+          </p>
+          {s.warnings.length > 0 && !isIgnored && !isDiscarded(s) && (
             <ul className="mt-1.5 flex flex-wrap gap-1" aria-label="Alertas">
               {s.warnings.map((w, i) => (
                 <li key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-200 border border-amber-500/20" title={w.message}>

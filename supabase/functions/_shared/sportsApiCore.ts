@@ -35,6 +35,7 @@ export type SuggestionStatus =
   | "pronto_para_importar"
   | "revisar"
   | "ignorado_sem_transmissao"
+  | "ignorado_canal_estrangeiro"
   | "duplicado"
   | "conflito"
   | "erro";
@@ -51,6 +52,7 @@ export type SuggestionWarning = {
     | "competicao_divergente"
     | "esporte_divergente"
     | "sem_transmissao"
+    | "canal_estrangeiro"
     | "status_conflitante"
     | "dados_incompletos";
   message: string;
@@ -102,6 +104,14 @@ export type ExistingGame = {
 export type ClassifyOptions = {
   brazilOnly: boolean;
   acceptKnownChannel: boolean;
+  /** Descarta em silêncio redes com país/nome estrangeiro (padrão true). */
+  ignoreForeign?: boolean;
+};
+
+export type BroadcastDecision = {
+  accept: boolean;
+  reason: "pais_brasil" | "canal_cadastrado" | "pais_estrangeiro" | "nome_estrangeiro" | "canal_desconhecido" | "fora_do_brasil_aceito";
+  entry: ChannelRegistryEntry | null;
 };
 
 export type Classification = {
@@ -262,28 +272,52 @@ export function resolveNetwork(name: string, registry: ChannelRegistry): Channel
   return registry.get(k) ?? registry.get(stripQuality(k)) ?? null;
 }
 
-/** Filtra redes relevantes para o Brasil (país BR ou canal reconhecido). */
+/** Indícios de canal estrangeiro no próprio nome (quando a API não manda país). */
+const FOREIGN_NAME_HINTS =
+  /\b(usa|us|u\.s\.|united states|estados unidos|argentina|chile|m[eé]xico|colombia|per[uú]|uruguay|uruguai|paraguay|bolivia|ecuador|venezuela|spain|espa[ñn]a|espanha|portugal|uk|england|ireland|france|fran[çc]a|germany|deutschland|italy|italia|international|internacional|latam|latin america|latino|deportes|africa|asia|australia|canada|india|japan|korea)\b/i;
+
+export const isForeignName = (name: string): boolean => FOREIGN_NAME_HINTS.test(name.replace(/[()\-_/·]+/g, " "));
+
+/**
+ * Regra central: a rede é uma transmissão válida para o Brasil?
+ * 1. país informado → só BR/Brazil/Brasil;
+ * 2. sem país → só se bater com canal oficial/apelido do cadastro e o nome não tiver indício estrangeiro;
+ * 3. nome com indício estrangeiro (Usa, Deportes, Argentina…) → rejeita.
+ */
+export function isBrazilBroadcast(
+  network: SportsApiTvNetwork,
+  registry: ChannelRegistry,
+  opts: Pick<ClassifyOptions, "brazilOnly" | "acceptKnownChannel"> = { brazilOnly: true, acceptKnownChannel: true },
+): BroadcastDecision {
+  const entry = resolveNetwork(network.name, registry);
+  if (network.country) {
+    if (isBrazilCountry(network.country)) return { accept: true, reason: "pais_brasil", entry };
+    if (!opts.brazilOnly && entry) return { accept: true, reason: "fora_do_brasil_aceito", entry };
+    return { accept: false, reason: "pais_estrangeiro", entry };
+  }
+  if (isForeignName(network.name)) return { accept: false, reason: "nome_estrangeiro", entry };
+  if (entry && opts.acceptKnownChannel) return { accept: true, reason: "canal_cadastrado", entry };
+  return { accept: false, reason: "canal_desconhecido", entry };
+}
+
+/** Separa redes aceitas (Brasil/cadastro), desconhecidas (sem país, precisam de revisão) e estrangeiras. */
 export function filterBrazilBroadcasts(
   networks: SportsApiTvNetwork[],
   registry: ChannelRegistry,
   opts: ClassifyOptions,
 ): {
-  accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null }>;
+  accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null; reason: BroadcastDecision["reason"] }>;
   unknown: SportsApiTvNetwork[];
-  foreign: SportsApiTvNetwork[];
+  foreign: Array<{ network: SportsApiTvNetwork; reason: BroadcastDecision["reason"] }>;
 } {
-  const accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null }> = [];
+  const accepted: Array<{ network: SportsApiTvNetwork; entry: ChannelRegistryEntry | null; reason: BroadcastDecision["reason"] }> = [];
   const unknown: SportsApiTvNetwork[] = [];
-  const foreign: SportsApiTvNetwork[] = [];
+  const foreign: Array<{ network: SportsApiTvNetwork; reason: BroadcastDecision["reason"] }> = [];
   for (const n of networks) {
-    const entry = resolveNetwork(n.name, registry);
-    const br = isBrazilCountry(n.country);
-    if (br) accepted.push({ network: n, entry });
-    else if (!n.country && opts.acceptKnownChannel && entry) accepted.push({ network: n, entry });
-    else if (!opts.brazilOnly && entry) accepted.push({ network: n, entry });
-    // País explícito e não-Brasil: transmissão irrelevante para o app (não vira alerta).
-    else if (n.country) foreign.push(n);
-    else unknown.push(n);
+    const d = isBrazilBroadcast(n, registry, opts);
+    if (d.accept) accepted.push({ network: n, entry: d.entry, reason: d.reason });
+    else if (d.reason === "canal_desconhecido") unknown.push(n);
+    else foreign.push({ network: n, reason: d.reason });
   }
   return { accepted, unknown, foreign };
 }
@@ -352,15 +386,18 @@ export function classifyMatch(
 
   if (accepted.length === 0 && unknown.length === 0) {
     return {
-      status: "ignorado_sem_transmissao",
+      status: "ignorado_canal_estrangeiro",
       warnings: [{
-        code: "sem_transmissao",
-        message: `Só transmissão fora do Brasil (${foreign.map((f) => `${f.name} · ${f.country}`).join(", ")}).`,
+        code: "canal_estrangeiro",
+        message: `Só transmissão fora do Brasil: ${foreign.map((f) => `${f.network.name}${f.network.country ? ` (${f.network.country})` : ""}`).join(", ")}.`,
       }],
       normalized_channels: [],
       broadcast_country: null,
       matched_game_id: null,
     };
+  }
+  if (foreign.length && opts.ignoreForeign === false) {
+    warnings.push({ code: "canal_estrangeiro", message: `Descartados: ${foreign.map((f) => f.network.name).join(", ")}.` });
   }
   const channels: string[] = [];
   const seen = new Set<string>();
@@ -461,6 +498,7 @@ export const SUGGESTION_STATUS_LABEL: Record<SuggestionStatus, string> = {
   pronto_para_importar: "Pronto",
   revisar: "Revisar",
   ignorado_sem_transmissao: "Sem transmissão",
+  ignorado_canal_estrangeiro: "Canal estrangeiro",
   duplicado: "Duplicado",
   conflito: "Conflito",
   erro: "Erro",

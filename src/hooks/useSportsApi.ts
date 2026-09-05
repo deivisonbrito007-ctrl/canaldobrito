@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { callSportsApi, type SportsApiSuggestion, type SportsApiSyncRun } from "@/lib/sportsApi";
+import { callSportsApi, type SportsApiStatus, type SportsApiSuggestion, type SportsApiSyncRun } from "@/lib/sportsApi";
 
 export const SPORTSAPI_SUGGESTIONS_QK = ["sportsapi_suggestions"] as const;
 export const SPORTSAPI_RUNS_QK = ["sportsapi_sync_runs"] as const;
@@ -80,6 +80,7 @@ const useInvalidate = () => {
     qc.invalidateQueries({ queryKey: SPORTSAPI_RUNS_QK });
     qc.invalidateQueries({ queryKey: ["daily_games"] });
     qc.invalidateQueries({ queryKey: ["sportsapi_channel_usage"] });
+    qc.invalidateQueries({ queryKey: ["sportsapi_status"] });
   };
 };
 
@@ -122,5 +123,30 @@ export function useSportsApiUpdateExisting() {
   return useMutation({
     mutationFn: (id: string) => callSportsApi<{ game_id: string }>({ action: "update-existing", id }),
     onSettled: inv,
+  });
+}
+
+export function useSportsApiStatus() {
+  return useQuery({
+    queryKey: ["sportsapi_status"],
+    queryFn: () => callSportsApi<SportsApiStatus>({ action: "status" }),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    retry: false,
+  });
+}
+
+export function useSportsApiTest() {
+  return useMutation({
+    mutationFn: () => callSportsApi<{ ok: boolean; latencyMs?: number; message?: string; sports?: number | null }>({ action: "test" }),
+  });
+}
+
+export function useSportsApiAutoFetch() {
+  const inv = useInvalidate();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => callSportsApi<{ skipped: boolean; reason?: string; dates?: Record<string, unknown> }>({ action: "auto-fetch" }),
+    onSettled: () => { inv(); qc.invalidateQueries({ queryKey: ["sportsapi_status"] }); },
   });
 }

@@ -45,3 +45,11 @@
 - [x] Atualização ao vivo agendada a cada 3 min (segredo interno; pula se desligada/sem jogos)
 - [x] Auditoria: trigger corrigido (settings sem campo `active`); funções internas com EXECUTE restrito
 - [x] 438 testes passando, build OK, sem scroll horizontal 375/1280
+
+## SportsAPI revisão (concluída)
+- [x] Filtro Brasil: isBrazilBroadcast + canal estrangeiro por nome + status ignorado_canal_estrangeiro
+- [x] Ao vivo: atualizar jogos manuais correspondentes; live para todos esportes
+- [x] Automação: cron sugestões (hoje+amanhã, horário comercial) + live adaptativo por config
+- [x] Cota: contagem dia/mês, painel técnico, testar conexão
+- [x] Configurações + painel admin (motivos, filtros, resumo)
+- [x] Testes, build, browser

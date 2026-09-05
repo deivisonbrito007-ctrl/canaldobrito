@@ -39,6 +39,12 @@ export const SportsApiSettings = () => {
   const [acceptKnown, setAcceptKnown] = useState(true);
   const [liveUpdates, setLiveUpdates] = useState(true);
   const [interval, setInterval] = useState("3");
+  const [liveSec, setLiveSec] = useState("60");
+  const [autoFetch, setAutoFetch] = useState(true);
+  const [autoFetchMin, setAutoFetchMin] = useState("60");
+  const [ignoreForeign, setIgnoreForeign] = useState(true);
+  const [nightPause, setNightPause] = useState(true);
+  const [dailyBudget, setDailyBudget] = useState("8000");
   const [maxPerSport, setMaxPerSport] = useState("40");
 
   useEffect(() => {
@@ -51,6 +57,12 @@ export const SportsApiSettings = () => {
     setAcceptKnown((settings.sportsapi_accept_known_channel ?? "true") !== "false");
     setLiveUpdates((settings.sportsapi_live_updates ?? "true") !== "false");
     setInterval(settings.sportsapi_live_interval_min ?? "3");
+    setLiveSec(settings.sportsapi_live_interval_live_sec ?? "60");
+    setAutoFetch((settings.sportsapi_auto_fetch ?? "true") !== "false");
+    setAutoFetchMin(settings.sportsapi_auto_fetch_interval_min ?? "60");
+    setIgnoreForeign((settings.sportsapi_ignore_foreign ?? "true") !== "false");
+    setNightPause((settings.sportsapi_night_pause ?? "true") !== "false");
+    setDailyBudget(settings.sportsapi_daily_budget ?? "8000");
     setMaxPerSport(settings.sportsapi_max_per_sport ?? "40");
   }, [settings]);
 
@@ -66,7 +78,13 @@ export const SportsApiSettings = () => {
 
   const save = async () => {
     const n = Number(interval);
-    if (!Number.isFinite(n) || n < 2 || n > 60) return toast.error("Intervalo deve ficar entre 2 e 60 minutos.");
+    if (!Number.isFinite(n) || n < 1 || n > 60) return toast.error("Intervalo sem jogo ao vivo deve ficar entre 1 e 60 minutos.");
+    const ls = Number(liveSec);
+    if (!Number.isFinite(ls) || ls < 30 || ls > 600) return toast.error("Intervalo com jogo ao vivo deve ficar entre 30 e 600 segundos.");
+    const af = Number(autoFetchMin);
+    if (!Number.isFinite(af) || af < 15 || af > 360) return toast.error("Frequência de sugestões deve ficar entre 15 e 360 minutos.");
+    const bud = Number(dailyBudget);
+    if (!Number.isFinite(bud) || bud < 500 || bud > 10000) return toast.error("Orçamento diário deve ficar entre 500 e 10.000 requisições.");
     const m = Number(maxPerSport);
     if (!Number.isFinite(m) || m < 1 || m > 200) return toast.error("Máximo por esporte deve ficar entre 1 e 200.");
     if (sports.length === 0) return toast.error("Habilite pelo menos um esporte.");
@@ -79,6 +97,12 @@ export const SportsApiSettings = () => {
       ["sportsapi_accept_known_channel", String(acceptKnown)],
       ["sportsapi_live_updates", String(liveUpdates)],
       ["sportsapi_live_interval_min", String(n)],
+      ["sportsapi_live_interval_live_sec", String(ls)],
+      ["sportsapi_auto_fetch", String(autoFetch)],
+      ["sportsapi_auto_fetch_interval_min", String(af)],
+      ["sportsapi_ignore_foreign", String(ignoreForeign)],
+      ["sportsapi_night_pause", String(nightPause)],
+      ["sportsapi_daily_budget", String(bud)],
       ["sportsapi_max_per_sport", String(m)],
     ];
     try {
@@ -118,19 +142,40 @@ export const SportsApiSettings = () => {
           </div>
         </div>
 
+        <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Filtro de transmissão</p>
         <div className="grid sm:grid-cols-2 gap-3">
-          <ToggleRow id="brazil-only" label="Importar somente com transmissão Brasil" hint="Jogos sem canal nunca entram." checked={brazilOnly} onChange={setBrazilOnly} />
-          <ToggleRow id="accept-known" label="Aceitar canal reconhecido mesmo sem país" hint="Usa o cadastro de canais/apelidos." checked={acceptKnown} onChange={setAcceptKnown} />
-          <ToggleRow id="live-updates" label="Atualizar placares ao vivo" hint="Só para jogos importados da API." checked={liveUpdates} onChange={setLiveUpdates} />
+          <ToggleRow id="brazil-only" label="Importar somente com transmissão Brasil" hint="País BR/Brazil/Brasil na transmissão." checked={brazilOnly} onChange={setBrazilOnly} />
+          <ToggleRow id="accept-known" label="Aceitar canal cadastrado mesmo sem país" hint="Usa o cadastro de canais/apelidos (ESPN2 → ESPN 2, PFC → Premiere)." checked={acceptKnown} onChange={setAcceptKnown} />
+          <ToggleRow id="ignore-foreign" label="Ignorar canais estrangeiros automaticamente" hint="ESPN (Usa), ESPN Deportes, TNT Argentina… nunca entram." checked={ignoreForeign} onChange={setIgnoreForeign} />
+          <div className="space-y-1">
+            <Label htmlFor="sa-max" className="text-[11px]">Máx. de jogos por esporte</Label>
+            <Input id="sa-max" type="number" min={1} max={200} value={maxPerSport} onChange={(e) => setMaxPerSport(e.target.value)} className="h-11" />
+          </div>
+        </div>
+
+        <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Automação</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <ToggleRow id="auto-fetch" label="Buscar sugestões automaticamente" hint="Hoje e amanhã, entre 6h e 23h. Não publica nada sozinho no modo Sugestões." checked={autoFetch} onChange={setAutoFetch} />
+          <div className="space-y-1">
+            <Label htmlFor="sa-autofetch" className="text-[11px]">Frequência das sugestões (min)</Label>
+            <Input id="sa-autofetch" type="number" min={15} max={360} value={autoFetchMin} onChange={(e) => setAutoFetchMin(e.target.value)} className="h-11" disabled={!autoFetch} />
+          </div>
+          <ToggleRow id="live-updates" label="Atualizar placares ao vivo" hint="Só jogos publicados (manuais ou importados) perto do horário, em andamento ou recém-encerrados." checked={liveUpdates} onChange={setLiveUpdates} />
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label htmlFor="sa-interval" className="text-[11px]">Intervalo (min)</Label>
-              <Input id="sa-interval" type="number" min={2} max={60} value={interval} onChange={(e) => setInterval(e.target.value)} className="h-11" />
+              <Label htmlFor="sa-live-sec" className="text-[11px]">Com jogo ao vivo (s)</Label>
+              <Input id="sa-live-sec" type="number" min={30} max={600} value={liveSec} onChange={(e) => setLiveSec(e.target.value)} className="h-11" disabled={!liveUpdates} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="sa-max" className="text-[11px]">Máx. por esporte</Label>
-              <Input id="sa-max" type="number" min={1} max={200} value={maxPerSport} onChange={(e) => setMaxPerSport(e.target.value)} className="h-11" />
+              <Label htmlFor="sa-interval" className="text-[11px]">Sem jogo ao vivo (min)</Label>
+              <Input id="sa-interval" type="number" min={1} max={60} value={interval} onChange={(e) => setInterval(e.target.value)} className="h-11" disabled={!liveUpdates} />
             </div>
+          </div>
+          <ToggleRow id="night-pause" label="Pausar de madrugada" hint="Sem busca 23h–6h e sem placar 2h–6h (exceto jogo ao vivo)." checked={nightPause} onChange={setNightPause} />
+          <div className="space-y-1">
+            <Label htmlFor="sa-budget" className="text-[11px]">Orçamento diário (requisições)</Label>
+            <Input id="sa-budget" type="number" min={500} max={10000} value={dailyBudget} onChange={(e) => setDailyBudget(e.target.value)} className="h-11" />
+            <p className="text-[10px] text-muted-foreground/70">Plano Pro: 300 mil/mês ≈ 10 mil/dia. Ao chegar a 80%, a frequência cai pela metade.</p>
           </div>
         </div>
 
