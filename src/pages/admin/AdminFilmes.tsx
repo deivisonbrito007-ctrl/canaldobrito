@@ -70,6 +70,7 @@ const AdminFilmes = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [confirmBulkDeactivate, setConfirmBulkDeactivate] = useState(false);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [listSearch, setListSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "incomplete">("all");
@@ -309,13 +310,14 @@ const AdminFilmes = () => {
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <Input
-                  placeholder="Nome do filme..."
+                  id="tmdb-search-input"
+                aria-label="Buscar filme no TMDB"
+                placeholder="Nome do filme..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="glass-panel border-white/[0.1] text-sm h-11 pr-9"
-                  aria-label="Buscar filme por nome"
-                  enterKeyHint="search"
+                                    enterKeyHint="search"
                   inputMode="search"
                 />
                 {query && (
@@ -423,13 +425,13 @@ const AdminFilmes = () => {
                   {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                   Ativar
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => bulkSetActive(false)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
+                <Button size="sm" variant="outline" onClick={() => setConfirmBulkDeactivate(true)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
                   {bulkRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
                   Desativar
                 </Button>
                 <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)} disabled={bulkRunning || selectedIds.size === 0} className="h-9 text-[10px] gap-1">
                   <Trash2 className="h-3 w-3" />
-                  Excluir
+                  Remover
                 </Button>
                 <Button size="sm" variant="ghost" onClick={exitSelection} disabled={bulkRunning} className="h-9 text-[10px]" aria-label="Sair do modo de seleção">
                   <X className="h-3 w-3" />
@@ -479,8 +481,11 @@ const AdminFilmes = () => {
           ) : totalCount === 0 ? (
             <div className="py-10 text-center space-y-2">
               <Film className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-              <p className="text-xs text-muted-foreground">Nenhum filme adicionado</p>
-              <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar filmes do TMDB</p>
+              <p className="text-xs text-muted-foreground">Nenhum filme adicionado.</p>
+              <p className="text-[10px] text-muted-foreground/50">Busque um título e adicione ao catálogo.</p>
+              <Button size="sm" variant="outline" className="min-h-11 text-xs gap-1" onClick={() => document.getElementById("tmdb-search-input")?.focus()}>
+                <Search className="h-3.5 w-3.5" /> Buscar filme
+              </Button>
             </div>
           ) : filteredMovies.length === 0 ? (
             <div className="py-10 text-center space-y-2">
@@ -580,6 +585,21 @@ const AdminFilmes = () => {
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
               Remover
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmBulkDeactivate} onOpenChange={setConfirmBulkDeactivate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar {selectedIds.size} filme(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Os filmes selecionados deixam de aparecer no site público. Você pode reativá-los depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmBulkDeactivate(false); bulkSetActive(false); }}>Desativar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

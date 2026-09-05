@@ -66,7 +66,7 @@ describe("AdminSeries", () => {
   it("renderiza header e estado vazio", () => {
     wrap(<AdminSeries />);
     expect(screen.getByText("Buscar Séries")).toBeInTheDocument();
-    expect(screen.getByText("Nenhuma série adicionada")).toBeInTheDocument();
+    expect(screen.getByText("Nenhuma série adicionada.")).toBeInTheDocument();
     expect(screen.getByText(/0 ativas \/ 0/)).toBeInTheDocument();
   });
 

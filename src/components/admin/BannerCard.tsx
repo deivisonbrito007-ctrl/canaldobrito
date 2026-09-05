@@ -216,7 +216,7 @@ export const BannerCard = ({
             <Button
               size="icon"
               variant="ghost"
-              aria-label="Excluir banner"
+              aria-label="Remover banner"
               className="h-9 w-9 rounded-lg text-destructive hover:bg-destructive/10"
               onClick={() => onDelete(banner.id)}
             >

@@ -260,13 +260,14 @@ const AdminSeries = () => {
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <Input
-                  placeholder="Nome da série..."
+                  id="tmdb-search-input"
+                aria-label="Buscar série no TMDB"
+                placeholder="Nome da série..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="glass-panel border-white/[0.1] text-sm h-11 pr-9"
-                  aria-label="Buscar série por nome"
-                  enterKeyHint="search"
+                                    enterKeyHint="search"
                   inputMode="search"
                 />
                 {query && (
@@ -365,8 +366,11 @@ const AdminSeries = () => {
           ) : totalCount === 0 ? (
             <div className="py-10 text-center space-y-2">
               <Clapperboard className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-              <p className="text-xs text-muted-foreground">Nenhuma série adicionada</p>
-              <p className="text-[10px] text-muted-foreground/50">Use a busca acima para adicionar séries do TMDB</p>
+              <p className="text-xs text-muted-foreground">Nenhuma série adicionada.</p>
+              <p className="text-[10px] text-muted-foreground/50">Busque um título e adicione ao catálogo.</p>
+              <Button size="sm" variant="outline" className="min-h-11 text-xs gap-1" onClick={() => document.getElementById("tmdb-search-input")?.focus()}>
+                <Search className="h-3.5 w-3.5" /> Buscar série
+              </Button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-10 text-center space-y-2">

@@ -80,7 +80,7 @@ describe("AdminNovidades", () => {
   it("renderiza header de busca e estado vazio sem stats bar", () => {
     wrap(<AdminNovidades />);
     expect(screen.getByText("Buscar Conteúdo")).toBeInTheDocument();
-    expect(screen.getByText("Nenhum item adicionado")).toBeInTheDocument();
+    expect(screen.getByText("Nenhuma novidade adicionada.")).toBeInTheDocument();
   });
 
   it("dispara busca de filme via Enter", () => {

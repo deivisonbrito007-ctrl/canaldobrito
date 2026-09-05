@@ -238,7 +238,8 @@ const AdminAudit = () => {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar time, payload, actor…"
+              placeholder="Buscar por time, detalhes ou usuário…"
+              aria-label="Buscar na auditoria"
               className="w-full bg-white/[0.04] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 min-h-11 focus:outline-none focus:border-primary/40"
             />
           </div>
@@ -291,9 +292,20 @@ const AdminAudit = () => {
             </div>
           )}
           {!isLoading && filtered.length === 0 && (
-            <p className="p-6 text-center text-xs text-muted-foreground">
-              {rows.length === 0 ? "Nenhum registro ainda." : "Nenhum resultado para os filtros aplicados."}
-            </p>
+            <div className="p-6 text-center space-y-3">
+              <ScrollText className="h-8 w-8 text-muted-foreground/20 mx-auto" aria-hidden />
+              <p className="text-xs text-muted-foreground">Nenhum evento encontrado nesse período.</p>
+              {(rows.length > 0 || days > 0) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-h-11 text-xs"
+                  onClick={() => { setQuery(""); setActionFilter("all"); setEntityFilter("all"); setDays(0); }}
+                >
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
           )}
           {!isLoading && filtered.map((row) => {
             const meta = ACTION_META[row.action] ?? {
@@ -357,20 +369,20 @@ const AdminAudit = () => {
                         className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
                         aria-label="Copiar actor id"
                       >
-                        <Copy className="h-2.5 w-2.5" /> actor: {row.actor_id.slice(0, 8)}
+                        <Copy className="h-2.5 w-2.5" /> usuário: {row.actor_id.slice(0, 8)}
                       </button>
                     ) : (
-                      <span>actor: sistema</span>
+                      <span>usuário: sistema</span>
                     )}
                   </span>
                   <button
                     onClick={() => toggleExpand(row.id)}
                     className="inline-flex items-center gap-1 hover:text-foreground transition-colors min-h-11 px-1 -mx-1"
                     aria-expanded={isOpen}
-                    aria-label="Mostrar JSON completo"
+                    aria-label={isOpen ? "Ocultar detalhes técnicos" : "Ver detalhes técnicos"}
                   >
                     {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    payload
+                    Detalhes técnicos
                   </button>
                 </div>
 

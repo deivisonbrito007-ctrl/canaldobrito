@@ -25,3 +25,11 @@
 - [x] Formatos: Completa, Curta, Ao vivo (fallback próximos), Próximos (qtd configurável), Filmes/Séries
 - [x] Prévia estilo WhatsApp, editar, restaurar padrão, link rastreado (whatsapp-*), ?date= preservado no link curto
 - [x] Últimos envios: formato, aba, data, nº de jogos, acessos 7d, ver/copiar/reenviar
+
+## Polimento final geral — concluído
+- Menu admin: "Canais/Logos" → "Canais"; Diagnóstico GitHub saiu do menu (fica em Configurações › Ferramentas técnicas); rotas antigas mantidas.
+- Nomenclatura: ação de exclusão padronizada como "Remover" em todo o admin; termos técnicos (payload, tab_view, shares, landings, utm_content, CTR seco) traduzidos em Auditoria, Analytics, WhatsApp e Laboratório A/B.
+- Estados vazios com orientação + CTA em Filmes, Séries, Novidades, Canais, Auditoria, Histórico WhatsApp e Atividade recente do dashboard.
+- Confirmação adicionada para desativação em massa (Filmes/Séries/Novidades).
+- Teste novo: `src/pages/__tests__/adminRoutes.test.ts` garante que todo item do menu tem rota (sem 404) e sem nomes antigos.
+- Type-check, 417 testes e build OK; sem scroll horizontal em 375/1280.
