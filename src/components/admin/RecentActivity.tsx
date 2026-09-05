@@ -47,7 +47,21 @@ export const RecentActivity = React.forwardRef<HTMLDivElement, RecentActivityPro
     return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
   }, [banners, movies, series, news, games]);
 
-  if (isLoading || items.length === 0) return null;
+  if (isLoading) return null;
+  if (items.length === 0) {
+    return (
+      <div className="glass-panel rounded-2xl p-6 text-center space-y-2">
+        <p className="text-sm font-semibold text-foreground">Nenhuma atividade recente.</p>
+        <p className="text-xs text-muted-foreground">Publique a programação de hoje para começar.</p>
+        <button
+          onClick={() => navigate("/admin/programacao")}
+          className="inline-flex items-center justify-center min-h-11 px-4 rounded-lg bg-primary/15 text-primary border border-primary/30 text-xs font-bold hover:bg-primary/20 transition-colors"
+        >
+          Ir para Programação
+        </button>
+      </div>
+    );
+  }
 
   const renderItem = (item: ActivityItem, i: number) => {
     const config = typeConfig[item.type];
