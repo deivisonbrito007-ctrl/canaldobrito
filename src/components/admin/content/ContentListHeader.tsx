@@ -57,7 +57,9 @@ export const ContentListHeader = ({
   onClearSelection,
   onBulkActive,
   onBulkDelete,
-}: ContentListHeaderProps) => (
+}: ContentListHeaderProps) => {
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  return (
   <>
     <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-white/[0.06]">
       <h3 className="text-sm font-bold text-foreground">
