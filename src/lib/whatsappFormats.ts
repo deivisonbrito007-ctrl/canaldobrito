@@ -103,8 +103,16 @@ const channelsLine = (g: DailyGame): string | null => {
 };
 
 /** Bloco padrão de um jogo: horário + confronto, competição, canais. */
+const scoreSuffix = (g: DailyGame): string => {
+  if (isSingleEvent(g) || typeof g.home_score !== "number" || typeof g.away_score !== "number") return "";
+  const st = getGameStatus(g);
+  if (st !== "live" && st !== "ended") return "";
+  const clock = st === "live" ? [g.live_clock, g.period].map((p) => (p ?? "").trim()).filter(Boolean).join(" · ") : "";
+  return ` (${g.home_score}-${g.away_score}${clock ? ` · ${escapeWppMarkdown(clock)}` : ""})`;
+};
+
 const gameBlock = (g: DailyGame, opts: { competition?: boolean } = {}): string[] => {
-  const lines = [`${timeOf(g)} - ${matchupLine(g)}`];
+  const lines = [`${timeOf(g)} - ${matchupLine(g)}${scoreSuffix(g)}`];
   if (opts.competition !== false) {
     const c = competitionLine(g);
     if (c) lines.push(c);
