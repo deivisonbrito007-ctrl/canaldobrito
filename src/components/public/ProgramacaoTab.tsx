@@ -145,7 +145,8 @@ const ProgramacaoTab = () => {
     }
   }, [rawDate, dateIsAllowed, params, setParams]);
 
-  const gamesQuery = useAllDailyGamesRange([today, tomorrow]);
+  const scheduleDates = useMemo(() => [today, tomorrow], [today, tomorrow]);
+  const gamesQuery = useAllDailyGamesRange(scheduleDates);
   const { isLoading, isError, isFetching, dataUpdatedAt, refetch } = gamesQuery;
   const rawGames = useMemo(() => (gamesQuery.data ?? []).filter((game) => game.date === date), [gamesQuery.data, date]);
   const tomorrowGamesRaw = useMemo(

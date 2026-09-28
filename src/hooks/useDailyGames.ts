@@ -145,8 +145,7 @@ export const useAllDailyGamesRange = (dates: string[]) => {
         return undefined;
       }
     },
-    retry: 1,
-    retryDelay: 750,
+    retry: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 5 * 60_000,
