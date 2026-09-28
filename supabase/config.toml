@@ -13,5 +13,3 @@ verify_jwt = true
 [functions.send-push-notifications]
 verify_jwt = false
 
-[functions.sportsapi-sync]
-verify_jwt = false

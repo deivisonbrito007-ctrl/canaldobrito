@@ -5,7 +5,6 @@ import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEG
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
-import { SportsApiPanel } from "@/components/admin/sportsapi/SportsApiPanel";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
 import { BannerCard } from "@/components/admin/BannerCard";
 import { BannerHealthPanel } from "@/components/admin/BannerHealthPanel";
@@ -320,12 +319,12 @@ const PasteZone = ({
   );
 };
 
-type Section = "categories" | "programacao" | "sportsapi";
+type Section = "categories" | "programacao";
 
 const AdminProgramacao = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: Section = tabParam === "categories" ? "categories" : tabParam === "sportsapi" ? "sportsapi" : "programacao";
+  const initialTab: Section = tabParam === "categories" ? "categories" : "programacao";
   const [activeSection, setActiveSection] = useState<Section>(initialTab);
 
   const [selectedCategory, setSelectedCategory] = useState<BannerCategory>("cover");
@@ -632,7 +631,6 @@ const AdminProgramacao = () => {
         className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
         {[
           { key: "programacao" as const, label: "📋 Programação" },
-          { key: "sportsapi" as const, label: "📡 Sugestões da API" },
           { key: "categories" as const, label: "🖼️ Banners de imagem" },
         ].map((s) => (
           <button
@@ -696,8 +694,6 @@ const AdminProgramacao = () => {
           <ArchivedGamesManager />
         </div>
       )}
-
-      {activeSection === "sportsapi" && <SportsApiPanel />}
 
       {activeSection === "categories" && (
         <>

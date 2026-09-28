@@ -92,38 +92,20 @@ export function isSingleEvent(g: { home_team: string; away_team?: string | null;
 
 export type GameStatus = 'live' | 'soon' | 'upcoming' | 'ended';
 
-/** Computes the current status of a game (soon = starts within `soonMinutes`). */
-/**
- * Status vindo da API (quando o jogo foi importado/atualizado pela SportsAPI).
- * Retorna null quando não há dado confiável e o cálculo por horário deve valer.
- * Um "live" da API só é aceito se atualizado há menos de 30 min (evita jogo preso em ao vivo).
- */
-export function apiGameStatus(
-  g: { api_status?: string | null; live_status?: string | null; live_updated_at?: string | null; last_api_sync_at?: string | null },
-): 'live' | 'ended' | null {
-  const s = (g.api_status || g.live_status || '').toLowerCase();
-  if (!s) return null;
-  if (s === 'finished') return 'ended';
-  if (s === 'live') {
-    const at = g.live_updated_at || g.last_api_sync_at;
-    if (!at) return null;
-    const ageMin = (Date.now() - new Date(at).getTime()) / 60000;
-    return ageMin <= 30 ? 'live' : null;
-  }
-  return null;
-}
-
 export function getGameStatus(
-  g: { game_time: string; date: string; sport_type?: string | null; api_status?: string | null; live_status?: string | null; live_updated_at?: string | null; last_api_sync_at?: string | null },
+  g: { game_time: string; date: string; sport_type?: string | null },
   soonMinutes = 60,
 ): GameStatus {
   const st = (g.sport_type || 'football') as SportType;
-  const fromApi = apiGameStatus(g);
-  if (fromApi) return fromApi;
   if (isGameCurrentlyLive(g.game_time, g.date, st)) return 'live';
   const mins = getMinutesUntilStart(g.game_time, g.date);
   if (mins === null) return 'ended';
   return mins <= soonMinutes ? 'soon' : 'upcoming';
+}
+
+export function formatScore(g: { home_score?: number | null; away_score?: number | null }): string | null {
+  if (typeof g.home_score !== 'number' || typeof g.away_score !== 'number') return null;
+  return `${g.home_score} x ${g.away_score}`;
 }
 
 
