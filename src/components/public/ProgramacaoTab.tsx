@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Radio, Clock, SearchX, RefreshCw, AlertCircle } from "lucide-react";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
-import { ContinueWatchingSection } from "@/components/public/ContinueWatchingSection";
 import { useAllDailyGamesRange, type DailyGame } from "@/hooks/useDailyGames";
 import { useRealtimeDailyGames } from "@/hooks/useRealtimeDailyGames";
 import {
@@ -577,10 +576,6 @@ const ProgramacaoTab = () => {
           <p className="text-center text-[11px] text-white/45 mt-4 mb-4">
             Todos os horários no Horário de Brasília (GMT-3)
           </p>
-
-          <div className="mt-4">
-            <ContinueWatchingSection />
-          </div>
 
           <div className="mt-4 mb-2 md:max-w-[560px] md:mx-auto">
             <PremiumCTA from="programacao-bottom" />

@@ -12,7 +12,10 @@ export const AppNavbar = () => {
   const dateStr = getLocalDateString();
   const tomorrow = offsetDateStr(dateStr, 1);
   const { data: rangeGames } = useAllDailyGamesRange([dateStr, tomorrow]);
-  const games = useMemo(() => (rangeGames ?? []).filter((game) => game.date === dateStr), [rangeGames, dateStr]);
+  const games = useMemo(
+    () => (rangeGames ?? []).filter((game) => game.date === dateStr && game.active && !game.archived),
+    [rangeGames, dateStr],
+  );
   const tick = useLiveTick();
 
   const liveCount = useMemo(() => {
