@@ -38,4 +38,5 @@
 - [x] SportsAPI removida; programação voltou a ser 100% manual/GPT
 - [x] Programações anteriores a hoje apagadas; hoje e datas futuras preservadas
 - [x] Atualizações repetidas e manutenção durante leitura pública removidas
-- [ ] Cache persistente de trailers e validação final
+- [x] Cache persistente de trailers
+- [ ] Validação final

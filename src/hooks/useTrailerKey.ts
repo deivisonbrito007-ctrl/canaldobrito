@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { trailerCache as cache } from "./useTrailerAvailability";
+import { trailerCache as cache, cacheTrailer } from "./useTrailerAvailability";
 
 const findYouTubeTrailer = (results: any[]) =>
   results.find((v: any) => v.type === "Trailer" && v.site === "YouTube") ||
@@ -43,7 +43,7 @@ export const useTrailerKey = (
         if (data?.results) {
           const t = findYouTubeTrailer(data.results);
           if (t) {
-            cache.set(tmdb_id, t.key);
+            cacheTrailer(tmdb_id, t.key);
             setTrailerKey(t.key);
             return;
           }
@@ -58,13 +58,13 @@ export const useTrailerKey = (
         if (dataEn?.results) {
           const t = findYouTubeTrailer(dataEn.results);
           if (t) {
-            cache.set(tmdb_id, t.key);
+            cacheTrailer(tmdb_id, t.key);
             setTrailerKey(t.key);
             return;
           }
         }
 
-        cache.set(tmdb_id, null);
+        cacheTrailer(tmdb_id, null);
       } catch (e) {
         console.error("Trailer fetch error:", e);
       } finally {
