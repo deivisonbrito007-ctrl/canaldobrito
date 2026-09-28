@@ -2,10 +2,11 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Radio, Clock, SearchX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Radio, Clock, SearchX, RefreshCw, AlertCircle } from "lucide-react";
 import { PremiumCTA } from "@/components/public/cinema/PremiumCTA";
 import { ContinueWatchingSection } from "@/components/public/ContinueWatchingSection";
-import { useAllDailyGames, type DailyGame } from "@/hooks/useDailyGames";
+import { useAllDailyGamesRange, type DailyGame } from "@/hooks/useDailyGames";
+import { useRealtimeDailyGames } from "@/hooks/useRealtimeDailyGames";
 import {
   type SportType,
   SPORT_LABEL,
@@ -68,6 +69,7 @@ const norm = (s: string) =>
 const STATUS_RANK: Record<string, number> = { live: 0, soon: 1, upcoming: 2, ended: 3 };
 
 const ProgramacaoTab = () => {
+  useRealtimeDailyGames();
   const [params, setParams] = useSearchParams();
   const today = getLocalDateString();
   const tomorrow = offsetDateStr(today, 1);
@@ -75,9 +77,13 @@ const ProgramacaoTab = () => {
   const dateIsAllowed = rawDate ? rawDate === today || rawDate === tomorrow : true;
   const date = rawDate && dateIsAllowed ? rawDate : today;
 
-  const [filter, setFilterState] = useState<FilterValue>("all");
+  const [filter, setFilterState] = useState<FilterValue>(() => {
+    try { return (sessionStorage.getItem("agenda:sport") as FilterValue) || "all"; } catch { return "all"; }
+  });
   const [search, setSearch] = useState("");
-  const [status, setStatusState] = useState<StatusFilter>("all");
+  const [status, setStatusState] = useState<StatusFilter>(() => {
+    try { return (sessionStorage.getItem("agenda:status") as StatusFilter) || "all"; } catch { return "all"; }
+  });
   const [sort, setSortState] = useState<SortMode>(() => {
     try {
       const saved = sessionStorage.getItem("agenda:sort");
@@ -86,7 +92,9 @@ const ProgramacaoTab = () => {
       return "time";
     }
   });
-  const [channel, setChannelState] = useState<string | null>(null);
+  const [channel, setChannelState] = useState<string | null>(() => {
+    try { return sessionStorage.getItem("agenda:channel"); } catch { return null; }
+  });
 
   // Analytics simples (sem ranking público)
   const setStatus = useCallback((v: StatusFilter) => {
@@ -115,6 +123,18 @@ const ProgramacaoTab = () => {
   useEffect(() => {
     try { sessionStorage.setItem("agenda:sort", sort); } catch { /* noop */ }
   }, [sort]);
+  useEffect(() => {
+    try { sessionStorage.setItem("agenda:sport", filter); } catch { /* noop */ }
+  }, [filter]);
+  useEffect(() => {
+    try { sessionStorage.setItem("agenda:status", status); } catch { /* noop */ }
+  }, [status]);
+  useEffect(() => {
+    try {
+      if (channel) sessionStorage.setItem("agenda:channel", channel);
+      else sessionStorage.removeItem("agenda:channel");
+    } catch { /* noop */ }
+  }, [channel]);
 
   // Defensive cleanup: drop ?date if it's not today/tomorrow (or is malformed).
   useEffect(() => {
@@ -125,8 +145,13 @@ const ProgramacaoTab = () => {
     }
   }, [rawDate, dateIsAllowed, params, setParams]);
 
-  const { data: rawGames, isLoading } = useAllDailyGames(date);
-  const { data: tomorrowGamesRaw } = useAllDailyGames(date === today ? tomorrow : today);
+  const gamesQuery = useAllDailyGamesRange([today, tomorrow]);
+  const { isLoading, isError, isFetching, dataUpdatedAt, refetch } = gamesQuery;
+  const rawGames = useMemo(() => (gamesQuery.data ?? []).filter((game) => game.date === date), [gamesQuery.data, date]);
+  const tomorrowGamesRaw = useMemo(
+    () => (gamesQuery.data ?? []).filter((game) => game.date === (date === today ? tomorrow : today)),
+    [gamesQuery.data, date, today, tomorrow],
+  );
   const tomorrowCount = useMemo(
     () => (date === today ? (tomorrowGamesRaw ?? []).filter((g) => !g.archived && g.active).length : 0),
     [tomorrowGamesRaw, date, today],
@@ -346,6 +371,11 @@ const ProgramacaoTab = () => {
   const nothingMatches = !isLoading && total > 0 && visibleGames.length === 0;
   // Com filtros ativos, o carrossel sai do caminho para a lista aparecer logo
   const showHighlights = !hasActiveFilters && highlights.length > 0;
+  const updatedLabel = useMemo(() => {
+    if (!dataUpdatedAt) return "";
+    const minutes = Math.max(0, Math.floor((Date.now() - dataUpdatedAt) / 60_000));
+    return minutes < 1 ? "Atualizado agora" : `Atualizado há ${minutes} min`;
+  }, [dataUpdatedAt, tick]);
 
   return (
     <div className="mx-auto w-full max-w-[460px] md:max-w-[1100px] px-4 md:px-6 pt-4 pb-6 text-white">
@@ -399,7 +429,27 @@ const ProgramacaoTab = () => {
           {" · "}
           <span className="text-white/45">Horário de Brasília</span>
         </p>
+        <div className="mt-2 flex min-h-11 items-center justify-between gap-2" role="status" aria-live="polite">
+          <span className="text-[11px] text-white/55">{updatedLabel}</span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+            aria-label="Atualizar programação"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden />
+          </button>
+        </div>
       </div>
+
+      {isError && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3" role="alert">
+          <AlertCircle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
+          <p className="flex-1 text-xs text-white/85">Não foi possível buscar a atualização. A última programação carregada continua disponível.</p>
+          <button type="button" onClick={() => refetch()} className="min-h-11 px-3 text-xs font-bold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Tentar novamente</button>
+        </div>
+      )}
 
       {isLoading && <AgendaSkeleton />}
 

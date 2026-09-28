@@ -60,57 +60,33 @@ Deno.serve(async (req) => {
       console.error("Error activating daily_games:", gamesError);
     }
 
-    // Soft delete: archive games older than 2 days (Brazil timezone)
-    const archiveDate = new Date(nowBR);
-    archiveDate.setDate(archiveDate.getDate() - 2);
-    const archiveDateStr = archiveDate.toISOString().split("T")[0];
-
-    const { data: gamesToArchive } = await supabase
-      .from("daily_games")
-      .select("id, date, home_team, away_team")
-      .eq("archived", false)
-      .lt("date", archiveDateStr);
-
-    if (gamesToArchive?.length) {
-      console.log(`Archiving ${gamesToArchive.length} old games:`, gamesToArchive.map(g => `${g.date}: ${g.home_team} x ${g.away_team} (${g.id})`));
-    }
-
-    const { data: archivedGames, error: archiveError } = await supabase
-      .from("daily_games")
-      .update({ archived: true, active: false })
-      .eq("archived", false)
-      .lt("date", archiveDateStr)
-      .select("id");
-
-    if (archiveError) {
-      console.error("Error archiving old games:", archiveError);
-    }
-
-    // Hard delete: permanently remove games archived for more than 30 days
-    const hardDeleteDate = new Date(nowBR);
-    hardDeleteDate.setDate(hardDeleteDate.getDate() - 30);
-    const hardDeleteDateStr = hardDeleteDate.toISOString().split("T")[0];
-
+    // Daily cleanup: retain today and all future schedules in São Paulo time.
     const { data: deletedGames, error: deleteError } = await supabase
       .from("daily_games")
       .delete()
-      .eq("archived", true)
-      .lt("date", hardDeleteDateStr)
+      .lt("date", todayBR)
       .select("id");
 
     if (deleteError) {
       console.error("Error deleting old archived games:", deleteError);
     }
 
+    if ((deletedGames?.length || 0) > 0) {
+      const { error: auditError } = await supabase.from("audit_logs").insert({
+        action: "cleanup_old_schedules",
+        entity: "daily_games",
+        payload: { deleted_count: deletedGames?.length || 0, retained_from: todayBR },
+      });
+      if (auditError) console.error("Error logging schedule cleanup:", auditError);
+    }
+
     const result = {
       activated_banners: activatedBanners?.length || 0,
       deactivated_expired_banners: expiredBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
-      archived_games: archivedGames?.length || 0,
-      hard_deleted_games: deletedGames?.length || 0,
+      deleted_old_games: deletedGames?.length || 0,
       today_br: todayBR,
-      archive_before: archiveDateStr,
-      hard_delete_before: hardDeleteDateStr,
+      retained_from: todayBR,
       checked_at: new Date().toISOString(),
     };
 
