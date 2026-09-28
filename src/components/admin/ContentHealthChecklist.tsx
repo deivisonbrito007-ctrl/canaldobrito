@@ -171,7 +171,8 @@ export const ContentHealthChecklist = ({ todayGames, tomorrowGames, banners, mov
       list.push({ id: "news", level: "warn", label: "Nenhuma novidade ativa na vitrine", route: "/admin/novidades" });
     }
 
-    return list;
+    const priority: Record<Level, number> = { error: 0, warn: 1, ok: 2 };
+    return list.sort((a, b) => priority[a.level] - priority[b.level]);
   }, [todayGames, tomorrowGames, banners, movies, series, news, mappings, aliasRows]);
 
   const errors = items.filter((i) => i.level === "error").length;
@@ -185,7 +186,7 @@ export const ContentHealthChecklist = ({ todayGames, tomorrowGames, banners, mov
   return (
     <section className="glass-panel rounded-xl p-4 border border-white/[0.08]" aria-labelledby="health-checklist-title">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <h2 id="health-checklist-title" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Saúde do conteúdo</h2>
+        <h2 id="health-checklist-title" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Central de pendências</h2>
         {!isLoading && <span className={`text-[11px] font-bold ${summaryTone}`}>{summary}</span>}
       </div>
       {isLoading ? (

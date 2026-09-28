@@ -30,13 +30,6 @@ const BelowFoldSkeleton = () => (
 const TAB_ORDER = ["schedule", "novidades"] as const;
 type TabId = typeof TAB_ORDER[number];
 
-// Transição vertical/fade: evita deslocamento horizontal e barra de rolagem no mobile
-const slideVariants = {
-  enter: (dir: number) => ({ opacity: 0, y: dir > 0 ? 16 : -16 }),
-  center: { opacity: 1, y: 0 },
-  exit: (dir: number) => ({ opacity: 0, y: dir > 0 ? -16 : 16 }),
-};
-
 const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<TabId>("schedule");

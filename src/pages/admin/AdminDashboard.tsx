@@ -144,6 +144,11 @@ const AdminDashboard = () => {
     return Math.max(...timestamps);
   }, [updatedBanners, updatedMovies, updatedSeries, updatedNews, updatedGames]);
 
+  const freshness = [
+    ["Banners", updatedBanners], ["Filmes", updatedMovies], ["Séries", updatedSeries],
+    ["Novidades", updatedNews], ["Programação", updatedGames],
+  ] as const;
+
   return (
     <div className="space-y-6">
       {/* Date card + last updated */}
@@ -178,6 +183,23 @@ const AdminDashboard = () => {
 
       {/* Content Health Bar */}
       <ContentHealthBar totalActive={totalActiveContent} totalAll={totalAllContent} isLoading={isLoading} />
+
+      <section className="glass-panel rounded-xl border border-white/[0.08] p-4" aria-labelledby="data-diagnostics-title">
+        <div className="flex items-center justify-between gap-2">
+          <h2 id="data-diagnostics-title" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Atualização dos dados</h2>
+          <span className={`text-[10px] font-semibold ${hasError ? "text-rose-400" : isFetching ? "text-amber-400" : "text-emerald-400"}`}>
+            {hasError ? "Requer atenção" : isFetching ? "Atualizando" : "Normal"}
+          </span>
+        </div>
+        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {freshness.map(([label, timestamp]) => (
+            <li key={label} className="rounded-lg bg-white/[0.03] p-2">
+              <p className="text-[10px] text-muted-foreground">{label}</p>
+              <p className="mt-1 text-xs font-semibold text-foreground">{timestamp ? format(new Date(timestamp), "HH:mm") : "Pendente"}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {/* Error alert */}
       {hasError && (

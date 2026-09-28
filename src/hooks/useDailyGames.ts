@@ -266,7 +266,9 @@ export const useArchivedDailyGames = () =>
       if (error) throw error;
       return data as DailyGame[];
     },
-    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 5 * 60_000,
   });
 
 /** Resumo leve dos arquivados: quantidade por data (só a coluna date). */
