@@ -60,33 +60,11 @@ Deno.serve(async (req) => {
       console.error("Error activating daily_games:", gamesError);
     }
 
-    // Daily cleanup: retain today and all future schedules in São Paulo time.
-    const { data: deletedGames, error: deleteError } = await supabase
-      .from("daily_games")
-      .delete()
-      .lt("date", todayBR)
-      .select("id");
-
-    if (deleteError) {
-      console.error("Error deleting old archived games:", deleteError);
-    }
-
-    if ((deletedGames?.length || 0) > 0) {
-      const { error: auditError } = await supabase.from("audit_logs").insert({
-        action: "cleanup_old_schedules",
-        entity: "daily_games",
-        payload: { deleted_count: deletedGames?.length || 0, retained_from: todayBR },
-      });
-      if (auditError) console.error("Error logging schedule cleanup:", auditError);
-    }
-
     const result = {
       activated_banners: activatedBanners?.length || 0,
       deactivated_expired_banners: expiredBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
-      deleted_old_games: deletedGames?.length || 0,
       today_br: todayBR,
-      retained_from: todayBR,
       checked_at: new Date().toISOString(),
     };
 
