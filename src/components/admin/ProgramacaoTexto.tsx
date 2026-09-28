@@ -999,6 +999,7 @@ export const ProgramacaoTexto = () => {
   useEffect(() => {
     const id = window.setTimeout(() => {
       try {
+        if (!text.trim() && draftAvailable) return;
         if (!text.trim()) {
           localStorage.removeItem("admin_schedule_draft_v1");
           setDraftAvailable(false);
@@ -1008,7 +1009,7 @@ export const ProgramacaoTexto = () => {
       } catch { /* storage unavailable */ }
     }, 500);
     return () => window.clearTimeout(id);
-  }, [text, selectedDate, scheduleMidnight, autoBumpMidnight]);
+  }, [text, selectedDate, scheduleMidnight, autoBumpMidnight, draftAvailable]);
 
   const restoreDraft = () => {
     try {

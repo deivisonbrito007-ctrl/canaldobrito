@@ -43,9 +43,9 @@
 
 
 ## Polimento completo — set/2026
-- [ ] Publicação comparativa e rascunho recuperável
-- [ ] Histórico de versões e restauração
-- [ ] Carregamento público progressivo, atualização e preferências
-- [ ] Central de pendências e diagnóstico administrativo
-- [ ] Limpeza diária segura com auditoria
+- [x] Publicação comparativa e rascunho recuperável
+- [x] Histórico de versões e restauração
+- [x] Carregamento público progressivo, atualização e preferências
+- [x] Central de pendências e diagnóstico administrativo
+- [x] Limpeza diária segura com auditoria
 - [ ] Acessibilidade, responsividade e testes finais
