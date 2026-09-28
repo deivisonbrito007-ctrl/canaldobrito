@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { gameKey } from "@/lib/dedup";
 import { toast } from "sonner";
 
 export interface DailyGame {
@@ -28,6 +29,8 @@ export interface DailyGame {
   source?: string | null;
   external_source?: string | null;
   external_sport?: string | null;
+  live_clock?: string | null;
+  period?: string | null;
 }
 
 const PUBLIC_GAME_COLUMNS = "id,date,home_team,away_team,competition,competition_detail,game_time,channels,is_live,is_womens,active,archived,status_short,elapsed_minutes,publish_at,sport_type,created_at,external_id,home_score,away_score,live_status,live_updated_at,source";
