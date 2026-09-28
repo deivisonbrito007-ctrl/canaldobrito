@@ -40,3 +40,12 @@
 - [x] Atualizações repetidas e manutenção durante leitura pública removidas
 - [x] Cache persistente de trailers
 - [x] Validação final
+
+
+## Polimento completo — set/2026
+- [x] Publicação comparativa e rascunho recuperável
+- [x] Histórico de versões e restauração
+- [x] Carregamento público progressivo, atualização e preferências
+- [x] Central de pendências e diagnóstico administrativo
+- [x] Limpeza diária segura com auditoria
+- [x] Acessibilidade, responsividade e testes finais

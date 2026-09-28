@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { AppNavbar } from "@/components/public/AppNavbar";
 import { TAB_SLUGS, SLUG_TO_TAB } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -31,17 +30,9 @@ const BelowFoldSkeleton = () => (
 const TAB_ORDER = ["schedule", "novidades"] as const;
 type TabId = typeof TAB_ORDER[number];
 
-// Transição vertical/fade: evita deslocamento horizontal e barra de rolagem no mobile
-const slideVariants = {
-  enter: (dir: number) => ({ opacity: 0, y: dir > 0 ? 16 : -16 }),
-  center: { opacity: 1, y: 0 },
-  exit: (dir: number) => ({ opacity: 0, y: dir > 0 ? -16 : 16 }),
-};
-
 const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<TabId>("schedule");
-  const [direction, setDirection] = useState(0);
   const { pullDistance, isRefreshing } = usePullToRefresh(mainRef);
 
   const handleTabChange = useCallback((tabId: string) => {
@@ -59,12 +50,7 @@ const Index = () => {
     }
     const next = normalized as TabId;
     if (!TAB_ORDER.includes(next)) return;
-    setActiveTab((prev) => {
-      const prevIdx = TAB_ORDER.indexOf(prev);
-      const nextIdx = TAB_ORDER.indexOf(next);
-      setDirection(nextIdx >= prevIdx ? 1 : -1);
-      return next;
-    });
+    setActiveTab(next);
     // Sync URL so refresh stays on the same tab
     const targetPath = `/${TAB_SLUGS[next]}`;
     if (window.location.pathname !== targetPath) {
@@ -163,19 +149,9 @@ const Index = () => {
 
       <main ref={mainRef} className="relative z-10 flex-1" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom, 0px))", overscrollBehaviorY: "contain" }}>
         <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
-        <AnimatePresence mode="wait" initial={false} custom={direction}>
-          <motion.div
-            key={activeTab}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            {renderContent()}
-          </motion.div>
-        </AnimatePresence>
+        <div key={activeTab} className="animate-fade-up motion-reduce:animate-none">
+          {renderContent()}
+        </div>
       </main>
 
       <PublicFooter />

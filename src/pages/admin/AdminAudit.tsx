@@ -92,7 +92,9 @@ const AdminAudit = () => {
       if (error) throw error;
       return (data || []) as unknown as AuditRow[];
     },
-    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 60_000,
   });
 
   if (error) {

@@ -60,57 +60,11 @@ Deno.serve(async (req) => {
       console.error("Error activating daily_games:", gamesError);
     }
 
-    // Soft delete: archive games older than 2 days (Brazil timezone)
-    const archiveDate = new Date(nowBR);
-    archiveDate.setDate(archiveDate.getDate() - 2);
-    const archiveDateStr = archiveDate.toISOString().split("T")[0];
-
-    const { data: gamesToArchive } = await supabase
-      .from("daily_games")
-      .select("id, date, home_team, away_team")
-      .eq("archived", false)
-      .lt("date", archiveDateStr);
-
-    if (gamesToArchive?.length) {
-      console.log(`Archiving ${gamesToArchive.length} old games:`, gamesToArchive.map(g => `${g.date}: ${g.home_team} x ${g.away_team} (${g.id})`));
-    }
-
-    const { data: archivedGames, error: archiveError } = await supabase
-      .from("daily_games")
-      .update({ archived: true, active: false })
-      .eq("archived", false)
-      .lt("date", archiveDateStr)
-      .select("id");
-
-    if (archiveError) {
-      console.error("Error archiving old games:", archiveError);
-    }
-
-    // Hard delete: permanently remove games archived for more than 30 days
-    const hardDeleteDate = new Date(nowBR);
-    hardDeleteDate.setDate(hardDeleteDate.getDate() - 30);
-    const hardDeleteDateStr = hardDeleteDate.toISOString().split("T")[0];
-
-    const { data: deletedGames, error: deleteError } = await supabase
-      .from("daily_games")
-      .delete()
-      .eq("archived", true)
-      .lt("date", hardDeleteDateStr)
-      .select("id");
-
-    if (deleteError) {
-      console.error("Error deleting old archived games:", deleteError);
-    }
-
     const result = {
       activated_banners: activatedBanners?.length || 0,
       deactivated_expired_banners: expiredBanners?.length || 0,
       activated_games: activatedGames?.length || 0,
-      archived_games: archivedGames?.length || 0,
-      hard_deleted_games: deletedGames?.length || 0,
       today_br: todayBR,
-      archive_before: archiveDateStr,
-      hard_delete_before: hardDeleteDateStr,
       checked_at: new Date().toISOString(),
     };
 

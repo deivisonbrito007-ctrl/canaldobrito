@@ -568,6 +568,36 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_publication_versions: {
+        Row: {
+          action: string
+          created_at: string
+          created_by: string | null
+          dates: string[]
+          game_count: number
+          games: Json
+          id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          game_count?: number
+          games?: Json
+          id?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          game_count?: number
+          games?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
@@ -781,6 +811,7 @@ export type Database = {
           mapping_name: string
         }[]
       }
+      cleanup_old_manual_schedules: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -801,6 +832,10 @@ export type Database = {
         Returns: undefined
       }
       reorder_channel_mappings: { Args: { _ids: string[] }; Returns: undefined }
+      restore_schedule_publication_version: {
+        Args: { _version_id: string }
+        Returns: number
+      }
       upsert_push_subscription: {
         Args: { _auth: string; _endpoint: string; _p256dh: string }
         Returns: undefined

@@ -64,7 +64,9 @@ const useScheduledItems = () =>
       items.sort((a, b) => new Date(a.publish_at).getTime() - new Date(b.publish_at).getTime());
       return items;
     },
-    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 60_000,
   });
 
 export const UpcomingActivations = forwardRef<HTMLDivElement>((_props, ref) => {
