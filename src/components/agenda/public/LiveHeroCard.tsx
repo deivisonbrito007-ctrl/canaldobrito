@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadge } from "@/components/public/ChannelBadge";
-import { formatLiveClock, formatScore } from "@/lib/sportsApi";
-import { SPORT_EMOJI, SPORT_LABEL, type SportType, getElapsedMinutes } from "@/lib/gameUtils";
+import { SPORT_EMOJI, SPORT_LABEL, type SportType, getElapsedMinutes, formatScore } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
 
@@ -64,8 +63,7 @@ export const LiveHeroCard = ({ games }: Props) => {
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const isVs = !!game.away_team;
-  const clock = formatLiveClock(game);
-  const elapsed = clock ? null : getElapsedMinutes(game.game_time, game.date, sport);
+  const elapsed = getElapsedMinutes(game.game_time, game.date, sport);
   const score = formatScore(game);
 
   const goPrev = () => {
@@ -144,9 +142,7 @@ export const LiveHeroCard = ({ games }: Props) => {
                   transition={{ duration: 1.2, repeat: Infinity }}
                 />
                 AO VIVO
-                {clock ? (
-                  <span className="ml-0.5 tabular-nums normal-case tracking-normal">· {clock}</span>
-                ) : elapsed !== null ? (
+                {elapsed !== null ? (
                   <span className="ml-0.5 tabular-nums">· {elapsed}'</span>
                 ) : null}
               </span>

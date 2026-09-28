@@ -5,7 +5,26 @@ import { supabase } from "@/integrations/supabase/client";
  * Shared cache: tmdb_id → YouTube trailer key (or null if none).
  * Same cache instance used by useTrailerKey for zero-duplication.
  */
+const STORAGE_KEY = "canal-do-brito:trailers:v1";
 const cache = new Map<number, string | null>();
+
+try {
+  const saved = sessionStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    for (const [id, key] of JSON.parse(saved) as Array<[number, string | null]>) cache.set(id, key);
+  }
+} catch {
+  // Storage can be unavailable in private browsing; memory cache still works.
+}
+
+export function cacheTrailer(id: number, key: string | null) {
+  cache.set(id, key);
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...cache.entries()]));
+  } catch {
+    // A full or unavailable storage must not block trailer playback.
+  }
+}
 
 /** Expose cache for useTrailerKey to share */
 export { cache as trailerCache };
@@ -82,7 +101,7 @@ export const useTrailerAvailability = (
             if (data?.results) {
               const t = findYouTubeTrailer(data.results);
               if (t) {
-                cache.set(tmdb_id, t.key);
+                cacheTrailer(tmdb_id, t.key);
                 return { tmdb_id, hasTrailer: true };
               }
             }
@@ -96,15 +115,15 @@ export const useTrailerAvailability = (
             if (dataEn?.results) {
               const t = findYouTubeTrailer(dataEn.results);
               if (t) {
-                cache.set(tmdb_id, t.key);
+                cacheTrailer(tmdb_id, t.key);
                 return { tmdb_id, hasTrailer: true };
               }
             }
 
-            cache.set(tmdb_id, null);
+            cacheTrailer(tmdb_id, null);
             return { tmdb_id, hasTrailer: false };
           } catch {
-            cache.set(tmdb_id, null);
+            cacheTrailer(tmdb_id, null);
             return { tmdb_id, hasTrailer: false };
           }
         });

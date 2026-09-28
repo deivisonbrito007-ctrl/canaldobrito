@@ -3,7 +3,6 @@ import type { DailyGame } from "@/hooks/useDailyGames";
 import { ChannelBadgeList } from "@/components/public/ChannelBadge";
 import {
   isGameCurrentlyLive,
-  apiGameStatus,
   type SportType,
   getMinutesUntilStart,
   formatCountdown,
@@ -14,7 +13,6 @@ import {
 } from "@/lib/gameUtils";
 import { detectedSport } from "./highlightsCuration";
 import { themeFor } from "./gamePremiumTheme";
-import { formatLiveClock } from "@/lib/sportsApi";
 
 interface Props {
   game: DailyGame;
@@ -27,19 +25,17 @@ export const GamePremiumCard = ({ game, index, showSport = false }: Props) => {
   const sport = detectedSport(game);
   const theme = themeFor(sport);
   const time = game.game_time.slice(0, 5);
-  const fromApi = apiGameStatus(game);
-  const live = fromApi ? fromApi === "live" : isGameCurrentlyLive(game.game_time, game.date, sport as SportType);
-  const elapsed = live && !fromApi ? getElapsedMinutes(game.game_time, game.date, sport as SportType) : null;
-  const minutesUntil = !live && fromApi !== "ended" ? getMinutesUntilStart(game.game_time, game.date) : null;
+  const live = isGameCurrentlyLive(game.game_time, game.date, sport as SportType);
+  const elapsed = live ? getElapsedMinutes(game.game_time, game.date, sport as SportType) : null;
+  const minutesUntil = !live ? getMinutesUntilStart(game.game_time, game.date) : null;
   const soon = minutesUntil !== null && minutesUntil <= 60;
   const ended = !live && minutesUntil === null;
   const single = isSingleEvent({ ...game, sport_type: sport });
   const channels = game.channels ?? [];
   const hasScore = !single && typeof game.home_score === "number" && typeof game.away_score === "number" && (live || ended);
-  const clock = live ? formatLiveClock(game) : null;
 
   const statusLabel = live
-    ? clock ? `AO VIVO · ${clock}` : elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
+    ? elapsed !== null ? `AO VIVO · ${elapsed}'` : "AO VIVO"
     : soon
       ? minutesUntil! < 1 ? "COMEÇANDO" : `COMEÇA EM ${formatCountdown(minutesUntil!).toUpperCase()}`
       : ended ? "ENCERRADO" : "EM BREVE";

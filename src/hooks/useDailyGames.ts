@@ -29,26 +29,11 @@ export interface DailyGame {
   source?: string | null;
   external_source?: string | null;
   external_sport?: string | null;
-  api_status?: string | null;
   live_clock?: string | null;
   period?: string | null;
-  broadcast_country?: string | null;
-  last_api_sync_at?: string | null;
 }
 
-/** Fontes exibidas no app: manual (parser/WhatsApp) e importadas da SportsAPI após revisão. */
-export const VISIBLE_SOURCES = ["manual", "sportsapi"] as const;
-
-/**
- * Jogos vindos da API só aparecem se tiverem canal válido.
- * Jogos manuais mantêm o comportamento atual ("Canal a confirmar").
- */
-export function hasValidBroadcast(g: Pick<DailyGame, "source" | "channels">): boolean {
-  if (g.source !== "sportsapi") return true;
-  return Array.isArray(g.channels) && g.channels.some((c) => typeof c === "string" && c.trim().length > 0);
-}
-
-// Fontes: parser manual (WhatsApp/GPT) + importações revisadas da SportsAPI.
+const PUBLIC_GAME_COLUMNS = "id,date,home_team,away_team,competition,competition_detail,game_time,channels,is_live,is_womens,active,archived,status_short,elapsed_minutes,publish_at,sport_type,created_at,external_id,home_score,away_score,live_status,live_updated_at,source";
 
 export const useDailyGames = (date: string) => {
   return useQuery({
@@ -56,17 +41,18 @@ export const useDailyGames = (date: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_games")
-        .select("*")
+        .select(PUBLIC_GAME_COLUMNS)
         .eq("date", date)
         .eq("active", true)
         .eq("archived", false)
-        .in("source", [...VISIBLE_SOURCES])
+        .eq("source", "manual")
         .order("game_time", { ascending: true });
       if (error) throw error;
-      return (data as DailyGame[]).filter(hasValidBroadcast);
+      return data as DailyGame[];
     },
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -76,46 +62,17 @@ export const useAllDailyGames = (date: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_games")
-        .select("*")
+        .select(PUBLIC_GAME_COLUMNS)
         .eq("date", date)
-        .in("source", [...VISIBLE_SOURCES])
+        .eq("source", "manual")
         .order("game_time", { ascending: true });
       if (error) throw error;
 
-      // Auto-cleanup: detect and remove duplicates, keeping oldest
-      const rows = (data as DailyGame[]).filter(hasValidBroadcast);
-      const seen = new Map<string, DailyGame>();
-      const dupeIds: string[] = [];
-
-      for (const row of rows) {
-        const key = gameKey(row);
-        const existing = seen.get(key);
-        if (existing) {
-          // Keep older record (smaller created_at)
-          if (row.created_at < existing.created_at) {
-            dupeIds.push(existing.id);
-            seen.set(key, row);
-          } else {
-            dupeIds.push(row.id);
-          }
-        } else {
-          seen.set(key, row);
-        }
-      }
-
-      if (dupeIds.length > 0) {
-        await supabase.from("daily_games").delete().in("id", dupeIds);
-        toast.info(`${dupeIds.length} duplicata(s) removida(s) automaticamente`);
-        return rows.filter((r) => !dupeIds.includes(r.id));
-      }
-
-      return rows;
+      return data as DailyGame[];
     },
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    staleTime: 15_000,
+    staleTime: 5 * 60_000,
   });
 };
 

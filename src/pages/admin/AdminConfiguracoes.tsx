@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Loader2, Phone, Key, Info, Globe, Copy, Check, Tv, RotateCcw, Wrench, Github } from "lucide-react";
 import { toast } from "sonner";
-import { SportsApiSettings } from "@/components/admin/sportsapi/SportsApiSettings";
 
 const DEFAULT_TV_CHANNELS_JSON = JSON.stringify(
   [
@@ -207,8 +206,6 @@ const AdminConfiguracoes = () => {
           </p>
         </div>
       </div>
-
-      <SportsApiSettings />
 
       {/* Ferramentas técnicas */}
       <div className="glass-panel rounded-xl overflow-hidden">
