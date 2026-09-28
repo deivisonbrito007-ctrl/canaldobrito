@@ -831,6 +831,10 @@ export type Database = {
         Returns: undefined
       }
       reorder_channel_mappings: { Args: { _ids: string[] }; Returns: undefined }
+      restore_schedule_publication_version: {
+        Args: { _version_id: string }
+        Returns: number
+      }
       upsert_push_subscription: {
         Args: { _auth: string; _endpoint: string; _p256dh: string }
         Returns: undefined

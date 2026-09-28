@@ -15,6 +15,13 @@
       "when": 1790609303443,
       "tag": "0001_create_schedule_publication_versions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790609345306,
+      "tag": "0002_add_atomic_schedule_version_restore",
+      "breakpoints": true
     }
   ]
 }
