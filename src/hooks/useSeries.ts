@@ -43,7 +43,9 @@ export const useAllSeries = () =>
       if (error) throw error;
       return data as FeaturedSeries[];
     },
-    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 5 * 60_000,
   });
 
 export const useAddSeries = () => {

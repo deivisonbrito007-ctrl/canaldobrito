@@ -22,6 +22,8 @@ import { GamePremiumCard } from "@/components/agenda/public/GamePremiumCard";
 import { Loader2, FileText, Trash2, Check, Pencil, X, Clipboard, Clock, CheckSquare, Square, AlertTriangle, Camera, Copy, Wand2, Eye, ListChecks, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCreateScheduleVersion } from "@/hooks/useScheduleVersions";
 
 export interface ParsedGame {
   home_team: string;
@@ -958,6 +960,7 @@ function generateWhatsAppSummary(games: ParsedGame[]): string {
 }
 
 export const ProgramacaoTexto = () => {
+  const { user } = useAuth();
   const { data: channelMappings } = useChannelMappings();
   const today = getLocalDateString();
   const [text, setText] = useState("");
@@ -977,8 +980,58 @@ export const ProgramacaoTexto = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const insertGames = useInsertDailyGames();
   const deleteByDate = useDeleteDailyGamesByDate();
+  const createVersion = useCreateScheduleVersion();
+  const [draftAvailable, setDraftAvailable] = useState(false);
 
   const [existingKeys, setExistingKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("admin_schedule_draft_v1");
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { text?: string; selectedDate?: string; scheduleMidnight?: boolean; autoBumpMidnight?: boolean };
+      if (draft.text?.trim()) setDraftAvailable(true);
+    } catch {
+      localStorage.removeItem("admin_schedule_draft_v1");
+    }
+  }, []);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        if (!text.trim()) {
+          localStorage.removeItem("admin_schedule_draft_v1");
+          setDraftAvailable(false);
+          return;
+        }
+        localStorage.setItem("admin_schedule_draft_v1", JSON.stringify({ text, selectedDate, scheduleMidnight, autoBumpMidnight, savedAt: new Date().toISOString() }));
+      } catch { /* storage unavailable */ }
+    }, 500);
+    return () => window.clearTimeout(id);
+  }, [text, selectedDate, scheduleMidnight, autoBumpMidnight]);
+
+  const restoreDraft = () => {
+    try {
+      const raw = localStorage.getItem("admin_schedule_draft_v1");
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { text?: string; selectedDate?: string; scheduleMidnight?: boolean; autoBumpMidnight?: boolean };
+      setText(draft.text ?? "");
+      if (draft.selectedDate) setSelectedDate(draft.selectedDate);
+      setScheduleMidnight(Boolean(draft.scheduleMidnight));
+      setAutoBumpMidnight(Boolean(draft.autoBumpMidnight));
+      setParsed([]);
+      setDraftAvailable(false);
+      toast.success("Rascunho restaurado");
+    } catch {
+      toast.error("Não foi possível restaurar o rascunho");
+    }
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem("admin_schedule_draft_v1");
+    setDraftAvailable(false);
+    toast.info("Rascunho descartado");
+  };
 
   const handleProcess = async () => {
     if (!text.trim()) {
@@ -1251,6 +1304,10 @@ export const ProgramacaoTexto = () => {
       const result = await insertGames.mutateAsync(toInsert);
       const { inserted, skipped } = result;
 
+      if (inserted > 0 && user?.id) {
+        await createVersion.mutateAsync({ action: "publish", games: toInsert, userId: user.id });
+      }
+
       if (inserted === 0 && skipped > 0) {
         toast.warning(`Todos os ${skipped} jogos já existem no banco`);
       } else if (skipped > 0) {
@@ -1270,6 +1327,7 @@ export const ProgramacaoTexto = () => {
 
       setParsed([]);
       setText("");
+      localStorage.removeItem("admin_schedule_draft_v1");
     } catch (err: any) {
       const code = err?.code || err?.cause?.code;
       if (code === "23505") {
@@ -1305,9 +1363,13 @@ export const ProgramacaoTexto = () => {
       }
       const toInsert = buildInsertPayload(selected);
       await insertGames.mutateAsync(toInsert);
+      if (user?.id) {
+        await createVersion.mutateAsync({ action: "republish", games: toInsert, userId: user.id });
+      }
       toast.success(`Republicado! ${selected.length} jogos.`);
       setParsed([]);
       setText("");
+      localStorage.removeItem("admin_schedule_draft_v1");
     } catch (err: any) {
       const code = err?.code || err?.cause?.code;
       if (code === "23505") {
@@ -1456,12 +1518,19 @@ export const ProgramacaoTexto = () => {
     }
     return {
       count: sel.length,
+      newCount: sel.filter((g) => !existingKeys.has(gameKey(g))).length,
+      existingCount: sel.filter((g) => existingKeys.has(gameKey(g))).length,
       sports: [...sports.entries()].sort((a, b) => b[1] - a[1]),
       channels: [...channels.entries()].sort((a, b) => b[1] - a[1]),
       dates: [...dates].sort(),
       dateMismatch: [...dates].some((d) => d !== selectedDate),
     };
-  }, [parsed, selectedDate]);
+  }, [parsed, selectedDate, existingKeys]);
+
+  const republishRemovalCount = useMemo(
+    () => parsed.filter((g) => existingKeys.has(gameKey(g))).length,
+    [parsed, existingKeys],
+  );
 
   return (
     <div className="space-y-5">
@@ -1537,6 +1606,19 @@ export const ProgramacaoTexto = () => {
             <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/20 text-primary text-[11px] font-bold">2</span>
             <h3 className="text-sm font-bold text-foreground">Texto da Programação</h3>
           </div>
+
+          {draftAvailable && !text.trim() && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/[0.05] p-3" role="status">
+              <div>
+                <p className="text-xs font-semibold text-foreground">Rascunho recuperável</p>
+                <p className="text-[10px] text-muted-foreground">Há uma programação não publicada salva neste navegador.</p>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" onClick={restoreDraft} className="min-h-11">Restaurar</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={discardDraft} className="min-h-11">Descartar</Button>
+              </div>
+            </div>
+          )}
 
           {pendingImage && (
             <div className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06]">
@@ -2054,18 +2136,22 @@ export const ProgramacaoTexto = () => {
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="space-y-3 text-left">
-                        <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                           <div className="rounded-lg bg-white/[0.04] p-2">
                             <p className="text-lg font-bold text-foreground tabular-nums">{reviewSummary.count}</p>
                             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">jogos</p>
                           </div>
                           <div className="rounded-lg bg-white/[0.04] p-2">
-                            <p className="text-lg font-bold text-foreground tabular-nums">{reviewSummary.sports.length}</p>
-                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">esportes</p>
+                            <p className="text-lg font-bold text-emerald-400 tabular-nums">{reviewSummary.newCount}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">novos</p>
                           </div>
                           <div className="rounded-lg bg-white/[0.04] p-2">
-                            <p className="text-lg font-bold text-foreground tabular-nums">{reviewSummary.channels.length}</p>
-                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">canais</p>
+                            <p className="text-lg font-bold text-amber-400 tabular-nums">{reviewSummary.existingCount}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">já existentes</p>
+                          </div>
+                          <div className="rounded-lg bg-white/[0.04] p-2">
+                            <p className="text-lg font-bold text-foreground tabular-nums">{totalWarnings}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">alertas</p>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-1">
@@ -2081,6 +2167,9 @@ export const ProgramacaoTexto = () => {
                             <span className="text-amber-400 font-semibold"> · diferente da data selecionada ({formatDatePt(selectedDate)})</span>
                           )}
                         </p>
+                        {republishRemovalCount > 0 && (
+                          <p className="text-[11px] text-amber-400">Na republicação, os jogos atuais dessas datas serão substituídos pela seleção revisada.</p>
+                        )}
                         {totalWarnings > 0 ? (
                           <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-3 space-y-2">
                             <p className="text-[11px] font-bold text-amber-400 flex items-center gap-1">

@@ -76,6 +76,29 @@ export const useAllDailyGames = (date: string) => {
   });
 };
 
+export const useAllDailyGamesRange = (dates: string[]) => {
+  const stableDates = [...dates].sort();
+  return useQuery({
+    queryKey: ["daily_games", "all-range", stableDates],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_games")
+        .select(PUBLIC_GAME_COLUMNS)
+        .in("date", stableDates)
+        .eq("source", "manual")
+        .order("date", { ascending: true })
+        .order("game_time", { ascending: true });
+      if (error) throw error;
+      return data as DailyGame[];
+    },
+    enabled: stableDates.length > 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 5 * 60_000,
+    placeholderData: (previous) => previous,
+  });
+};
+
 /**
  * Insert daily games with automatic dedup:
  * fetches existing games for the date(s) and skips duplicates.

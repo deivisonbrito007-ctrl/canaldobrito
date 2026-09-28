@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAllBanners, useCreateBanner, useUpdateBanner, useDeleteBanner, CATEGORY_LABELS, CATEGORY_LIST, type Banner, type BannerCategory } from "@/hooks/useBanners";
 import { ProgramacaoTexto } from "@/components/admin/ProgramacaoTexto";
+import { ScheduleVersionHistory } from "@/components/admin/ScheduleVersionHistory";
 import { DailyGamesManager } from "@/components/admin/DailyGamesManager";
 import { ArchivedGamesManager } from "@/components/admin/ArchivedGamesManager";
 import { ExpiredBannersAlert } from "@/components/admin/ExpiredBannersAlert";
@@ -690,6 +691,7 @@ const AdminProgramacao = () => {
             </Popover>
           </div>
           <ProgramacaoTexto />
+          <ScheduleVersionHistory />
           <DailyGamesManager />
           <ArchivedGamesManager />
         </div>
