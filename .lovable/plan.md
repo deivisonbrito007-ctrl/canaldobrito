@@ -5,6 +5,7 @@
 - A integração está gerando carga excessiva: o banco mantém um agendamento `sportsapi-cron` ativo a cada minuto, com 11.518 execuções e 21.890 sugestões armazenadas.
 - As consultas da SportsAPI ocupam os primeiros lugares entre as operações mais lentas do banco; uma delas já foi chamada 45.768 vezes.
 - Não existem jogos publicados com origem SportsAPI neste momento: os 1.080 jogos existentes são manuais. Porém, 268 jogos manuais receberam placar/status/metadados da API e precisam ser limpos para voltar ao comportamento anterior.
+- A limpeza de histórico seguirá a decisão confirmada: manter a programação de hoje e todas as datas futuras; apagar definitivamente os jogos de datas anteriores, inclusive arquivados.
 - A tela pública também consulta hoje e amanhã continuamente, a cada 30 segundos, apesar de já existir atualização em tempo real. Isso cria tráfego duplicado desnecessário.
 - O catálogo faz várias consultas individuais para descobrir trailers; o resultado só fica em memória e é perdido ao recarregar a página.
 
@@ -29,8 +30,10 @@
 - Manter o cálculo de “Ao vivo”, “Em breve” e “Encerrado” pelo horário de Brasília, como era antes.
 - Preservar integralmente o fluxo de colar texto/imagem, revisão, publicação manual, canais/logos e WhatsApp.
 
-### 3. Limpar o banco sem perder o histórico necessário
+### 3. Limpar o banco e as programações vencidas
 
+- Apagar definitivamente de `daily_games` todos os jogos anteriores à data atual em `America/Sao_Paulo`, mantendo hoje e todas as datas futuras.
+- Fazer a exclusão em uma operação controlada no banco, sem criar uma rotina recorrente: a própria consulta pública já filtra datas atuais, e novas limpezas poderão ser feitas pelo fluxo administrativo quando necessário.
 - Remover as tabelas `sportsapi_suggestions` e `sportsapi_sync_runs`, seus índices, políticas e gatilhos.
 - Remover todas as configurações `sportsapi_*`.
 - Remover apenas as colunas exclusivas da SportsAPI em `daily_games`.
@@ -50,6 +53,7 @@
 
 - Confirmar no banco que o agendamento, tabelas, configurações e função SportsAPI deixaram de existir.
 - Confirmar que nenhum jogo manual mantém metadados aplicados pela API.
+- Confirmar que `daily_games` contém somente hoje e datas futuras, usando a data de São Paulo como referência.
 - Verificar publicação manual, agenda pública, busca/filtros, canais, WhatsApp e Filmes/Séries.
 - Testar celular e computador, incluindo ausência de tela branca, erros e rolagem horizontal.
 - Rodar os testes existentes e confirmar o carregamento sem consultas recorrentes da SportsAPI.
