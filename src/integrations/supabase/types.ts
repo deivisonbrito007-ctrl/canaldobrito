@@ -568,6 +568,36 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_publication_versions: {
+        Row: {
+          action: string
+          created_at: string
+          created_by: string | null
+          dates: string[]
+          game_count: number
+          games: Json
+          id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          game_count?: number
+          games?: Json
+          id?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          game_count?: number
+          games?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
