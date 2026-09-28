@@ -39,13 +39,21 @@ export const useScheduleVersions = () =>
 export const useCreateScheduleVersion = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ action, games, userId }: { action: Exclude<ScheduleVersionAction, "restore">; games: Record<string, unknown>[]; userId: string }) => {
-      const dates = [...new Set(games.map((game) => String(game.date)))].sort();
+    mutationFn: async ({ action, dates, userId }: { action: Exclude<ScheduleVersionAction, "restore">; dates: string[]; userId: string }) => {
+      const uniqueDates = [...new Set(dates)].sort();
+      const { data: games, error: gamesError } = await supabase
+        .from("daily_games")
+        .select("*")
+        .in("date", uniqueDates)
+        .eq("source", "manual")
+        .order("date", { ascending: true })
+        .order("game_time", { ascending: true });
+      if (gamesError) throw gamesError;
       const { error } = await supabase.from("schedule_publication_versions").insert({
         action,
-        dates,
-        game_count: games.length,
-        games: games as Json,
+        dates: uniqueDates,
+        game_count: games?.length ?? 0,
+        games: (games ?? []) as Json,
         created_by: userId,
       });
       if (error) throw error;

@@ -1305,7 +1305,12 @@ export const ProgramacaoTexto = () => {
       const { inserted, skipped } = result;
 
       if (inserted > 0 && user?.id) {
-        await createVersion.mutateAsync({ action: "publish", games: toInsert, userId: user.id });
+        const dates = toInsert.map((game) => String(game.date));
+        try {
+          await createVersion.mutateAsync({ action: "publish", dates, userId: user.id });
+        } catch {
+          toast.warning("A programação foi publicada, mas o histórico não pôde ser salvo.");
+        }
       }
 
       if (inserted === 0 && skipped > 0) {
@@ -1364,7 +1369,12 @@ export const ProgramacaoTexto = () => {
       const toInsert = buildInsertPayload(selected);
       await insertGames.mutateAsync(toInsert);
       if (user?.id) {
-        await createVersion.mutateAsync({ action: "republish", games: toInsert, userId: user.id });
+        const dates = toInsert.map((game) => String(game.date));
+        try {
+          await createVersion.mutateAsync({ action: "republish", dates, userId: user.id });
+        } catch {
+          toast.warning("A programação foi republicada, mas o histórico não pôde ser salvo.");
+        }
       }
       toast.success(`Republicado! ${selected.length} jogos.`);
       setParsed([]);
