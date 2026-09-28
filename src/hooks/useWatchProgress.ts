@@ -35,7 +35,9 @@ export const useWatchProgress = () =>
       if (error) throw error;
       return (data ?? []) as WatchProgress[];
     },
-    refetchInterval: 30_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 30 * 60_000,
   });
 
 export const useUpsertProgress = () => {
