@@ -811,6 +811,7 @@ export type Database = {
           mapping_name: string
         }[]
       }
+      cleanup_old_manual_schedules: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
