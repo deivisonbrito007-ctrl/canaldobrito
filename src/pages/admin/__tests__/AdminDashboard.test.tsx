@@ -113,7 +113,7 @@ describe("AdminDashboard", () => {
 
   it("shows content health checklist when items are incomplete", () => {
     wrap(<AdminDashboard />);
-    expect(screen.getByText("Saúde do conteúdo")).toBeInTheDocument();
+    expect(screen.getByText("Central de pendências")).toBeInTheDocument();
     expect(screen.getByText(/conteúdos? incompletos?/)).toBeInTheDocument();
   });
 

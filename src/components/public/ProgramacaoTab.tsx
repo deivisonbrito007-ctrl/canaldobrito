@@ -29,6 +29,7 @@ import { SportSection } from "@/components/agenda/public/SportSection";
 import { TimeSection } from "@/components/agenda/public/TimeSection";
 import { EmptyDayState } from "@/components/agenda/public/EmptyDayState";
 import { AgendaSkeleton } from "@/components/agenda/public/AgendaSkeleton";
+import { Button } from "@/components/ui/button";
 import { curateHighlights, detectedSport } from "@/components/agenda/public/highlightsCuration";
 
 const SPORT_ORDER: SportType[] = [
@@ -431,15 +432,17 @@ const ProgramacaoTab = () => {
         </p>
         <div className="mt-2 flex min-h-11 items-center justify-between gap-2" role="status" aria-live="polite">
           <span className="text-[11px] text-white/55">{updatedLabel}</span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+            className="min-h-11 min-w-11 rounded-full text-white/70 hover:bg-white/10"
             aria-label="Atualizar programação"
           >
             <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -447,7 +450,7 @@ const ProgramacaoTab = () => {
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3" role="alert">
           <AlertCircle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
           <p className="flex-1 text-xs text-white/85">Não foi possível buscar a atualização. A última programação carregada continua disponível.</p>
-          <button type="button" onClick={() => refetch()} className="min-h-11 px-3 text-xs font-bold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Tentar novamente</button>
+          <Button type="button" variant="ghost" onClick={() => refetch()} className="min-h-11 px-3 text-xs font-bold text-primary">Tentar novamente</Button>
         </div>
       )}
 
