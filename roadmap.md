@@ -39,4 +39,4 @@
 - [x] Programações anteriores a hoje apagadas; hoje e datas futuras preservadas
 - [x] Atualizações repetidas e manutenção durante leitura pública removidas
 - [x] Cache persistente de trailers
-- [ ] Validação final
+- [x] Validação final
