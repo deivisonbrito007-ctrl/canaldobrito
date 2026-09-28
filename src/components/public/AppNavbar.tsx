@@ -1,15 +1,21 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
-import { useDailyGames } from "@/hooks/useDailyGames";
+import { useAllDailyGamesRange } from "@/hooks/useDailyGames";
 import { getLocalDateString, isGameCurrentlyLive, type SportType } from "@/lib/gameUtils";
 import { useMemo } from "react";
 import { useLiveTick } from "@/hooks/useLiveTick";
+import { offsetDateStr } from "@/lib/whatsappText";
 
 export const AppNavbar = () => {
   const today = new Date();
   const dateStr = getLocalDateString();
-  const { data: games } = useDailyGames(dateStr);
+  const tomorrow = offsetDateStr(dateStr, 1);
+  const { data: rangeGames } = useAllDailyGamesRange([dateStr, tomorrow]);
+  const games = useMemo(
+    () => (rangeGames ?? []).filter((game) => game.date === dateStr && game.active && !game.archived),
+    [rangeGames, dateStr],
+  );
   const tick = useLiveTick();
 
   const liveCount = useMemo(() => {

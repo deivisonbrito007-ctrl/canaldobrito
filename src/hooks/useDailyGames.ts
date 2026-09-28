@@ -35,6 +35,37 @@ export interface DailyGame {
 
 const PUBLIC_GAME_COLUMNS = "id,date,home_team,away_team,competition,competition_detail,game_time,channels,is_live,is_womens,active,archived,status_short,elapsed_minutes,publish_at,sport_type,created_at,external_id,home_score,away_score,live_status,live_updated_at,source";
 
+const PUBLIC_SCHEDULE_CACHE_KEY = "agenda:public-games:v1";
+const PUBLIC_SCHEDULE_TIMEOUT_MS = 8_000;
+
+type PublicScheduleCache = {
+  savedAt: number;
+  dates: string[];
+  games: DailyGame[];
+};
+
+function readPublicScheduleCache(dates: string[]): DailyGame[] | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PUBLIC_SCHEDULE_CACHE_KEY) ?? "null") as PublicScheduleCache | null;
+    if (!parsed || !Array.isArray(parsed.games) || !Array.isArray(parsed.dates)) return undefined;
+    if (Date.now() - parsed.savedAt > 24 * 60 * 60_000) return undefined;
+    if (!dates.every((date) => parsed.dates.includes(date))) return undefined;
+    return parsed.games.filter((game) => dates.includes(game.date));
+  } catch {
+    return undefined;
+  }
+}
+
+function writePublicScheduleCache(dates: string[], games: DailyGame[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PUBLIC_SCHEDULE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), dates, games }));
+  } catch {
+    // Storage can be unavailable in private mode; the live request still works.
+  }
+}
+
 export const useDailyGames = (date: string) => {
   return useQuery({
     queryKey: ["daily_games", date, "public"],
@@ -80,18 +111,41 @@ export const useAllDailyGamesRange = (dates: string[]) => {
   const stableDates = [...dates].sort();
   return useQuery({
     queryKey: ["daily_games", "all-range", stableDates],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("daily_games")
-        .select(PUBLIC_GAME_COLUMNS)
-        .in("date", stableDates)
-        .eq("source", "manual")
-        .order("date", { ascending: true })
-        .order("game_time", { ascending: true });
-      if (error) throw error;
-      return data as DailyGame[];
+    queryFn: async ({ signal }) => {
+      const timeoutController = new AbortController();
+      const timeoutId = window.setTimeout(() => timeoutController.abort(), PUBLIC_SCHEDULE_TIMEOUT_MS);
+      const abort = () => timeoutController.abort();
+      signal.addEventListener("abort", abort, { once: true });
+      try {
+        const { data, error } = await supabase
+          .from("daily_games")
+          .select(PUBLIC_GAME_COLUMNS)
+          .in("date", stableDates)
+          .eq("source", "manual")
+          .order("date", { ascending: true })
+          .order("game_time", { ascending: true })
+          .abortSignal(timeoutController.signal);
+        if (error) throw error;
+        const games = data as DailyGame[];
+        writePublicScheduleCache(stableDates, games);
+        return games;
+      } finally {
+        window.clearTimeout(timeoutId);
+        signal.removeEventListener("abort", abort);
+      }
     },
     enabled: stableDates.length > 0,
+    initialData: () => readPublicScheduleCache(stableDates),
+    initialDataUpdatedAt: () => {
+      if (typeof window === "undefined") return undefined;
+      try {
+        const parsed = JSON.parse(localStorage.getItem(PUBLIC_SCHEDULE_CACHE_KEY) ?? "null") as PublicScheduleCache | null;
+        return parsed?.savedAt;
+      } catch {
+        return undefined;
+      }
+    },
+    retry: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 5 * 60_000,

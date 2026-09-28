@@ -49,3 +49,9 @@
 - [x] Central de pendências e diagnóstico administrativo
 - [x] Limpeza diária segura com auditoria
 - [x] Acessibilidade, responsividade e testes finais
+
+## Correção do carregamento da agenda — set/2026
+- [x] Reutilizar a mesma consulta da agenda no cabeçalho, eliminando leitura duplicada
+- [x] Mostrar a última agenda válida imediatamente enquanto a atualização ocorre
+- [x] Encerrar consultas lentas com erro recuperável, sem esqueleto infinito
+- [x] Remover da agenda a consulta inexistente de progresso e sua repetição a cada 30 segundos
