@@ -236,7 +236,10 @@ Deno.serve(async (req) => {
 
     const upcomingGames = games.filter((g) => {
       const [h, m] = (g.game_time as string).split(":").map(Number);
-      return Math.abs(h * 60 + m - targetMinutes) <= 2;
+      // A tarefa roda a cada 5 minutos: cada jogo cai em exatamente uma
+      // janela de 5 minutos (13 a 17 min antes do início).
+      const diff = h * 60 + m - targetMinutes;
+      return diff >= -2 && diff < 3;
     });
 
     if (upcomingGames.length === 0) {
