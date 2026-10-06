@@ -449,7 +449,11 @@ const ProgramacaoTab = () => {
       {isError && (
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3" role="alert">
           <AlertCircle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
-          <p className="flex-1 text-xs text-white/85">Não foi possível buscar a atualização. A última programação carregada continua disponível.</p>
+          <p className="flex-1 text-xs text-white/85">
+            {gamesQuery.data && gamesQuery.data.length > 0
+              ? "Não foi possível buscar a atualização. A última programação carregada continua disponível."
+              : "A conexão está lenta e a programação não carregou. Tente novamente em instantes."}
+          </p>
           <Button type="button" variant="ghost" onClick={() => refetch()} className="min-h-11 px-3 text-xs font-bold text-primary">Tentar novamente</Button>
         </div>
       )}
