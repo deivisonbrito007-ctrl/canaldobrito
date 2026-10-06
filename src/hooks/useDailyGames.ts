@@ -145,7 +145,9 @@ export const useAllDailyGamesRange = (dates: string[]) => {
         return undefined;
       }
     },
-    retry: false,
+    // Uma nova tentativa automática após 3s antes de mostrar "Tentar novamente".
+    retry: 1,
+    retryDelay: 3_000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 5 * 60_000,

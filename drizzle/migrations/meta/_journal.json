@@ -36,6 +36,13 @@
       "when": 1790609606015,
       "tag": "0004_preserve_full_manual_schedule_snapshot_on_restore",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791303357055,
+      "tag": "0005_lighten_scheduled_jobs",
+      "breakpoints": true
     }
   ]
 }

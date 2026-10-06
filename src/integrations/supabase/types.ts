@@ -798,6 +798,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_scheduled_content: { Args: never; Returns: undefined }
       add_push_game_id: {
         Args: { _endpoint: string; _game_id: string }
         Returns: undefined
@@ -811,6 +812,7 @@ export type Database = {
           mapping_name: string
         }[]
       }
+      cleanup_job_logs: { Args: never; Returns: undefined }
       cleanup_old_manual_schedules: { Args: never; Returns: number }
       has_role: {
         Args: {
