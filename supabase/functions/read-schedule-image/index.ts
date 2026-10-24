@@ -23,13 +23,13 @@ FORMATO FINAL OBRIGATÓRIO:
 
 📅 **Dia DD/MM**
 
-🏆 **NOME DO ESPORTE**
+⚽ FUTEBOL
 
 Nome do evento ou Time A x Time B
 🏆 Competição / ⏰ HH:MM
 📺 Canal 1, Canal 2
 
-🏆 **OUTRO ESPORTE**
+🎾 TÊNIS
 
 Nome do evento
 🏆 Competição / ⏰ HH:MM
@@ -46,7 +46,7 @@ REGRAS DE HORÁRIO:
 - Manter horário de Brasília.
 - Se o horário não aparecer, use: ⏰ A confirmar
 
-REGRAS DE ESPORTE (cabeçalho 🏆 **ESPORTE**):
+REGRAS DE ESPORTE (cabeçalho = emoji do esporte + nome em MAIÚSCULAS, sem asteriscos e sem 🏆. Emojis: ⚽ FUTEBOL/FUTSAL, 🏀 BASQUETE/NBA, 🎾 TÊNIS, 🥊 UFC/MMA/BOXE, 🏎️ FÓRMULA 1/MOTOGP/AUTOMOBILISMO, 🏐 VÔLEI, ⚾ MLB, 🏉 NFL/RUGBY, 🚴 CICLISMO, 🏄 SURFE, ⛳ GOLFE, 🤾 HANDEBOL, 🏃 OUTRO):
 Classifique usando: Futebol, Tênis, Basquete, NBA, UFC, MMA, Boxe, Fórmula 1, MotoGP, NFL, MLB, Vôlei, Futsal, Ciclismo, Surfe, Golfe, Rugby, Handebol, Automobilismo, Outro.
 Critérios:
 - Brasileirão, Copa do Brasil, Libertadores, Sul-Americana, Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Campeonato Saudita, Copa Itália = Futebol.
@@ -73,7 +73,7 @@ REGRAS DE COMPETIÇÃO:
 - Incluir detalhe entre parênteses quando disponível: fase, rodada, etapa, local (ex: "oitavas de final", "Indian Wells", "Card Principal").
 
 REGRAS DE CANAIS:
-- Sempre incluir a linha 📺. Vários canais separados por vírgula. Se não houver canal, use: 📺 A confirmar
+- Vários canais separados por vírgula. Se não houver canal no texto, OMITA a linha 📺 (nunca escreva "A confirmar" como canal).
 - Não inventar canal. Remover textos promocionais que não sejam canal.
 - Normalizar nomes óbvios:
 ESPN2 → ESPN 2; Espn 2 → ESPN 2; ESPN 2 HD → ESPN 2; ESPN3 → ESPN 3; ESPN4 → ESPN 4;
@@ -89,7 +89,7 @@ Canal Goat → Canal GOAT; GOAT → Canal GOAT; YouTube Canal GOAT → Canal GOA
 N Sports → Nsports; YouTube Nsports → Nsports; X Sports → XSports
 
 REGRAS DE ORGANIZAÇÃO:
-- Agrupar por esporte (cabeçalho 🏆 **ESPORTE**). Omitir esporte sem eventos.
+- Agrupar por esporte (cabeçalho emoji + ESPORTE, ex.: 🏀 BASQUETE). Omitir esporte sem eventos.
 - Dentro de cada esporte, ordenar por horário.
 - Não duplicar: mesmo jogo + mesmo horário + mesmos canais = manter apenas um. Horários ou canais diferentes = manter os dois.
 
@@ -99,7 +99,7 @@ Manter: jogos, eventos, competições, horários, canais, data.
 Nunca escrever "Nenhum jogo identificado" ou similares — omita a seção.
 
 REVISÃO FINAL (antes de responder):
-- Todos os eventos têm ⏰ (ou "A confirmar"), 🏆 (ou "A confirmar") e 📺 (ou "A confirmar")?
+- Todos os eventos têm ⏰ (ou "A confirmar"), 🏆 (ou "A confirmar") e 📺 apenas quando há canal real? Cabeçalhos no formato "⚽ FUTEBOL" (nunca 🏆)?
 - Evento único sem "x"? Confronto verdadeiro com "x"?
 - Canais óbvios normalizados? Sem duplicados exatos?
 - A resposta contém APENAS a programação final?`;
